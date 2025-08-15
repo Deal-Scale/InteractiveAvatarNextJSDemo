@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { useMemoizedFn } from "ahooks";
 import { nanoid } from "nanoid";
 
@@ -6,14 +6,16 @@ import { AvatarControls } from "./AvatarSession/AvatarControls";
 import { AvatarVideo } from "./AvatarSession/AvatarVideo";
 import { Chat } from "./AvatarSession/Chat";
 import ConnectionIndicator from "./AvatarSession/ConnectionIndicator";
+import { useMessageHistory } from "./logic/useMessageHistory";
 import { StreamingAvatarSessionState } from "./logic/context";
 import { ChatModeToggle } from "./ui/ChatModeToggle";
+import { DockablePanel, DockMode } from "./ui/DockablePanel";
 import { Sidebar } from "./ui/sidebar";
 
 import { useApiService } from "@/components/logic/ApiServiceContext";
-import { MessageSender } from "@/lib/types";
-import { useSessionStore } from "@/lib/stores/session";
 import { useVoiceChat } from "@/components/logic/useVoiceChat";
+import { useSessionStore } from "@/lib/stores/session";
+import { MessageSender } from "@/lib/types";
 
 interface AvatarSessionProps {
   mediaStream: React.RefObject<HTMLVideoElement>;
@@ -29,6 +31,13 @@ export function AvatarSession({
   const { apiService } = useApiService();
   const { chatMode, setChatMode, messages, addMessage } = useSessionStore();
   const { startVoiceChat, stopVoiceChat, isVoiceChatActive } = useVoiceChat();
+  const { navigateHistory, resetHistory } = useMessageHistory(messages);
+
+  // UI state
+  const [dock, setDock] = useState<DockMode>("right");
+  const [expanded, setExpanded] = useState(false);
+  const [floatingPos, setFloatingPos] = useState({ x: 24, y: 24 });
+  const [chatInput, setChatInput] = useState("");
 
   const isConnected = useMemo(
     () => sessionState === StreamingAvatarSessionState.CONNECTED,
@@ -36,6 +45,10 @@ export function AvatarSession({
   );
 
   const handleSendMessage = useMemoizedFn(async (text: string) => {
+    if (!text.trim()) {
+      return;
+    }
+
     addMessage({
       id: nanoid(),
       content: text,
@@ -44,6 +57,8 @@ export function AvatarSession({
     if (apiService) {
       await apiService.textChat.sendMessageSync(text);
     }
+    resetHistory();
+    setChatInput("");
   });
 
   // Wrap async handlers to match Chat's expected void return types
@@ -78,11 +93,19 @@ export function AvatarSession({
   });
 
   const handleArrowUp = useMemoizedFn(() => {
-    // optional: route to message history navigation
+    const previousMessage = navigateHistory("up");
+
+    if (previousMessage) {
+      setChatInput(previousMessage);
+    }
   });
 
   const handleArrowDown = useMemoizedFn(() => {
-    // optional: route to message history navigation
+    const nextMessage = navigateHistory("down");
+
+    if (nextMessage) {
+      setChatInput(nextMessage);
+    }
   });
 
   return (
@@ -92,37 +115,82 @@ export function AvatarSession({
         <div className="absolute top-2 right-2 flex flex-col gap-2">
           <ConnectionIndicator sessionState={sessionState} />
         </div>
-      </div>
 
-      <Sidebar>
-        {isConnected ? (
-          <>
+        {isConnected && dock !== "right" && (
+          <DockablePanel
+            className="pointer-events-auto"
+            dock={dock}
+            expanded={expanded}
+            floatingPos={floatingPos}
+            onDockChange={setDock}
+            onFloatingPosChange={setFloatingPos}
+            onToggleExpand={() => setExpanded((e) => !e)}
+          >
             <ChatModeToggle
               chatMode={chatMode}
               onChatModeChange={setChatMode}
             />
             <Chat
+              _onStartListening={handleStartListening}
+              _onStopListening={handleStopListening}
+              chatInput={chatInput}
               chatMode={chatMode}
-              handleArrowDown={handleArrowDown}
-              handleArrowUp={handleArrowUp}
-              handleCopy={handleCopy}
-              handleSendMessage={sendMessageVoid}
-              handleStartListening={handleStartListening}
-              handleStopListening={handleStopListening}
               isVoiceChatActive={isVoiceChatActive}
               messages={messages}
-              sendMessage={sendMessageVoid}
-              startVoiceChat={startVoiceChatVoid}
-              stopVoiceChat={stopVoiceChatVoid}
+              onArrowDown={handleArrowDown}
+              onArrowUp={handleArrowUp}
+              onChatInputChange={setChatInput}
+              onCopy={handleCopy}
+              onSendMessage={sendMessageVoid}
+              onStartVoiceChat={startVoiceChatVoid}
+              onStopVoiceChat={stopVoiceChatVoid}
             />
             <AvatarControls stopSession={stopSession} />
-          </>
-        ) : (
-          <div className="flex items-center justify-center h-full">
-            <p className="text-white">Waiting to start session...</p>
-          </div>
+          </DockablePanel>
         )}
-      </Sidebar>
+      </div>
+
+      {dock === "right" ? (
+        isConnected ? (
+          <DockablePanel
+            className="py-4 px-2"
+            dock="right"
+            expanded={expanded}
+            onDockChange={setDock}
+            onToggleExpand={() => setExpanded((e) => !e)}
+          >
+            <ChatModeToggle
+              chatMode={chatMode}
+              onChatModeChange={setChatMode}
+            />
+            <Chat
+              _onStartListening={handleStartListening}
+              _onStopListening={handleStopListening}
+              chatInput={chatInput}
+              chatMode={chatMode}
+              isVoiceChatActive={isVoiceChatActive}
+              messages={messages}
+              onArrowDown={handleArrowDown}
+              onArrowUp={handleArrowUp}
+              onChatInputChange={setChatInput}
+              onCopy={handleCopy}
+              onSendMessage={sendMessageVoid}
+              onStartVoiceChat={startVoiceChatVoid}
+              onStopVoiceChat={stopVoiceChatVoid}
+            />
+            <AvatarControls stopSession={stopSession} />
+          </DockablePanel>
+        ) : (
+          <Sidebar>
+            <div className="flex items-center justify-center h-full">
+              <p className="text-white">Waiting to start session...</p>
+            </div>
+          </Sidebar>
+        )
+      ) : (
+        // When not docked right, keep a slim placeholder to preserve layout on wide screens
+        <div className="w-[8px]" />
+      )}
     </div>
   );
 }

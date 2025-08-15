@@ -1,7 +1,20 @@
-import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { cn } from "@/lib/utils";
+import React, {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+} from "react";
+
 import { Button } from "./button";
-import { Maximize2Icon, Minimize2Icon, PanelBottomOpenIcon, PanelRightOpenIcon, MoveIcon } from "lucide-react";
+import {
+  Maximize2Icon,
+  Minimize2Icon,
+  PanelBottomOpenIcon,
+  PanelRightOpenIcon,
+  MoveIcon,
+} from "lucide-react";
+
+import { cn } from "@/lib/utils";
 
 export type DockMode = "right" | "bottom" | "floating";
 

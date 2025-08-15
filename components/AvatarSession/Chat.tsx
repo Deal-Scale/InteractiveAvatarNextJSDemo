@@ -1,8 +1,6 @@
-import React, { useCallback, useEffect, useState } from "react";
-import { SendIcon, MicIcon, MicOffIcon, ClipboardCopyIcon } from "lucide-react";
-
-import { useMessageHistory } from "../logic/useMessageHistory";
-import { usePrevious, useKeyPress } from "ahooks";
+import { useKeyPress } from "ahooks";
+import { ClipboardCopyIcon, MicIcon, MicOffIcon, SendIcon } from "lucide-react";
+import React from "react";
 
 import {
   ChatContainerContent,
@@ -29,37 +27,38 @@ import { Message as MessageType, MessageSender } from "@/lib/types";
 import { ChatMode } from "@/lib/stores/session";
 
 interface ChatProps {
+  chatInput: string;
   chatMode: ChatMode;
-  messages: MessageType[];
-  sendMessage: (text: string) => void;
-  startVoiceChat: () => void;
-  stopVoiceChat: () => void;
   isVoiceChatActive: boolean;
-  handleCopy: (text: string) => void;
-  handleSendMessage: (text: string) => void;
-  handleStartListening: () => void;
-  handleStopListening: () => void;
-  handleArrowUp: () => void;
-  handleArrowDown: () => void;
+  messages: MessageType[];
+  onArrowDown: () => void;
+  onArrowUp: () => void;
+  onChatInputChange: (value: string) => void;
+  onCopy: (text: string) => void;
+  onSendMessage: (text: string) => void;
+  _onStartListening: () => void;
+  onStartVoiceChat: () => void;
+  _onStopListening: () => void;
+  onStopVoiceChat: () => void;
 }
 
 export const Chat: React.FC<ChatProps> = ({
+  chatInput,
   chatMode,
-  messages,
-  sendMessage,
-  startVoiceChat,
-  stopVoiceChat,
   isVoiceChatActive,
-  handleCopy,
-  handleSendMessage,
-  handleStartListening,
-  handleStopListening,
-  handleArrowUp,
-  handleArrowDown,
+  messages,
+  onArrowDown,
+  onArrowUp,
+  onChatInputChange,
+  onCopy,
+  onSendMessage,
+  // _onStartListening,
+  onStartVoiceChat,
+  // _onStopListening,
+  onStopVoiceChat,
 }) => {
-  const [inputValue, setInputValue] = useState("");
-  useKeyPress("ArrowUp", handleArrowUp);
-  useKeyPress("ArrowDown", handleArrowDown);
+  useKeyPress("ArrowUp", onArrowUp);
+  useKeyPress("ArrowDown", onArrowDown);
 
   return (
     <div className="flex flex-col w-full h-full relative">
@@ -111,7 +110,7 @@ export const Chat: React.FC<ChatProps> = ({
                       <Button
                         size="icon"
                         variant="ghost"
-                        onClick={() => handleCopy(message.content)}
+                        onClick={() => onCopy(message.content)}
                       >
                         <ClipboardCopyIcon className="h-4 w-4" />
                       </Button>
@@ -130,13 +129,9 @@ export const Chat: React.FC<ChatProps> = ({
       {chatMode === "text" && (
         <PromptInput
           className="w-full mt-4"
-          value={inputValue}
-          onValueChange={setInputValue}
-          onSubmit={() => {
-            if (inputValue.trim().length === 0) return;
-            handleSendMessage(inputValue);
-            setInputValue("");
-          }}
+          value={chatInput}
+          onValueChange={onChatInputChange}
+          onSubmit={() => onSendMessage(chatInput)}
         >
           <div className="flex items-end gap-2">
             <PromptInputTextarea
@@ -158,13 +153,7 @@ export const Chat: React.FC<ChatProps> = ({
           <Button
             className={isVoiceChatActive ? "bg-red-500" : "bg-green-500"}
             size="icon"
-            onClick={() => {
-              if (isVoiceChatActive) {
-                stopVoiceChat();
-              } else {
-                startVoiceChat();
-              }
-            }}
+            onClick={isVoiceChatActive ? onStopVoiceChat : onStartVoiceChat}
           >
             {isVoiceChatActive ? <MicOffIcon /> : <MicIcon />}
           </Button>
