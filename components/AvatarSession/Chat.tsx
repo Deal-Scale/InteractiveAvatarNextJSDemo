@@ -1,242 +1,175 @@
 import React, { useCallback, useEffect, useState } from "react";
-import { TaskType, TaskMode } from "@heygen/streaming-avatar";
-import { usePrevious, useKeyPress } from "ahooks";
-import { Mic, MicOff, SendIcon } from "lucide-react";
+import { SendIcon, MicIcon, MicOffIcon, ClipboardCopyIcon } from "lucide-react";
 
-import { MessageSender } from "../logic/context";
-import { useConversationState } from "../logic/useConversationState";
 import { useMessageHistory } from "../logic/useMessageHistory";
-import { useTextChat } from "../logic/useTextChat";
-import { useVoiceChat } from "../logic/useVoiceChat";
+import { usePrevious, useKeyPress } from "ahooks";
 
-import { Button } from "@/components/ui/button";
 import {
-  ChatContainerRoot as ChatContainer,
   ChatContainerContent,
+  ChatContainerRoot,
   ChatContainerScrollAnchor,
 } from "@/components/ui/chat-container";
-import { Message, MessageContent } from "@/components/ui/message";
+import {
+  Message,
+  MessageAction,
+  MessageActions,
+  MessageAvatar,
+  MessageContent,
+} from "@/components/ui/message";
 import {
   PromptInput,
+  PromptInputAction,
   PromptInputActions,
   PromptInputTextarea,
 } from "@/components/ui/prompt-input";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import { ScrollButton } from "@/components/ui/scroll-button";
+import { Button } from "@/components/ui/button";
 
-export const Chat: React.FC = () => {
-  const { messages } = useMessageHistory();
-  const { sendMessage, sendMessageSync, repeatMessage, repeatMessageSync } =
-    useTextChat();
-  const { startListening, stopListening } = useConversationState();
-  const {
-    startVoiceChat,
-    stopVoiceChat,
-    isVoiceChatActive,
-    isMuted,
-    muteInputAudio,
-    unmuteInputAudio,
-  } = useVoiceChat();
-  const [taskType, setTaskType] = useState<TaskType>(TaskType.TALK);
-  const [taskMode, setTaskMode] = useState<TaskMode>(TaskMode.ASYNC);
-  const [input, setInput] = useState("");
-  const [historyIndex, setHistoryIndex] = useState(-1);
+import { Message as MessageType, MessageSender } from "@/lib/types";
+import { ChatMode } from "@/lib/stores/session";
 
-  const handleSend = useCallback(() => {
-    if (input.trim() === "") {
-      return;
-    }
-    setHistoryIndex(-1);
-    if (taskType === TaskType.TALK) {
-      if (taskMode === TaskMode.SYNC) {
-        sendMessageSync(input);
-      } else {
-        sendMessage(input);
-      }
-    } else {
-      if (taskMode === TaskMode.SYNC) {
-        repeatMessageSync(input);
-      } else {
-        repeatMessage(input);
-      }
-    }
-    setInput("");
-  }, [
-    taskType,
-    taskMode,
-    input,
-    sendMessage,
-    sendMessageSync,
-    repeatMessage,
-    repeatMessageSync,
-  ]);
+interface ChatProps {
+  chatMode: ChatMode;
+  messages: MessageType[];
+  sendMessage: (text: string) => void;
+  startVoiceChat: () => void;
+  stopVoiceChat: () => void;
+  isVoiceChatActive: boolean;
+  handleCopy: (text: string) => void;
+  handleSendMessage: (text: string) => void;
+  handleStartListening: () => void;
+  handleStopListening: () => void;
+  handleArrowUp: () => void;
+  handleArrowDown: () => void;
+}
 
-  const previousInput = usePrevious(input);
-
-  const handleToggleVoiceChat = useCallback(() => {
-    if (isVoiceChatActive) {
-      if (isMuted) {
-        unmuteInputAudio();
-      } else {
-        muteInputAudio();
-      }
-    } else {
-      startVoiceChat();
-    }
-  }, [
-    isVoiceChatActive,
-    isMuted,
-    startVoiceChat,
-    muteInputAudio,
-    unmuteInputAudio,
-  ]);
-
-  const handleStopVoiceChat = useCallback(() => {
-    stopVoiceChat();
-  }, [stopVoiceChat]);
-
-  useEffect(() => {
-    if (!previousInput && input) {
-      startListening();
-    } else if (previousInput && !input) {
-      stopListening();
-    }
-  }, [input, previousInput, startListening, stopListening]);
-
-  useKeyPress("ArrowUp", () => {
-    const userMessages = messages.filter(
-      (m) => m.sender === MessageSender.CLIENT
-    );
-
-    if (userMessages.length > 0) {
-      const newIndex = Math.min(historyIndex + 1, userMessages.length - 1);
-
-      setHistoryIndex(newIndex);
-      setInput(userMessages[userMessages.length - 1 - newIndex].content);
-    }
-  });
-
-  useKeyPress("ArrowDown", () => {
-    const userMessages = messages.filter(
-      (m) => m.sender === MessageSender.CLIENT
-    );
-
-    if (historyIndex > 0) {
-      const newIndex = Math.max(historyIndex - 1, 0);
-
-      setHistoryIndex(newIndex);
-      setInput(userMessages[userMessages.length - 1 - newIndex].content);
-    } else if (historyIndex === 0) {
-      setHistoryIndex(-1);
-      setInput("");
-    }
-  });
+export const Chat: React.FC<ChatProps> = ({
+  chatMode,
+  messages,
+  sendMessage,
+  startVoiceChat,
+  stopVoiceChat,
+  isVoiceChatActive,
+  handleCopy,
+  handleSendMessage,
+  handleStartListening,
+  handleStopListening,
+  handleArrowUp,
+  handleArrowDown,
+}) => {
+  const [inputValue, setInputValue] = useState("");
+  useKeyPress("ArrowUp", handleArrowUp);
+  useKeyPress("ArrowDown", handleArrowDown);
 
   return (
-    <div className="flex flex-col gap-4 w-full h-full">
-      <ChatContainer className="text-white max-h-[150px]">
+    <div className="flex flex-col w-full h-full relative">
+      <ChatContainerRoot className="flex-grow text-white max-h-[calc(100%-80px)]">
         <ChatContainerContent>
           {messages.map((message) => (
             <Message
               key={message.id}
-              className={`flex flex-col gap-1 ${
+              className={`flex gap-2 ${
                 message.sender === MessageSender.AVATAR
                   ? "items-start"
-                  : "items-end"
+                  : "items-end flex-row-reverse"
               }`}
             >
-              <p className="text-xs text-zinc-400">
-                {message.sender === MessageSender.AVATAR ? "Avatar" : "You"}
-              </p>
-              <MessageContent
-                className={`text-sm ${
+              <MessageAvatar
+                alt={
+                  message.sender === MessageSender.AVATAR ? "Avatar" : "User"
+                }
+                fallback={message.sender === MessageSender.AVATAR ? "A" : "U"}
+                src={
                   message.sender === MessageSender.AVATAR
-                    ? "bg-zinc-700"
-                    : "bg-blue-500"
+                    ? "/heygen-logo.png"
+                    : ""
+                }
+              />
+              <div
+                className={`flex flex-col gap-1 ${
+                  message.sender === MessageSender.AVATAR
+                    ? "items-start"
+                    : "items-end"
                 }`}
               >
-                {message.content}
-              </MessageContent>
+                <p className="text-xs text-zinc-400">
+                  {message.sender === MessageSender.AVATAR ? "Avatar" : "You"}
+                </p>
+                <MessageContent
+                  markdown
+                  className={`text-sm ${
+                    message.sender === MessageSender.AVATAR
+                      ? "bg-zinc-700"
+                      : "bg-indigo-500"
+                  }`}
+                >
+                  {message.content}
+                </MessageContent>
+                {message.sender === MessageSender.AVATAR && (
+                  <MessageActions>
+                    <MessageAction tooltip="Copy message">
+                      <Button
+                        size="icon"
+                        variant="ghost"
+                        onClick={() => handleCopy(message.content)}
+                      >
+                        <ClipboardCopyIcon className="h-4 w-4" />
+                      </Button>
+                    </MessageAction>
+                  </MessageActions>
+                )}
+              </div>
             </Message>
           ))}
         </ChatContainerContent>
         <ChatContainerScrollAnchor />
-      </ChatContainer>
-      <PromptInput
-        className="w-full"
-        value={input}
-        onSubmit={handleSend}
-        onValueChange={setInput}
-      >
-        <div className="flex items-end gap-2">
-          <Button size="icon" variant="outline" onClick={handleToggleVoiceChat}>
-            <Mic />
-          </Button>
-          <PromptInputTextarea
-            className="flex-grow"
-            disabled={isVoiceChatActive}
-            placeholder={
-              isVoiceChatActive
-                ? isMuted
-                  ? "Voice chat is muted"
-                  : "Voice chat is active..."
-                : `Type something for the avatar to ${
-                  taskType === TaskType.REPEAT ? "repeat" : "respond"
-                }...`
-            }
-          />
-          <PromptInputActions>
-            <Select
-              disabled={isVoiceChatActive}
-              value={taskType}
-              onValueChange={(value: string) =>
-                setTaskType(value as TaskType)
-              }
-            >
-              <SelectTrigger className="w-[120px]">
-                <SelectValue placeholder="Task Type" />
-              </SelectTrigger>
-              <SelectContent>
-                {Object.values(TaskType).map((type) => (
-                  <SelectItem key={type} value={type}>
-                    {type.toUpperCase()}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            <Select
-              disabled={isVoiceChatActive}
-              value={taskMode}
-              onValueChange={(value: string) => setTaskMode(value as TaskMode)}
-            >
-              <SelectTrigger className="w-[120px]">
-                <SelectValue placeholder="Task Mode" />
-              </SelectTrigger>
-              <SelectContent>
-                {Object.values(TaskMode).map((mode) => (
-                  <SelectItem key={mode} value={mode}>
-                    {mode.toUpperCase()}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            {isVoiceChatActive ? (
-              <Button size="icon" variant="destructive" onClick={handleStopVoiceChat}>
-                <MicOff />
-              </Button>
-            ) : (
-              <Button size="icon" type="submit" onClick={handleSend}>
-                <SendIcon />
-              </Button>
-            )}
-          </PromptInputActions>
+        <div className="absolute right-4 bottom-4">
+          <ScrollButton className="shadow-sm" />
         </div>
-      </PromptInput>
+      </ChatContainerRoot>
+      {chatMode === "text" && (
+        <PromptInput
+          className="w-full mt-4"
+          value={inputValue}
+          onValueChange={setInputValue}
+          onSubmit={() => {
+            if (inputValue.trim().length === 0) return;
+            handleSendMessage(inputValue);
+            setInputValue("");
+          }}
+        >
+          <div className="flex items-end gap-2">
+            <PromptInputTextarea
+              className="flex-grow"
+              placeholder="Type a message..."
+            />
+            <PromptInputActions>
+              <PromptInputAction tooltip="Send message">
+                <Button size="icon" type="submit">
+                  <SendIcon />
+                </Button>
+              </PromptInputAction>
+            </PromptInputActions>
+          </div>
+        </PromptInput>
+      )}
+      {chatMode === "voice" && (
+        <div className="flex items-center justify-center mt-4">
+          <Button
+            className={isVoiceChatActive ? "bg-red-500" : "bg-green-500"}
+            size="icon"
+            onClick={() => {
+              if (isVoiceChatActive) {
+                stopVoiceChat();
+              } else {
+                startVoiceChat();
+              }
+            }}
+          >
+            {isVoiceChatActive ? <MicOffIcon /> : <MicIcon />}
+          </Button>
+        </div>
+      )}
     </div>
   );
 };
