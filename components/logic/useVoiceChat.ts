@@ -1,10 +1,11 @@
 import { useCallback } from "react";
 
+import { useApiService } from "./ApiServiceContext";
 import { useStreamingAvatarContext } from "./context";
 
 export const useVoiceChat = () => {
+  const { apiService } = useApiService();
   const {
-    avatarRef,
     isMuted,
     setIsMuted,
     isVoiceChatActive,
@@ -15,36 +16,38 @@ export const useVoiceChat = () => {
 
   const startVoiceChat = useCallback(
     async (isInputAudioMuted?: boolean) => {
-      if (!avatarRef.current) return;
+      if (!apiService?.voiceChat) return;
+
       setIsVoiceChatLoading(true);
-      await avatarRef.current?.startVoiceChat({
-        isInputAudioMuted,
-      });
+      await apiService.voiceChat.start(isInputAudioMuted);
       setIsVoiceChatLoading(false);
       setIsVoiceChatActive(true);
       setIsMuted(!!isInputAudioMuted);
     },
-    [avatarRef, setIsMuted, setIsVoiceChatActive, setIsVoiceChatLoading],
+    [apiService, setIsMuted, setIsVoiceChatActive, setIsVoiceChatLoading],
   );
 
   const stopVoiceChat = useCallback(() => {
-    if (!avatarRef.current) return;
-    avatarRef.current?.closeVoiceChat();
+    if (!apiService?.voiceChat) return;
+
+    apiService.voiceChat.stop();
     setIsVoiceChatActive(false);
     setIsMuted(true);
-  }, [avatarRef, setIsMuted, setIsVoiceChatActive]);
+  }, [apiService, setIsMuted, setIsVoiceChatActive]);
 
   const muteInputAudio = useCallback(() => {
-    if (!avatarRef.current) return;
-    avatarRef.current?.muteInputAudio();
+    if (!apiService?.voiceChat) return;
+
+    apiService.voiceChat.mute();
     setIsMuted(true);
-  }, [avatarRef, setIsMuted]);
+  }, [apiService, setIsMuted]);
 
   const unmuteInputAudio = useCallback(() => {
-    if (!avatarRef.current) return;
-    avatarRef.current?.unmuteInputAudio();
+    if (!apiService?.voiceChat) return;
+
+    apiService.voiceChat.unmute();
     setIsMuted(false);
-  }, [avatarRef, setIsMuted]);
+  }, [apiService, setIsMuted]);
 
   return {
     startVoiceChat,

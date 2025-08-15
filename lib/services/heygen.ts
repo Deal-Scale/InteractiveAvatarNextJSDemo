@@ -1,60 +1,56 @@
-import { StreamingAvatarApi, TaskMode, TaskType } from "@heygen/streaming-avatar";
-import { ApiService } from "./api";
+import StreamingAvatar, { TaskMode, TaskType } from "@heygen/streaming-avatar";
+
+import { ApiService, TextChatService, VoiceChatService } from "./api";
 
 export class HeyGenService implements ApiService {
-  private avatar: StreamingAvatarApi;
+  textChat: TextChatService;
+  voiceChat: VoiceChatService;
 
-  constructor(avatar: StreamingAvatarApi) {
-    this.avatar = avatar;
-  }
+  constructor(avatar: StreamingAvatar) {
+    this.textChat = {
+      sendMessage: (message: string) => {
+        avatar.speak({
+          text: message,
+          taskType: TaskType.TALK,
+          taskMode: TaskMode.ASYNC,
+        });
+      },
+      sendMessageSync: async (message: string) => {
+        return await avatar.speak({
+          text: message,
+          taskType: TaskType.TALK,
+          taskMode: TaskMode.SYNC,
+        });
+      },
+      repeatMessage: (message: string) => {
+        avatar.speak({
+          text: message,
+          taskType: TaskType.REPEAT,
+          taskMode: TaskMode.ASYNC,
+        });
+      },
+      repeatMessageSync: async (message: string) => {
+        return await avatar.speak({
+          text: message,
+          taskType: TaskType.REPEAT,
+          taskMode: TaskMode.SYNC,
+        });
+      },
+    };
 
-  // Text Chat Methods
-  sendMessage(message: string) {
-    this.avatar.speak({
-      text: message,
-      taskType: TaskType.TALK,
-      taskMode: TaskMode.ASYNC,
-    });
-  }
-
-  async sendMessageSync(message: string) {
-    return await this.avatar.speak({
-      text: message,
-      taskType: TaskType.TALK,
-      taskMode: TaskMode.SYNC,
-    });
-  }
-
-  repeatMessage(message: string) {
-    this.avatar.speak({
-      text: message,
-      taskType: TaskType.REPEAT,
-      taskMode: TaskMode.ASYNC,
-    });
-  }
-
-  async repeatMessageSync(message: string) {
-    return await this.avatar.speak({
-      text: message,
-      taskType: TaskType.REPEAT,
-      taskMode: TaskMode.SYNC,
-    });
-  }
-
-  // Voice Chat Methods
-  async startVoiceChat(isInputAudioMuted?: boolean) {
-    await this.avatar.startVoiceChat({ isInputAudioMuted });
-  }
-
-  stopVoiceChat() {
-    this.avatar.closeVoiceChat();
-  }
-
-  muteInputAudio() {
-    this.avatar.muteInputAudio();
-  }
-
-  unmuteInputAudio() {
-    this.avatar.unmuteInputAudio();
+    this.voiceChat = {
+      start: async (isInputAudioMuted?: boolean) => {
+        await avatar.startVoiceChat({ isInputAudioMuted });
+      },
+      stop: () => {
+        avatar.closeVoiceChat();
+      },
+      mute: () => {
+        avatar.muteInputAudio();
+      },
+      unmute: () => {
+        avatar.unmuteInputAudio();
+      },
+    };
   }
 }
