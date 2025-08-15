@@ -9,6 +9,8 @@ import {
 } from "lucide-react";
 import React from "react";
 
+import { PromptSuggestions } from "./PromptSuggestions";
+
 import { Button } from "@/components/ui/button";
 import {
   PromptInput,
@@ -25,6 +27,7 @@ interface ChatInputProps {
   isEditing: boolean;
   isVoiceChatLoading: boolean;
   attachments: File[];
+  promptSuggestions: string[];
   onChatInputChange: (value: string) => void;
   onStartVoiceChat: () => void;
   onStopVoiceChat: () => void;
@@ -44,6 +47,7 @@ export const ChatInput: React.FC<ChatInputProps> = ({
   isEditing,
   isVoiceChatLoading,
   attachments,
+  promptSuggestions,
   onChatInputChange,
   onStartVoiceChat,
   onStopVoiceChat,
@@ -61,10 +65,10 @@ export const ChatInput: React.FC<ChatInputProps> = ({
       disabled={isVoiceChatActive}
       maxHeight={320}
       value={chatInput}
-      onValueChange={onChatInputChange}
       onSubmit={() =>
         isEditing ? confirmEdit() : sendWithAttachments(chatInput)
       }
+      onValueChange={onChatInputChange}
     >
       <div className="flex items-end gap-2">
         <PromptInputTextarea
@@ -156,11 +160,11 @@ export const ChatInput: React.FC<ChatInputProps> = ({
         </PromptInputActions>
       </div>
       <input
+        ref={fileInputRef}
         aria-hidden
         multiple
-        ref={fileInputRef}
-        tabIndex={-1}
         className="hidden"
+        tabIndex={-1}
         type="file"
         onChange={handleFilesSelected}
       />
@@ -184,6 +188,14 @@ export const ChatInput: React.FC<ChatInputProps> = ({
           ))}
         </div>
       )}
+      <div className="mt-4">
+        <PromptSuggestions
+          chatInput={chatInput}
+          isVoiceChatActive={isVoiceChatActive}
+          promptSuggestions={promptSuggestions}
+          onChatInputChange={onChatInputChange}
+        />
+      </div>
     </PromptInput>
   );
 };
