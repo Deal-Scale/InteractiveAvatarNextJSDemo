@@ -29,7 +29,7 @@ export const useStreamingAvatarSession = () => {
     handleEndMessage,
     clearMessages,
   } = useStreamingAvatarContext();
-  const { stopVoiceChat } = useVoiceChat();
+  const { startVoiceChat, stopVoiceChat, isVoiceChatActive, isVoiceChatLoading } = useVoiceChat();
 
   useMessageHistory();
 
@@ -154,5 +154,9 @@ export const useStreamingAvatarSession = () => {
     initAvatar: init,
     startAvatar: start,
     stopAvatar: stop,
+    startVoiceChat,
+    stopVoiceChat,
+    isVoiceChatActive,
+    isVoiceChatLoading,
   };
 };

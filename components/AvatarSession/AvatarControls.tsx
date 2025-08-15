@@ -8,7 +8,11 @@ import { useInterrupt } from "../logic/useInterrupt";
 import { AudioInput } from "./AudioInput";
 import { PromptBar } from "./PromptBar";
 
-export const AvatarControls: React.FC = () => {
+interface AvatarControlsProps {
+  stopSession: () => void;
+}
+
+export const AvatarControls: React.FC<AvatarControlsProps> = ({ stopSession }) => {
   const {
     isVoiceChatLoading,
     isVoiceChatActive,
@@ -51,9 +55,14 @@ export const AvatarControls: React.FC = () => {
       </ToggleGroup>
       {isVoiceChatActive || isVoiceChatLoading ? <AudioInput /> : <PromptBar />}
       <div className="absolute top-[-70px] right-3">
-        <Button className="!bg-zinc-700 !text-white" onClick={interrupt}>
-          Interrupt
-        </Button>
+        <div className="flex gap-2">
+          <Button className="!bg-zinc-700 !text-white" onClick={interrupt}>
+            Interrupt
+          </Button>
+          <Button className="!bg-red-600 !text-white" onClick={stopSession}>
+            Stop
+          </Button>
+        </div>
       </div>
     </div>
   );
