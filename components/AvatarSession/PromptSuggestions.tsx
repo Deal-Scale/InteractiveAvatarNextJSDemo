@@ -7,7 +7,12 @@ interface PromptSuggestionsProps {
   onChatInputChange: (value: string) => void;
 }
 
-export const PromptSuggestions: React.FC<PromptSuggestionsProps> = ({ chatInput, isVoiceChatActive, promptSuggestions, onChatInputChange }) => {
+export const PromptSuggestions: React.FC<PromptSuggestionsProps> = ({
+  chatInput,
+  isVoiceChatActive,
+  promptSuggestions,
+  onChatInputChange,
+}) => {
   return (
     <>
       {chatInput.trim() === "" ? (
@@ -15,9 +20,10 @@ export const PromptSuggestions: React.FC<PromptSuggestionsProps> = ({ chatInput,
           {promptSuggestions.map((s, i) => (
             <PromptSuggestion
               key={i}
+              className="rounded-full bg-accent/30 text-foreground hover:bg-accent/50 border-transparent"
               disabled={isVoiceChatActive}
-              size="lg"
-              variant="outline"
+              size="sm"
+              variant="secondary"
               onClick={() => onChatInputChange(s)}
             >
               {s}
@@ -26,7 +32,7 @@ export const PromptSuggestions: React.FC<PromptSuggestionsProps> = ({ chatInput,
         </div>
       ) : (
         <div className="px-2 pt-2">
-          <div className="flex max-h-40 flex-col gap-1 overflow-auto rounded-md border border-border bg-background/80 p-1">
+          <div className="flex max-h-40 flex-col gap-1 overflow-auto rounded-xl border border-border bg-popover p-1 text-popover-foreground shadow-sm">
             {promptSuggestions
               .filter((s) =>
                 s.toLowerCase().includes(chatInput.trim().toLowerCase()),
@@ -35,6 +41,7 @@ export const PromptSuggestions: React.FC<PromptSuggestionsProps> = ({ chatInput,
               .map((s, i) => (
                 <PromptSuggestion
                   key={i}
+                  className="rounded-lg"
                   disabled={isVoiceChatActive}
                   highlight={chatInput.trim()}
                   size="sm"
