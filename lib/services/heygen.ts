@@ -39,8 +39,11 @@ export class HeyGenService implements ApiService {
     };
 
     this.voiceChat = {
-      start: async (isInputAudioMuted?: boolean) => {
-        await avatar.startVoiceChat({ isInputAudioMuted });
+      start: async (options: {
+        isInputAudioMuted?: boolean;
+        mediaStream?: MediaStream;
+      }) => {
+        await avatar.startVoiceChat(options);
       },
       stop: () => {
         avatar.closeVoiceChat();

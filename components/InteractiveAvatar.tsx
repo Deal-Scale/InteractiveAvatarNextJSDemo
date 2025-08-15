@@ -41,14 +41,19 @@ const DEFAULT_CONFIG: StartAvatarRequest = {
 };
 
 function InteractiveAvatarCore() {
-  const { initAvatar, startAvatar, stopAvatar, sessionState, stream } =
-    useStreamingAvatarSession();
+  const {
+    sessionState,
+    stream: mediaStream,
+    startAvatar: startSession,
+    stopAvatar: stopSession,
+    initAvatar,
+  } = useStreamingAvatarSession();
 
   const { setApiService } = useApiService();
 
-  const { chatMode, addMessage, openConfigModal } = useSessionStore();
+  const { addMessage, openConfigModal } = useSessionStore();
 
-  const mediaStream = useRef<HTMLVideoElement | null>(null);
+  const mediaStreamRef = useRef<HTMLVideoElement>(null!);
 
   async function fetchAccessToken() {
     try {
@@ -110,34 +115,30 @@ function InteractiveAvatarCore() {
         });
       });
 
-      await startAvatar(config);
-
-      if (chatMode === "voice") {
-        await heygenService.voiceChat.start();
-      }
+      await startSession(config);
     } catch (error) {
       console.error("Error starting avatar session:", error);
     }
   });
 
-  const stopSession = useMemoizedFn(() => {
-    stopAvatar().then(() => {
+  const stopSessionV2 = useMemoizedFn(() => {
+    stopSession().then(() => {
       setApiService(null);
     });
   });
 
   useUnmount(() => {
-    stopSession();
+    stopSessionV2();
   });
 
   useEffect(() => {
-    if (stream && mediaStream.current) {
-      mediaStream.current.srcObject = stream;
-      mediaStream.current.onloadedmetadata = () => {
-        mediaStream.current!.play();
+    if (mediaStream && mediaStreamRef.current) {
+      mediaStreamRef.current.srcObject = mediaStream;
+      mediaStreamRef.current.onloadedmetadata = () => {
+        mediaStreamRef.current!.play();
       };
     }
-  }, [mediaStream, stream]);
+  }, [mediaStream, mediaStreamRef]);
 
   const isConnecting = useMemo(
     () =>
@@ -148,14 +149,14 @@ function InteractiveAvatarCore() {
   return (
     <div className="w-full flex flex-col gap-4">
       <SessionConfigModal
-        isConnecting={isConnecting}
         initialConfig={DEFAULT_CONFIG}
+        isConnecting={isConnecting}
         startSession={startSessionV2}
       />
       <AvatarSession
-        mediaStream={mediaStream as React.RefObject<HTMLVideoElement>}
+        mediaStream={mediaStreamRef}
         sessionState={sessionState}
-        stopSession={stopSession}
+        stopSession={stopSessionV2}
       />
       {/* Floating Settings Button */}
       <div className="fixed bottom-6 right-6 z-50">
