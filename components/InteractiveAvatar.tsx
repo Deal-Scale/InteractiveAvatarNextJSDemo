@@ -51,7 +51,7 @@ function InteractiveAvatarCore() {
 
   const { setApiService } = useApiService();
 
-  const { addMessage, openConfigModal } = useSessionStore();
+  const { appendMessageChunk, openConfigModal } = useSessionStore();
 
   const mediaStreamRef = useRef<HTMLVideoElement>(null!);
 
@@ -106,13 +106,18 @@ function InteractiveAvatarCore() {
         console.log(">>>>> Avatar talking message:", e);
       });
 
+      // Stream incremental chat to the Zustand store
+      avatar.on(StreamingEvents.USER_TALKING_MESSAGE, (event: any) => {
+        const chunk = event?.detail?.message ?? "";
+        if (chunk) appendMessageChunk(MessageSender.CLIENT, chunk);
+      });
+      avatar.on(StreamingEvents.AVATAR_TALKING_MESSAGE, (event: any) => {
+        const chunk = event?.detail?.message ?? "";
+        if (chunk) appendMessageChunk(MessageSender.AVATAR, chunk);
+      });
       avatar.on(StreamingEvents.AVATAR_END_MESSAGE, (event: any) => {
         console.log(">>>>> Avatar end message:", event);
-        addMessage({
-          id: nanoid(),
-          content: event.detail.message,
-          sender: MessageSender.AVATAR,
-        });
+        // No-op: chunks already appended above ensure message completeness
       });
 
       await startSession(config);
