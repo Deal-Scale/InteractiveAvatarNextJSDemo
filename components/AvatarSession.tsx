@@ -71,6 +71,138 @@ export function AvatarSession({
     [sessionState],
   );
 
+  // Simple helpers to format MCP results for chat
+  const formatAsCodeBlock = (obj: unknown) => {
+    try {
+      return "```json\n" + JSON.stringify(obj, null, 2) + "\n```";
+    } catch {
+      return String(obj);
+    }
+  };
+
+  const addAvatarMessage = (content: string) =>
+    addMessage({ id: nanoid(), content, sender: MessageSender.AVATAR });
+
+  const parseJsonArgs = (maybeJson: string | undefined) => {
+    if (!maybeJson) return undefined;
+    try {
+      return JSON.parse(maybeJson);
+    } catch {
+      return undefined;
+    }
+  };
+
+  const handleMcpCommand = async (raw: string) => {
+    const parts = raw.trim().split(/\s+/).slice(1); // drop '/mcp'
+    const sub = (parts[0] || "").toLowerCase();
+    try {
+      switch (sub) {
+        case "tools": {
+          const res = await fetch("/api/mcp/tools");
+          const data = await res.json();
+          const list = (data?.tools || []).map((t: any) => `• ${t.name}`).join("\n");
+          addAvatarMessage(list || "No tools available.");
+          break;
+        }
+        case "prompts": {
+          const res = await fetch("/api/mcp/prompts");
+          const data = await res.json();
+          const list = (data?.prompts || []).map((p: any) => `• ${p.name}`).join("\n");
+          addAvatarMessage(list || "No prompts available.");
+          break;
+        }
+        case "resources": {
+          const res = await fetch("/api/mcp/resources");
+          const data = await res.json();
+          const list = (data?.resources || []).map((r: any) => `• ${r.uri}`).join("\n");
+          addAvatarMessage(list || "No resources available.");
+          break;
+        }
+        case "tool": {
+          const name = parts[1];
+          const args = parseJsonArgs(parts.slice(2).join(" "));
+          if (!name) {
+            addAvatarMessage("Usage: /mcp tool <name> {jsonArgs}");
+            break;
+          }
+          const res = await fetch(`/api/mcp/tool/${encodeURIComponent(name)}`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ args: args ?? {} }),
+          });
+          const data = await res.json();
+          addAvatarMessage(formatAsCodeBlock(data));
+          break;
+        }
+        case "resource": {
+          const uri = parts[1];
+          if (!uri) {
+            addAvatarMessage("Usage: /mcp resource <uri>");
+            break;
+          }
+          const res = await fetch(`/api/mcp/resource`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ uri }),
+          });
+          const data = await res.json();
+          addAvatarMessage(formatAsCodeBlock(data));
+          break;
+        }
+        case "prompt": {
+          const name = parts[1];
+          const args = parseJsonArgs(parts.slice(2).join(" "));
+          if (!name) {
+            addAvatarMessage("Usage: /mcp prompt <name> {jsonArgs}");
+            break;
+          }
+          const res = await fetch(`/api/mcp/prompt`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ name, args: args ?? {} }),
+          });
+          const data = await res.json();
+          addAvatarMessage(formatAsCodeBlock(data));
+          break;
+        }
+        case "complete": {
+          const payload = parseJsonArgs(parts.slice(1).join(" "));
+          if (!payload) {
+            addAvatarMessage(
+              "Usage: /mcp complete {\"ref\":{...},\"argument\":{...},\"context\":{...}}",
+            );
+            break;
+          }
+          const res = await fetch(`/api/mcp/complete`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(payload),
+          });
+          const data = await res.json();
+          addAvatarMessage(formatAsCodeBlock(data));
+          break;
+        }
+        default: {
+          addAvatarMessage(
+            [
+              "MCP commands:",
+              "• /mcp tools",
+              "• /mcp prompts",
+              "• /mcp resources",
+              "• /mcp tool <name> {jsonArgs}",
+              "• /mcp resource <uri>",
+              "• /mcp prompt <name> {jsonArgs}",
+              "• /mcp complete {json}",
+            ].join("\n"),
+          );
+        }
+      }
+    } catch (err) {
+      console.error("[Chat] MCP command error", err);
+      addAvatarMessage("MCP error: " + (err as Error)?.message);
+    }
+  };
+
   const handleSendMessage = useMemoizedFn(async (text: string) => {
     if (!text.trim()) {
       return;
@@ -90,7 +222,12 @@ export function AvatarSession({
     });
     try {
       if (apiService) {
-        await apiService.textChat.sendMessageSync(text);
+        // If user typed an MCP command, route to MCP API and do not send to avatar
+        if (text.trim().toLowerCase().startsWith("/mcp")) {
+          await handleMcpCommand(text);
+        } else {
+          await apiService.textChat.sendMessageSync(text);
+        }
       } else {
         console.warn("[Chat] send(no apiService)");
       }
