@@ -317,7 +317,7 @@ export function AvatarSession({
 
   if (dock === "floating") {
     return (
-      <div className="w-full h-full">
+      <div className="relative w-full h-full">
         {avatarVideoPanel}
         <div
           ref={panelRef}
