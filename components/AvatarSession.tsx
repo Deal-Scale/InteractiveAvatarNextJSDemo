@@ -91,16 +91,17 @@ export function AvatarSession({
 
   const startVoiceChatVoid = useMemoizedFn(async () => {
     try {
-
-      const stream = await navigator.mediaDevices.getUserMedia({
-        video: true,
-        audio: true,
-      });
-      setUserVideoStream(stream);
-
+      // Capture only local webcam video for PIP. Do NOT include audio here.
       // Let the HeyGen SDK acquire the microphone itself so it can
-      // choose constraints that match its internal AudioContext.
-      await startVoiceChat({ mediaStream: stream });
+      // choose constraints that match its internal AudioContext (e.g., 16kHz).
+      const videoOnly = await navigator.mediaDevices.getUserMedia({
+        video: true,
+        audio: false,
+      });
+      setUserVideoStream(videoOnly);
+
+      // Start voice chat without injecting our own MediaStream.
+      await startVoiceChat({});
     } catch (error) {
       console.error("Failed to start voice chat:", error);
     }
@@ -196,8 +197,26 @@ export function AvatarSession({
     };
   }, [handlePointerMove, handlePointerUp]);
 
+  // When in floating mode, snap the chat panel to bottom-right by default
+  useEffect(() => {
+    if (dock !== "floating") return;
+    const parent = panelRef.current?.parentElement;
+    if (!parent) return;
+    const parentRect = parent.getBoundingClientRect();
+    const width = expanded ? 520 : 340;
+    const height = expanded ? 520 : 340;
+    const x = Math.max(0, parentRect.width - width - 24);
+    const y = Math.max(0, parentRect.height - height - 24);
+    setFloatingPos({ x, y });
+  }, [dock, expanded]);
+
   const chatPanel = (
-    <div className="bg-gray-800/95 text-white rounded-lg shadow-lg border border-gray-700 overflow-hidden flex flex-col h-full w-full">
+    <div
+      className={cn(
+        "bg-gray-800/95 text-white rounded-lg shadow-lg border border-gray-700 overflow-hidden flex flex-col h-full w-full",
+        dock === "bottom" && "flex flex-col gap-3 relative w-full items-center",
+      )}
+    >
       <div
         className={cn(
           "flex items-center justify-between gap-2 px-3 py-2 border-b border-gray-700 bg-gray-900/80",
@@ -207,7 +226,7 @@ export function AvatarSession({
       >
         <div className="flex items-center gap-2 text-xs text-gray-300">
           <MoveIcon className="h-4 w-4" />
-          <span>Chat & Voice</span>
+          <span>Chat</span>
         </div>
         <div className="flex items-center gap-1">
           <Button
@@ -234,18 +253,20 @@ export function AvatarSession({
           >
             <MoveIcon className="h-4 w-4" />
           </Button>
-          <Button
-            size="icon"
-            variant="ghost"
-            title={expanded ? "Collapse" : "Expand"}
-            onClick={() => setExpanded((e) => !e)}
-          >
-            {expanded ? (
-              <Minimize2Icon className="h-4 w-4" />
-            ) : (
-              <Maximize2Icon className="h-4 w-4" />
-            )}
-          </Button>
+          {dock === "floating" && (
+            <Button
+              size="icon"
+              variant="ghost"
+              title={expanded ? "Collapse" : "Expand"}
+              onClick={() => setExpanded((e) => !e)}
+            >
+              {expanded ? (
+                <Minimize2Icon className="h-4 w-4" />
+              ) : (
+                <Maximize2Icon className="h-4 w-4" />
+              )}
+            </Button>
+          )}
         </div>
       </div>
       <div
@@ -280,7 +301,7 @@ export function AvatarSession({
   );
 
   const avatarVideoPanel = (
-    <div className="relative w-full h-full bg-gray-900 rounded-lg overflow-hidden flex items-center justify-center">
+    <div className="relative w-full h-full bg-black overflow-hidden">
       <AvatarVideo ref={mediaStream} />
       <div className="absolute top-4 right-4 flex flex-col gap-2">
         <ConnectionIndicator sessionState={sessionState} />
@@ -314,17 +335,25 @@ export function AvatarSession({
     );
   }
 
+  // Ensure defaultSize is not below minSize for the active dock orientation
+  const isRight = dock === "right";
+  const chatMinSize = isRight ? 20 : 10; // 20% min when right, 10% when bottom
+  const chatDefaultSize = isRight ? 24 : 15; // satisfy min; modest width when right
+  const videoDefaultSize = 100 - chatDefaultSize;
+
   return (
     <ResizablePanelGroup
       className="w-full h-full"
-      direction={dock === "right" ? "horizontal" : "vertical"}
+      direction={isRight ? "horizontal" : "vertical"}
     >
-      <ResizablePanel defaultSize={75}>{avatarVideoPanel}</ResizablePanel>
+      <ResizablePanel defaultSize={videoDefaultSize}>
+        {avatarVideoPanel}
+      </ResizablePanel>
       <ResizableHandle withHandle />
       <ResizablePanel
-        defaultSize={25}
-        maxSize={dock === "bottom" ? 50 : 40}
-        minSize={20}
+        defaultSize={chatDefaultSize}
+        maxSize={isRight ? 40 : 50}
+        minSize={chatMinSize}
       >
         {chatPanel}
       </ResizablePanel>

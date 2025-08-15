@@ -2,6 +2,7 @@ import type { StartAvatarRequest } from "@heygen/streaming-avatar";
 import type { Message } from "@/lib/types";
 
 import { create } from "zustand";
+import { persist, createJSONStorage } from "zustand/middleware";
 
 export type ChatMode = "voice" | "text";
 
@@ -21,19 +22,32 @@ interface SessionState {
   clearMessages: () => void;
 }
 
-export const useSessionStore = create<SessionState>((set) => ({
-  isConfigModalOpen: true, // Open modal by default
-  openConfigModal: () => set({ isConfigModalOpen: true }),
-  closeConfigModal: () => set({ isConfigModalOpen: false }),
+export const useSessionStore = create<SessionState>()(
+  persist(
+    (set) => ({
+      isConfigModalOpen: true, // Open modal by default
+      openConfigModal: () => set({ isConfigModalOpen: true }),
+      closeConfigModal: () => set({ isConfigModalOpen: false }),
 
-  config: null,
-  setConfig: (config) => set({ config }),
+      config: null,
+      setConfig: (config) => set({ config }),
 
-  chatMode: "text",
-  setChatMode: (mode) => set({ chatMode: mode }),
+      chatMode: "text",
+      setChatMode: (mode) => set({ chatMode: mode }),
 
-  messages: [],
-  addMessage: (message) =>
-    set((state) => ({ messages: [...state.messages, message] })),
-  clearMessages: () => set({ messages: [] }),
-}));
+      messages: [],
+      addMessage: (message) =>
+        set((state) => ({ messages: [...state.messages, message] })),
+      clearMessages: () => set({ messages: [] }),
+    }),
+    {
+      name: "session-store",
+      storage: createJSONStorage(() => localStorage),
+      // Only persist what's useful across reloads
+      partialize: (state) => ({
+        messages: state.messages,
+        chatMode: state.chatMode,
+      }),
+    },
+  ),
+);
