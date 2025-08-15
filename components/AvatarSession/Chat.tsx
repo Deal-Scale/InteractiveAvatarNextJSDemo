@@ -1,5 +1,17 @@
 import { useKeyPress } from "ahooks";
-import { ClipboardCopy, MicIcon, MicOffIcon, SendIcon, Paperclip, X } from "lucide-react";
+import {
+  ClipboardCopy,
+  MicIcon,
+  MicOffIcon,
+  SendIcon,
+  Paperclip,
+  X,
+  ThumbsUp,
+  ThumbsDown,
+  Pencil,
+  Check,
+  XCircle,
+} from "lucide-react";
 import React, { useEffect, useMemo, useRef, useState } from "react";
  
 import {
@@ -95,6 +107,72 @@ export const Chat: React.FC<ChatProps> = ({
     onChatInputChange("");
   };
 
+  // Per-message action state
+  const [lastCopiedId, setLastCopiedId] = useState<string | null>(null);
+  const [voteState, setVoteState] = useState<Record<string, "up" | "down" | null>>({});
+
+  // Edit mode state
+  const [isEditing, setIsEditing] = useState(false);
+  const [editingMessageId, setEditingMessageId] = useState<string | null>(null);
+  const [inputBackup, setInputBackup] = useState<string>("");
+
+  const handleCopy = async (id: string, content: string) => {
+    try {
+      await navigator.clipboard.writeText(content);
+      setLastCopiedId(id);
+      setTimeout(() => {
+        setLastCopiedId((prev) => (prev === id ? null : prev));
+      }, 1500);
+      console.debug("[Chat] message copied", { id });
+      onCopy(content);
+    } catch (e) {
+      console.error("[Chat] copy failed", e);
+    }
+  };
+
+  const setVote = (id: string, dir: "up" | "down") => {
+    setVoteState((prev) => {
+      const current = prev[id] ?? null;
+      const next = current === dir ? null : dir;
+      console.debug("[Chat] vote", { id, direction: next });
+      return { ...prev, [id]: next };
+    });
+  };
+
+  const handleEditToInput = (content: string, id: string) => {
+    // enter edit mode: backup current input and set editing text
+    if (!isEditing) setInputBackup(chatInput);
+    setIsEditing(true);
+    setEditingMessageId(id);
+    onChatInputChange(content);
+    // Focus the textarea by targeting aria-label
+    const el = document.querySelector<HTMLTextAreaElement>('textarea[aria-label="Chat input"]');
+    if (el) {
+      el.focus();
+      // move caret to end
+      const len = el.value.length;
+      el.setSelectionRange(len, len);
+    }
+  };
+
+  const cancelEdit = () => {
+    setIsEditing(false);
+    setEditingMessageId(null);
+    onChatInputChange(inputBackup);
+  };
+
+  const confirmEdit = () => {
+    const text = (chatInput ?? "").trim();
+    if (!text) {
+      cancelEdit();
+      return;
+    }
+    onSendMessage(text);
+    setIsEditing(false);
+    setEditingMessageId(null);
+    onChatInputChange("");
+  };
+
   return (
     <div className="flex flex-col w-full h-full p-4">
       <ChatContainerRoot className="flex-1 min-h-0 text-white">
@@ -139,19 +217,48 @@ export const Chat: React.FC<ChatProps> = ({
                 >
                   {message.content}
                 </MessageContent>
-                {message.sender === MessageSender.AVATAR && (
-                  <MessageActions>
-                    <MessageAction tooltip="Copy message">
-                      <Button
-                        size="icon"
-                        variant="ghost"
-                        onClick={() => onCopy(message.content)}
-                      >
-                        <ClipboardCopy className="h-4 w-4" />
-                      </Button>
-                    </MessageAction>
-                  </MessageActions>
-                )}
+                <MessageActions>
+                  <MessageAction tooltip={lastCopiedId === message.id ? "Copied!" : "Copy message"}>
+                    <Button
+                      aria-label="Copy message"
+                      size="icon"
+                      variant="ghost"
+                      onClick={() => handleCopy(message.id, message.content)}
+                    >
+                      <ClipboardCopy className="h-4 w-4" />
+                    </Button>
+                  </MessageAction>
+                  <MessageAction tooltip={voteState[message.id] === "up" ? "Upvoted" : "Upvote response"}>
+                    <Button
+                      aria-label="Upvote response"
+                      size="icon"
+                      variant={voteState[message.id] === "up" ? "secondary" : "ghost"}
+                      onClick={() => setVote(message.id, "up")}
+                    >
+                      <ThumbsUp className="h-4 w-4" />
+                    </Button>
+                  </MessageAction>
+                  <MessageAction tooltip={voteState[message.id] === "down" ? "Downvoted" : "Downvote response"}>
+                    <Button
+                      aria-label="Downvote response"
+                      size="icon"
+                      variant={voteState[message.id] === "down" ? "secondary" : "ghost"}
+                      onClick={() => setVote(message.id, "down")}
+                    >
+                      <ThumbsDown className="h-4 w-4" />
+                    </Button>
+                  </MessageAction>
+                  <MessageAction tooltip="Edit into input">
+                    <Button
+                      aria-label="Edit into input"
+                      size="icon"
+                      variant="ghost"
+                      onClick={() => handleEditToInput(message.content, message.id)}
+                    >
+                      <Pencil className="h-4 w-4" />
+                    </Button>
+                  </MessageAction>
+                </MessageActions>
               </div>
             </Message>
           ))}
@@ -167,47 +274,82 @@ export const Chat: React.FC<ChatProps> = ({
         value={chatInput}
         onValueChange={onChatInputChange}
         maxHeight={320}
-        onSubmit={() => sendWithAttachments(chatInput)}
+        onSubmit={() => (isEditing ? confirmEdit() : sendWithAttachments(chatInput))}
       >
         <div className="flex items-end gap-2">
           <PromptInputTextarea
+            aria-label="Chat input"
             className="flex-grow"
             placeholder="Type a message..."
           />
           <PromptInputActions className="shrink-0">
-            <PromptInputAction
-              tooltip={
-                isVoiceChatActive ? "Stop voice chat" : "Start voice chat"
-              }
-            >
-              <Button
-                size="icon"
-                variant={isVoiceChatActive ? "destructive" : "default"}
-                onClick={isVoiceChatActive ? onStopVoiceChat : onStartVoiceChat}
-              >
-                {isVoiceChatActive ? (
-                  <MicOffIcon className="h-4 w-4" />
-                ) : (
-                  <MicIcon className="h-4 w-4" />
-                )}
-              </Button>
-            </PromptInputAction>
-            <PromptInputAction tooltip="Attach files">
-              <Button size="icon" type="button" aria-label="Attach files" onClick={handlePickFiles} disabled={isVoiceChatActive}>
-                <Paperclip className="h-4 w-4" />
-              </Button>
-            </PromptInputAction>
-            <PromptInputAction tooltip="Send message">
-              <Button
-                size="icon"
-                type="button"
-                aria-label="Send message"
-                disabled={isVoiceChatActive}
-                onClick={() => sendWithAttachments(chatInput)}
-              >
-                <SendIcon />
-              </Button>
-            </PromptInputAction>
+            {!isEditing ? (
+              <>
+                <PromptInputAction
+                  tooltip={
+                    isVoiceChatActive ? "Stop voice chat" : "Start voice chat"
+                  }
+                >
+                  <Button
+                    size="icon"
+                    variant={isVoiceChatActive ? "destructive" : "default"}
+                    onClick={isVoiceChatActive ? onStopVoiceChat : onStartVoiceChat}
+                  >
+                    {isVoiceChatActive ? (
+                      <MicOffIcon className="h-4 w-4" />
+                    ) : (
+                      <MicIcon className="h-4 w-4" />
+                    )}
+                  </Button>
+                </PromptInputAction>
+                <PromptInputAction tooltip="Attach files">
+                  <Button
+                    aria-label="Attach files"
+                    disabled={isVoiceChatActive}
+                    onClick={handlePickFiles}
+                    size="icon"
+                    type="button"
+                  >
+                    <Paperclip className="h-4 w-4" />
+                  </Button>
+                </PromptInputAction>
+                <PromptInputAction tooltip="Send message">
+                  <Button
+                    aria-label="Send message"
+                    disabled={isVoiceChatActive}
+                    onClick={() => sendWithAttachments(chatInput)}
+                    size="icon"
+                    type="button"
+                  >
+                    <SendIcon />
+                  </Button>
+                </PromptInputAction>
+              </>
+            ) : (
+              <>
+                <PromptInputAction tooltip="Confirm edit and send">
+                  <Button
+                    aria-label="Confirm edit and send"
+                    onClick={confirmEdit}
+                    size="icon"
+                    type="button"
+                  >
+                    <Check className="h-4 w-4" />
+                  </Button>
+                </PromptInputAction>
+                <PromptInputAction tooltip="Cancel editing">
+                  <Button
+                    aria-label="Cancel editing"
+                    onClick={cancelEdit}
+                    size="icon"
+                    type="button"
+                    variant="secondary"
+                  >
+                    <XCircle className="h-4 w-4" />
+                  </Button>
+                </PromptInputAction>
+              </>
+            )}
           </PromptInputActions>
         </div>
         {/* Hidden file input */}

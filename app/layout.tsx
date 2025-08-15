@@ -6,6 +6,7 @@ import Script from "next/script";
 import { Fira_Code as FontMono, Inter as FontSans } from "next/font/google";
 
 import AudioDebugShim from "@/components/AudioDebugShim";
+import { ToastProvider } from "@/components/ui/toaster";
 
 
 const fontSans = FontSans({
@@ -108,10 +109,12 @@ export default function RootLayout({
             } catch(_e){}
           })();
         `}</Script>
-        <main className="relative flex flex-col h-screen w-screen">
-          <AudioDebugShim />
-          {children}
-        </main>
+        <ToastProvider>
+          <main className="relative flex flex-col h-screen w-screen">
+            <AudioDebugShim />
+            {children}
+          </main>
+        </ToastProvider>
       </body>
     </html>
   );
