@@ -19,11 +19,7 @@ import { StreamingAvatarSessionState } from "./logic/context";
 
 import { useApiService } from "@/components/logic/ApiServiceContext";
 import { Button } from "@/components/ui/button";
-import {
-  ResizableHandle,
-  ResizablePanel,
-  ResizablePanelGroup,
-} from "@/components/ui/resizable";
+// Resizable components are not used in the unified layout to avoid remounts
 import { useVoiceChat } from "@/components/logic/useVoiceChat";
 import { useSessionStore } from "@/lib/stores/session";
 import { MessageSender } from "@/lib/types";
@@ -56,11 +52,17 @@ export function AvatarSession({
   const [floatingPos, setFloatingPos] = useState({ x: 24, y: 24 });
   const [chatInput, setChatInput] = useState("");
   const panelRef = useRef<HTMLDivElement | null>(null);
+  const rootRef = useRef<HTMLDivElement | null>(null);
   const dragState = useRef<{
     dragging: boolean;
     offsetX: number;
     offsetY: number;
   }>({ dragging: false, offsetX: 0, offsetY: 0 });
+
+  // Docked resize state (percentages of container size)
+  const [bottomSize, setBottomSize] = useState<number>(15); // % height of chat when docked bottom
+  const [rightSize, setRightSize] = useState<number>(24); // % width of chat when docked right
+  const [resizing, setResizing] = useState<null | "bottom" | "right">(null);
 
   const isConnected = useMemo(
     () => sessionState === StreamingAvatarSessionState.CONNECTED,
@@ -197,6 +199,32 @@ export function AvatarSession({
     };
   }, [handlePointerMove, handlePointerUp]);
 
+  // Handle docked resize pointer events
+  useEffect(() => {
+    const onMove = (e: PointerEvent) => {
+      if (!resizing) return;
+      const root = rootRef.current;
+      if (!root) return;
+      const rect = root.getBoundingClientRect();
+      if (resizing === "bottom") {
+        // chat height percent from bottom edge
+        const chatPct = ((rect.bottom - e.clientY) / rect.height) * 100;
+        setBottomSize(Math.max(0, Math.min(50, chatPct)));
+      } else if (resizing === "right") {
+        // chat width percent from right edge
+        const chatPct = ((rect.right - e.clientX) / rect.width) * 100;
+        setRightSize(Math.max(0, Math.min(40, chatPct)));
+      }
+    };
+    const onUp = () => setResizing(null);
+    window.addEventListener("pointermove", onMove);
+    window.addEventListener("pointerup", onUp);
+    return () => {
+      window.removeEventListener("pointermove", onMove);
+      window.removeEventListener("pointerup", onUp);
+    };
+  }, [resizing]);
+
   // When in floating mode, snap the chat panel to bottom-right by default
   useEffect(() => {
     if (dock !== "floating") return;
@@ -315,13 +343,62 @@ export function AvatarSession({
     </div>
   );
 
-  if (dock === "floating") {
-    return (
-      <div className="relative w-full h-full">
+  // Unified, stable render tree to avoid video remounts
+  const isRight = dock === "right";
+  const isFloating = dock === "floating";
+
+  return (
+    <div
+      ref={rootRef}
+      className={cn(
+        "relative w-full h-full",
+        !isFloating && (isRight ? "flex flex-row" : "flex flex-col"),
+      )}
+    >
+      {/* Video panel stays mounted */}
+      <div
+        className={cn(
+          "relative bg-black overflow-hidden",
+          !isFloating && (isRight ? "flex-1" : "flex-1"),
+          isFloating && "w-full h-full",
+        )}
+        style={!isFloating ? undefined : {}}
+      >
         {avatarVideoPanel}
+      </div>
+
+      {/* Docked resizer + chat (bottom or right) */}
+      {!isFloating && (
+        <>
+          {/* Resize handle */}
+          <div
+            role="separator"
+            aria-orientation={isRight ? "vertical" : "horizontal"}
+            className={cn(
+              "bg-zinc-700/60 hover:bg-zinc-600 transition-colors",
+              isRight ? "w-1 cursor-col-resize" : "h-1 cursor-row-resize",
+            )}
+            onPointerDown={() => setResizing(isRight ? "right" : "bottom")}
+          />
+          {/* Chat panel wrapper with dynamic size */}
+          <div
+            className={cn("overflow-hidden")}
+            style={
+              isRight
+                ? { width: `${rightSize}%` }
+                : { height: `${bottomSize}%` }
+            }
+          >
+            {chatPanel}
+          </div>
+        </>
+      )}
+
+      {/* Floating chat overlay */}
+      {isFloating && (
         <div
           ref={panelRef}
-          className="pointer-events-auto z-20 absolute"
+          className="pointer-events-auto z-30 absolute"
           style={{
             left: floatingPos.x,
             top: floatingPos.y,
@@ -331,32 +408,25 @@ export function AvatarSession({
         >
           {chatPanel}
         </div>
-      </div>
-    );
-  }
+      )}
 
-  // Ensure defaultSize is not below minSize for the active dock orientation
-  const isRight = dock === "right";
-  const chatMinSize = isRight ? 20 : 10; // 20% min when right, 10% when bottom
-  const chatDefaultSize = isRight ? 24 : 15; // satisfy min; modest width when right
-  const videoDefaultSize = 100 - chatDefaultSize;
-
-  return (
-    <ResizablePanelGroup
-      className="w-full h-full"
-      direction={isRight ? "horizontal" : "vertical"}
-    >
-      <ResizablePanel defaultSize={videoDefaultSize}>
-        {avatarVideoPanel}
-      </ResizablePanel>
-      <ResizableHandle withHandle />
-      <ResizablePanel
-        defaultSize={chatDefaultSize}
-        maxSize={isRight ? 40 : 50}
-        minSize={chatMinSize}
-      >
-        {chatPanel}
-      </ResizablePanel>
-    </ResizablePanelGroup>
+      {/* Reopen tabs when docked chat is collapsed to 0% */}
+      {!isFloating && !isRight && bottomSize === 0 && (
+        <button
+          className="absolute bottom-0 left-1/2 -translate-x-1/2 mb-1 rounded-full bg-zinc-800 px-3 py-1 text-xs text-white shadow"
+          onClick={() => setBottomSize(15)}
+        >
+          Open chat
+        </button>
+      )}
+      {!isFloating && isRight && rightSize === 0 && (
+        <button
+          className="absolute right-0 top-1/2 -translate-y-1/2 mr-1 rounded-full bg-zinc-800 px-3 py-1 text-xs text-white shadow"
+          onClick={() => setRightSize(24)}
+        >
+          Open chat
+        </button>
+      )}
+    </div>
   );
 }
