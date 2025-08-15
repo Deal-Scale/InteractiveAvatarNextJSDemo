@@ -36,6 +36,8 @@ import { ScrollButton } from "@/components/ui/scroll-button";
 import { Button } from "@/components/ui/button";
 import { Message as MessageType, MessageSender } from "@/lib/types";
 import { useToast } from "@/components/ui/toaster";
+import { Loader } from "@/components/ui/loader";
+import { useStreamingAvatarContext } from "@/components/logic/context";
 
 interface ChatProps {
   chatInput: string;
@@ -69,6 +71,7 @@ export const Chat: React.FC<ChatProps> = ({
   useKeyPress("ArrowUp", onArrowUp);
   useKeyPress("ArrowDown", onArrowDown);
   const { publish } = useToast();
+  const { isAvatarTalking } = useStreamingAvatarContext();
 
   // Local UI state for attachments and suggestions
   const fileInputRef = useRef<HTMLInputElement | null>(null);
@@ -284,6 +287,19 @@ export const Chat: React.FC<ChatProps> = ({
               </div>
             </Message>
           ))}
+          {isAvatarTalking && (
+            <Message className="flex gap-2 items-start">
+              <MessageAvatar alt="Avatar" fallback="A" src="/heygen-logo.png" />
+              <div className="flex flex-col items-start gap-1">
+                <p className="text-xs text-zinc-400">Avatar</p>
+                <div className="rounded-lg p-2 text-foreground bg-secondary prose break-words whitespace-normal text-sm bg-zinc-700">
+                  <div className="py-1">
+                    <Loader variant="typing" />
+                  </div>
+                </div>
+              </div>
+            </Message>
+          )}
         </ChatContainerContent>
         <ChatContainerScrollAnchor />
         <div className="absolute right-4 bottom-4">

@@ -24,6 +24,7 @@ import { useVoiceChat } from "@/components/logic/useVoiceChat";
 import { useSessionStore } from "@/lib/stores/session";
 import { MessageSender } from "@/lib/types";
 import { cn } from "@/lib/utils";
+import { Loader } from "@/components/ui/loader";
 
 type DockMode = "right" | "bottom" | "floating";
 
@@ -335,8 +336,15 @@ export function AvatarSession({
             onStopVoiceChat={stopVoiceChatVoid}
           />
         ) : (
-          <div className="flex items-center justify-center h-full">
-            <p className="text-white">Waiting to start session...</p>
+          <div className="flex flex-1 items-center justify-center h-full">
+            <div className="flex flex-col items-center gap-3 text-white">
+              <Loader variant="spinner" size="lg" />
+              <p className="text-sm text-zinc-300">
+                {sessionState === StreamingAvatarSessionState.CONNECTING
+                  ? "Connecting to avatar session..."
+                  : "Waiting to start session..."}
+              </p>
+            </div>
           </div>
         )}
       </div>
