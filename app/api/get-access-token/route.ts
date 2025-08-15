@@ -2,6 +2,7 @@ const HEYGEN_API_KEY = process.env.HEYGEN_API_KEY;
 
 export async function POST() {
   try {
+    console.log("HEYGEN_API_KEY loaded:", HEYGEN_API_KEY);
     if (!HEYGEN_API_KEY) {
       throw new Error("API key is missing from .env");
     }

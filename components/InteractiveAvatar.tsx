@@ -14,13 +14,15 @@ import { Button } from "./Button";
 import { AvatarConfig } from "./AvatarConfig";
 import { AvatarVideo } from "./AvatarSession/AvatarVideo";
 import { useStreamingAvatarSession } from "./logic/useStreamingAvatarSession";
-import { AvatarControls } from "./AvatarSession/AvatarControls";
 import { useVoiceChat } from "./logic/useVoiceChat";
 import { StreamingAvatarProvider, StreamingAvatarSessionState } from "./logic";
 import { LoadingIcon } from "./Icons";
-import { MessageHistory } from "./AvatarSession/MessageHistory";
+import { Chat } from "./AvatarSession/Chat";
+import { ApiServiceProvider } from "./logic/ApiServiceContext";
 
 import { AVATARS } from "@/app/lib/constants";
+import { ApiService } from "@/lib/services/api";
+import { HeyGenService } from "@/lib/services/heygen";
 
 const DEFAULT_CONFIG: StartAvatarRequest = {
   quality: AvatarQuality.Low,
@@ -44,6 +46,7 @@ function InteractiveAvatar() {
   const { startVoiceChat } = useVoiceChat();
 
   const [config, setConfig] = useState<StartAvatarRequest>(DEFAULT_CONFIG);
+  const [apiService, setApiService] = useState<ApiService | null>(null);
 
   const mediaStream = useRef<HTMLVideoElement>(null);
 
@@ -67,6 +70,9 @@ function InteractiveAvatar() {
     try {
       const newToken = await fetchAccessToken();
       const avatar = initAvatar(newToken);
+
+      const heygenService = new HeyGenService(avatar);
+      setApiService(heygenService);
 
       avatar.on(StreamingEvents.AVATAR_START_TALKING, (e) => {
         console.log("Avatar started talking", e);
@@ -109,8 +115,14 @@ function InteractiveAvatar() {
     }
   });
 
+  const stopSession = useMemoizedFn(() => {
+    stopAvatar().then(() => {
+      setApiService(null);
+    });
+  });
+
   useUnmount(() => {
-    stopAvatar();
+    stopSession();
   });
 
   useEffect(() => {
@@ -123,7 +135,8 @@ function InteractiveAvatar() {
   }, [mediaStream, stream]);
 
   return (
-    <div className="w-full flex flex-col gap-4">
+    <ApiServiceProvider service={apiService}>
+      <div className="w-full flex flex-col gap-4">
       <div className="flex flex-col rounded-xl bg-zinc-900 overflow-hidden">
         <div className="relative w-full aspect-video overflow-hidden flex flex-col items-center justify-center">
           {sessionState !== StreamingAvatarSessionState.INACTIVE ? (
@@ -134,7 +147,7 @@ function InteractiveAvatar() {
         </div>
         <div className="flex flex-col gap-3 items-center justify-center p-4 border-t border-zinc-700 w-full">
           {sessionState === StreamingAvatarSessionState.CONNECTED ? (
-            <AvatarControls />
+            <Button onClick={stopSession}>Stop</Button>
           ) : sessionState === StreamingAvatarSessionState.INACTIVE ? (
             <div className="flex flex-row gap-4">
               <Button onClick={() => startSessionV2(true)}>
@@ -149,10 +162,9 @@ function InteractiveAvatar() {
           )}
         </div>
       </div>
-      {sessionState === StreamingAvatarSessionState.CONNECTED && (
-        <MessageHistory />
-      )}
-    </div>
+      {sessionState === StreamingAvatarSessionState.CONNECTED && <Chat />}
+      </div>
+    </ApiServiceProvider>
   );
 }
 
