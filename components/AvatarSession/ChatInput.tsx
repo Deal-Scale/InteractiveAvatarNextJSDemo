@@ -19,6 +19,11 @@ import {
   PromptInputTextarea,
 } from "@/components/ui/prompt-input";
 import { Loader } from "@/components/ui/loader";
+import {
+  FileUpload,
+  FileUploadContent,
+  FileUploadTrigger,
+} from "@/components/ui/file-upload";
 
 interface ChatInputProps {
   chatInput: string;
@@ -31,13 +36,11 @@ interface ChatInputProps {
   onChatInputChange: (value: string) => void;
   onStartVoiceChat: () => void;
   onStopVoiceChat: () => void;
-  handlePickFiles: () => void;
   sendWithAttachments: (text: string) => void;
   confirmEdit: () => void;
   cancelEdit: () => void;
   removeAttachment: (idx: number) => void;
-  fileInputRef: React.RefObject<HTMLInputElement | null>;
-  handleFilesSelected: React.ChangeEventHandler<HTMLInputElement>;
+  onFilesAdded: (files: File[]) => void;
 }
 
 export const ChatInput: React.FC<ChatInputProps> = ({
@@ -51,13 +54,11 @@ export const ChatInput: React.FC<ChatInputProps> = ({
   onChatInputChange,
   onStartVoiceChat,
   onStopVoiceChat,
-  handlePickFiles,
   sendWithAttachments,
   confirmEdit,
   cancelEdit,
   removeAttachment,
-  fileInputRef,
-  handleFilesSelected,
+  onFilesAdded,
 }) => {
   return (
     <PromptInput
@@ -106,15 +107,28 @@ export const ChatInput: React.FC<ChatInputProps> = ({
                 </div>
               </PromptInputAction>
               <PromptInputAction tooltip="Attach files">
-                <Button
-                  aria-label="Attach files"
+                <FileUpload
+                  multiple
+                  accept="*"
                   disabled={isVoiceChatActive}
-                  size="icon"
-                  type="button"
-                  onClick={handlePickFiles}
+                  onFilesAdded={onFilesAdded}
                 >
-                  <Paperclip className="h-4 w-4" />
-                </Button>
+                  <FileUploadTrigger asChild>
+                    <Button
+                      aria-label="Attach files"
+                      disabled={isVoiceChatActive}
+                      size="icon"
+                      type="button"
+                    >
+                      <Paperclip className="h-4 w-4" />
+                    </Button>
+                  </FileUploadTrigger>
+                  <FileUploadContent className="border-border/60 bg-background/80 text-foreground/90">
+                    <div className="rounded-lg border px-6 py-4 text-center">
+                      <p className="text-sm">Drop files to attach</p>
+                    </div>
+                  </FileUploadContent>
+                </FileUpload>
               </PromptInputAction>
               <PromptInputAction tooltip="Send message">
                 <Button
@@ -159,15 +173,7 @@ export const ChatInput: React.FC<ChatInputProps> = ({
           )}
         </PromptInputActions>
       </div>
-      <input
-        ref={fileInputRef}
-        aria-hidden
-        multiple
-        className="hidden"
-        tabIndex={-1}
-        type="file"
-        onChange={handleFilesSelected}
-      />
+      {/* FileUpload handles file selection and drag/drop */}
       {attachments.length > 0 && (
         <div className="flex flex-wrap items-center gap-2 px-2 pt-2">
           {attachments.map((file, idx) => (
