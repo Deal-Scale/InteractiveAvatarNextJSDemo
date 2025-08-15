@@ -1,39 +1,46 @@
-import React, { useEffect, useRef } from "react";
+import React from "react";
 
-import { useMessageHistory, MessageSender } from "../logic";
+import { MessageSender } from "../logic/context";
+import { useMessageHistory } from "../logic/useMessageHistory";
+
+import {
+  ChatContainerContent,
+  ChatContainerRoot,
+  ChatContainerScrollAnchor,
+} from "@/components/ui/chat-container";
+import { Message, MessageContent } from "@/components/ui/message";
 
 export const MessageHistory: React.FC = () => {
   const { messages } = useMessageHistory();
-  const containerRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    const container = containerRef.current;
-
-    if (!container || messages.length === 0) return;
-
-    container.scrollTop = container.scrollHeight;
-  }, [messages]);
 
   return (
-    <div
-      ref={containerRef}
-      className="w-[600px] overflow-y-auto flex flex-col gap-2 px-2 py-2 text-white self-center max-h-[150px]"
-    >
-      {messages.map((message) => (
-        <div
-          key={message.id}
-          className={`flex flex-col gap-1 max-w-[350px] ${
-            message.sender === MessageSender.CLIENT
-              ? "self-end items-end"
-              : "self-start items-start"
-          }`}
-        >
-          <p className="text-xs text-zinc-400">
-            {message.sender === MessageSender.AVATAR ? "Avatar" : "You"}
-          </p>
-          <p className="text-sm">{message.content}</p>
-        </div>
-      ))}
-    </div>
+    <ChatContainerRoot className="w-[600px] text-white self-center max-h-[150px]">
+      <ChatContainerContent>
+        {messages.map((message) => (
+          <Message
+            key={message.id}
+            className={`flex flex-col gap-1 ${
+              message.sender === MessageSender.AVATAR
+                ? "items-start"
+                : "items-end"
+            }`}
+          >
+            <p className="text-xs text-zinc-400">
+              {message.sender === MessageSender.AVATAR ? "Avatar" : "You"}
+            </p>
+            <MessageContent
+              className={`text-sm ${
+                message.sender === MessageSender.AVATAR
+                  ? "bg-zinc-700"
+                  : "bg-blue-500"
+              }`}
+            >
+              {message.content}
+            </MessageContent>
+          </Message>
+        ))}
+      </ChatContainerContent>
+      <ChatContainerScrollAnchor />
+    </ChatContainerRoot>
   );
 };
