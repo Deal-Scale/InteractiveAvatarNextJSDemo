@@ -1,28 +1,28 @@
+import { useEffect, useMemo, useRef, useState } from "react";
+import { useMemoizedFn, useUnmount } from "ahooks";
 import {
   AvatarQuality,
+  ElevenLabsModel,
+  StartAvatarRequest,
+  STTProvider,
   StreamingEvents,
   VoiceChatTransport,
   VoiceEmotion,
-  StartAvatarRequest,
-  STTProvider,
-  ElevenLabsModel,
 } from "@heygen/streaming-avatar";
-import { useEffect, useMemo, useRef, useState } from "react";
-import { useMemoizedFn, useUnmount } from "ahooks";
 import { nanoid } from "nanoid";
+import { Settings } from "lucide-react";
 
+import { AvatarSession } from "./AvatarSession";
 import { StreamingAvatarProvider, StreamingAvatarSessionState } from "./logic";
 import { useStreamingAvatarSession } from "./logic/useStreamingAvatarSession";
-import { AvatarSession } from "./AvatarSession";
+import { SessionConfigModal } from "./ui/SessionConfigModal";
 
-import { ApiServiceProvider, useApiService } from "@/components/logic/ApiServiceContext";
 import { AVATARS } from "@/app/lib/constants";
+import { ApiServiceProvider, useApiService } from "@/components/logic/ApiServiceContext";
+import { Button } from "@/components/ui/button";
 import { HeyGenService } from "@/lib/services/heygen";
 import { useSessionStore } from "@/lib/stores/session";
 import { MessageSender } from "@/lib/types";
-import { SessionConfigModal } from "./ui/SessionConfigModal";
-import { Button } from "@/components/ui/button";
-import { Settings } from "lucide-react";
 
 const DEFAULT_CONFIG: StartAvatarRequest = {
   quality: AvatarQuality.Low,

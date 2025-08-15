@@ -28,10 +28,16 @@ export const useStreamingAvatarSession = () => {
     handleStreamingTalkingMessage,
     handleEndMessage,
     clearMessages,
+    messages,
   } = useStreamingAvatarContext();
-  const { startVoiceChat, stopVoiceChat, isVoiceChatActive, isVoiceChatLoading } = useVoiceChat();
+  const {
+    startVoiceChat,
+    stopVoiceChat,
+    isVoiceChatActive,
+    isVoiceChatLoading,
+  } = useVoiceChat();
 
-  useMessageHistory();
+  useMessageHistory(messages);
 
   const init = useCallback(
     (token: string) => {
