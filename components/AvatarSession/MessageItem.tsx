@@ -13,11 +13,15 @@ import {
   ResponseStream,
   type Mode as ResponseStreamMode,
 } from "@/components/ui/response-stream";
+import { useTextStream } from "@/components/ui/response-stream";
 import {
   Reasoning,
   ReasoningContent,
   ReasoningTrigger,
 } from "@/components/ui/reasoning";
+import { JSXPreview } from "@/components/ui/jsx-preview";
+import { Tool } from "@/components/ui/tool";
+import { Source, SourceContent, SourceTrigger } from "@/components/ui/source";
 
 interface MessageItemProps {
   message: MessageType;
@@ -54,6 +58,18 @@ export const MessageItem: React.FC<MessageItemProps> = ({
   reasoningMarkdown = true,
   isStreaming,
 }) => {
+  const hasJsx = Boolean(message.jsx && message.jsx.trim().length > 0);
+
+  // If we have JSX, stream it using the same text streaming hook used by ResponseStream.
+  const jsxStream = useTextStream({
+    textStream: message.jsx ?? "",
+    mode: streamMode,
+    speed: streamSpeed,
+    fadeDuration,
+    segmentDelay,
+    characterChunkSize,
+  });
+
   return (
     <Message
       key={message.id}
@@ -93,16 +109,53 @@ export const MessageItem: React.FC<MessageItemProps> = ({
                 </Reasoning>
               </div>
             )}
-            <ResponseStream
-              as="div"
-              characterChunkSize={characterChunkSize}
-              className="whitespace-pre-wrap"
-              fadeDuration={fadeDuration}
-              mode={streamMode}
-              segmentDelay={segmentDelay}
-              speed={streamSpeed}
-              textStream={message.content}
-            />
+            {hasJsx ? (
+              <div className="w-full">
+                <JSXPreview
+                  isStreaming={Boolean(isStreaming && !jsxStream.isComplete)}
+                  jsx={jsxStream.displayedText}
+                />
+              </div>
+            ) : (
+              <ResponseStream
+                as="div"
+                characterChunkSize={characterChunkSize}
+                className="whitespace-pre-wrap"
+                fadeDuration={fadeDuration}
+                mode={streamMode}
+                segmentDelay={segmentDelay}
+                speed={streamSpeed}
+                textStream={message.content}
+              />
+            )}
+            {Array.isArray(message.toolParts) && message.toolParts.length > 0 && (
+              <div className="w-full">
+                {message.toolParts.map((part, idx) => (
+                  <Tool
+                    key={part.toolCallId ?? `${message.id}-tool-${idx}`}
+                    defaultOpen={part.state !== "output-available"}
+                    toolPart={part}
+                  />
+                ))}
+              </div>
+            )}
+            {Array.isArray(message.sources) && message.sources.length > 0 && (
+              <div className="mt-2 flex w-full flex-wrap gap-1">
+                {message.sources.map((s, idx) => (
+                  <Source key={`${message.id}-src-${idx}`} href={s.href}>
+                    <SourceTrigger
+                      className="bg-zinc-600/50"
+                      label={s.label}
+                      showFavicon={s.showFavicon}
+                    />
+                    <SourceContent
+                      description={s.description}
+                      title={s.title}
+                    />
+                  </Source>
+                ))}
+              </div>
+            )}
           </div>
         ) : (
           <MessageContent markdown className="text-sm bg-indigo-500">
