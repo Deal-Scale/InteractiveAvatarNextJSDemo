@@ -190,6 +190,8 @@ export const Chat: React.FC<ChatProps> = ({
               handleCopy={handleCopy}
               handleEditToInput={handleEditToInput}
               setVote={setVote}
+              streamMode="typewriter"
+              streamSpeed={28}
             />
           ))}
           {isAvatarTalking && (
