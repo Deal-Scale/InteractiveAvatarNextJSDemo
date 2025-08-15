@@ -64,57 +64,55 @@ export const PromptBar: React.FC = () => {
   }, [input, previousInput, startListening, stopListening]);
 
   return (
-    <div className="flex flex-row gap-2 items-end w-full">
-      <Select
-        value={taskType}
-        onValueChange={(value: string) => setTaskType(value as TaskType)}
-      >
-        <SelectTrigger className="w-[120px]">
-          <SelectValue placeholder="Task Type" />
-        </SelectTrigger>
-        <SelectContent>
-          {Object.values(TaskType).map((type) => (
-            <SelectItem key={type} value={type}>
-              {type.toUpperCase()}
-            </SelectItem>
-          ))}
-        </SelectContent>
-      </Select>
-      <Select
-        value={taskMode}
-        onValueChange={(value: string) => setTaskMode(value as TaskMode)}
-      >
-        <SelectTrigger className="w-[120px]">
-          <SelectValue placeholder="Task Mode" />
-        </SelectTrigger>
-        <SelectContent>
-          {Object.values(TaskMode).map((mode) => (
-            <SelectItem key={mode} value={mode}>
-              {mode.toUpperCase()}
-            </SelectItem>
-          ))}
-        </SelectContent>
-      </Select>
-      <PromptInput
-        className="flex-grow"
-        value={input}
-        onValueChange={setInput}
-        onSubmit={handleSend}
-      >
-        <div className="flex items-end gap-2">
-          <PromptInputTextarea
-            className="flex-grow"
-            placeholder={`Type something for the avatar to ${
-              taskType === TaskType.REPEAT ? "repeat" : "respond"
-            }...`}
-          />
-          <PromptInputActions>
-            <Button onClick={handleSend} size="icon" type="submit">
-              <SendIcon />
-            </Button>
-          </PromptInputActions>
-        </div>
-      </PromptInput>
-    </div>
+    <PromptInput
+      className="w-full"
+      value={input}
+      onValueChange={setInput}
+      onSubmit={handleSend}
+    >
+      <div className="flex items-end gap-2">
+        <PromptInputTextarea
+          className="flex-grow"
+          placeholder={`Type something for the avatar to ${
+            taskType === TaskType.REPEAT ? "repeat" : "respond"
+          }...`}
+        />
+        <PromptInputActions>
+          <Select
+            value={taskType}
+            onValueChange={(value: string) => setTaskType(value as TaskType)}
+          >
+            <SelectTrigger className="w-[120px]">
+              <SelectValue placeholder="Task Type" />
+            </SelectTrigger>
+            <SelectContent>
+              {Object.values(TaskType).map((type) => (
+                <SelectItem key={type} value={type}>
+                  {type.toUpperCase()}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <Select
+            value={taskMode}
+            onValueChange={(value: string) => setTaskMode(value as TaskMode)}
+          >
+            <SelectTrigger className="w-[120px]">
+              <SelectValue placeholder="Task Mode" />
+            </SelectTrigger>
+            <SelectContent>
+              {Object.values(TaskMode).map((mode) => (
+                <SelectItem key={mode} value={mode}>
+                  {mode.toUpperCase()}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <Button onClick={handleSend} size="icon" type="submit">
+            <SendIcon />
+          </Button>
+        </PromptInputActions>
+      </div>
+    </PromptInput>
   );
 };
