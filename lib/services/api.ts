@@ -1,5 +1,3 @@
-import { TaskMode, TaskType } from "@heygen/streaming-avatar";
-
 export interface TextChatService {
   sendMessage(message: string): void;
   sendMessageSync(message: string): Promise<any>;
@@ -8,13 +6,16 @@ export interface TextChatService {
 }
 
 export interface VoiceChatService {
-  startVoiceChat(isInputAudioMuted?: boolean): Promise<void>;
-  stopVoiceChat(): void;
-  muteInputAudio(): void;
-  unmuteInputAudio(): void;
+  start(isInputAudioMuted?: boolean): Promise<void>;
+  stop(): void;
+  mute(): void;
+  unmute(): void;
 }
 
-export interface ApiService extends TextChatService, VoiceChatService {}
+export interface ApiService {
+  textChat: TextChatService;
+  voiceChat: VoiceChatService;
+}
 
 export enum ApiProvider {
   HeyGen = "HeyGen",

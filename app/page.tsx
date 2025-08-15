@@ -1,13 +1,20 @@
 "use client";
 
 import InteractiveAvatar from "@/components/InteractiveAvatar";
+import Sidebar from '@/components/Sidebar';
+import { ApiServiceProvider } from "@/components/logic/ApiServiceContext";
+import { HeyGenService } from "@/lib/services/heygen";
+
+const heygenService = new HeyGenService();
+
 export default function App() {
   return (
-    <div className="w-screen h-screen flex flex-col">
-      <div className="w-[900px] flex flex-col items-start justify-start gap-5 mx-auto pt-4 pb-20">
-        <div className="w-full">
-          <InteractiveAvatar />
-        </div>
+    <div className="w-screen h-screen flex flex-row">
+      <Sidebar />
+      <div className="flex-1 flex items-center justify-center">
+          <ApiServiceProvider service={heygenService}>
+            <InteractiveAvatar />
+          </ApiServiceProvider>
       </div>
     </div>
   );
