@@ -19,7 +19,7 @@ interface AvatarConfigProps {
   onConfigChange: (config: StartAvatarRequest) => void;
   config: StartAvatarRequest;
   isConnecting: boolean;
-  startSession: (isVoiceChat: boolean) => void;
+  startSession: () => void;
 }
 
 export const AvatarConfig: React.FC<AvatarConfigProps> = ({
@@ -187,18 +187,11 @@ export const AvatarConfig: React.FC<AvatarConfigProps> = ({
       )}
       <div className="mt-2 flex items-center gap-3">
         <button
-          className="px-4 py-2 rounded-md bg-emerald-600 text-white disabled:opacity-50"
-          onClick={() => startSession(true)}
+          className="px-4 py-2 rounded-md bg-blue-600 text-white disabled:opacity-50 w-full"
+          onClick={() => startSession()}
           disabled={isConnecting}
         >
-          {isConnecting ? "Connecting..." : "Start Voice Session"}
-        </button>
-        <button
-          className="px-4 py-2 rounded-md bg-blue-600 text-white disabled:opacity-50"
-          onClick={() => startSession(false)}
-          disabled={isConnecting}
-        >
-          {isConnecting ? "Connecting..." : "Start Text Session"}
+          {isConnecting ? "Connecting..." : "Start Session"}
         </button>
       </div>
 

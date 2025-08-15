@@ -4,22 +4,12 @@ import StreamingAvatar, {
   UserTalkingMessageEvent,
 } from "@heygen/streaming-avatar";
 import React, { useRef, useState } from "react";
+import { Message, MessageSender } from "@/lib/types";
 
 export enum StreamingAvatarSessionState {
   INACTIVE = "inactive",
   CONNECTING = "connecting",
   CONNECTED = "connected",
-}
-
-export enum MessageSender {
-  CLIENT = "CLIENT",
-  AVATAR = "AVATAR",
-}
-
-export interface Message {
-  id: string;
-  sender: MessageSender;
-  content: string;
 }
 
 type StreamingAvatarContextProps = {

@@ -1,6 +1,6 @@
 import React from "react";
 
-import { MessageSender } from "../logic/context";
+import { MessageSender } from "@/lib/types";
 import { useMessageHistory } from "../logic/useMessageHistory";
 
 import {

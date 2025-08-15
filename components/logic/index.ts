@@ -6,5 +6,6 @@ export { useInterrupt } from "./useInterrupt";
 export {
   StreamingAvatarSessionState,
   StreamingAvatarProvider,
-  MessageSender,
 } from "./context";
+export { MessageSender } from "@/lib/types";
+export type { Message } from "@/lib/types";

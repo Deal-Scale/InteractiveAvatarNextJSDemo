@@ -7,16 +7,22 @@ import {
   STTProvider,
   ElevenLabsModel,
 } from "@heygen/streaming-avatar";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useMemoizedFn, useUnmount } from "ahooks";
+import { nanoid } from "nanoid";
 
-import { StreamingAvatarProvider } from "./logic";
+import { StreamingAvatarProvider, StreamingAvatarSessionState } from "./logic";
 import { useStreamingAvatarSession } from "./logic/useStreamingAvatarSession";
 import { AvatarSession } from "./AvatarSession";
 
-import { ApiServiceProvider } from "@/components/logic/ApiServiceContext";
+import { ApiServiceProvider, useApiService } from "@/components/logic/ApiServiceContext";
 import { AVATARS } from "@/app/lib/constants";
 import { HeyGenService } from "@/lib/services/heygen";
+import { useSessionStore } from "@/lib/stores/session";
+import { MessageSender } from "@/lib/types";
+import { SessionConfigModal } from "./ui/SessionConfigModal";
+import { Button } from "@/components/ui/button";
+import { Settings } from "lucide-react";
 
 const DEFAULT_CONFIG: StartAvatarRequest = {
   quality: AvatarQuality.Low,
@@ -34,12 +40,13 @@ const DEFAULT_CONFIG: StartAvatarRequest = {
   },
 };
 
-function InteractiveAvatar() {
+function InteractiveAvatarCore() {
   const { initAvatar, startAvatar, stopAvatar, sessionState, stream } =
     useStreamingAvatarSession();
 
-  const [config, setConfig] = useState<StartAvatarRequest>(DEFAULT_CONFIG);
-  const [apiService, setApiService] = useState<HeyGenService | undefined>();
+  const { setApiService } = useApiService();
+
+  const { chatMode, addMessage, openConfigModal } = useSessionStore();
 
   const mediaStream = useRef<HTMLVideoElement | null>(null);
 
@@ -49,9 +56,7 @@ function InteractiveAvatar() {
         method: "POST",
       });
       const token = await response.text();
-
       console.log("Access Token:", token); // Log the token to verify
-
       return token;
     } catch (error) {
       console.error("Error fetching access token:", error);
@@ -59,7 +64,7 @@ function InteractiveAvatar() {
     }
   }
 
-  const startSessionV2 = useMemoizedFn(async (isVoiceChat: boolean) => {
+  const startSessionV2 = useMemoizedFn(async (config: StartAvatarRequest) => {
     try {
       const newToken = await fetchAccessToken();
       const avatar = initAvatar(newToken);
@@ -92,16 +97,22 @@ function InteractiveAvatar() {
       avatar.on(StreamingEvents.USER_TALKING_MESSAGE, (event: any) => {
         console.log(">>>>> User talking message:", event);
       });
-      avatar.on(StreamingEvents.AVATAR_TALKING_MESSAGE, (event: any) => {
-        console.log(">>>>> Avatar talking message:", event);
+      avatar.on(StreamingEvents.AVATAR_TALKING_MESSAGE, (e: any) => {
+        console.log(">>>>> Avatar talking message:", e);
       });
+
       avatar.on(StreamingEvents.AVATAR_END_MESSAGE, (event: any) => {
         console.log(">>>>> Avatar end message:", event);
+        addMessage({
+          id: nanoid(),
+          content: event.detail.message,
+          sender: MessageSender.AVATAR,
+        });
       });
 
       await startAvatar(config);
 
-      if (isVoiceChat) {
+      if (chatMode === "voice") {
         await heygenService.voiceChat.start();
       }
     } catch (error) {
@@ -111,7 +122,7 @@ function InteractiveAvatar() {
 
   const stopSession = useMemoizedFn(() => {
     stopAvatar().then(() => {
-      setApiService(undefined);
+      setApiService(null);
     });
   });
 
@@ -128,19 +139,46 @@ function InteractiveAvatar() {
     }
   }, [mediaStream, stream]);
 
+  const isConnecting = useMemo(
+    () =>
+      sessionState === StreamingAvatarSessionState.CONNECTING,
+    [sessionState],
+  );
+
   return (
     <div className="w-full flex flex-col gap-4">
-      <ApiServiceProvider service={apiService ?? null}>
-        <AvatarSession
-          config={config}
-          mediaStream={mediaStream as React.RefObject<HTMLVideoElement>}
-          sessionState={sessionState}
-          setConfig={setConfig}
-          startSessionV2={startSessionV2}
-          stopSession={stopSession}
-        />
-      </ApiServiceProvider>
+      <SessionConfigModal
+        isConnecting={isConnecting}
+        initialConfig={DEFAULT_CONFIG}
+        startSession={startSessionV2}
+      />
+      <AvatarSession
+        mediaStream={mediaStream as React.RefObject<HTMLVideoElement>}
+        sessionState={sessionState}
+        stopSession={stopSession}
+      />
+      {/* Floating Settings Button */}
+      <div className="fixed bottom-6 right-6 z-50">
+        <Button
+          size="icon"
+          className="h-12 w-12 rounded-full shadow-lg bg-indigo-600 hover:bg-indigo-500"
+          onClick={openConfigModal}
+        >
+          <Settings className="h-6 w-6" />
+          <span className="sr-only">Open session settings</span>
+        </Button>
+      </div>
     </div>
+  );
+}
+
+function InteractiveAvatar() {
+  const [apiService, setApiService] = useState<HeyGenService | null>(null);
+
+  return (
+    <ApiServiceProvider service={apiService} setApiService={setApiService}>
+      <InteractiveAvatarCore />
+    </ApiServiceProvider>
   );
 }
 
