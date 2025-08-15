@@ -13,6 +13,11 @@ import {
   ResponseStream,
   type Mode as ResponseStreamMode,
 } from "@/components/ui/response-stream";
+import {
+  Reasoning,
+  ReasoningContent,
+  ReasoningTrigger,
+} from "@/components/ui/reasoning";
 
 interface MessageItemProps {
   message: MessageType;
@@ -27,6 +32,10 @@ interface MessageItemProps {
   fadeDuration?: number; // ms
   segmentDelay?: number; // ms
   characterChunkSize?: number; // override speed
+  // Optional reasoning panel for avatar messages
+  reasoning?: string;
+  reasoningMarkdown?: boolean;
+  isStreaming?: boolean;
 }
 
 export const MessageItem: React.FC<MessageItemProps> = ({
@@ -41,6 +50,9 @@ export const MessageItem: React.FC<MessageItemProps> = ({
   fadeDuration,
   segmentDelay,
   characterChunkSize,
+  reasoning,
+  reasoningMarkdown = true,
+  isStreaming,
 }) => {
   return (
     <Message
@@ -66,6 +78,21 @@ export const MessageItem: React.FC<MessageItemProps> = ({
         </p>
         {message.sender === MessageSender.AVATAR ? (
           <div className="prose break-words whitespace-normal rounded-lg bg-zinc-700 p-2 text-sm text-foreground">
+            {reasoning && (
+              <div className="mb-2">
+                <Reasoning isStreaming={isStreaming}>
+                  <ReasoningTrigger className="text-xs text-muted-foreground">
+                    Reasoning
+                  </ReasoningTrigger>
+                  <ReasoningContent
+                    contentClassName="mt-1"
+                    markdown={reasoningMarkdown}
+                  >
+                    {reasoning}
+                  </ReasoningContent>
+                </Reasoning>
+              </div>
+            )}
             <ResponseStream
               as="div"
               characterChunkSize={characterChunkSize}
@@ -101,9 +128,7 @@ export const MessageItem: React.FC<MessageItemProps> = ({
               </MessageAction>
               <MessageAction
                 tooltip={
-                  voteState[message.id] === "up"
-                    ? "Upvoted"
-                    : "Upvote response"
+                  voteState[message.id] === "up" ? "Upvoted" : "Upvote response"
                 }
               >
                 <Button

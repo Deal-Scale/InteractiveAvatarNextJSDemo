@@ -1,5 +1,5 @@
 import { useKeyPress } from "ahooks";
-import React, { useMemo, useRef, useState } from "react";
+import React, { useMemo, useState } from "react";
 
 import { ChatInput } from "./ChatInput";
 import { MessageItem } from "./MessageItem";
@@ -15,7 +15,7 @@ import { Loader } from "@/components/ui/loader";
 import { Message, MessageAvatar } from "@/components/ui/message";
 import { ScrollButton } from "@/components/ui/scroll-button";
 import { useToast } from "@/components/ui/toaster";
-import { Message as MessageType } from "@/lib/types";
+import { Message as MessageType, MessageSender } from "@/lib/types";
 
 interface ChatProps {
   chatInput: string;
@@ -50,7 +50,6 @@ export const Chat: React.FC<ChatProps> = ({
   const { publish } = useToast();
   const { isAvatarTalking, isVoiceChatLoading } = useStreamingAvatarContext();
 
-  const fileInputRef = useRef<HTMLInputElement>(null);
   const [attachments, setAttachments] = useState<File[]>([]);
   const promptSuggestions = useMemo(
     () => [
@@ -62,19 +61,9 @@ export const Chat: React.FC<ChatProps> = ({
     [],
   );
 
-  const handlePickFiles = () => fileInputRef.current?.click();
-
-  const handleFilesSelected: React.ChangeEventHandler<HTMLInputElement> = (
-    e,
-  ) => {
-    const files = Array.from(e.target.files || []);
-
+  const onFilesAdded = (files: File[]) => {
     if (files.length) {
       setAttachments((prev) => [...prev, ...files]);
-    }
-
-    if (fileInputRef.current) {
-      fileInputRef.current.value = "";
     }
   };
 
@@ -184,14 +173,17 @@ export const Chat: React.FC<ChatProps> = ({
           {messages.map((message) => (
             <MessageItem
               key={message.id}
+              isStreaming={
+                isAvatarTalking && message.sender === MessageSender.AVATAR
+              }
               lastCopiedId={lastCopiedId}
               message={message}
+              streamMode="typewriter"
+              streamSpeed={28}
               voteState={voteState}
               handleCopy={handleCopy}
               handleEditToInput={handleEditToInput}
               setVote={setVote}
-              streamMode="typewriter"
-              streamSpeed={28}
             />
           ))}
           {isAvatarTalking && (
@@ -216,7 +208,6 @@ export const Chat: React.FC<ChatProps> = ({
       <ChatInput
         attachments={attachments}
         chatInput={chatInput}
-        fileInputRef={fileInputRef}
         isEditing={isEditing}
         isSending={isSending}
         isVoiceChatActive={isVoiceChatActive}
@@ -224,9 +215,8 @@ export const Chat: React.FC<ChatProps> = ({
         promptSuggestions={promptSuggestions}
         cancelEdit={cancelEdit}
         confirmEdit={confirmEdit}
-        handleFilesSelected={handleFilesSelected}
-        handlePickFiles={handlePickFiles}
         onChatInputChange={onChatInputChange}
+        onFilesAdded={onFilesAdded}
         onStartVoiceChat={onStartVoiceChat}
         onStopVoiceChat={onStopVoiceChat}
         removeAttachment={removeAttachment}
