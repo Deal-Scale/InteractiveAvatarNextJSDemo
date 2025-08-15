@@ -2,6 +2,8 @@
 // It communicates with the React toast system via CustomEvents, with a
 // direct-window API fallback when available.
 
+import type { ToastItem } from "@/components/ui/toaster";
+
 export type MCPToastVariant = "default" | "success" | "error" | "warning" | "loading" | "custom";
 
 export interface MCPToastOptions {
@@ -24,6 +26,16 @@ export type MCPToastPatch = Partial<MCPToastOptions>;
 const PUBLISH_EVENT = "app:toast:publish";
 const UPDATE_EVENT = "app:toast:update";
 const DISMISS_EVENT = "app:toast:dismiss";
+
+declare global {
+  interface Window {
+    mcpToast?: {
+      publish: (t: Omit<ToastItem, "id">) => string;
+      update: (id: string, patch: Partial<Omit<ToastItem, "id">>) => void;
+      dismiss: (id: string) => void;
+    };
+  }
+}
 
 function hasWindow(): boolean {
   return typeof window !== "undefined";
