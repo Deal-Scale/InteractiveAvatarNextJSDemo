@@ -15,14 +15,17 @@ export const useVoiceChat = () => {
   } = useStreamingAvatarContext();
 
   const startVoiceChat = useCallback(
-    async (isInputAudioMuted?: boolean) => {
+    async (options: {
+      isInputAudioMuted?: boolean;
+      mediaStream?: MediaStream;
+    }) => {
       if (!apiService?.voiceChat) return;
 
       setIsVoiceChatLoading(true);
-      await apiService.voiceChat.start(isInputAudioMuted);
+      await apiService.voiceChat.start(options);
       setIsVoiceChatLoading(false);
       setIsVoiceChatActive(true);
-      setIsMuted(!!isInputAudioMuted);
+      setIsMuted(!!options.isInputAudioMuted);
     },
     [apiService, setIsMuted, setIsVoiceChatActive, setIsVoiceChatLoading],
   );

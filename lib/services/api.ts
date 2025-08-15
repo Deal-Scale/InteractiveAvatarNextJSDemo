@@ -6,7 +6,10 @@ export interface TextChatService {
 }
 
 export interface VoiceChatService {
-  start(isInputAudioMuted?: boolean): Promise<void>;
+  start(options: {
+    isInputAudioMuted?: boolean;
+    mediaStream?: MediaStream;
+  }): Promise<void>;
   stop(): void;
   mute(): void;
   unmute(): void;

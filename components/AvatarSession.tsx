@@ -10,7 +10,6 @@ import { useMessageHistory } from "./logic/useMessageHistory";
 import { StreamingAvatarSessionState } from "./logic/context";
 // Removed ChatModeToggle to simplify UI: voice chat is controlled via mic button in Chat
 import { DockablePanel, DockMode } from "./ui/DockablePanel";
-import { Sidebar } from "./ui/sidebar";
 
 import { useApiService } from "@/components/logic/ApiServiceContext";
 import { useVoiceChat } from "@/components/logic/useVoiceChat";
@@ -34,7 +33,7 @@ export function AvatarSession({
   const { navigateHistory, resetHistory } = useMessageHistory(messages);
 
   // UI state
-  const [dock, setDock] = useState<DockMode>("right");
+  const [dock, setDock] = useState<DockMode>("bottom");
   const [expanded, setExpanded] = useState(false);
   const [floatingPos, setFloatingPos] = useState({ x: 24, y: 24 });
   const [chatInput, setChatInput] = useState("");
@@ -66,8 +65,14 @@ export function AvatarSession({
     void handleSendMessage(text);
   });
 
-  const startVoiceChatVoid = useMemoizedFn(() => {
-    void startVoiceChat();
+  const startVoiceChatVoid = useMemoizedFn(async () => {
+    try {
+      // Let the HeyGen SDK acquire the microphone itself so it can
+      // choose constraints that match its internal AudioContext.
+      await startVoiceChat({});
+    } catch (error) {
+      console.error("Failed to start voice chat:", error);
+    }
   });
 
   const stopVoiceChatVoid = useMemoizedFn(() => {
@@ -135,9 +140,9 @@ export function AvatarSession({
           <ConnectionIndicator sessionState={sessionState} />
         </div>
 
-        {isConnected && dock !== "right" && (
+        {dock !== "right" && (
           <DockablePanel
-            className="pointer-events-auto"
+            className="pointer-events-auto z-20"
             dock={dock}
             expanded={expanded}
             floatingPos={floatingPos}
@@ -145,30 +150,34 @@ export function AvatarSession({
             onFloatingPosChange={setFloatingPos}
             onToggleExpand={() => setExpanded((e) => !e)}
           >
-            {chatPanelContent}
+            {isConnected ? (
+              chatPanelContent
+            ) : (
+              <div className="flex items-center justify-center h-full">
+                <p className="text-white">Waiting to start session...</p>
+              </div>
+            )}
           </DockablePanel>
         )}
         {dock !== "right" && <AvatarControls stopSession={stopSession} />}
       </div>
 
       {dock === "right" ? (
-        isConnected ? (
-          <DockablePanel
-            className="py-4 px-2"
-            dock="right"
-            expanded={expanded}
-            onDockChange={setDock}
-            onToggleExpand={() => setExpanded((e) => !e)}
-          >
-            {chatPanelContent}
-          </DockablePanel>
-        ) : (
-          <Sidebar>
+        <DockablePanel
+          className="py-4 px-2 z-20 h-full"
+          dock="right"
+          expanded={expanded}
+          onDockChange={setDock}
+          onToggleExpand={() => setExpanded((e) => !e)}
+        >
+          {isConnected ? (
+            chatPanelContent
+          ) : (
             <div className="flex items-center justify-center h-full">
               <p className="text-white">Waiting to start session...</p>
             </div>
-          </Sidebar>
-        )
+          )}
+        </DockablePanel>
       ) : (
         // When not docked right, keep a slim placeholder to preserve layout on wide screens
         <div className="w-[8px]" />

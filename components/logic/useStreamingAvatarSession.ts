@@ -3,6 +3,7 @@ import StreamingAvatar, {
   StartAvatarRequest,
   StreamingEvents,
 } from "@heygen/streaming-avatar";
+import { useMemoizedFn } from "ahooks";
 import { useCallback } from "react";
 
 import {
@@ -38,6 +39,20 @@ export const useStreamingAvatarSession = () => {
   } = useVoiceChat();
 
   useMessageHistory(messages);
+
+  const getMicrophoneStream = useMemoizedFn(async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({
+        audio: true,
+        video: false,
+      });
+
+      return stream;
+    } catch (error) {
+      console.error("Error getting microphone access:", error);
+      throw error;
+    }
+  });
 
   const init = useCallback(
     (token: string) => {
@@ -158,6 +173,7 @@ export const useStreamingAvatarSession = () => {
     sessionState,
     stream,
     initAvatar: init,
+    getMicrophoneStream,
     startAvatar: start,
     stopAvatar: stop,
     startVoiceChat,

@@ -7,15 +7,16 @@ import remarkGfm from "remark-gfm"
 import { CodeBlock, CodeBlockCode } from "./code-block"
 
 export type MarkdownProps = {
-  children: string
+  children?: string | null
   id?: string
   className?: string
   components?: Partial<Components>
 }
 
-function parseMarkdownIntoBlocks(markdown: string): string[] {
-  const tokens = marked.lexer(markdown)
-  return tokens.map((token) => token.raw)
+function parseMarkdownIntoBlocks(markdown?: string | null): string[] {
+  const input = typeof markdown === "string" ? markdown : "";
+  const tokens = marked.lexer(input);
+  return tokens.map((token) => token.raw);
 }
 
 function extractLanguage(className?: string): string {
@@ -89,7 +90,10 @@ function MarkdownComponent({
 }: MarkdownProps) {
   const generatedId = useId()
   const blockId = id ?? generatedId
-  const blocks = useMemo(() => parseMarkdownIntoBlocks(children), [children])
+  const blocks = useMemo(
+    () => parseMarkdownIntoBlocks(children ?? ""),
+    [children]
+  )
 
   return (
     <div className={className}>
