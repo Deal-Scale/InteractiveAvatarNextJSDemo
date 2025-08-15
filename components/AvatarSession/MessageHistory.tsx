@@ -9,12 +9,13 @@ import {
   ChatContainerScrollAnchor,
 } from "@/components/ui/chat-container";
 import { Message, MessageContent } from "@/components/ui/message";
+import { ScrollButton } from "@/components/ui/scroll-button";
 
 export const MessageHistory: React.FC = () => {
   const { messages } = useMessageHistory();
 
   return (
-    <ChatContainerRoot className="w-[600px] text-white self-center max-h-[150px]">
+    <ChatContainerRoot className="relative w-[600px] text-white self-center max-h-[150px]">
       <ChatContainerContent>
         {messages.map((message) => (
           <Message
@@ -40,6 +41,7 @@ export const MessageHistory: React.FC = () => {
           </Message>
         ))}
       </ChatContainerContent>
+      <ScrollButton className="pointer-events-auto absolute bottom-3 right-3 shadow" />
       <ChatContainerScrollAnchor />
     </ChatContainerRoot>
   );
