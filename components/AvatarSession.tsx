@@ -1,20 +1,35 @@
-import { useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useMemoizedFn } from "ahooks";
+import {
+  Maximize2Icon,
+  Minimize2Icon,
+  MoveIcon,
+  PanelBottomOpenIcon,
+  PanelRightOpenIcon,
+} from "lucide-react";
 import { nanoid } from "nanoid";
 
 import { AvatarControls } from "./AvatarSession/AvatarControls";
 import { AvatarVideo } from "./AvatarSession/AvatarVideo";
 import { Chat } from "./AvatarSession/Chat";
 import ConnectionIndicator from "./AvatarSession/ConnectionIndicator";
+import { UserVideo } from "./AvatarSession/UserVideo";
 import { useMessageHistory } from "./logic/useMessageHistory";
 import { StreamingAvatarSessionState } from "./logic/context";
-// Removed ChatModeToggle to simplify UI: voice chat is controlled via mic button in Chat
-import { DockablePanel, DockMode } from "./ui/DockablePanel";
 
 import { useApiService } from "@/components/logic/ApiServiceContext";
+import { Button } from "@/components/ui/button";
+import {
+  ResizableHandle,
+  ResizablePanel,
+  ResizablePanelGroup,
+} from "@/components/ui/resizable";
 import { useVoiceChat } from "@/components/logic/useVoiceChat";
 import { useSessionStore } from "@/lib/stores/session";
 import { MessageSender } from "@/lib/types";
+import { cn } from "@/lib/utils";
+
+type DockMode = "right" | "bottom" | "floating";
 
 interface AvatarSessionProps {
   mediaStream: React.RefObject<HTMLVideoElement>;
@@ -31,12 +46,21 @@ export function AvatarSession({
   const { messages, addMessage } = useSessionStore();
   const { startVoiceChat, stopVoiceChat, isVoiceChatActive } = useVoiceChat();
   const { navigateHistory, resetHistory } = useMessageHistory(messages);
+  const [userVideoStream, setUserVideoStream] = useState<MediaStream | null>(
+    null,
+  );
 
   // UI state
   const [dock, setDock] = useState<DockMode>("bottom");
   const [expanded, setExpanded] = useState(false);
   const [floatingPos, setFloatingPos] = useState({ x: 24, y: 24 });
   const [chatInput, setChatInput] = useState("");
+  const panelRef = useRef<HTMLDivElement | null>(null);
+  const dragState = useRef<{
+    dragging: boolean;
+    offsetX: number;
+    offsetY: number;
+  }>({ dragging: false, offsetX: 0, offsetY: 0 });
 
   const isConnected = useMemo(
     () => sessionState === StreamingAvatarSessionState.CONNECTED,
@@ -67,9 +91,16 @@ export function AvatarSession({
 
   const startVoiceChatVoid = useMemoizedFn(async () => {
     try {
+
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: true,
+        audio: true,
+      });
+      setUserVideoStream(stream);
+
       // Let the HeyGen SDK acquire the microphone itself so it can
       // choose constraints that match its internal AudioContext.
-      await startVoiceChat({});
+      await startVoiceChat({ mediaStream: stream });
     } catch (error) {
       console.error("Failed to start voice chat:", error);
     }
@@ -77,6 +108,10 @@ export function AvatarSession({
 
   const stopVoiceChatVoid = useMemoizedFn(() => {
     stopVoiceChat();
+    if (userVideoStream) {
+      userVideoStream.getTracks().forEach((track) => track.stop());
+      setUserVideoStream(null);
+    }
   });
 
   // Auxiliary handlers required by Chat
@@ -113,75 +148,186 @@ export function AvatarSession({
     }
   });
 
-  const chatPanelContent = (
-    <>
-      <Chat
-        _onStartListening={handleStartListening}
-        _onStopListening={handleStopListening}
-        chatInput={chatInput}
-        isVoiceChatActive={isVoiceChatActive}
-        messages={messages}
-        onArrowDown={handleArrowDown}
-        onArrowUp={handleArrowUp}
-        onChatInputChange={setChatInput}
-        onCopy={handleCopy}
-        onSendMessage={sendMessageVoid}
-        onStartVoiceChat={startVoiceChatVoid}
-        onStopVoiceChat={stopVoiceChatVoid}
-      />
-    </>
+  const handlePointerDown = useCallback(
+    (e: React.PointerEvent) => {
+      if (dock !== "floating") return;
+      const el = panelRef.current;
+      if (!el) return;
+      dragState.current.dragging = true;
+      const rect = el.getBoundingClientRect();
+      dragState.current.offsetX = e.clientX - rect.left;
+      dragState.current.offsetY = e.clientY - rect.top;
+      (e.target as Element).setPointerCapture?.(e.pointerId);
+    },
+    [dock],
   );
 
-  return (
-    <div className="w-full flex flex-row gap-4">
-      <div className="relative w-full aspect-square bg-gray-900 rounded-lg overflow-hidden">
-        <AvatarVideo ref={mediaStream} />
-        <div className="absolute top-2 right-2 flex flex-col gap-2">
-          <ConnectionIndicator sessionState={sessionState} />
-        </div>
+  const handlePointerMove = useCallback(
+    (e: PointerEvent) => {
+      if (!dragState.current.dragging || dock !== "floating") return;
+      const parent = panelRef.current?.parentElement;
 
-        {dock !== "right" && (
-          <DockablePanel
-            className="pointer-events-auto z-20"
-            dock={dock}
-            expanded={expanded}
-            floatingPos={floatingPos}
-            onDockChange={setDock}
-            onFloatingPosChange={setFloatingPos}
-            onToggleExpand={() => setExpanded((e) => !e)}
-          >
-            {isConnected ? (
-              chatPanelContent
-            ) : (
-              <div className="flex items-center justify-center h-full">
-                <p className="text-white">Waiting to start session...</p>
-              </div>
-            )}
-          </DockablePanel>
+      if (!parent) return;
+
+      const parentRect = parent.getBoundingClientRect();
+      let x = e.clientX - parentRect.left - dragState.current.offsetX;
+      let y = e.clientY - parentRect.top - dragState.current.offsetY;
+      // clamp within parent
+      const el = panelRef.current;
+      const width = el?.offsetWidth ?? 0;
+      const height = el?.offsetHeight ?? 0;
+      x = Math.max(0, Math.min(x, parentRect.width - width));
+      y = Math.max(0, Math.min(y, parentRect.height - height));
+      setFloatingPos({ x, y });
+    },
+    [dock],
+  );
+
+  const handlePointerUp = useCallback(() => {
+    dragState.current.dragging = false;
+  }, []);
+
+  useEffect(() => {
+    window.addEventListener("pointermove", handlePointerMove);
+    window.addEventListener("pointerup", handlePointerUp);
+    return () => {
+      window.removeEventListener("pointermove", handlePointerMove);
+      window.removeEventListener("pointerup", handlePointerUp);
+    };
+  }, [handlePointerMove, handlePointerUp]);
+
+  const chatPanel = (
+    <div className="bg-gray-800/95 text-white rounded-lg shadow-lg border border-gray-700 overflow-hidden flex flex-col h-full w-full">
+      <div
+        className={cn(
+          "flex items-center justify-between gap-2 px-3 py-2 border-b border-gray-700 bg-gray-900/80",
+          dock === "floating" && "cursor-grab active:cursor-grabbing",
         )}
-        {dock !== "right" && <AvatarControls stopSession={stopSession} />}
+        onPointerDown={handlePointerDown}
+      >
+        <div className="flex items-center gap-2 text-xs text-gray-300">
+          <MoveIcon className="h-4 w-4" />
+          <span>Chat & Voice</span>
+        </div>
+        <div className="flex items-center gap-1">
+          <Button
+            size="icon"
+            variant="ghost"
+            title="Dock bottom"
+            onClick={() => setDock("bottom")}
+          >
+            <PanelBottomOpenIcon className="h-4 w-4" />
+          </Button>
+          <Button
+            size="icon"
+            variant="ghost"
+            title="Dock right"
+            onClick={() => setDock("right")}
+          >
+            <PanelRightOpenIcon className="h-4 w-4" />
+          </Button>
+          <Button
+            size="icon"
+            variant="ghost"
+            title="Float"
+            onClick={() => setDock("floating")}
+          >
+            <MoveIcon className="h-4 w-4" />
+          </Button>
+          <Button
+            size="icon"
+            variant="ghost"
+            title={expanded ? "Collapse" : "Expand"}
+            onClick={() => setExpanded((e) => !e)}
+          >
+            {expanded ? (
+              <Minimize2Icon className="h-4 w-4" />
+            ) : (
+              <Maximize2Icon className="h-4 w-4" />
+            )}
+          </Button>
+        </div>
       </div>
-
-      {dock === "right" ? (
-        <DockablePanel
-          className="py-4 px-2 z-20 h-full"
-          dock="right"
-          expanded={expanded}
-          onDockChange={setDock}
-          onToggleExpand={() => setExpanded((e) => !e)}
-        >
-          {isConnected ? (
-            chatPanelContent
-          ) : (
-            <div className="flex items-center justify-center h-full">
-              <p className="text-white">Waiting to start session...</p>
-            </div>
-          )}
-        </DockablePanel>
-      ) : (
-        // When not docked right, keep a slim placeholder to preserve layout on wide screens
-        <div className="w-[8px]" />
-      )}
+      <div
+        className={cn(
+          "flex flex-1 flex-col",
+          // Let inner containers manage their own scrolling (StickToBottom)
+          "min-h-0",
+        )}
+      >
+        {isConnected ? (
+          <Chat
+            _onStartListening={handleStartListening}
+            _onStopListening={handleStopListening}
+            chatInput={chatInput}
+            isVoiceChatActive={isVoiceChatActive}
+            messages={messages}
+            onArrowDown={handleArrowDown}
+            onArrowUp={handleArrowUp}
+            onChatInputChange={setChatInput}
+            onCopy={handleCopy}
+            onSendMessage={sendMessageVoid}
+            onStartVoiceChat={startVoiceChatVoid}
+            onStopVoiceChat={stopVoiceChatVoid}
+          />
+        ) : (
+          <div className="flex items-center justify-center h-full">
+            <p className="text-white">Waiting to start session...</p>
+          </div>
+        )}
+      </div>
     </div>
+  );
+
+  const avatarVideoPanel = (
+    <div className="relative w-full h-full bg-gray-900 rounded-lg overflow-hidden flex items-center justify-center">
+      <AvatarVideo ref={mediaStream} />
+      <div className="absolute top-4 right-4 flex flex-col gap-2">
+        <ConnectionIndicator sessionState={sessionState} />
+      </div>
+      {userVideoStream && (
+        <div className="absolute bottom-4 right-4 w-48 h-36 rounded-lg overflow-hidden border-2 border-gray-700">
+          <UserVideo userVideoStream={userVideoStream} />
+        </div>
+      )}
+      <AvatarControls stopSession={stopSession} />
+    </div>
+  );
+
+  if (dock === "floating") {
+    return (
+      <div className="w-full h-full">
+        {avatarVideoPanel}
+        <div
+          ref={panelRef}
+          className="pointer-events-auto z-20 absolute"
+          style={{
+            left: floatingPos.x,
+            top: floatingPos.y,
+            width: expanded ? 520 : 360,
+            height: expanded ? 520 : 340,
+          }}
+        >
+          {chatPanel}
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <ResizablePanelGroup
+      className="w-full h-full"
+      direction={dock === "right" ? "horizontal" : "vertical"}
+    >
+      <ResizablePanel defaultSize={75}>{avatarVideoPanel}</ResizablePanel>
+      <ResizableHandle withHandle />
+      <ResizablePanel
+        defaultSize={25}
+        maxSize={dock === "bottom" ? 50 : 40}
+        minSize={20}
+      >
+        {chatPanel}
+      </ResizablePanel>
+    </ResizablePanelGroup>
   );
 }

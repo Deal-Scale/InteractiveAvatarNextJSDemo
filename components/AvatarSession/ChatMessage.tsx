@@ -10,7 +10,6 @@ import {
   MessageContent,
 } from "@/components/ui/message";
 import { Message as MessageType, MessageSender } from "@/lib/types";
-import { cn } from "@/lib/utils";
 
 interface ChatMessageProps {
   message: MessageType;
@@ -18,31 +17,25 @@ interface ChatMessageProps {
 }
 
 const ChatMessage: React.FC<ChatMessageProps> = ({ message, onCopy }) => {
-  const isAvatar = message.sender === MessageSender.AVATAR;
-
   return (
     <Message
       key={message.id}
-      className={cn(
-        "flex gap-2",
-        isAvatar ? "items-start" : "items-end flex-row-reverse",
-      )}
+      className={`flex gap-2 ${message.sender === MessageSender.AVATAR ? "items-start" : "items-end flex-row-reverse"}`}
     >
       <MessageAvatar
-        alt={isAvatar ? "Avatar" : "User"}
-        fallback={isAvatar ? "A" : "U"}
-        src={isAvatar ? "/heygen-logo.png" : ""}
+        alt={message.sender === MessageSender.AVATAR ? "Avatar" : "User"}
+        fallback={message.sender === MessageSender.AVATAR ? "A" : "U"}
+        src={message.sender === MessageSender.AVATAR ? "/heygen-logo.png" : ""}
       />
       <div
-        className={cn(
-          "flex flex-col gap-1",
-          isAvatar ? "items-start" : "items-end",
-        )}
+        className={`flex flex-col gap-1 ${message.sender === MessageSender.AVATAR ? "items-start" : "items-end"}`}
       >
-        <p className="text-xs text-zinc-400">{isAvatar ? "Avatar" : "You"}</p>
+        <p className="text-xs text-zinc-400">
+          {message.sender === MessageSender.AVATAR ? "Avatar" : "You"}
+        </p>
         <MessageContent
           markdown
-          className={cn("text-sm", isAvatar ? "bg-zinc-700" : "bg-indigo-500")}
+          className={`text-sm ${message.sender === MessageSender.AVATAR ? "bg-zinc-700" : "bg-indigo-500"}`}
         >
           {message.content}
         </MessageContent>
