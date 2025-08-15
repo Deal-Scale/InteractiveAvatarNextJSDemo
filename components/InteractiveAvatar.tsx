@@ -10,18 +10,12 @@ import {
 import { useEffect, useRef, useState } from "react";
 import { useMemoizedFn, useUnmount } from "ahooks";
 
-import { Button } from "./Button";
-import { AvatarConfig } from "./AvatarConfig";
-import { AvatarVideo } from "./AvatarSession/AvatarVideo";
+import { StreamingAvatarProvider } from "./logic";
 import { useStreamingAvatarSession } from "./logic/useStreamingAvatarSession";
-import { useVoiceChat } from "./logic/useVoiceChat";
-import { StreamingAvatarProvider, StreamingAvatarSessionState } from "./logic";
-import { LoadingIcon } from "./Icons";
-import { Chat } from "./AvatarSession/Chat";
-import { ApiServiceProvider } from "./logic/ApiServiceContext";
+import { AvatarSession } from "./AvatarSession";
 
+import { ApiServiceProvider } from "@/components/logic/ApiServiceContext";
 import { AVATARS } from "@/app/lib/constants";
-import { ApiService } from "@/lib/services/api";
 import { HeyGenService } from "@/lib/services/heygen";
 
 const DEFAULT_CONFIG: StartAvatarRequest = {
@@ -43,12 +37,11 @@ const DEFAULT_CONFIG: StartAvatarRequest = {
 function InteractiveAvatar() {
   const { initAvatar, startAvatar, stopAvatar, sessionState, stream } =
     useStreamingAvatarSession();
-  const { startVoiceChat } = useVoiceChat();
 
   const [config, setConfig] = useState<StartAvatarRequest>(DEFAULT_CONFIG);
-  const [apiService, setApiService] = useState<ApiService | null>(null);
+  const [apiService, setApiService] = useState<HeyGenService | undefined>();
 
-  const mediaStream = useRef<HTMLVideoElement>(null);
+  const mediaStream = useRef<HTMLVideoElement | null>(null);
 
   async function fetchAccessToken() {
     try {
@@ -72,43 +65,44 @@ function InteractiveAvatar() {
       const avatar = initAvatar(newToken);
 
       const heygenService = new HeyGenService(avatar);
+
       setApiService(heygenService);
 
-      avatar.on(StreamingEvents.AVATAR_START_TALKING, (e) => {
+      avatar.on(StreamingEvents.AVATAR_START_TALKING, (e: any) => {
         console.log("Avatar started talking", e);
       });
-      avatar.on(StreamingEvents.AVATAR_STOP_TALKING, (e) => {
+      avatar.on(StreamingEvents.AVATAR_STOP_TALKING, (e: any) => {
         console.log("Avatar stopped talking", e);
       });
       avatar.on(StreamingEvents.STREAM_DISCONNECTED, () => {
         console.log("Stream disconnected");
       });
-      avatar.on(StreamingEvents.STREAM_READY, (event) => {
+      avatar.on(StreamingEvents.STREAM_READY, (event: any) => {
         console.log(">>>>> Stream ready:", event.detail);
       });
-      avatar.on(StreamingEvents.USER_START, (event) => {
+      avatar.on(StreamingEvents.USER_START, (event: any) => {
         console.log(">>>>> User started talking:", event);
       });
-      avatar.on(StreamingEvents.USER_STOP, (event) => {
+      avatar.on(StreamingEvents.USER_STOP, (event: any) => {
         console.log(">>>>> User stopped talking:", event);
       });
-      avatar.on(StreamingEvents.USER_END_MESSAGE, (event) => {
+      avatar.on(StreamingEvents.USER_END_MESSAGE, (event: any) => {
         console.log(">>>>> User end message:", event);
       });
-      avatar.on(StreamingEvents.USER_TALKING_MESSAGE, (event) => {
+      avatar.on(StreamingEvents.USER_TALKING_MESSAGE, (event: any) => {
         console.log(">>>>> User talking message:", event);
       });
-      avatar.on(StreamingEvents.AVATAR_TALKING_MESSAGE, (event) => {
+      avatar.on(StreamingEvents.AVATAR_TALKING_MESSAGE, (event: any) => {
         console.log(">>>>> Avatar talking message:", event);
       });
-      avatar.on(StreamingEvents.AVATAR_END_MESSAGE, (event) => {
+      avatar.on(StreamingEvents.AVATAR_END_MESSAGE, (event: any) => {
         console.log(">>>>> Avatar end message:", event);
       });
 
       await startAvatar(config);
 
       if (isVoiceChat) {
-        await startVoiceChat();
+        await heygenService.voiceChat.start();
       }
     } catch (error) {
       console.error("Error starting avatar session:", error);
@@ -117,7 +111,7 @@ function InteractiveAvatar() {
 
   const stopSession = useMemoizedFn(() => {
     stopAvatar().then(() => {
-      setApiService(null);
+      setApiService(undefined);
     });
   });
 
@@ -135,36 +129,18 @@ function InteractiveAvatar() {
   }, [mediaStream, stream]);
 
   return (
-    <ApiServiceProvider service={apiService}>
-      <div className="w-full flex flex-col gap-4">
-      <div className="flex flex-col rounded-xl bg-zinc-900 overflow-hidden">
-        <div className="relative w-full aspect-video overflow-hidden flex flex-col items-center justify-center">
-          {sessionState !== StreamingAvatarSessionState.INACTIVE ? (
-            <AvatarVideo ref={mediaStream} />
-          ) : (
-            <AvatarConfig config={config} onConfigChange={setConfig} />
-          )}
-        </div>
-        <div className="flex flex-col gap-3 items-center justify-center p-4 border-t border-zinc-700 w-full">
-          {sessionState === StreamingAvatarSessionState.CONNECTED ? (
-            <Button onClick={stopSession}>Stop</Button>
-          ) : sessionState === StreamingAvatarSessionState.INACTIVE ? (
-            <div className="flex flex-row gap-4">
-              <Button onClick={() => startSessionV2(true)}>
-                Start Voice Chat
-              </Button>
-              <Button onClick={() => startSessionV2(false)}>
-                Start Text Chat
-              </Button>
-            </div>
-          ) : (
-            <LoadingIcon />
-          )}
-        </div>
-      </div>
-      {sessionState === StreamingAvatarSessionState.CONNECTED && <Chat />}
-      </div>
-    </ApiServiceProvider>
+    <div className="w-full flex flex-col gap-4">
+      <ApiServiceProvider service={apiService ?? null}>
+        <AvatarSession
+          config={config}
+          mediaStream={mediaStream as React.RefObject<HTMLVideoElement>}
+          sessionState={sessionState}
+          setConfig={setConfig}
+          startSessionV2={startSessionV2}
+          stopSession={stopSession}
+        />
+      </ApiServiceProvider>
+    </div>
   );
 }
 

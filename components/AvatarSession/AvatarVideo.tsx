@@ -7,7 +7,7 @@ import { StreamingAvatarSessionState } from "../logic";
 import { CloseIcon } from "../Icons";
 import { Button } from "../Button";
 
-export const AvatarVideo = forwardRef<HTMLVideoElement>(({}, ref) => {
+export const AvatarVideo = forwardRef<HTMLVideoElement>((props, ref) => {
   const { sessionState, stopAvatar } = useStreamingAvatarSession();
   const { connectionQuality } = useConnectionQuality();
 

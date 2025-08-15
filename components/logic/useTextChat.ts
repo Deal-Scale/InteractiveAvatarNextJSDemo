@@ -6,28 +6,28 @@ export const useTextChat = () => {
 
   const sendMessage = useCallback(
     (message: string) => {
-      apiService?.sendMessage(message);
+      apiService?.textChat.sendMessage(message);
     },
     [apiService]
   );
 
   const sendMessageSync = useCallback(
     async (message: string) => {
-      return await apiService?.sendMessageSync(message);
+      return await apiService?.textChat.sendMessageSync(message);
     },
     [apiService]
   );
 
   const repeatMessage = useCallback(
     (message: string) => {
-      apiService?.repeatMessage(message);
+      apiService?.textChat.repeatMessage(message);
     },
     [apiService]
   );
 
   const repeatMessageSync = useCallback(
     async (message: string) => {
-      return await apiService?.repeatMessageSync(message);
+      return await apiService?.textChat.repeatMessageSync(message);
     },
     [apiService]
   );

@@ -18,11 +18,15 @@ import { AVATARS, STT_LANGUAGE_LIST } from "@/app/lib/constants";
 interface AvatarConfigProps {
   onConfigChange: (config: StartAvatarRequest) => void;
   config: StartAvatarRequest;
+  isConnecting: boolean;
+  startSession: (isVoiceChat: boolean) => void;
 }
 
 export const AvatarConfig: React.FC<AvatarConfigProps> = ({
   onConfigChange,
   config,
+  isConnecting,
+  startSession,
 }) => {
   const onChange = <T extends keyof StartAvatarRequest>(
     key: T,
@@ -181,6 +185,23 @@ export const AvatarConfig: React.FC<AvatarConfigProps> = ({
           </Field>
         </>
       )}
+      <div className="mt-2 flex items-center gap-3">
+        <button
+          className="px-4 py-2 rounded-md bg-emerald-600 text-white disabled:opacity-50"
+          onClick={() => startSession(true)}
+          disabled={isConnecting}
+        >
+          {isConnecting ? "Connecting..." : "Start Voice Session"}
+        </button>
+        <button
+          className="px-4 py-2 rounded-md bg-blue-600 text-white disabled:opacity-50"
+          onClick={() => startSession(false)}
+          disabled={isConnecting}
+        >
+          {isConnecting ? "Connecting..." : "Start Text Session"}
+        </button>
+      </div>
+
       <button
         className="text-zinc-400 text-sm cursor-pointer w-full text-center bg-transparent"
         onClick={() => setShowMore(!showMore)}
