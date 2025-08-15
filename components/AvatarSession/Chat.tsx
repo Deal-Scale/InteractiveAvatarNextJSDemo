@@ -22,13 +22,10 @@ import {
 } from "@/components/ui/prompt-input";
 import { ScrollButton } from "@/components/ui/scroll-button";
 import { Button } from "@/components/ui/button";
-
 import { Message as MessageType, MessageSender } from "@/lib/types";
-import { ChatMode } from "@/lib/stores/session";
 
 interface ChatProps {
   chatInput: string;
-  chatMode: ChatMode;
   isVoiceChatActive: boolean;
   messages: MessageType[];
   onArrowDown: () => void;
@@ -44,7 +41,6 @@ interface ChatProps {
 
 export const Chat: React.FC<ChatProps> = ({
   chatInput,
-  chatMode,
   isVoiceChatActive,
   messages,
   onArrowDown,
@@ -126,39 +122,44 @@ export const Chat: React.FC<ChatProps> = ({
           <ScrollButton className="shadow-sm" />
         </div>
       </ChatContainerRoot>
-      {chatMode === "text" && (
-        <PromptInput
-          className="w-full mt-4"
-          value={chatInput}
-          onValueChange={onChatInputChange}
-          onSubmit={() => onSendMessage(chatInput)}
-        >
-          <div className="flex items-end gap-2">
-            <PromptInputTextarea
-              className="flex-grow"
-              placeholder="Type a message..."
-            />
-            <PromptInputActions>
-              <PromptInputAction tooltip="Send message">
-                <Button size="icon" type="submit">
-                  <SendIcon />
-                </Button>
-              </PromptInputAction>
-            </PromptInputActions>
-          </div>
-        </PromptInput>
-      )}
-      {chatMode === "voice" && (
-        <div className="flex items-center justify-center mt-4">
-          <Button
-            className={isVoiceChatActive ? "bg-red-500" : "bg-green-500"}
-            size="icon"
-            onClick={isVoiceChatActive ? onStopVoiceChat : onStartVoiceChat}
-          >
-            {isVoiceChatActive ? <MicOffIcon /> : <MicIcon />}
-          </Button>
+      <PromptInput
+        className="w-full mt-4"
+        value={chatInput}
+        onValueChange={onChatInputChange}
+        onSubmit={() => onSendMessage(chatInput)}
+      >
+        <div className="flex items-end gap-2">
+          <PromptInputTextarea
+            className="flex-grow"
+            disabled={isVoiceChatActive}
+            placeholder="Type a message..."
+          />
+          <PromptInputActions>
+            <PromptInputAction
+              tooltip={
+                isVoiceChatActive ? "Stop voice chat" : "Start voice chat"
+              }
+            >
+              <Button
+                size="icon"
+                variant={isVoiceChatActive ? "destructive" : "default"}
+                onClick={isVoiceChatActive ? onStopVoiceChat : onStartVoiceChat}
+              >
+                {isVoiceChatActive ? (
+                  <MicOffIcon className="h-4 w-4" />
+                ) : (
+                  <MicIcon className="h-4 w-4" />
+                )}
+              </Button>
+            </PromptInputAction>
+            <PromptInputAction tooltip="Send message">
+              <Button size="icon" type="submit" disabled={isVoiceChatActive}>
+                <SendIcon />
+              </Button>
+            </PromptInputAction>
+          </PromptInputActions>
         </div>
-      )}
+      </PromptInput>
     </div>
   );
 };

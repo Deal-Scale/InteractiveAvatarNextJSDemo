@@ -8,7 +8,7 @@ import { Chat } from "./AvatarSession/Chat";
 import ConnectionIndicator from "./AvatarSession/ConnectionIndicator";
 import { useMessageHistory } from "./logic/useMessageHistory";
 import { StreamingAvatarSessionState } from "./logic/context";
-import { ChatModeToggle } from "./ui/ChatModeToggle";
+// Removed ChatModeToggle to simplify UI: voice chat is controlled via mic button in Chat
 import { DockablePanel, DockMode } from "./ui/DockablePanel";
 import { Sidebar } from "./ui/sidebar";
 
@@ -29,7 +29,7 @@ export function AvatarSession({
   sessionState,
 }: AvatarSessionProps) {
   const { apiService } = useApiService();
-  const { chatMode, setChatMode, messages, addMessage } = useSessionStore();
+  const { messages, addMessage } = useSessionStore();
   const { startVoiceChat, stopVoiceChat, isVoiceChatActive } = useVoiceChat();
   const { navigateHistory, resetHistory } = useMessageHistory(messages);
 
@@ -108,6 +108,25 @@ export function AvatarSession({
     }
   });
 
+  const chatPanelContent = (
+    <>
+      <Chat
+        _onStartListening={handleStartListening}
+        _onStopListening={handleStopListening}
+        chatInput={chatInput}
+        isVoiceChatActive={isVoiceChatActive}
+        messages={messages}
+        onArrowDown={handleArrowDown}
+        onArrowUp={handleArrowUp}
+        onChatInputChange={setChatInput}
+        onCopy={handleCopy}
+        onSendMessage={sendMessageVoid}
+        onStartVoiceChat={startVoiceChatVoid}
+        onStopVoiceChat={stopVoiceChatVoid}
+      />
+    </>
+  );
+
   return (
     <div className="w-full flex flex-row gap-4">
       <div className="relative w-full aspect-square bg-gray-900 rounded-lg overflow-hidden">
@@ -126,28 +145,10 @@ export function AvatarSession({
             onFloatingPosChange={setFloatingPos}
             onToggleExpand={() => setExpanded((e) => !e)}
           >
-            <ChatModeToggle
-              chatMode={chatMode}
-              onChatModeChange={setChatMode}
-            />
-            <Chat
-              _onStartListening={handleStartListening}
-              _onStopListening={handleStopListening}
-              chatInput={chatInput}
-              chatMode={chatMode}
-              isVoiceChatActive={isVoiceChatActive}
-              messages={messages}
-              onArrowDown={handleArrowDown}
-              onArrowUp={handleArrowUp}
-              onChatInputChange={setChatInput}
-              onCopy={handleCopy}
-              onSendMessage={sendMessageVoid}
-              onStartVoiceChat={startVoiceChatVoid}
-              onStopVoiceChat={stopVoiceChatVoid}
-            />
-            <AvatarControls stopSession={stopSession} />
+            {chatPanelContent}
           </DockablePanel>
         )}
+        {dock !== "right" && <AvatarControls stopSession={stopSession} />}
       </div>
 
       {dock === "right" ? (
@@ -159,26 +160,7 @@ export function AvatarSession({
             onDockChange={setDock}
             onToggleExpand={() => setExpanded((e) => !e)}
           >
-            <ChatModeToggle
-              chatMode={chatMode}
-              onChatModeChange={setChatMode}
-            />
-            <Chat
-              _onStartListening={handleStartListening}
-              _onStopListening={handleStopListening}
-              chatInput={chatInput}
-              chatMode={chatMode}
-              isVoiceChatActive={isVoiceChatActive}
-              messages={messages}
-              onArrowDown={handleArrowDown}
-              onArrowUp={handleArrowUp}
-              onChatInputChange={setChatInput}
-              onCopy={handleCopy}
-              onSendMessage={sendMessageVoid}
-              onStartVoiceChat={startVoiceChatVoid}
-              onStopVoiceChat={stopVoiceChatVoid}
-            />
-            <AvatarControls stopSession={stopSession} />
+            {chatPanelContent}
           </DockablePanel>
         ) : (
           <Sidebar>
