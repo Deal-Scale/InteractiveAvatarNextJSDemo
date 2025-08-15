@@ -62,7 +62,7 @@ export const ChatInput: React.FC<ChatInputProps> = ({
   return (
     <PromptInput
       className="w-full mt-4"
-      disabled={isVoiceChatActive}
+      disabled={false}
       maxHeight={320}
       value={chatInput}
       onSubmit={() =>
