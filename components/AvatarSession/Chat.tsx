@@ -35,6 +35,7 @@ import {
 import { ScrollButton } from "@/components/ui/scroll-button";
 import { Button } from "@/components/ui/button";
 import { Message as MessageType, MessageSender } from "@/lib/types";
+import { useToast } from "@/components/ui/toaster";
 
 interface ChatProps {
   chatInput: string;
@@ -67,6 +68,7 @@ export const Chat: React.FC<ChatProps> = ({
 }) => {
   useKeyPress("ArrowUp", onArrowUp);
   useKeyPress("ArrowDown", onArrowDown);
+  const { publish } = useToast();
 
   // Local UI state for attachments and suggestions
   const fileInputRef = useRef<HTMLInputElement | null>(null);
@@ -125,8 +127,10 @@ export const Chat: React.FC<ChatProps> = ({
       }, 1500);
       console.debug("[Chat] message copied", { id });
       onCopy(content);
+      publish({ title: "Copied", description: "Message copied to clipboard." });
     } catch (e) {
       console.error("[Chat] copy failed", e);
+      publish({ title: "Copy failed", description: "Could not copy to clipboard.", duration: 4000 });
     }
   };
 
@@ -171,6 +175,7 @@ export const Chat: React.FC<ChatProps> = ({
     setIsEditing(false);
     setEditingMessageId(null);
     onChatInputChange("");
+    publish({ title: "Edited", description: "Edited message sent." });
   };
 
   return (
@@ -218,46 +223,63 @@ export const Chat: React.FC<ChatProps> = ({
                   {message.content}
                 </MessageContent>
                 <MessageActions>
-                  <MessageAction tooltip={lastCopiedId === message.id ? "Copied!" : "Copy message"}>
-                    <Button
-                      aria-label="Copy message"
-                      size="icon"
-                      variant="ghost"
-                      onClick={() => handleCopy(message.id, message.content)}
-                    >
-                      <ClipboardCopy className="h-4 w-4" />
-                    </Button>
-                  </MessageAction>
-                  <MessageAction tooltip={voteState[message.id] === "up" ? "Upvoted" : "Upvote response"}>
-                    <Button
-                      aria-label="Upvote response"
-                      size="icon"
-                      variant={voteState[message.id] === "up" ? "secondary" : "ghost"}
-                      onClick={() => setVote(message.id, "up")}
-                    >
-                      <ThumbsUp className="h-4 w-4" />
-                    </Button>
-                  </MessageAction>
-                  <MessageAction tooltip={voteState[message.id] === "down" ? "Downvoted" : "Downvote response"}>
-                    <Button
-                      aria-label="Downvote response"
-                      size="icon"
-                      variant={voteState[message.id] === "down" ? "secondary" : "ghost"}
-                      onClick={() => setVote(message.id, "down")}
-                    >
-                      <ThumbsDown className="h-4 w-4" />
-                    </Button>
-                  </MessageAction>
-                  <MessageAction tooltip="Edit into input">
-                    <Button
-                      aria-label="Edit into input"
-                      size="icon"
-                      variant="ghost"
-                      onClick={() => handleEditToInput(message.content, message.id)}
-                    >
-                      <Pencil className="h-4 w-4" />
-                    </Button>
-                  </MessageAction>
+                  {message.sender === MessageSender.AVATAR ? (
+                    <>
+                      <MessageAction tooltip={lastCopiedId === message.id ? "Copied!" : "Copy message"}>
+                        <Button
+                          aria-label="Copy message"
+                          size="icon"
+                          variant="ghost"
+                          onClick={() => handleCopy(message.id, message.content)}
+                        >
+                          <ClipboardCopy className="h-4 w-4" />
+                        </Button>
+                      </MessageAction>
+                      <MessageAction tooltip={voteState[message.id] === "up" ? "Upvoted" : "Upvote response"}>
+                        <Button
+                          aria-label="Upvote response"
+                          size="icon"
+                          variant={voteState[message.id] === "up" ? "secondary" : "ghost"}
+                          onClick={() => setVote(message.id, "up")}
+                        >
+                          <ThumbsUp className="h-4 w-4" />
+                        </Button>
+                      </MessageAction>
+                      <MessageAction tooltip={voteState[message.id] === "down" ? "Downvoted" : "Downvote response"}>
+                        <Button
+                          aria-label="Downvote response"
+                          size="icon"
+                          variant={voteState[message.id] === "down" ? "secondary" : "ghost"}
+                          onClick={() => setVote(message.id, "down")}
+                        >
+                          <ThumbsDown className="h-4 w-4" />
+                        </Button>
+                      </MessageAction>
+                    </>
+                  ) : (
+                    <>
+                      <MessageAction tooltip={lastCopiedId === message.id ? "Copied!" : "Copy message"}>
+                        <Button
+                          aria-label="Copy message"
+                          size="icon"
+                          variant="ghost"
+                          onClick={() => handleCopy(message.id, message.content)}
+                        >
+                          <ClipboardCopy className="h-4 w-4" />
+                        </Button>
+                      </MessageAction>
+                      <MessageAction tooltip="Edit into input">
+                        <Button
+                          aria-label="Edit into input"
+                          size="icon"
+                          variant="ghost"
+                          onClick={() => handleEditToInput(message.content, message.id)}
+                        >
+                          <Pencil className="h-4 w-4" />
+                        </Button>
+                      </MessageAction>
+                    </>
+                  )}
                 </MessageActions>
               </div>
             </Message>
