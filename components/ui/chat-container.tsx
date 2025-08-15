@@ -29,8 +29,8 @@ function ChatContainerRoot({
     <StickToBottom
       className={cn(
         // Make root act as the scroll container and fill available space
-        "flex h-full w-full min-h-0 flex-col overflow-y-auto overflow-x-auto",
-        className,
+        "flex w-full min-h-0 flex-col overflow-y-auto overflow-x-auto",
+        className
       )}
       initial="instant"
       resize="smooth"

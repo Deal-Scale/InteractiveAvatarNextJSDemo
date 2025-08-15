@@ -147,17 +147,21 @@ function InteractiveAvatarCore() {
   );
 
   return (
-    <div className="w-full flex flex-col gap-4">
-      <SessionConfigModal
-        initialConfig={DEFAULT_CONFIG}
-        isConnecting={isConnecting}
-        startSession={startSessionV2}
-      />
-      <AvatarSession
-        mediaStream={mediaStreamRef}
-        sessionState={sessionState}
-        stopSession={stopSessionV2}
-      />
+    <div className="w-full h-screen relative bg-black">
+      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-10">
+        <SessionConfigModal
+          initialConfig={DEFAULT_CONFIG}
+          isConnecting={isConnecting}
+          startSession={startSessionV2}
+        />
+      </div>
+      <div className="w-full h-full">
+        <AvatarSession
+          mediaStream={mediaStreamRef}
+          sessionState={sessionState}
+          stopSession={stopSessionV2}
+        />
+      </div>
       {/* Floating Settings Button */}
       <div className="fixed bottom-6 right-6 z-50">
         <Button
