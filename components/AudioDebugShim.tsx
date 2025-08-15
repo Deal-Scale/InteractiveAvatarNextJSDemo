@@ -109,6 +109,7 @@ export default function AudioDebugShim() {
         ?.createMediaStreamSource;
       if (OriginalCreate && !OriginalCreate.__WRAPPED) {
         (window as any).AudioContext.prototype.createMediaStreamSource = function (
+          this: BaseAudioContext,
           stream: MediaStream,
         ) {
           try {

@@ -88,7 +88,7 @@ function PromptSuggestion({
           const after = content.substring(index + actualHighlightedText.length)
 
           return (
-            <>
+            <span>
               {before && (
                 <span className="text-muted-foreground whitespace-pre-wrap">
                   {before}
@@ -102,7 +102,7 @@ function PromptSuggestion({
                   {after}
                 </span>
               )}
-            </>
+            </span>
           )
         })()
       ) : (

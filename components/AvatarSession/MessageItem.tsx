@@ -1,0 +1,114 @@
+import { ClipboardCopy, ThumbsUp, ThumbsDown, Pencil } from "lucide-react";
+import { Message as MessageType, MessageSender } from "@/lib/types";
+import { Button } from "@/components/ui/button";
+import {
+  Message,
+  MessageAction,
+  MessageActions,
+  MessageAvatar,
+  MessageContent,
+} from "@/components/ui/message";
+
+interface MessageItemProps {
+  message: MessageType;
+  lastCopiedId: string | null;
+  voteState: Record<string, "up" | "down" | null>;
+  handleCopy: (id: string, content: string) => void;
+  setVote: (id: string, dir: "up" | "down") => void;
+  handleEditToInput: (content: string, id: string) => void;
+}
+
+export const MessageItem: React.FC<MessageItemProps> = ({ message, lastCopiedId, voteState, handleCopy, setVote, handleEditToInput }) => {
+  return (
+    <Message
+      key={message.id}
+      className={`flex gap-2 ${
+        message.sender === MessageSender.AVATAR
+          ? "items-start"
+          : "items-end flex-row-reverse"
+      }`}
+    >
+      <MessageAvatar
+        alt={message.sender === MessageSender.AVATAR ? "Avatar" : "User"}
+        fallback={message.sender === MessageSender.AVATAR ? "A" : "U"}
+        src={message.sender === MessageSender.AVATAR ? "/heygen-logo.png" : ""}
+      />
+      <div
+        className={`flex flex-col gap-1 ${
+          message.sender === MessageSender.AVATAR ? "items-start" : "items-end"
+        }`}
+      >
+        <p className="text-xs text-zinc-400">
+          {message.sender === MessageSender.AVATAR ? "Avatar" : "You"}
+        </p>
+        <MessageContent
+          markdown
+          className={`text-sm ${
+            message.sender === MessageSender.AVATAR ? "bg-zinc-700" : "bg-indigo-500"
+          }`}
+        >
+          {message.content}
+        </MessageContent>
+        <MessageActions>
+          {message.sender === MessageSender.AVATAR ? (
+            <>
+              <MessageAction tooltip={lastCopiedId === message.id ? "Copied!" : "Copy message"}>
+                <Button
+                  aria-label="Copy message"
+                  size="icon"
+                  variant="ghost"
+                  onClick={() => handleCopy(message.id, message.content)}
+                >
+                  <ClipboardCopy className="h-4 w-4" />
+                </Button>
+              </MessageAction>
+              <MessageAction tooltip={voteState[message.id] === "up" ? "Upvoted" : "Upvote response"}>
+                <Button
+                  aria-label="Upvote response"
+                  size="icon"
+                  variant={voteState[message.id] === "up" ? "secondary" : "ghost"}
+                  onClick={() => setVote(message.id, "up")}
+                >
+                  <ThumbsUp className="h-4 w-4" />
+                </Button>
+              </MessageAction>
+              <MessageAction tooltip={voteState[message.id] === "down" ? "Downvoted" : "Downvote response"}>
+                <Button
+                  aria-label="Downvote response"
+                  size="icon"
+                  variant={voteState[message.id] === "down" ? "secondary" : "ghost"}
+                  onClick={() => setVote(message.id, "down")}
+                >
+                  <ThumbsDown className="h-4 w-4" />
+                </Button>
+              </MessageAction>
+            </>
+          ) : (
+            <>
+              <MessageAction tooltip={lastCopiedId === message.id ? "Copied!" : "Copy message"}>
+                <Button
+                  aria-label="Copy message"
+                  size="icon"
+                  variant="ghost"
+                  onClick={() => handleCopy(message.id, message.content)}
+                >
+                  <ClipboardCopy className="h-4 w-4" />
+                </Button>
+              </MessageAction>
+              <MessageAction tooltip="Edit into input">
+                <Button
+                  aria-label="Edit into input"
+                  size="icon"
+                  variant="ghost"
+                  onClick={() => handleEditToInput(message.content, message.id)}
+                >
+                  <Pencil className="h-4 w-4" />
+                </Button>
+              </MessageAction>
+            </>
+          )}
+        </MessageActions>
+      </div>
+    </Message>
+  );
+};
