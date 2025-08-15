@@ -11,7 +11,6 @@ import { nanoid } from "nanoid";
 
 import { AvatarControls } from "./AvatarSession/AvatarControls";
 import { AvatarVideo } from "./AvatarSession/AvatarVideo";
-import { Chat } from "./AvatarSession/Chat";
 import ConnectionIndicator from "./AvatarSession/ConnectionIndicator";
 import { UserVideo } from "./AvatarSession/UserVideo";
 import { useMessageHistory } from "./logic/useMessageHistory";
@@ -25,6 +24,7 @@ import { useSessionStore } from "@/lib/stores/session";
 import { MessageSender } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { Loader } from "@/components/ui/loader";
+import { Chat } from "./AvatarSession/Chat";
 
 type DockMode = "right" | "bottom" | "floating";
 
@@ -52,6 +52,7 @@ export function AvatarSession({
   const [expanded, setExpanded] = useState(false);
   const [floatingPos, setFloatingPos] = useState({ x: 24, y: 24 });
   const [chatInput, setChatInput] = useState("");
+  const [isSending, setIsSending] = useState(false);
   const panelRef = useRef<HTMLDivElement | null>(null);
   const rootRef = useRef<HTMLDivElement | null>(null);
   const dragState = useRef<{
@@ -81,6 +82,7 @@ export function AvatarSession({
       length: text.length,
     });
 
+    setIsSending(true);
     addMessage({
       id: nanoid(),
       content: text,
@@ -100,6 +102,7 @@ export function AvatarSession({
     }
     resetHistory();
     setChatInput("");
+    setIsSending(false);
   });
 
   // Wrap async handlers to match Chat's expected void return types
@@ -141,14 +144,6 @@ export function AvatarSession({
       // no-op fallback
       console.error("Copy failed", e);
     }
-  });
-
-  const handleStartListening = useMemoizedFn(() => {
-    // placeholder: integrate speech recognition if/when available
-  });
-
-  const handleStopListening = useMemoizedFn(() => {
-    // placeholder: integrate speech recognition if/when available
   });
 
   const handleArrowUp = useMemoizedFn(() => {
@@ -275,24 +270,24 @@ export function AvatarSession({
         <div className="flex items-center gap-1">
           <Button
             size="icon"
-            variant="ghost"
             title="Dock bottom"
+            variant="ghost"
             onClick={() => setDock("bottom")}
           >
             <PanelBottomOpenIcon className="h-4 w-4" />
           </Button>
           <Button
             size="icon"
-            variant="ghost"
             title="Dock right"
+            variant="ghost"
             onClick={() => setDock("right")}
           >
             <PanelRightOpenIcon className="h-4 w-4" />
           </Button>
           <Button
             size="icon"
-            variant="ghost"
             title="Float"
+            variant="ghost"
             onClick={() => setDock("floating")}
           >
             <MoveIcon className="h-4 w-4" />
@@ -300,8 +295,8 @@ export function AvatarSession({
           {dock === "floating" && (
             <Button
               size="icon"
-              variant="ghost"
               title={expanded ? "Collapse" : "Expand"}
+              variant="ghost"
               onClick={() => setExpanded((e) => !e)}
             >
               {expanded ? (
@@ -322,9 +317,8 @@ export function AvatarSession({
       >
         {isConnected ? (
           <Chat
-            _onStartListening={handleStartListening}
-            _onStopListening={handleStopListening}
             chatInput={chatInput}
+            isSending={isSending}
             isVoiceChatActive={isVoiceChatActive}
             messages={messages}
             onArrowDown={handleArrowDown}
@@ -338,7 +332,7 @@ export function AvatarSession({
         ) : (
           <div className="flex flex-1 items-center justify-center h-full">
             <div className="flex flex-col items-center gap-3 text-white">
-              <Loader variant="spinner" size="lg" />
+              <Loader variant="classic" size="lg" />
               <p className="text-sm text-zinc-300">
                 {sessionState === StreamingAvatarSessionState.CONNECTING
                   ? "Connecting to avatar session..."

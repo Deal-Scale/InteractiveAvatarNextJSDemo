@@ -1,7 +1,6 @@
 import React from "react";
-
 import { MessageSender } from "@/lib/types";
-import { useMessageHistory } from "../logic/useMessageHistory";
+import { useSessionStore } from "@/lib/stores/session";
 
 import {
   ChatContainerContent,
@@ -12,7 +11,7 @@ import { Message, MessageContent } from "@/components/ui/message";
 import { ScrollButton } from "@/components/ui/scroll-button";
 
 export const MessageHistory: React.FC = () => {
-  const { messages } = useMessageHistory();
+  const messages = useSessionStore((s) => s.messages);
 
   return (
     <ChatContainerRoot className="relative w-[600px] text-white self-center max-h-[150px]">
@@ -46,3 +45,4 @@ export const MessageHistory: React.FC = () => {
     </ChatContainerRoot>
   );
 };
+
