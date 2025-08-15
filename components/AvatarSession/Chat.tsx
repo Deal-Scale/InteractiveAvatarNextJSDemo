@@ -3,7 +3,6 @@ import React, { useMemo, useRef, useState } from "react";
 
 import { ChatInput } from "./ChatInput";
 import { MessageItem } from "./MessageItem";
-import { PromptSuggestions } from "./PromptSuggestions";
 import { formatAttachmentSummary } from "./utils";
 
 import { useStreamingAvatarContext } from "@/components/logic/context";
@@ -220,6 +219,7 @@ export const Chat: React.FC<ChatProps> = ({
         isSending={isSending}
         isVoiceChatActive={isVoiceChatActive}
         isVoiceChatLoading={isVoiceChatLoading}
+        promptSuggestions={promptSuggestions}
         cancelEdit={cancelEdit}
         confirmEdit={confirmEdit}
         handleFilesSelected={handleFilesSelected}
@@ -230,14 +230,6 @@ export const Chat: React.FC<ChatProps> = ({
         removeAttachment={removeAttachment}
         sendWithAttachments={sendWithAttachments}
       />
-      <div className="mt-4">
-        <PromptSuggestions
-          chatInput={chatInput}
-          isVoiceChatActive={isVoiceChatActive}
-          promptSuggestions={promptSuggestions}
-          onChatInputChange={onChatInputChange}
-        />
-      </div>
     </div>
   );
 };
