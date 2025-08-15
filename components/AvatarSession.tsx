@@ -74,13 +74,28 @@ export function AvatarSession({
       return;
     }
 
+    const startTs = performance.now();
+    console.debug("[Chat] send(start)", {
+      text: text.slice(0, 200),
+      length: text.length,
+    });
+
     addMessage({
       id: nanoid(),
       content: text,
       sender: MessageSender.CLIENT,
     });
-    if (apiService) {
-      await apiService.textChat.sendMessageSync(text);
+    try {
+      if (apiService) {
+        await apiService.textChat.sendMessageSync(text);
+      } else {
+        console.warn("[Chat] send(no apiService)");
+      }
+      const dur = Math.round(performance.now() - startTs);
+      console.debug("[Chat] send(success)", { durationMs: dur });
+    } catch (err) {
+      const dur = Math.round(performance.now() - startTs);
+      console.error("[Chat] send(error)", { durationMs: dur, error: err });
     }
     resetHistory();
     setChatInput("");
