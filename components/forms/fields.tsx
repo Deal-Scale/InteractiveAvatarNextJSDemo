@@ -1,7 +1,10 @@
 import React from "react";
 import { UseFormRegister } from "react-hook-form";
 
-export const SensitiveInput: React.FC<{ name: string; register: UseFormRegister<any> }> = ({ name, register }) => {
+export const SensitiveInput: React.FC<{
+  name: string;
+  register: UseFormRegister<any>;
+}> = ({ name, register }) => {
   const [show, setShow] = React.useState(false);
   return (
     <div className="relative">
@@ -12,8 +15,8 @@ export const SensitiveInput: React.FC<{ name: string; register: UseFormRegister<
       />
       <button
         className="absolute right-2 top-1/2 -translate-y-1/2 rounded-md border border-zinc-300 bg-white px-2 py-0.5 text-xs text-zinc-700 hover:bg-zinc-100 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-300 dark:hover:bg-zinc-700"
-        onClick={() => setShow((s) => !s)}
         type="button"
+        onClick={() => setShow((s) => !s)}
       >
         {show ? "Hide" : "Show"}
       </button>
