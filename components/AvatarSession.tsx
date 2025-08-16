@@ -76,6 +76,14 @@ export function AvatarSession({
     enableMockChatUi,
   });
 
+  // Open bottom chat expanded without selecting an avatar
+  const startWithoutAvatar = () => {
+    // Ensure docked at bottom and fully expanded
+    setDock("bottom");
+    setBottomSize(100);
+    if (!expanded) toggleExpand();
+  };
+
   // Auxiliary handlers provided by useChatController
 
   // (All dock/drag/resize effects moved into useDockablePanel)
@@ -107,8 +115,10 @@ export function AvatarSession({
   const avatarVideoPanel = (
     <AvatarVideoPanel
       mediaStream={mediaStream}
+      sessionState={sessionState}
       stopSession={stopSession}
       userVideoStream={userVideoStream}
+      onStartWithoutAvatar={startWithoutAvatar}
     />
   );
 
