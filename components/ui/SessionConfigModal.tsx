@@ -9,6 +9,7 @@ import { UserSettingsTab } from "../modals/session/UserSettingsTab";
 import { GlobalSettingsTab } from "../modals/session/GlobalSettingsTab";
 import { AgentSettingsTab } from "../modals/session/AgentSettingsTab";
 import { useDynamicOptions } from "../modals/session/hooks";
+import { PublishAgentModal } from "../modals/session/PublishAgentModal";
 import {
   applyUserSettingsToConfig,
   initFormsFromStorage,
@@ -49,6 +50,7 @@ export function SessionConfigModal({
   const [activeTab, setActiveTab] = useState<
     "session" | "global" | "user" | "agent"
   >("session");
+  const [isPublishOpen, setPublishOpen] = useState(false);
   const {
     avatarOptions,
     voiceOptions,
@@ -234,9 +236,22 @@ export function SessionConfigModal({
               mcpServerOptions={mcpServerOptions}
               languagesOptions={languagesOptions}
               onSubmit={saveAgentSettings as any}
+              onPublish={() => setPublishOpen(true)}
             />
           )}
         </div>
+        <PublishAgentModal
+          open={isPublishOpen}
+          onOpenChange={setPublishOpen}
+          onSubmit={(values) => {
+            try {
+              // Placeholder: integrate with your publish API or persistence
+              console.log("Publishing agent with public metadata:", values);
+            } finally {
+              setPublishOpen(false);
+            }
+          }}
+        />
       </DialogContent>
     </Dialog>
   );
