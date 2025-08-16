@@ -9,8 +9,7 @@ import {
   VoiceChatTransport,
   VoiceEmotion,
 } from "@heygen/streaming-avatar";
-import { nanoid } from "nanoid";
-import { Settings } from "lucide-react";
+// removed Settings icon (no longer used here)
 
 import { AvatarSession } from "./AvatarSession";
 import { StreamingAvatarProvider, StreamingAvatarSessionState } from "./logic";
@@ -19,7 +18,6 @@ import { SessionConfigModal } from "./ui/SessionConfigModal";
 
 import { AVATARS } from "@/app/lib/constants";
 import { ApiServiceProvider, useApiService } from "@/components/logic/ApiServiceContext";
-import { Button } from "@/components/ui/button";
 import { HeyGenService } from "@/lib/services/heygen";
 import { useSessionStore } from "@/lib/stores/session";
 import { MessageSender } from "@/lib/types";
@@ -51,7 +49,7 @@ function InteractiveAvatarCore() {
 
   const { setApiService } = useApiService();
 
-  const { appendMessageChunk, openConfigModal } = useSessionStore();
+  const { appendMessageChunk } = useSessionStore();
 
   const mediaStreamRef = useRef<HTMLVideoElement>(null!);
 
@@ -167,17 +165,7 @@ function InteractiveAvatarCore() {
           stopSession={stopSessionV2}
         />
       </div>
-      {/* Floating Settings Button */}
-      <div className="fixed bottom-6 right-6 z-50">
-        <Button
-          size="icon"
-          className="h-12 w-12 rounded-full shadow-lg bg-indigo-600 hover:bg-indigo-500"
-          onClick={openConfigModal}
-        >
-          <Settings className="h-6 w-6" />
-          <span className="sr-only">Open session settings</span>
-        </Button>
-      </div>
+      {/* Removed floating settings button (moved to bottom-left when sidebar collapsed) */}
     </div>
   );
 }
