@@ -563,7 +563,7 @@ const Sidebar: React.FC<SidebarProps> = ({ onSelect, apps }) => {
 
           {/* Conversations count above chats */}
           {!loading && (
-            <div className="px-2 pb-1 text-xs text-muted-foreground group-data-[state=collapsed]/sidebar:hidden">
+            <div className="px-2 pb-1 text-center text-xs text-muted-foreground group-data-[state=collapsed]/sidebar:hidden">
               {formatCompactNumber(totalCount)} conversations • {formatCompactNumber(archivedList.length)} archived
             </div>
           )}
@@ -615,21 +615,29 @@ const Sidebar: React.FC<SidebarProps> = ({ onSelect, apps }) => {
                               />
                             )}
                             <div className="min-w-0 flex-1 truncate pr-2">{conversation.title}</div>
-                            <button
-                              type="button"
+                            <span
+                              role="button"
+                              tabIndex={0}
                               onClick={(e) => {
                                 e.stopPropagation();
                                 openBookmarkModal(conversation.id);
                               }}
+                              onKeyDown={(e) => {
+                                if (e.key === "Enter" || e.key === " ") {
+                                  e.preventDefault();
+                                  e.stopPropagation();
+                                  openBookmarkModal(conversation.id);
+                                }
+                              }}
                               aria-label={isBookmarked ? "Edit bookmark" : "Add bookmark"}
-                              className="inline-flex items-center justify-center rounded p-1 text-muted-foreground hover:bg-muted"
+                              className="inline-flex cursor-pointer items-center justify-center rounded p-1 text-muted-foreground hover:bg-muted focus:outline-none focus:ring-2 focus:ring-primary/40"
                             >
                               {isBookmarked ? (
                                 <BookmarkCheck className="size-4 text-primary" />
                               ) : (
                                 <Bookmark className="size-4" />
                               )}
-                            </button>
+                            </span>
                           </div>
                         </SidebarMenuButton>
                       );
