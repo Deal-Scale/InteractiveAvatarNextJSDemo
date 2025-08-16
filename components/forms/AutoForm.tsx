@@ -94,8 +94,32 @@ export function AutoForm<TSchema extends z.ZodObject<any, any>>({
       );
     };
 
-    if (def instanceof z.ZodEnum) {
-      const raw = (def as any).options;
+    // Unwrap wrappers like Optional/Nullable/Default/Effects to detect the base type
+    const unwrap = (t: z.ZodTypeAny): z.ZodTypeAny => {
+      let cur = t as any;
+      // Iteratively unwrap known wrappers
+      // ZodOptional, ZodNullable, ZodDefault expose innerType; ZodEffects exposes schema
+      while (
+        cur?._def?.typeName === "ZodOptional" ||
+        cur?._def?.typeName === "ZodNullable" ||
+        cur?._def?.typeName === "ZodDefault" ||
+        cur?._def?.typeName === "ZodEffects"
+      ) {
+        if (cur?._def?.innerType) {
+          cur = cur._def.innerType;
+        } else if (cur?._def?.schema) {
+          cur = cur._def.schema;
+        } else {
+          break;
+        }
+      }
+      return cur as z.ZodTypeAny;
+    };
+
+    const base = unwrap(def);
+
+    if (base instanceof z.ZodEnum) {
+      const raw = (base as any).options;
       const values: unknown[] = Array.isArray(raw) ? raw : Object.values(raw ?? {});
       const stringValues = values.filter((v): v is string => typeof v === "string");
       const opts = stringValues.map((v) => ({ value: v, label: v }));
@@ -103,8 +127,28 @@ export function AutoForm<TSchema extends z.ZodObject<any, any>>({
       return renderSelect(opts, Boolean(cfg.multiple));
     }
 
-    if ((def as any)._def?.typeName === "ZodNativeEnum") {
-      const enumObj = (def as any)._def.values as Record<
+    // Support unions of enums/strings as select
+    if ((base as any)._def?.typeName === "ZodUnion") {
+      const options: z.ZodTypeAny[] = (base as any)._def?.options ?? [];
+      const stringVals: string[] = [];
+      for (const opt of options) {
+        if (opt instanceof z.ZodEnum) {
+          const raw = (opt as any).options;
+          const vals: unknown[] = Array.isArray(raw) ? raw : Object.values(raw ?? {});
+          for (const v of vals) if (typeof v === "string") stringVals.push(v);
+        } else if ((opt as any)._def?.typeName === "ZodNativeEnum") {
+          const enumObj = (opt as any)._def.values as Record<string, string | number>;
+          for (const v of Object.values(enumObj)) if (typeof v === "string") stringVals.push(v);
+        }
+      }
+      if (stringVals.length) {
+        const opts = Array.from(new Set(stringVals)).map((v) => ({ value: v, label: v }));
+        return renderSelect(opts, Boolean(cfg.multiple));
+      }
+    }
+
+    if ((base as any)._def?.typeName === "ZodNativeEnum") {
+      const enumObj = (base as any)._def.values as Record<
         string,
         string | number
       >;
@@ -117,8 +161,8 @@ export function AutoForm<TSchema extends z.ZodObject<any, any>>({
     }
 
     // ZodArray support (multi-select when element is enum or string with options)
-    if ((def as any)._def?.typeName === "ZodArray") {
-      const el = (def as any)._def.type as z.ZodTypeAny;
+    if ((base as any)._def?.typeName === "ZodArray") {
+      const el = (base as any)._def.type as z.ZodTypeAny;
       // Enum-based multi-select
       if (el instanceof z.ZodEnum) {
         const raw = (el as any).options;
@@ -160,7 +204,7 @@ export function AutoForm<TSchema extends z.ZodObject<any, any>>({
       }
     }
 
-    if ((def as any)._def?.typeName === "ZodBoolean") {
+    if ((base as any)._def?.typeName === "ZodBoolean") {
       // Support rendering boolean as a select dropdown when configured
       if ((cfg as any).widget === "select") {
         const current = (getValues() as any)[key] as boolean | undefined;
@@ -202,7 +246,7 @@ export function AutoForm<TSchema extends z.ZodObject<any, any>>({
       );
     }
 
-    if ((def as any)._def?.typeName === "ZodNumber") {
+    if ((base as any)._def?.typeName === "ZodNumber") {
       if (cfg.widget === "slider") {
         return (
           <div key={key} className="flex flex-col gap-1">
@@ -232,7 +276,7 @@ export function AutoForm<TSchema extends z.ZodObject<any, any>>({
       );
     }
 
-    if ((def as any)._def?.typeName === "ZodString") {
+    if ((base as any)._def?.typeName === "ZodString") {
       const stringDef = (def as any)._def as {
         description?: string;
         checks?: Array<{ kind: string; regex?: RegExp }>;
@@ -366,80 +410,9 @@ export function AutoForm<TSchema extends z.ZodObject<any, any>>({
               <legend className="px-1 text-xs uppercase tracking-wide text-zinc-500 dark:text-zinc-400">{key}</legend>
               <div className="space-y-2">
                 {Object.keys(innerShape).map((childKey) => {
-                  const childDef = innerShape[childKey];
                   const name = `${key}.${childKey}`;
-                  const childError = (formState.errors as any)?.[key]?.[childKey]?.message as string | undefined;
-
-                  // Native enum
-                  if ((childDef as any)?._def?.typeName === "ZodNativeEnum") {
-                    const enumObj = (childDef as any)._def.values as Record<string, string | number>;
-                    const values = Object.values(enumObj).filter((v) => typeof v === "string") as string[];
-                    const opts = values.map((v) => ({ value: v, label: v }));
-                    return (
-                      <div key={name} className="flex flex-col gap-1">
-                        <label className="text-sm text-zinc-600 dark:text-zinc-300">{childKey}</label>
-                        <select
-                          className="rounded-md border border-zinc-300 bg-white px-3 py-2 text-zinc-900 shadow-sm focus:outline-none focus:ring-2 focus:ring-zinc-500 focus:border-zinc-500 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100"
-                          defaultValue=""
-                          {...register(name as any)}
-                        >
-                          <option disabled value="">
-                            Select {childKey}
-                          </option>
-                          {opts.map((o) => (
-                            <option key={o.value} value={o.value}>
-                              {o.label}
-                            </option>
-                          ))}
-                        </select>
-                        {childError && (
-                          <span className="text-xs text-red-500 dark:text-red-400">{childError}</span>
-                        )}
-                      </div>
-                    );
-                  }
-
-                  // Number
-                  if ((childDef as any)?._def?.typeName === "ZodNumber") {
-                    return (
-                      <div key={name} className="flex flex-col gap-1">
-                        <label className="text-sm text-zinc-600 dark:text-zinc-300">{childKey}</label>
-                        <input
-                          className="rounded-md border border-zinc-300 bg-white px-3 py-2 text-zinc-900 shadow-sm focus:outline-none focus:ring-2 focus:ring-zinc-500 focus:border-zinc-500 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100"
-                          type="number"
-                          {...register(name as any, { valueAsNumber: true })}
-                        />
-                        {childError && (
-                          <span className="text-xs text-red-500 dark:text-red-400">{childError}</span>
-                        )}
-                      </div>
-                    );
-                  }
-
-                  // Boolean
-                  if ((childDef as any)?._def?.typeName === "ZodBoolean") {
-                    return (
-                      <label key={name} className="flex items-center justify-between gap-3">
-                        <span className="text-sm text-zinc-600 dark:text-zinc-300">{childKey}</span>
-                        <input className="h-4 w-4 accent-zinc-900 dark:accent-zinc-100" type="checkbox" {...register(name as any)} />
-                      </label>
-                    );
-                  }
-
-                  // String and fallback
-                  return (
-                    <div key={name} className="flex flex-col gap-3">
-                      <label className="text-sm text-zinc-600 dark:text-zinc-300">{childKey}</label>
-                      <input
-                        className="rounded-md border border-zinc-300 bg-white px-3 py-2 text-zinc-900 shadow-sm focus:outline-none focus:ring-2 focus:ring-zinc-500 focus:border-zinc-500 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100"
-                        type="text"
-                        {...register(name as any)}
-                      />
-                      {childError && (
-                        <span className="text-xs text-red-500 dark:text-red-400">{childError}</span>
-                      )}
-                    </div>
-                  );
+                  const childDef = innerShape[childKey];
+                  return renderField(name, childDef);
                 })}
               </div>
             </fieldset>

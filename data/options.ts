@@ -96,3 +96,26 @@ export const loadMcpServerOptions = async (): Promise<Option[]> => {
     return [];
   }
 };
+
+// Attempt to load knowledge bases from a presumed endpoint. Falls back to empty list.
+export const loadKnowledgeBaseOptions = async (): Promise<Option[]> => {
+  try {
+    const res = await fetch("/api/knowledge-bases", { cache: "no-store" });
+    if (!res.ok) return [];
+    const json: any = await res.json();
+    const list =
+      (Array.isArray(json?.data) && json.data) ||
+      (Array.isArray(json?.knowledgeBases) && json.knowledgeBases) ||
+      [];
+    const opts: Option[] = list
+      .map((kb: any) => {
+        const id = kb?.id || kb?.knowledgeBaseId || kb?.knowledge_base_id;
+        const name = kb?.name || kb?.title || id;
+        return id ? { value: String(id), label: String(name ?? id) } : undefined;
+      })
+      .filter(Boolean);
+    return opts;
+  } catch {
+    return [];
+  }
+};

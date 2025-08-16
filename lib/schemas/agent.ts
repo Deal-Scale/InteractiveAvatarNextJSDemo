@@ -1,9 +1,5 @@
 import z from "zod";
-import {
-  STTProvider,
-  VoiceChatTransport,
-  VoiceEmotion,
-} from "@heygen/streaming-avatar";
+import { STTProvider, VoiceChatTransport, VoiceEmotion, AvatarQuality } from "@heygen/streaming-avatar";
 
 export const AgentConfigSchema = z.object({
   id: z.string().min(1), // agent ID
@@ -13,6 +9,7 @@ export const AgentConfigSchema = z.object({
   language: z.string().optional(), // default language
   model: z.string().optional(), // backend model (may restrict to allowed list)
   temperature: z.number().min(0).max(2).optional(),
+  quality: z.nativeEnum(AvatarQuality).optional(),
 
   // Connection / transport
   voiceChatTransport: z.nativeEnum(VoiceChatTransport).optional(),
