@@ -65,9 +65,10 @@ export function SidebarInset({ children }: { children: React.ReactNode }) {
 
 interface SidebarProps {
   children: React.ReactNode;
+  className?: string;
 }
 
-export function Sidebar({ children }: SidebarProps) {
+export function Sidebar({ children, className = "" }: SidebarProps) {
   const { open } = useSidebar();
   return (
     <aside
@@ -75,11 +76,12 @@ export function Sidebar({ children }: SidebarProps) {
       aria-label="Primary"
       data-state={open ? "open" : "collapsed"}
       className={
-        "group/sidebar bg-gray-800 text-white transition-[width] duration-200 " +
-        (open ? "w-[320px] border-r border-zinc-700" : "w-0 border-r-0")
+        "group/sidebar transition-[width] duration-200 bg-white text-zinc-900 dark:bg-zinc-900 dark:text-zinc-100 " +
+        (open ? "w-[320px] border-r border-zinc-200 dark:border-zinc-800" : "w-0 border-r-0") +
+        (className ? ` ${className}` : "")
       }
     >
-      <div className="flex h-full flex-col gap-4 py-4 max-h-full overflow-y-auto px-2 group-data-[state=collapsed]/sidebar:hidden">
+      <div className="flex h-full flex-col gap-4 py-4 max-h-full overflow-y-auto px-2 pb-20 group-data-[state=collapsed]/sidebar:hidden">
         {children}
       </div>
     </aside>
@@ -112,7 +114,7 @@ export function SidebarMenuButton({ children, onClick, className = "" }: { child
       <button
         type="button"
         onClick={onClick}
-        className={`w-full text-left rounded-md px-3 py-2 hover:bg-zinc-700/70 ${className}`}
+        className={`w-full text-left rounded-md px-3 py-2 text-foreground hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 ${className}`}
       >
         {children}
       </button>

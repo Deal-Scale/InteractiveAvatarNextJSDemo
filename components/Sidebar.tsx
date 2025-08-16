@@ -1,7 +1,10 @@
 "use client";
 
 import React, { useEffect, useMemo, useRef, useState, ReactNode } from "react";
+import { Plus as PlusIcon, PanelLeft, Settings, ChevronRight, Search, AppWindow, Image as ImageIcon, Trash2, Archive, Bookmark, BookmarkCheck, CheckSquare } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Slider } from "@/components/ui/slider";
 import { useSessionStore } from "@/lib/stores/session";
 import {
   Sidebar as UISidebar,
@@ -16,9 +19,6 @@ import {
   SidebarFooter,
   useSidebar,
 } from "@/components/ui/sidebar";
-import { Plus as PlusIcon, PanelLeft, Settings, ChevronRight, Search, AppWindow } from "lucide-react";
-import { Input } from "@/components/ui/input";
-import { Slider } from "@/components/ui/slider";
 
 type Conversation = {
   id: string;
@@ -193,6 +193,28 @@ const Sidebar: React.FC<SidebarProps> = ({ onSelect, apps }) => {
   const [collapsedAssets, setCollapsedAssets] = useState<boolean>(false);
   const [collapsedAgents, setCollapsedAgents] = useState<boolean>(false);
   const [collapsedGroups, setCollapsedGroups] = useState<Set<string>>(new Set());
+  const [selectionMode, setSelectionMode] = useState<boolean>(false);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [bookmarkedIds, setBookmarkedIds] = useState<Set<string>>(() => {
+    if (typeof window === "undefined") return new Set();
+    try {
+      const raw = localStorage.getItem("sidebar.bookmarks.v1");
+      if (!raw) return new Set();
+      return new Set<string>(JSON.parse(raw));
+    } catch {
+      return new Set();
+    }
+  });
+  const [archivedIds, setArchivedIds] = useState<Set<string>>(() => {
+    if (typeof window === "undefined") return new Set();
+    try {
+      const raw = localStorage.getItem("sidebar.archived.v1");
+      if (!raw) return new Set();
+      return new Set<string>(JSON.parse(raw));
+    } catch {
+      return new Set();
+    }
+  });
   const assetsRef = useRef<HTMLDivElement | null>(null);
 
   // Persisted collapse state
@@ -230,6 +252,21 @@ const Sidebar: React.FC<SidebarProps> = ({ onSelect, apps }) => {
     } catch {}
   }, [collapsedStarter, collapsedAssets, collapsedAgents, collapsedGroups]);
 
+  // Persist bookmarks and archived
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    try {
+      localStorage.setItem("sidebar.bookmarks.v1", JSON.stringify(Array.from(bookmarkedIds)));
+    } catch {}
+  }, [bookmarkedIds]);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    try {
+      localStorage.setItem("sidebar.archived.v1", JSON.stringify(Array.from(archivedIds)));
+    } catch {}
+  }, [archivedIds]);
+
   // Placeholder assets and agents; agents include current store agent when present
   const assets = useMemo(
     () => [
@@ -266,11 +303,60 @@ const Sidebar: React.FC<SidebarProps> = ({ onSelect, apps }) => {
       .map((g) => ({
         ...g,
         conversations: g.conversations.filter(
-          (c) => c.title.toLowerCase().includes(q) || c.lastMessage.toLowerCase().includes(q),
+          (c) =>
+            !archivedIds.has(c.id) &&
+            (c.title.toLowerCase().includes(q) || c.lastMessage.toLowerCase().includes(q)),
         ),
       }))
       .filter((g) => g.conversations.length > 0);
-  }, [groups, query]);
+  }, [groups, query, archivedIds]);
+
+  // Derived archived conversations list
+  const archivedList = useMemo(() => {
+    if (!groups) return [] as Conversation[];
+    const all = groups.flatMap((g) => g.conversations);
+    return all.filter((c) => archivedIds.has(c.id));
+  }, [groups, archivedIds]);
+
+  // Handlers
+  const toggleSelect = (id: string) => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
+
+  const clearSelection = () => setSelectedIds(new Set());
+
+  const deleteSelected = () => {
+    if (!groups || selectedIds.size === 0) return;
+    const nextGroups = groups.map((g) => ({
+      ...g,
+      conversations: g.conversations.filter((c) => !selectedIds.has(c.id)),
+    }));
+    setGroups(nextGroups);
+    saveToCache(nextGroups);
+    clearSelection();
+    setSelectionMode(false);
+  };
+
+  const archiveSelected = () => {
+    if (selectedIds.size === 0) return;
+    setArchivedIds((prev) => new Set([...Array.from(prev), ...Array.from(selectedIds)]));
+    clearSelection();
+    setSelectionMode(false);
+  };
+
+  const toggleBookmark = (id: string) => {
+    setBookmarkedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
 
   // Initial lazy load with cache
   useEffect(() => {
@@ -295,12 +381,12 @@ const Sidebar: React.FC<SidebarProps> = ({ onSelect, apps }) => {
 
   return (
     <SidebarProvider>
-      <UISidebar>
+      <UISidebar className="bg-white text-zinc-900 dark:bg-zinc-900 dark:text-zinc-100">
         <SidebarHeader className="flex flex-col gap-2 px-2 py-2">
           <div className="flex flex-row items-center justify-between gap-2">
             <div className="flex flex-row items-center gap-2 px-2">
               <div className="bg-primary/10 size-8 rounded-md" />
-              <div className="text-md font-medium text-primary tracking-tight group-data-[state=collapsed]/sidebar:hidden">
+              <div className="text-md font-medium tracking-tight text-foreground group-data-[state=collapsed]/sidebar:hidden">
                 zola.chat
               </div>
             </div>
@@ -315,22 +401,64 @@ const Sidebar: React.FC<SidebarProps> = ({ onSelect, apps }) => {
           {/* Search (filters conversations only) */}
           <div className="px-2 group-data-[state=collapsed]/sidebar:hidden">
             <div className="relative">
-              <Search className="pointer-events-none absolute left-2 top-1/2 size-4 -translate-y-1/2 text-zinc-400" />
+              <Search className="pointer-events-none absolute left-2 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
               <Input
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
                 placeholder="Search conversations..."
-                className="pl-8 h-9"
+                className="h-9 pl-8 text-sm bg-background text-foreground placeholder:text-muted-foreground border border-border focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
               />
             </div>
           </div>
         </SidebarHeader>
 
         <SidebarContent className="pt-2">
+          {/* Bulk selection toolbar */}
+          <div className="px-2 pb-2 group-data-[state=collapsed]/sidebar:hidden">
+            <div className="flex items-center justify-between gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                className="gap-2 bg-background text-foreground border border-border hover:bg-muted"
+                onClick={() => {
+                  if (selectionMode) {
+                    clearSelection();
+                    setSelectionMode(false);
+                  } else {
+                    setSelectionMode(true);
+                  }
+                }}
+              >
+                <CheckSquare className="size-4" />
+                <span>{selectionMode ? "Cancel Select" : "Select"}</span>
+              </Button>
+              {selectionMode && (
+                <div className="flex items-center gap-2">
+                  <span className="text-xs text-muted-foreground">{selectedIds.size} selected</span>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="gap-2 text-red-600 border-border hover:bg-muted"
+                    onClick={deleteSelected}
+                  >
+                    <Trash2 className="size-4" /> Delete
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="gap-2 border-border hover:bg-muted"
+                    onClick={archiveSelected}
+                  >
+                    <Archive className="size-4" /> Archive
+                  </Button>
+                </div>
+              )}
+            </div>
+          </div>
           <div className="px-2">
             <Button
               variant="outline"
-              className="mb-3 flex w-full items-center gap-2 group-data-[state=collapsed]/sidebar:justify-center"
+              className="mb-3 flex w-full items-center gap-2 group-data-[state=collapsed]/sidebar:justify-center bg-background text-foreground border border-border hover:bg-muted"
             >
               <PlusIcon className="size-4" />
               <span className="group-data-[state=collapsed]/sidebar:hidden">New Chat</span>
@@ -341,7 +469,7 @@ const Sidebar: React.FC<SidebarProps> = ({ onSelect, apps }) => {
           <SidebarGroup>
             <button
               type="button"
-              className="flex w-full items-center justify-between px-2 py-1 text-left"
+              className="flex w-full items-center justify-between px-2 py-1 text-left rounded-md hover:bg-zinc-100 dark:hover:bg-zinc-700/60"
               onClick={() => setCollapsedStarter((v) => !v)}
             >
               <SidebarGroupLabel>Applications Starter</SidebarGroupLabel>
@@ -359,13 +487,14 @@ const Sidebar: React.FC<SidebarProps> = ({ onSelect, apps }) => {
                   <Slider value={[starterScale]} min={0.8} max={1.4} step={0.1} onValueChange={(v) => setStarterScale(v[0] ?? 1)} />
                 </div>
                 <SidebarMenu>
-                  {(apps && apps.length > 0
-                    ? apps
-                    : [
-                        { id: "starter-1", label: "Quick Demo", icon: <AppWindow className="size-4" /> },
-                        { id: "starter-2", label: "Sales Flow", icon: <AppWindow className="size-4" /> },
-                        { id: "starter-3", label: "Support Flow", icon: <AppWindow className="size-4" /> },
-                      ]
+                  {(
+                    (apps && apps.length > 0
+                      ? apps
+                      : [
+                          { id: "starter-1", label: "Quick Demo", icon: <AppWindow className="size-4" /> },
+                          { id: "starter-2", label: "Sales Flow", icon: <AppWindow className="size-4" /> },
+                          { id: "starter-3", label: "Support Flow", icon: <AppWindow className="size-4" /> },
+                        ]) as AppOption[]
                   ).map((s) => (
                     <SidebarMenuButton key={s.id} className="justify-start">
                       <span className="mr-2 inline-flex size-4 items-center justify-center overflow-hidden rounded">
@@ -391,9 +520,9 @@ const Sidebar: React.FC<SidebarProps> = ({ onSelect, apps }) => {
 
           {loading && (
             <div className="px-2">
-              <div className="mb-2 h-3 w-24 rounded bg-zinc-700/60" />
+              <div className="mb-2 h-3 w-24 rounded bg-zinc-200 dark:bg-zinc-700/60" />
               {Array.from({ length: 6 }).map((_, i) => (
-                <div key={i} className="mb-2 h-8 rounded bg-zinc-700/40" />
+                <div key={i} className="mb-2 h-8 rounded bg-zinc-100 dark:bg-zinc-700/40" />
               ))}
             </div>
           )}
@@ -402,7 +531,7 @@ const Sidebar: React.FC<SidebarProps> = ({ onSelect, apps }) => {
             <SidebarGroup key={group.period}>
               <button
                 type="button"
-                className="flex w-full items-center justify-between px-2 py-1 text-left"
+                className="flex w-full items-center justify-between px-2 py-1 text-left rounded-md hover:bg-zinc-100 dark:hover:bg-zinc-700/60"
                 onClick={() =>
                   setCollapsedGroups((prev) => {
                     const next = new Set(prev);
@@ -419,14 +548,51 @@ const Sidebar: React.FC<SidebarProps> = ({ onSelect, apps }) => {
               </button>
               {!collapsedGroups.has(group.period) && (
                 <SidebarMenu>
-                  {group.conversations.map((conversation) => (
-                    <SidebarMenuButton
-                      key={conversation.id}
-                      onClick={() => onSelect?.(conversation)}
-                    >
-                      <span className="truncate pr-2">{conversation.title}</span>
-                    </SidebarMenuButton>
-                  ))}
+                  {group.conversations
+                    .filter((c) => !archivedIds.has(c.id))
+                    .map((conversation) => {
+                      const isBookmarked = bookmarkedIds.has(conversation.id);
+                      const isSelected = selectedIds.has(conversation.id);
+                      return (
+                        <SidebarMenuButton
+                          key={conversation.id}
+                          onClick={() => {
+                            if (selectionMode) toggleSelect(conversation.id);
+                            else onSelect?.(conversation);
+                          }}
+                          className=""
+                        >
+                          <div className="flex w-full items-center gap-2">
+                            {selectionMode && (
+                              <input
+                                type="checkbox"
+                                checked={isSelected}
+                                onChange={() => toggleSelect(conversation.id)}
+                                onClick={(e) => e.stopPropagation()}
+                                className="size-4 accent-primary"
+                                aria-label={isSelected ? "Deselect conversation" : "Select conversation"}
+                              />
+                            )}
+                            <div className="min-w-0 flex-1 truncate pr-2">{conversation.title}</div>
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                toggleBookmark(conversation.id);
+                              }}
+                              aria-label={isBookmarked ? "Remove bookmark" : "Add bookmark"}
+                              className="inline-flex items-center justify-center rounded p-1 text-muted-foreground hover:bg-muted"
+                            >
+                              {isBookmarked ? (
+                                <BookmarkCheck className="size-4 text-primary" />
+                              ) : (
+                                <Bookmark className="size-4" />
+                              )}
+                            </button>
+                          </div>
+                        </SidebarMenuButton>
+                      );
+                    })}
                 </SidebarMenu>
               )}
             </SidebarGroup>
@@ -436,7 +602,7 @@ const Sidebar: React.FC<SidebarProps> = ({ onSelect, apps }) => {
           <SidebarGroup>
             <button
               type="button"
-              className="flex w-full items-center justify-between px-2 py-1 text-left"
+              className="flex w-full items-center justify-between px-2 py-1 text-left rounded-md hover:bg-zinc-100 dark:hover:bg-zinc-700/60"
               onClick={() => setCollapsedAssets((v) => !v)}
             >
               <SidebarGroupLabel>Assets</SidebarGroupLabel>
@@ -470,7 +636,7 @@ const Sidebar: React.FC<SidebarProps> = ({ onSelect, apps }) => {
           <SidebarGroup>
             <button
               type="button"
-              className="flex w-full items-center justify-between px-2 py-1 text-left"
+              className="flex w-full items-center justify-between px-2 py-1 text-left rounded-md hover:bg-zinc-100 dark:hover:bg-zinc-700/60"
               onClick={() => setCollapsedAgents((v) => !v)}
             >
               <SidebarGroupLabel>Agents</SidebarGroupLabel>
@@ -494,8 +660,8 @@ const Sidebar: React.FC<SidebarProps> = ({ onSelect, apps }) => {
         </SidebarContent>
 
         <SidebarFooter className="px-2">
-          <div className="text-xs text-zinc-400 group-data-[state=collapsed]/sidebar:hidden">
-            {totalCount} conversations
+          <div className="text-xs text-muted-foreground group-data-[state=collapsed]/sidebar:hidden">
+            {totalCount} conversations • {archivedList.length} archived
           </div>
         </SidebarFooter>
       </UISidebar>
@@ -510,21 +676,21 @@ function HeaderActionsStack({ onAssetsClick }: { onAssetsClick?: () => void }) {
     <div className="flex flex-col items-center gap-1">
       <Button
         variant="ghost"
-        className="size-8"
+        className="size-8 text-zinc-900 dark:text-zinc-100 hover:bg-zinc-100 dark:hover:bg-zinc-700/60"
         aria-label="Assets"
         onClick={onAssetsClick}
       >
-        A
+        <ImageIcon className="size-4" />
       </Button>
       <Button
         variant="ghost"
-        className="size-8"
+        className="size-8 text-zinc-900 dark:text-zinc-100 hover:bg-zinc-100 dark:hover:bg-zinc-700/60"
         aria-label="Avatar settings"
         onClick={openConfigModal}
       >
         <Settings className="size-4" />
       </Button>
-      <SidebarTrigger className="size-8 inline-flex items-center justify-center rounded-md hover:bg-zinc-700/60">
+      <SidebarTrigger className="size-8 inline-flex items-center justify-center rounded-md hover:bg-zinc-100 dark:hover:bg-zinc-700/60">
         <PanelLeft className="size-4" />
       </SidebarTrigger>
     </div>
