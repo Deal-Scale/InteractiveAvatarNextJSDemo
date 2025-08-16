@@ -34,7 +34,16 @@ export function SessionConfigModal({
   initialConfig,
   startSession,
 }: SessionConfigModalProps) {
-  const { isConfigModalOpen, closeConfigModal } = useSessionStore();
+  const {
+    isConfigModalOpen,
+    closeConfigModal,
+    userSettings,
+    setUserSettings,
+    globalSettings,
+    setGlobalSettings,
+    agentSettings,
+    setAgentSettings,
+  } = useSessionStore();
   const [config, setConfig] = useState<StartAvatarRequest>(initialConfig);
   const [activeTab, setActiveTab] = useState<
     "session" | "global" | "user" | "agent"
@@ -91,6 +100,7 @@ export function SessionConfigModal({
       if (typeof window !== "undefined") {
         localStorage.setItem("userSettings", JSON.stringify(values));
       }
+      setUserSettings(values as UserSettings);
       // Keep the modal open; provide a subtle confirmation via console for now
       console.log("User settings saved:", values);
     } catch (e) {
@@ -105,6 +115,7 @@ export function SessionConfigModal({
       if (typeof window !== "undefined") {
         localStorage.setItem("globalSettings", JSON.stringify(values));
       }
+      setGlobalSettings(values as AppGlobalSettings);
       console.log("Global settings saved:", values);
     } catch (e) {
       console.warn("Failed to persist global settings", e);
@@ -116,32 +127,36 @@ export function SessionConfigModal({
       if (typeof window !== "undefined") {
         localStorage.setItem("agentSettings", JSON.stringify(values));
       }
+      setAgentSettings(values);
       console.log("Agent settings saved:", values);
     } catch (e) {
       console.warn("Failed to persist agent settings", e);
     }
   };
 
-  // Load saved settings on mount
+  // Load saved settings on mount from store first, then localStorage fallback
   useEffect(() => {
     if (typeof window === "undefined") return;
     try {
-      const savedGlobal = localStorage.getItem("globalSettings");
-      if (savedGlobal) {
-        const parsed = JSON.parse(savedGlobal);
-        globalForm.reset(parsed);
+      if (globalSettings) {
+        globalForm.reset(globalSettings);
+      } else {
+        const savedGlobal = localStorage.getItem("globalSettings");
+        if (savedGlobal) globalForm.reset(JSON.parse(savedGlobal));
       }
 
-      const savedUser = localStorage.getItem("userSettings");
-      if (savedUser) {
-        const parsed = JSON.parse(savedUser);
-        userForm.reset(parsed);
+      if (userSettings) {
+        userForm.reset(userSettings);
+      } else {
+        const savedUser = localStorage.getItem("userSettings");
+        if (savedUser) userForm.reset(JSON.parse(savedUser));
       }
 
-      const savedAgent = localStorage.getItem("agentSettings");
-      if (savedAgent) {
-        const parsed = JSON.parse(savedAgent);
-        agentForm.reset(parsed);
+      if (agentSettings) {
+        agentForm.reset(agentSettings);
+      } else {
+        const savedAgent = localStorage.getItem("agentSettings");
+        if (savedAgent) agentForm.reset(JSON.parse(savedAgent));
       }
     } catch (e) {
       console.warn("Failed to load saved settings", e);

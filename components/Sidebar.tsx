@@ -16,7 +16,9 @@ import {
   SidebarFooter,
   useSidebar,
 } from "@/components/ui/sidebar";
-import { Plus as PlusIcon, PanelLeft, Settings, ChevronRight } from "lucide-react";
+import { Plus as PlusIcon, PanelLeft, Settings, ChevronRight, Search, AppWindow } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Slider } from "@/components/ui/slider";
 
 type Conversation = {
   id: string;
@@ -176,6 +178,45 @@ async function fetchConversations(): Promise<ConversationGroup[]> {
 const Sidebar: React.FC<SidebarProps> = ({ onSelect }) => {
   const [groups, setGroups] = useState<ConversationGroup[] | null>(() => loadFromCache());
   const [loading, setLoading] = useState<boolean>(!groups);
+  const { agentSettings } = useSessionStore();
+  const [query, setQuery] = useState("");
+  const [starterScale, setStarterScale] = useState<number>(1);
+
+  // Placeholder assets and agents; agents include current store agent when present
+  const assets = useMemo(
+    () => [
+      { id: "asset-1", name: "Default Avatar 1" },
+      { id: "asset-2", name: "Studio Background" },
+      { id: "asset-3", name: "Office Background" },
+    ],
+    [],
+  );
+
+  const agents = useMemo(
+    () => {
+      const base = [
+        { id: "agent-1", name: "Sales Assistant" },
+        { id: "agent-2", name: "Support Bot" },
+      ];
+      if (agentSettings?.id) {
+        return [
+          { id: agentSettings.id, name: agentSettings.name || "Configured Agent" },
+          ...base,
+        ];
+      }
+      return base;
+    },
+    [agentSettings],
+  );
+
+  const filteredAssets = useMemo(
+    () => assets.filter((a) => a.name.toLowerCase().includes(query.toLowerCase())),
+    [assets, query],
+  );
+  const filteredAgents = useMemo(
+    () => agents.filter((a) => a.name.toLowerCase().includes(query.toLowerCase())),
+    [agents, query],
+  );
 
   // Initial lazy load with cache
   useEffect(() => {
@@ -201,14 +242,29 @@ const Sidebar: React.FC<SidebarProps> = ({ onSelect }) => {
   return (
     <SidebarProvider>
       <UISidebar>
-        <SidebarHeader className="flex flex-row items-center justify-between gap-2 px-2 py-2">
-          <div className="flex flex-row items-center gap-2 px-2">
-            <div className="bg-primary/10 size-8 rounded-md" />
-            <div className="text-md font-medium text-primary tracking-tight group-data-[state=collapsed]/sidebar:hidden">
-              zola.chat
+        <SidebarHeader className="flex flex-col gap-2 px-2 py-2">
+          <div className="flex flex-row items-center justify-between gap-2">
+            <div className="flex flex-row items-center gap-2 px-2">
+              <div className="bg-primary/10 size-8 rounded-md" />
+              <div className="text-md font-medium text-primary tracking-tight group-data-[state=collapsed]/sidebar:hidden">
+                zola.chat
+              </div>
+            </div>
+            <HeaderActionsStack />
+          </div>
+
+          {/* Search */}
+          <div className="px-2 group-data-[state=collapsed]/sidebar:hidden">
+            <div className="relative">
+              <Search className="pointer-events-none absolute left-2 top-1/2 size-4 -translate-y-1/2 text-zinc-400" />
+              <Input
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                placeholder="Search assets and agents..."
+                className="pl-8 h-9"
+              />
             </div>
           </div>
-          <HeaderActionsStack />
         </SidebarHeader>
 
         <SidebarContent className="pt-2">
@@ -221,6 +277,60 @@ const Sidebar: React.FC<SidebarProps> = ({ onSelect }) => {
               <span className="group-data-[state=collapsed]/sidebar:hidden">New Chat</span>
             </Button>
           </div>
+
+          {/* Applications Starter */}
+          <SidebarGroup>
+            <SidebarGroupLabel>Applications Starter</SidebarGroupLabel>
+            <div className="px-2 py-1 group-data-[state=collapsed]/sidebar:hidden">
+              <div className="mb-2 flex items-center justify-between text-xs text-zinc-400">
+                <span>Card size</span>
+                <span>{starterScale.toFixed(1)}x</span>
+              </div>
+              <Slider value={[starterScale]} min={0.8} max={1.4} step={0.1} onValueChange={(v) => setStarterScale(v[0] ?? 1)} />
+            </div>
+            <SidebarMenu>
+              {[
+                { id: 'starter-1', label: 'Quick Demo' },
+                { id: 'starter-2', label: 'Sales Flow' },
+                { id: 'starter-3', label: 'Support Flow' },
+              ].map((s) => (
+                <SidebarMenuButton key={s.id} className="justify-start">
+                  <AppWindow className="size-4 mr-2" />
+                  <span style={{ transform: `scale(${starterScale})`, transformOrigin: 'left center' }}>{s.label}</span>
+                </SidebarMenuButton>
+              ))}
+            </SidebarMenu>
+          </SidebarGroup>
+
+          {/* Assets */}
+          <SidebarGroup>
+            <SidebarGroupLabel>Assets</SidebarGroupLabel>
+            <SidebarMenu>
+              {filteredAssets.map((asset) => (
+                <SidebarMenuButton key={asset.id} className="justify-start">
+                  <span className="truncate pr-2">{asset.name}</span>
+                </SidebarMenuButton>
+              ))}
+              {filteredAssets.length === 0 && (
+                <div className="px-3 py-2 text-xs text-zinc-500">No assets found</div>
+              )}
+            </SidebarMenu>
+          </SidebarGroup>
+
+          {/* Agents */}
+          <SidebarGroup>
+            <SidebarGroupLabel>Agents</SidebarGroupLabel>
+            <SidebarMenu>
+              {filteredAgents.map((agent) => (
+                <SidebarMenuButton key={agent.id} className="justify-start">
+                  <span className="truncate pr-2">{agent.name}</span>
+                </SidebarMenuButton>
+              ))}
+              {filteredAgents.length === 0 && (
+                <div className="px-3 py-2 text-xs text-zinc-500">No agents found</div>
+              )}
+            </SidebarMenu>
+          </SidebarGroup>
 
           {loading && (
             <div className="px-2">

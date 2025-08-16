@@ -1,9 +1,11 @@
 import type { StartAvatarRequest } from "@heygen/streaming-avatar";
-import type { Message } from "@/lib/types";
-import { MessageSender } from "@/lib/types";
-
 import { create } from "zustand";
 import { persist, createJSONStorage } from "zustand/middleware";
+
+import type { AgentConfig } from "@/lib/schemas/agent";
+import type { UserSettings, AppGlobalSettings } from "@/lib/schemas/global";
+import type { Message } from "@/lib/types";
+import { MessageSender } from "@/lib/types";
 
 export type ChatMode = "voice" | "text";
 
@@ -36,6 +38,14 @@ interface SessionState {
   // Video panel tab/view selection
   viewTab: "video" | "brain" | "data" | "actions";
   setViewTab: (tab: "video" | "brain" | "data" | "actions") => void;
+
+  // Settings persisted in app state
+  userSettings?: UserSettings;
+  setUserSettings: (s: UserSettings) => void;
+  globalSettings?: AppGlobalSettings;
+  setGlobalSettings: (s: AppGlobalSettings) => void;
+  agentSettings?: AgentConfig;
+  setAgentSettings: (s: AgentConfig) => void;
 }
 
 export const useSessionStore = create<SessionState>()(
@@ -93,6 +103,14 @@ export const useSessionStore = create<SessionState>()(
       // View tab
       viewTab: "video",
       setViewTab: (tab) => set({ viewTab: tab }),
+
+      // Settings
+      userSettings: undefined,
+      setUserSettings: (s) => set({ userSettings: s }),
+      globalSettings: undefined,
+      setGlobalSettings: (s) => set({ globalSettings: s }),
+      agentSettings: undefined,
+      setAgentSettings: (s) => set({ agentSettings: s }),
     }),
     {
       name: "session-store",
@@ -104,6 +122,9 @@ export const useSessionStore = create<SessionState>()(
         creditsRemaining: state.creditsRemaining,
         creditsPerMinute: state.creditsPerMinute,
         viewTab: state.viewTab,
+        userSettings: state.userSettings,
+        globalSettings: state.globalSettings,
+        agentSettings: state.agentSettings,
       }),
     },
   ),
