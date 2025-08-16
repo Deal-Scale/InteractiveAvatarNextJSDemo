@@ -14,6 +14,13 @@ import { Select } from "../Select";
 import { Field } from "./Field";
 
 import { AVATARS, STT_LANGUAGE_LIST } from "@/app/lib/constants";
+import { BorderBeam } from "@/components/magicui/border-beam";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 
 interface AvatarConfigProps {
   onConfigChange: (config: StartAvatarRequest) => void;
@@ -224,15 +231,43 @@ export const AvatarConfig: React.FC<AvatarConfigProps> = ({
         </>
       )}
       <div className="mt-2 flex items-center gap-3">
-        <button
-          className="px-4 py-2 rounded-md bg-blue-600 text-white disabled:opacity-50 w-full"
-          onClick={() => startSession()}
-          disabled={
-            isConnecting || (selectedAvatar?.isCustom && !!config.avatarName && !customIdValid)
-          }
-        >
-          {isConnecting ? "Connecting..." : "Start Session"}
-        </button>
+        <div className="relative w-full overflow-hidden rounded-md inline-flex">
+          {(() => {
+            const isDisabled =
+              isConnecting || (selectedAvatar?.isCustom && !!config.avatarName && !customIdValid);
+            if (isDisabled) {
+              return (
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <span tabIndex={0} className="inline-flex w-full">
+                        <button
+                          className="px-4 py-2 rounded-md bg-blue-600 text-white disabled:opacity-50 w-full"
+                          onClick={() => startSession()}
+                          disabled
+                        >
+                          {isConnecting ? "Connecting..." : "Start Session"}
+                        </button>
+                      </span>
+                    </TooltipTrigger>
+                    <TooltipContent side="top">
+                      Set up your agent and settings first
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              );
+            }
+            return (
+              <button
+                className="px-4 py-2 rounded-md bg-blue-600 text-white disabled:opacity-50 w-full"
+                onClick={() => startSession()}
+              >
+                {isConnecting ? "Connecting..." : "Start Session"}
+              </button>
+            );
+          })()}
+          <BorderBeam borderWidth={2} duration={8} size={90} />
+        </div>
       </div>
 
       <button

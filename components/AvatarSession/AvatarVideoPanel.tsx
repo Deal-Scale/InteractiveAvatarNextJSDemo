@@ -26,6 +26,12 @@ import {
 } from "@/components/ui/select";
 import { BorderBeam } from "@/components/magicui/border-beam";
 import { Input } from "@/components/Input";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 
 export function AvatarVideoPanel({
   mediaStream,
@@ -184,23 +190,57 @@ export function AvatarVideoPanel({
                 >
                   Start without avatar
                 </Button>
-                <Button
-                  className="bg-zinc-800 text-zinc-100"
-                  disabled={
-                    !selectedAvatar ||
-                    (selectedAvatar === "CUSTOM" && (!customAvatarId || !customIdValid)) ||
-                    (!!knowledgeBaseId && !kbIdValid)
-                  }
-                  onClick={() =>
-                    onStartSession?.(
-                      selectedAvatar === "CUSTOM" ? customAvatarId : selectedAvatar,
-                    )
-                  }
-                  size="sm"
-                  variant="secondary"
-                >
-                  Start Session
-                </Button>
+                <div className="relative inline-flex overflow-hidden rounded-md">
+                  {(() => {
+                    const isDisabled =
+                      !selectedAvatar ||
+                      (selectedAvatar === "CUSTOM" && (!customAvatarId || !customIdValid)) ||
+                      (!!knowledgeBaseId && !kbIdValid);
+                    if (isDisabled) {
+                      return (
+                        <TooltipProvider>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <span tabIndex={0} className="inline-flex">
+                                <Button
+                                  className="bg-zinc-800 text-zinc-100"
+                                  disabled
+                                  onClick={() =>
+                                    onStartSession?.(
+                                      selectedAvatar === "CUSTOM" ? customAvatarId : selectedAvatar,
+                                    )
+                                  }
+                                  size="sm"
+                                  variant="secondary"
+                                >
+                                  Start Session
+                                </Button>
+                              </span>
+                            </TooltipTrigger>
+                            <TooltipContent side="top">
+                              Set up your agent and settings first
+                            </TooltipContent>
+                          </Tooltip>
+                        </TooltipProvider>
+                      );
+                    }
+                    return (
+                      <Button
+                        className="bg-zinc-800 text-zinc-100"
+                        onClick={() =>
+                          onStartSession?.(
+                            selectedAvatar === "CUSTOM" ? customAvatarId : selectedAvatar,
+                          )
+                        }
+                        size="sm"
+                        variant="secondary"
+                      >
+                        Start Session
+                      </Button>
+                    );
+                  })()}
+                  <BorderBeam borderWidth={2} duration={8} size={80} />
+                </div>
               </CardFooter>
               <BorderBeam
                 borderWidth={2}
