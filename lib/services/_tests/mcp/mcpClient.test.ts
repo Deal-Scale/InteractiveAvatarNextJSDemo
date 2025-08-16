@@ -70,7 +70,6 @@ vi.mock("@modelcontextprotocol/sdk/client/index.js", () => {
 async function importFreshClient() {
   // Ensure a fresh module instance each time
   const modPath = "@/lib/services/mcpClient";
-  // @ts-expect-error vite vitest runtime
   const moduleNode = await vi.importActual<typeof import("@/lib/services/mcpClient")>(modPath);
   return moduleNode;
 }

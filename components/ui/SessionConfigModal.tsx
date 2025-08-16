@@ -1,9 +1,10 @@
-import { useEffect, useState } from "react";
 import type { StartAvatarRequest } from "@heygen/streaming-avatar";
+import { AvatarQuality, VoiceChatTransport } from "@heygen/streaming-avatar";
 
-import { useSessionStore } from "@/lib/stores/session";
+import { useEffect, useState } from "react";
 
 import { AvatarConfig } from "../AvatarConfig";
+
 import {
   Dialog,
   DialogContent,
@@ -11,6 +12,8 @@ import {
   DialogHeader,
   DialogTitle,
 } from "./dialog";
+
+import { useSessionStore } from "@/lib/stores/session";
 import { UserSettingsSchema } from "@/lib/schemas/global";
 import { useZodForm } from "@/components/forms/useZodForm";
 import { AutoForm } from "@/components/forms/AutoForm";
@@ -46,13 +49,13 @@ export function SessionConfigModal({
     defaultValues: {
       userId: "local-user",
       language: "en-US",
-      quality: "high" as any,
-      voiceChatTransport: (globalThis as any).VoiceChatTransport?.WEBSOCKET,
+      quality: AvatarQuality.High,
+      voiceChatTransport: VoiceChatTransport.WEBSOCKET,
       disableIdleTimeout: false,
       activityIdleTimeout: 120,
       stt: {
         // provider left undefined by default
-        confidenceThreshold: 0.6 as any,
+        confidenceThreshold: 0.6,
       },
     },
     mode: "onChange",
@@ -88,8 +91,8 @@ export function SessionConfigModal({
                   ? "border-b-2 border-blue-500 text-zinc-100"
                   : "text-zinc-400 hover:text-zinc-200"
               }`}
-              onClick={() => setActiveTab("session")}
               type="button"
+              onClick={() => setActiveTab("session")}
             >
               Session
             </button>
@@ -99,8 +102,8 @@ export function SessionConfigModal({
                   ? "border-b-2 border-blue-500 text-zinc-100"
                   : "text-zinc-400 hover:text-zinc-200"
               }`}
-              onClick={() => setActiveTab("user")}
               type="button"
+              onClick={() => setActiveTab("user")}
             >
               User Settings
             </button>
@@ -110,8 +113,8 @@ export function SessionConfigModal({
                   ? "border-b-2 border-blue-500 text-zinc-100"
                   : "text-zinc-400 hover:text-zinc-200"
               }`}
-              onClick={() => setActiveTab("agent")}
               type="button"
+              onClick={() => setActiveTab("agent")}
             >
               Agent
             </button>
@@ -124,22 +127,23 @@ export function SessionConfigModal({
             <AvatarConfig
               config={config}
               isConnecting={isConnecting}
-              onConfigChange={setConfig}
               startSession={handleStartSession}
+              onConfigChange={setConfig}
             />
           )}
 
           {activeTab === "user" && (
             <div className="space-y-4">
               <p className="text-sm text-zinc-400">
-                Configure your preferences. These persist locally in your browser.
+                Configure your preferences. These persist locally in your
+                browser.
               </p>
               <AutoForm
                 className="space-y-3"
                 form={userForm}
-                onSubmit={saveUserSettings}
                 schema={UserSettingsSchema}
                 submitLabel="Save Preferences"
+                onSubmit={saveUserSettings}
               />
             </div>
           )}
