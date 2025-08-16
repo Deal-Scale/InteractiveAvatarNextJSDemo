@@ -1,9 +1,8 @@
 "use client";
 
 import React, { useMemo, useRef } from "react";
-import { Plus as PlusIcon, Search, Bookmark } from "lucide-react";
+import { Plus as PlusIcon, Bookmark } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { useSessionStore } from "@/lib/stores/session";
 import { useAgentStore } from "@/lib/stores/agent";
 import { useSettingsStore } from "@/lib/stores/settings";
@@ -13,7 +12,6 @@ import { Sidebar as UISidebar, SidebarContent, SidebarHeader, SidebarProvider, S
 import type { SidebarProps } from "@/components/Sidebar/types";
 import { formatCompactNumber } from "@/components/Sidebar/utils/format";
 import CollapsedEdgeTrigger from "@/components/Sidebar/CollapsedEdgeTrigger";
-import HeaderActionsStack from "@/components/Sidebar/HeaderActionsStack";
 import ApplicationsStarter from "@/components/Sidebar/ApplicationsStarter";
 import ConversationsSection from "@/components/Sidebar/ConversationsSection";
 import AssetsSection from "@/components/Sidebar/AssetsSection";
