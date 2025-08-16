@@ -1,5 +1,5 @@
 import type { StartAvatarRequest } from "@heygen/streaming-avatar";
-import { AvatarQuality, VoiceChatTransport } from "@heygen/streaming-avatar";
+import { VoiceChatTransport } from "@heygen/streaming-avatar";
 import { useEffect, useState } from "react";
 import { z } from "zod";
 
@@ -15,6 +15,7 @@ import {
 
 import { useSessionStore } from "@/lib/stores/session";
 import { UserSettingsSchema } from "@/lib/schemas/global";
+import type { UserSettings } from "@/lib/schemas/global";
 import { AgentConfigSchema } from "@/lib/schemas/agent";
 import { useZodForm } from "@/components/forms/useZodForm";
 import { AutoForm } from "@/components/forms/AutoForm";
@@ -50,7 +51,7 @@ export function SessionConfigModal({
     defaultValues: {
       userId: "local-user",
       language: "en-US",
-      quality: AvatarQuality.High,
+      quality: "high",
       voiceChatTransport: VoiceChatTransport.WEBSOCKET,
       disableIdleTimeout: false,
       activityIdleTimeout: 120,
@@ -58,7 +59,7 @@ export function SessionConfigModal({
         // provider left undefined by default
         confidenceThreshold: 0.6,
       },
-    },
+    } as Partial<UserSettings>,
     mode: "onChange",
   });
 

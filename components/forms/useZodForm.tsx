@@ -9,18 +9,16 @@ import { zodResolver } from "@hookform/resolvers/zod";
 
 // Ensure the form type strictly follows the provided Zod schema and
 // remains compatible with react-hook-form's FieldValues constraint.
-export function useZodForm<
-  TSchema extends z.ZodTypeAny,
-  TValues extends FieldValues = z.infer<TSchema>,
->(
+export function useZodForm<TSchema extends z.ZodType<FieldValues, any, any>>(
   schema: TSchema,
-  options?: Omit<UseFormProps<TValues>, "resolver">,
-): UseFormReturn<TValues> {
-  return useForm<TValues>({
-    // Casts keep resolver generic-friendly while preserving runtime behavior
-    resolver: zodResolver(schema as unknown as z.ZodTypeAny) as any,
+  options?: Omit<UseFormProps<z.infer<TSchema>>, "resolver">,
+): UseFormReturn<z.infer<TSchema>> {
+  return useForm<z.infer<TSchema>>({
+    resolver: zodResolver(
+      schema as unknown as z.ZodType<FieldValues, any, any>,
+    ) as any,
     mode: "onChange",
     criteriaMode: "firstError",
-    ...options,
+    ...(options as any),
   });
 }
