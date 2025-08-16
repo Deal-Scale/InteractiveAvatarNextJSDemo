@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState, ReactNode } from "react";
 import { Button } from "@/components/ui/button";
 import { useSessionStore } from "@/lib/stores/session";
 import {
@@ -32,8 +32,16 @@ type ConversationGroup = {
   conversations: Conversation[];
 };
 
+export interface AppOption {
+  id: string;
+  label: string;
+  icon?: ReactNode;
+  imageUrl?: string; // optional image support for app tiles
+}
+
 export interface SidebarProps {
   onSelect?: (c: Conversation) => void;
+  apps?: AppOption[];
 }
 
 function CollapsedEdgeTrigger() {
@@ -175,7 +183,7 @@ async function fetchConversations(): Promise<ConversationGroup[]> {
   ];
 }
 
-const Sidebar: React.FC<SidebarProps> = ({ onSelect }) => {
+const Sidebar: React.FC<SidebarProps> = ({ onSelect, apps }) => {
   const [groups, setGroups] = useState<ConversationGroup[] | null>(() => loadFromCache());
   const [loading, setLoading] = useState<boolean>(!groups);
   const { agentSettings } = useSessionStore();
@@ -185,6 +193,7 @@ const Sidebar: React.FC<SidebarProps> = ({ onSelect }) => {
   const [collapsedAssets, setCollapsedAssets] = useState<boolean>(false);
   const [collapsedAgents, setCollapsedAgents] = useState<boolean>(false);
   const [collapsedGroups, setCollapsedGroups] = useState<Set<string>>(new Set());
+  const assetsRef = useRef<HTMLDivElement | null>(null);
 
   // Persisted collapse state
   useEffect(() => {
@@ -248,14 +257,20 @@ const Sidebar: React.FC<SidebarProps> = ({ onSelect }) => {
     [agentSettings],
   );
 
-  const filteredAssets = useMemo(
-    () => assets.filter((a) => a.name.toLowerCase().includes(query.toLowerCase())),
-    [assets, query],
-  );
-  const filteredAgents = useMemo(
-    () => agents.filter((a) => a.name.toLowerCase().includes(query.toLowerCase())),
-    [agents, query],
-  );
+  // Search only filters conversations (title and lastMessage)
+  const filteredGroups = useMemo(() => {
+    if (!groups) return null;
+    const q = query.trim().toLowerCase();
+    if (!q) return groups;
+    return groups
+      .map((g) => ({
+        ...g,
+        conversations: g.conversations.filter(
+          (c) => c.title.toLowerCase().includes(q) || c.lastMessage.toLowerCase().includes(q),
+        ),
+      }))
+      .filter((g) => g.conversations.length > 0);
+  }, [groups, query]);
 
   // Initial lazy load with cache
   useEffect(() => {
@@ -289,17 +304,22 @@ const Sidebar: React.FC<SidebarProps> = ({ onSelect }) => {
                 zola.chat
               </div>
             </div>
-            <HeaderActionsStack />
+            <HeaderActionsStack
+              onAssetsClick={() => {
+                setCollapsedAssets(false);
+                assetsRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+              }}
+            />
           </div>
 
-          {/* Search */}
+          {/* Search (filters conversations only) */}
           <div className="px-2 group-data-[state=collapsed]/sidebar:hidden">
             <div className="relative">
               <Search className="pointer-events-none absolute left-2 top-1/2 size-4 -translate-y-1/2 text-zinc-400" />
               <Input
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
-                placeholder="Search assets and agents..."
+                placeholder="Search conversations..."
                 className="pl-8 h-9"
               />
             </div>
@@ -339,14 +359,27 @@ const Sidebar: React.FC<SidebarProps> = ({ onSelect }) => {
                   <Slider value={[starterScale]} min={0.8} max={1.4} step={0.1} onValueChange={(v) => setStarterScale(v[0] ?? 1)} />
                 </div>
                 <SidebarMenu>
-                  {[
-                    { id: 'starter-1', label: 'Quick Demo' },
-                    { id: 'starter-2', label: 'Sales Flow' },
-                    { id: 'starter-3', label: 'Support Flow' },
-                  ].map((s) => (
+                  {(apps && apps.length > 0
+                    ? apps
+                    : [
+                        { id: "starter-1", label: "Quick Demo", icon: <AppWindow className="size-4" /> },
+                        { id: "starter-2", label: "Sales Flow", icon: <AppWindow className="size-4" /> },
+                        { id: "starter-3", label: "Support Flow", icon: <AppWindow className="size-4" /> },
+                      ]
+                  ).map((s) => (
                     <SidebarMenuButton key={s.id} className="justify-start">
-                      <AppWindow className="size-4 mr-2" />
-                      <span style={{ transform: `scale(${starterScale})`, transformOrigin: 'left center' }}>{s.label}</span>
+                      <span className="mr-2 inline-flex size-4 items-center justify-center overflow-hidden rounded">
+                        {s.imageUrl ? (
+                          <img src={s.imageUrl} alt={s.label} className="h-4 w-4 object-cover" />
+                        ) : (
+                          s.icon ?? <AppWindow className="size-4" />
+                        )}
+                      </span>
+                      <span
+                        style={{ transform: `scale(${starterScale})`, transformOrigin: "left center" }}
+                      >
+                        {s.label}
+                      </span>
                     </SidebarMenuButton>
                   ))}
                 </SidebarMenu>
@@ -354,57 +387,7 @@ const Sidebar: React.FC<SidebarProps> = ({ onSelect }) => {
             )}
           </SidebarGroup>
 
-          {/* Assets */}
-          <SidebarGroup>
-            <button
-              type="button"
-              className="flex w-full items-center justify-between px-2 py-1 text-left"
-              onClick={() => setCollapsedAssets((v) => !v)}
-            >
-              <SidebarGroupLabel>Assets</SidebarGroupLabel>
-              <ChevronRight
-                className={`size-3 transition-transform ${collapsedAssets ? "rotate-0" : "rotate-90"}`}
-              />
-            </button>
-            {!collapsedAssets && (
-              <SidebarMenu>
-                {filteredAssets.map((asset) => (
-                  <SidebarMenuButton key={asset.id} className="justify-start">
-                    <span className="truncate pr-2">{asset.name}</span>
-                  </SidebarMenuButton>
-                ))}
-                {filteredAssets.length === 0 && (
-                  <div className="px-3 py-2 text-xs text-zinc-500">No assets found</div>
-                )}
-              </SidebarMenu>
-            )}
-          </SidebarGroup>
-
-          {/* Agents */}
-          <SidebarGroup>
-            <button
-              type="button"
-              className="flex w-full items-center justify-between px-2 py-1 text-left"
-              onClick={() => setCollapsedAgents((v) => !v)}
-            >
-              <SidebarGroupLabel>Agents</SidebarGroupLabel>
-              <ChevronRight
-                className={`size-3 transition-transform ${collapsedAgents ? "rotate-0" : "rotate-90"}`}
-              />
-            </button>
-            {!collapsedAgents && (
-              <SidebarMenu>
-                {filteredAgents.map((agent) => (
-                  <SidebarMenuButton key={agent.id} className="justify-start">
-                    <span className="truncate pr-2">{agent.name}</span>
-                  </SidebarMenuButton>
-                ))}
-                {filteredAgents.length === 0 && (
-                  <div className="px-3 py-2 text-xs text-zinc-500">No agents found</div>
-                )}
-              </SidebarMenu>
-            )}
-          </SidebarGroup>
+          
 
           {loading && (
             <div className="px-2">
@@ -415,7 +398,7 @@ const Sidebar: React.FC<SidebarProps> = ({ onSelect }) => {
             </div>
           )}
 
-          {!loading && groups && groups.map((group) => (
+          {!loading && filteredGroups && filteredGroups.map((group) => (
             <SidebarGroup key={group.period}>
               <button
                 type="button"
@@ -448,6 +431,66 @@ const Sidebar: React.FC<SidebarProps> = ({ onSelect }) => {
               )}
             </SidebarGroup>
           ))}
+
+          {/* Assets (moved after messages) */}
+          <SidebarGroup>
+            <button
+              type="button"
+              className="flex w-full items-center justify-between px-2 py-1 text-left"
+              onClick={() => setCollapsedAssets((v) => !v)}
+            >
+              <SidebarGroupLabel>Assets</SidebarGroupLabel>
+              <ChevronRight
+                className={`size-3 transition-transform ${collapsedAssets ? "rotate-0" : "rotate-90"}`}
+              />
+            </button>
+            <div ref={assetsRef} />
+            {!collapsedAssets && (
+              <SidebarMenu>
+                {assets.map((asset) => (
+                  <SidebarMenuButton key={asset.id} className="justify-start">
+                    {"thumbnailUrl" in (asset as any) && (asset as any).thumbnailUrl ? (
+                      <img
+                        src={(asset as any).thumbnailUrl as string}
+                        alt={asset.name}
+                        className="mr-2 size-4 rounded object-cover"
+                      />
+                    ) : null}
+                    <span className="truncate pr-2">{asset.name}</span>
+                  </SidebarMenuButton>
+                ))}
+                {assets.length === 0 && (
+                  <div className="px-3 py-2 text-xs text-zinc-500">No assets found</div>
+                )}
+              </SidebarMenu>
+            )}
+          </SidebarGroup>
+
+          {/* Agents (moved after messages) */}
+          <SidebarGroup>
+            <button
+              type="button"
+              className="flex w-full items-center justify-between px-2 py-1 text-left"
+              onClick={() => setCollapsedAgents((v) => !v)}
+            >
+              <SidebarGroupLabel>Agents</SidebarGroupLabel>
+              <ChevronRight
+                className={`size-3 transition-transform ${collapsedAgents ? "rotate-0" : "rotate-90"}`}
+              />
+            </button>
+            {!collapsedAgents && (
+              <SidebarMenu>
+                {agents.map((agent) => (
+                  <SidebarMenuButton key={agent.id} className="justify-start">
+                    <span className="truncate pr-2">{agent.name}</span>
+                  </SidebarMenuButton>
+                ))}
+                {agents.length === 0 && (
+                  <div className="px-3 py-2 text-xs text-zinc-500">No agents found</div>
+                )}
+              </SidebarMenu>
+            )}
+          </SidebarGroup>
         </SidebarContent>
 
         <SidebarFooter className="px-2">
@@ -461,10 +504,18 @@ const Sidebar: React.FC<SidebarProps> = ({ onSelect }) => {
   );
 };
 
-function HeaderActionsStack() {
+function HeaderActionsStack({ onAssetsClick }: { onAssetsClick?: () => void }) {
   const { openConfigModal } = useSessionStore();
   return (
     <div className="flex flex-col items-center gap-1">
+      <Button
+        variant="ghost"
+        className="size-8"
+        aria-label="Assets"
+        onClick={onAssetsClick}
+      >
+        A
+      </Button>
       <Button
         variant="ghost"
         className="size-8"
