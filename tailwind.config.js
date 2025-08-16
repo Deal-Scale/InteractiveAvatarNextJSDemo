@@ -64,6 +64,7 @@ module.exports = {
       },
       animation: {
         aurora: 'aurora 8s ease-in-out infinite alternate',
+        'aurora-text': 'aurora-text 8s ease-in-out infinite alternate',
         typing: 'typing 1.2s ease-in-out infinite',
         'loading-dots': 'loading-dots 1.2s ease-in-out infinite',
         wave: 'wave 1s ease-in-out infinite',
@@ -84,6 +85,11 @@ module.exports = {
           '50%': { backgroundPosition: '100% 50%', transform: 'rotate(-3deg) scale(0.95)' },
           '75%': { backgroundPosition: '50% 0%', transform: 'rotate(3deg) scale(1.05)' },
           '100%': { backgroundPosition: '0% 50%', transform: 'rotate(-5deg) scale(0.9)' },
+        },
+        'aurora-text': {
+          '0%': { backgroundPosition: '0% 50%' },
+          '50%': { backgroundPosition: '100% 50%' },
+          '100%': { backgroundPosition: '0% 50%' },
         },
         typing: {
           '0%, 100%': { transform: 'translateY(0)', opacity: '0.5' },
