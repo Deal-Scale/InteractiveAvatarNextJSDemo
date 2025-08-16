@@ -65,10 +65,13 @@ export const BorderBeam = ({
 }: BorderBeamProps) => {
   return (
     <div
-      className="pointer-events-none absolute inset-0 rounded-[inherit] border-transparent [mask-clip:padding-box,border-box] [mask-composite:intersect] [mask-image:linear-gradient(transparent,transparent),linear-gradient(#000,#000)] border-(length:--border-beam-width)"
+      className="pointer-events-none absolute inset-0 rounded-[inherit] border-transparent [mask-clip:padding-box,border-box] [mask-composite:intersect] [mask-image:linear-gradient(transparent,transparent),linear-gradient(#000,#000)]"
       style={
         {
           "--border-beam-width": `${borderWidth}px`,
+          // Tailwind v3 does not support the `border-(length:var(--...))` syntax.
+          // Apply the border width directly via inline style using the CSS variable.
+          borderWidth: "var(--border-beam-width)",
         } as React.CSSProperties
       }
     >
