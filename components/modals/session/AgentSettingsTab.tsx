@@ -12,6 +12,7 @@ interface AgentSettingsTabProps {
   mcpServerOptions: Option[];
   languagesOptions: Option[];
   onSubmit: (values: any) => void;
+  onPublish?: () => void;
 }
 
 export function AgentSettingsTab({
@@ -23,6 +24,7 @@ export function AgentSettingsTab({
   mcpServerOptions,
   languagesOptions,
   onSubmit,
+  onPublish,
 }: AgentSettingsTabProps) {
   return (
     <div className="space-y-4 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-900 p-4 md:p-6 shadow-sm">
@@ -58,6 +60,15 @@ export function AgentSettingsTab({
         submitLabel="Save Agent"
         onSubmit={onSubmit}
       />
+      <div className="flex items-center justify-end">
+        <button
+          type="button"
+          className="inline-flex items-center rounded-md bg-indigo-600 px-3 py-1.5 text-sm font-medium text-white shadow hover:bg-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-400 disabled:opacity-50"
+          onClick={() => onPublish?.()}
+        >
+          Publish Agent
+        </button>
+      </div>
     </div>
   );
 }

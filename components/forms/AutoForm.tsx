@@ -1,3 +1,4 @@
+"use client";
 import type { FieldsConfig } from "./utils";
 
 import React from "react";
@@ -24,7 +25,11 @@ export function AutoForm<TSchema extends z.ZodObject<any, any>>({
   className,
 }: AutoFormProps<TSchema>) {
   const { handleSubmit, formState } = form;
-  const shape = schema.shape;
+  // Support Zod versions where shape is a function vs. a plain object
+  const shape: Record<string, z.ZodTypeAny> =
+    typeof (schema as any)._def?.shape === "function"
+      ? ((schema as any)._def.shape() as Record<string, z.ZodTypeAny>)
+      : ((schema as any).shape as Record<string, z.ZodTypeAny>);
   
   
   const keys = Object.keys(shape);
@@ -36,9 +41,18 @@ export function AutoForm<TSchema extends z.ZodObject<any, any>>({
     >
       {keys.map((key) => {
         const def = shape[key];
+        if (process.env.NODE_ENV !== "production") {
+          try {
+            // eslint-disable-next-line no-console
+            console.debug("AutoForm field", key, (def as any)?._def?.typeName);
+          } catch {}
+        }
         // Support nested object fields by rendering their children with dotted names
         if ((def as any)?._def?.typeName === "ZodObject") {
-          const innerShape = (def as any).shape as Record<string, z.ZodTypeAny>;
+          const innerShape: Record<string, z.ZodTypeAny> =
+            typeof (def as any)._def?.shape === "function"
+              ? ((def as any)._def.shape() as Record<string, z.ZodTypeAny>)
+              : ((def as any).shape as Record<string, z.ZodTypeAny>);
           return (
             <fieldset key={key} className="rounded-md border border-zinc-200 p-2 dark:border-zinc-800">
               <legend className="px-1 text-xs uppercase tracking-wide text-zinc-500 dark:text-zinc-400">{key}</legend>

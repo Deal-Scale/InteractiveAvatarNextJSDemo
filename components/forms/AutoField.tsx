@@ -1,3 +1,4 @@
+"use client";
 import React from "react";
 import { z } from "zod";
 import { UseFormReturn } from "react-hook-form";
@@ -80,26 +81,38 @@ export const AutoField: React.FC<AutoFieldProps> = ({ name, def, form, fields = 
   };
 
   const base = unwrapType(def);
+  if (process.env.NODE_ENV !== "production") {
+    try {
+      // eslint-disable-next-line no-console
+      console.debug("AutoField detect", {
+        name,
+        typeName: (base as any)?._def?.typeName,
+      });
+    } catch {}
+  }
 
   // Enum
-  if (base instanceof z.ZodEnum) {
+  if ((base as any)?._def?.typeName === "ZodEnum") {
     const values = enumStringValuesFromZodEnum((base as any).options);
     const opts = optionsFromStrings(values);
     return renderSelect(opts, Boolean((cfg as any).multiple));
   }
 
-  // Union of enums/strings -> select
+  // Union of enums/strings/literals -> select
   if ((base as any)._def?.typeName === "ZodUnion") {
     const options: z.ZodTypeAny[] = (base as any)._def?.options ?? [];
     const stringVals: string[] = [];
     for (const opt of options) {
-      if (opt instanceof z.ZodEnum) {
+      if ((opt as any)?._def?.typeName === "ZodEnum") {
         const raw = (opt as any).options;
         const vals: unknown[] = Array.isArray(raw) ? raw : Object.values(raw ?? {});
         for (const v of vals) if (typeof v === "string") stringVals.push(v);
       } else if ((opt as any)._def?.typeName === "ZodNativeEnum") {
         const enumObj = (opt as any)._def.values as Record<string, string | number>;
         for (const v of Object.values(enumObj)) if (typeof v === "string") stringVals.push(v);
+      } else if ((opt as any)._def?.typeName === "ZodLiteral") {
+        const litVal = (opt as any)._def?.value;
+        if (typeof litVal === "string") stringVals.push(litVal);
       }
     }
     if (stringVals.length) {
@@ -119,7 +132,7 @@ export const AutoField: React.FC<AutoFieldProps> = ({ name, def, form, fields = 
   // Array -> multi select or textarea
   if ((base as any)._def?.typeName === "ZodArray") {
     const el = (base as any)._def.type as z.ZodTypeAny;
-    if (el instanceof z.ZodEnum) {
+    if ((el as any)?._def?.typeName === "ZodEnum") {
       const values = enumStringValuesFromZodEnum((el as any).options);
       const opts = optionsFromStrings(values);
       return renderSelect(opts, true);

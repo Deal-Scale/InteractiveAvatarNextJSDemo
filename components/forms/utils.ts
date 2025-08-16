@@ -26,6 +26,7 @@ export type FieldsConfig<T> = Partial<Record<keyof T & string, FieldConfig>>;
 // Unwrap wrappers like Optional/Nullable/Default/Effects to detect the base type
 export function unwrapType(t: z.ZodTypeAny): z.ZodTypeAny {
   let cur: any = t;
+  const trace: string[] = [];
 
   while (
     cur?._def?.typeName === "ZodOptional" ||
@@ -33,6 +34,7 @@ export function unwrapType(t: z.ZodTypeAny): z.ZodTypeAny {
     cur?._def?.typeName === "ZodDefault" ||
     cur?._def?.typeName === "ZodEffects"
   ) {
+    trace.push(cur?._def?.typeName);
     if (cur?._def?.innerType) {
       cur = cur._def.innerType;
     } else if (cur?._def?.schema) {
@@ -41,7 +43,15 @@ export function unwrapType(t: z.ZodTypeAny): z.ZodTypeAny {
       break;
     }
   }
-
+  if (process.env.NODE_ENV !== "production") {
+    try {
+      // eslint-disable-next-line no-console
+      console.debug("unwrapType trace", {
+        wrappers: trace,
+        base: cur?._def?.typeName,
+      });
+    } catch {}
+  }
   return cur as z.ZodTypeAny;
 }
 
