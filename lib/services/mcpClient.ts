@@ -2,6 +2,36 @@ import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { StdioClientTransport } from "@modelcontextprotocol/sdk/client/stdio.js";
 import { StreamableHTTPClientTransport } from "@modelcontextprotocol/sdk/client/streamableHttp.js";
 
+// Coerce loose argument maps into the string-only records expected by MCP SDK
+function toStringRecord(args: Record<string, unknown>): Record<string, string> {
+  const out: Record<string, string> = {};
+  
+  for (const [k, v] of Object.entries(args)) {
+    if (v === undefined) continue;
+    if (v === null) {
+      out[k] = "null";
+      continue;
+    }
+    switch (typeof v) {
+      case "string":
+        out[k] = v;
+        break;
+      case "number":
+      case "boolean":
+        out[k] = String(v);
+        break;
+      default:
+        try {
+          out[k] = JSON.stringify(v);
+        } catch {
+          out[k] = String(v as any);
+        }
+    }
+  }
+
+  return out;
+}
+
 /**
  * MCP Client (server-side only)
  *
@@ -27,8 +57,11 @@ class MCPClientWrapper {
     const useHttp = !!serverUrl;
 
     let transport: StreamableHTTPClientTransport | StdioClientTransport;
+
     if (useHttp) {
-      transport = new StreamableHTTPClientTransport(new URL(serverUrl as string));
+      transport = new StreamableHTTPClientTransport(
+        new URL(serverUrl as string),
+      );
     } else {
       const args = process.env.MCP_STDIO_ARGS?.split(" ") ?? [
         "-y",
@@ -39,10 +72,12 @@ class MCPClientWrapper {
       // Build string-only env object
       const baseEnv = process.env as Record<string, string | undefined>;
       const env: Record<string, string> = {};
+
       for (const [k, v] of Object.entries(baseEnv)) {
         if (typeof v === "string") env[k] = v;
       }
-      env.REGISTRY_URL = env.REGISTRY_URL ?? "https://www.prompt-kit.com/c/registry.json";
+      env.REGISTRY_URL =
+        env.REGISTRY_URL ?? "https://www.prompt-kit.com/c/registry.json";
 
       transport = new StdioClientTransport({
         command: process.env.MCP_STDIO_COMMAND || "npx",
@@ -55,6 +90,7 @@ class MCPClientWrapper {
       await client.connect(transport);
       this.client = client;
       this.connecting = null;
+
       return client;
     })();
 
@@ -67,40 +103,51 @@ class MCPClientWrapper {
 
   async listTools() {
     const c = await this.ensure();
+
     return c.listTools();
   }
 
   async listResources() {
     const c = await this.ensure();
+
     return c.listResources();
   }
 
   async listPrompts() {
     const c = await this.ensure();
+
     return c.listPrompts();
   }
 
   async getPrompt(name: string, args?: Record<string, unknown>) {
     const c = await this.ensure();
-    return c.getPrompt({ name, arguments: args ?? {} });
+    const stringArgs = args ? toStringRecord(args) : {};
+
+    return c.getPrompt({ name, arguments: stringArgs });
   }
 
   async readResource(uri: string) {
     const c = await this.ensure();
+
     return c.readResource({ uri });
   }
 
   async callTool(name: string, args?: Record<string, unknown>) {
     const c = await this.ensure();
-    return c.callTool({ name, arguments: args ?? {} });
+    const stringArgs = args ? toStringRecord(args) : {};
+
+    return c.callTool({ name, arguments: stringArgs });
   }
 
   async complete(input: {
-    ref: { type: "ref/resource"; uri: string } | { type: "ref/prompt"; name: string };
+    ref:
+      | { type: "ref/resource"; uri: string }
+      | { type: "ref/prompt"; name: string };
     argument: { name: string; value: string };
     context?: { arguments?: Record<string, string> };
   }) {
     const c = await this.ensure();
+
     return c.complete(input as any);
   }
 
