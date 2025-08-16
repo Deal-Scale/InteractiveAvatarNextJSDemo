@@ -2,12 +2,15 @@ import React from "react";
 import { z } from "zod";
 import { UseFormReturn } from "react-hook-form";
 
-type Widget = "input" | "number" | "textarea" | "select" | "switch";
+type Widget = "input" | "number" | "textarea" | "select" | "switch" | "slider";
 
 type FieldConfig = {
   label?: string;
   widget?: Widget;
   options?: Array<{ value: string; label: string }>;
+  min?: number;
+  max?: number;
+  step?: number;
 };
 
 export type FieldsConfig<T> = Partial<Record<keyof T & string, FieldConfig>>;
@@ -107,6 +110,22 @@ export function AutoForm<TSchema extends z.ZodObject<any, any>>({
     }
 
     if ((def as any)._def?.typeName === "ZodNumber") {
+      if (cfg.widget === "slider") {
+        return (
+          <div key={key} className="flex flex-col gap-1">
+            <label className="text-sm text-zinc-300">{label}</label>
+            <input
+              className="w-full"
+              type="range"
+              min={cfg.min}
+              max={cfg.max}
+              step={cfg.step}
+              {...register(key as any, { valueAsNumber: true })}
+            />
+            {error && <span className="text-xs text-red-400">{error}</span>}
+          </div>
+        );
+      }
       return (
         <div key={key} className="flex flex-col gap-1">
           <label className="text-sm text-zinc-300">{label}</label>
