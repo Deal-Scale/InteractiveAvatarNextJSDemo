@@ -6,6 +6,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Slider } from "@/components/ui/slider";
 import { useSessionStore } from "@/lib/stores/session";
+import { useRouter } from "next/navigation";
+import { useBookmarkStore } from "@/lib/stores/bookmarks";
 import {
   Sidebar as UISidebar,
   SidebarContent,
@@ -184,6 +186,7 @@ async function fetchConversations(): Promise<ConversationGroup[]> {
 }
 
 const Sidebar: React.FC<SidebarProps> = ({ onSelect, apps }) => {
+  const router = useRouter();
   const [groups, setGroups] = useState<ConversationGroup[] | null>(() => loadFromCache());
   const [loading, setLoading] = useState<boolean>(!groups);
   const { agentSettings } = useSessionStore();
@@ -195,16 +198,21 @@ const Sidebar: React.FC<SidebarProps> = ({ onSelect, apps }) => {
   const [collapsedGroups, setCollapsedGroups] = useState<Set<string>>(new Set());
   const [selectionMode, setSelectionMode] = useState<boolean>(false);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
-  const [bookmarkedIds, setBookmarkedIds] = useState<Set<string>>(() => {
-    if (typeof window === "undefined") return new Set();
-    try {
-      const raw = localStorage.getItem("sidebar.bookmarks.v1");
-      if (!raw) return new Set();
-      return new Set<string>(JSON.parse(raw));
-    } catch {
-      return new Set();
-    }
-  });
+  const {
+    bookmarkedIds,
+    folders: bookmarkFolders,
+    meta: bookmarkMeta,
+    addBookmark: addBm,
+    removeBookmark: removeBm,
+    setBookmarkMeta: setBmMeta,
+    clearBookmarkMeta: clearBmMeta,
+    upsertFolder,
+  } = useBookmarkStore();
+  const [bookmarkModalOpen, setBookmarkModalOpen] = useState<boolean>(false);
+  const [bookmarkTargetId, setBookmarkTargetId] = useState<string | null>(null);
+  const [draftFolderId, setDraftFolderId] = useState<string>("");
+  const [draftNewFolder, setDraftNewFolder] = useState<string>("");
+  const [draftTags, setDraftTags] = useState<string>("");
   const [archivedIds, setArchivedIds] = useState<Set<string>>(() => {
     if (typeof window === "undefined") return new Set();
     try {
@@ -251,14 +259,6 @@ const Sidebar: React.FC<SidebarProps> = ({ onSelect, apps }) => {
       );
     } catch {}
   }, [collapsedStarter, collapsedAssets, collapsedAgents, collapsedGroups]);
-
-  // Persist bookmarks and archived
-  useEffect(() => {
-    if (typeof window === "undefined") return;
-    try {
-      localStorage.setItem("sidebar.bookmarks.v1", JSON.stringify(Array.from(bookmarkedIds)));
-    } catch {}
-  }, [bookmarkedIds]);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -318,6 +318,13 @@ const Sidebar: React.FC<SidebarProps> = ({ onSelect, apps }) => {
     return all.filter((c) => archivedIds.has(c.id));
   }, [groups, archivedIds]);
 
+  // Visible (rendered) conversation ids helper: mirrors the UI filtering (query + not archived)
+  const visibleConversationIds = useMemo(() => {
+    const base = (filteredGroups ?? groups) || [];
+    const all = base.flatMap((g) => g.conversations);
+    return all.filter((c) => !archivedIds.has(c.id)).map((c) => c.id);
+  }, [filteredGroups, groups, archivedIds]);
+
   // Handlers
   const toggleSelect = (id: string) => {
     setSelectedIds((prev) => {
@@ -329,6 +336,11 @@ const Sidebar: React.FC<SidebarProps> = ({ onSelect, apps }) => {
   };
 
   const clearSelection = () => setSelectedIds(new Set());
+
+  const selectAllVisible = () => {
+    if (!visibleConversationIds.length) return;
+    setSelectedIds(new Set(visibleConversationIds));
+  };
 
   const deleteSelected = () => {
     if (!groups || selectedIds.size === 0) return;
@@ -349,13 +361,35 @@ const Sidebar: React.FC<SidebarProps> = ({ onSelect, apps }) => {
     setSelectionMode(false);
   };
 
-  const toggleBookmark = (id: string) => {
-    setBookmarkedIds((prev) => {
-      const next = new Set(prev);
-      if (next.has(id)) next.delete(id);
-      else next.add(id);
-      return next;
-    });
+  const openBookmarkModal = (id: string) => {
+    setBookmarkTargetId(id);
+    const existing = bookmarkMeta[id];
+    setDraftFolderId(existing?.folderId ?? "");
+    setDraftNewFolder("");
+    setDraftTags((existing?.tags ?? []).join(", "));
+    setBookmarkModalOpen(true);
+  };
+
+  const saveBookmark = () => {
+    if (!bookmarkTargetId) return;
+    let folderId = draftFolderId;
+    if (!folderId && draftNewFolder.trim()) {
+      folderId = upsertFolder(draftNewFolder);
+    }
+    const tags = draftTags
+      .split(/[\,\n]/)
+      .map((t) => t.trim())
+      .filter(Boolean);
+    addBm(bookmarkTargetId!);
+    setBmMeta(bookmarkTargetId!, { folderId: folderId || undefined, tags });
+    setBookmarkModalOpen(false);
+  };
+
+  const handleRemoveBookmark = () => {
+    if (!bookmarkTargetId) return;
+    removeBm(bookmarkTargetId);
+    clearBmMeta(bookmarkTargetId);
+    setBookmarkModalOpen(false);
   };
 
   // Initial lazy load with cache
@@ -413,48 +447,6 @@ const Sidebar: React.FC<SidebarProps> = ({ onSelect, apps }) => {
         </SidebarHeader>
 
         <SidebarContent className="pt-2">
-          {/* Bulk selection toolbar */}
-          <div className="px-2 pb-2 group-data-[state=collapsed]/sidebar:hidden">
-            <div className="flex items-center justify-between gap-2">
-              <Button
-                variant="outline"
-                size="sm"
-                className="gap-2 bg-background text-foreground border border-border hover:bg-muted"
-                onClick={() => {
-                  if (selectionMode) {
-                    clearSelection();
-                    setSelectionMode(false);
-                  } else {
-                    setSelectionMode(true);
-                  }
-                }}
-              >
-                <CheckSquare className="size-4" />
-                <span>{selectionMode ? "Cancel Select" : "Select"}</span>
-              </Button>
-              {selectionMode && (
-                <div className="flex items-center gap-2">
-                  <span className="text-xs text-muted-foreground">{selectedIds.size} selected</span>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="gap-2 text-red-600 border-border hover:bg-muted"
-                    onClick={deleteSelected}
-                  >
-                    <Trash2 className="size-4" /> Delete
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="gap-2 border-border hover:bg-muted"
-                    onClick={archiveSelected}
-                  >
-                    <Archive className="size-4" /> Archive
-                  </Button>
-                </div>
-              )}
-            </div>
-          </div>
           <div className="px-2">
             <Button
               variant="outline"
@@ -463,7 +455,17 @@ const Sidebar: React.FC<SidebarProps> = ({ onSelect, apps }) => {
               <PlusIcon className="size-4" />
               <span className="group-data-[state=collapsed]/sidebar:hidden">New Chat</span>
             </Button>
+            <Button
+              variant="outline"
+              className="mb-3 flex w-full items-center gap-2 group-data-[state=collapsed]/sidebar:justify-center bg-background text-foreground border border-border hover:bg-muted"
+              onClick={() => router.push("/bookmarks")}
+            >
+              <Bookmark className="size-4" />
+              <span className="group-data-[state=collapsed]/sidebar:hidden">Bookmarks</span>
+            </Button>
           </div>
+
+          
 
           {/* Applications Starter */}
           <SidebarGroup>
@@ -527,6 +529,28 @@ const Sidebar: React.FC<SidebarProps> = ({ onSelect, apps }) => {
             </div>
           )}
 
+          {/* Selection toggle above chats */}
+          {!loading && (
+            <div className="px-2 pb-2 group-data-[state=collapsed]/sidebar:hidden">
+              <Button
+                variant="outline"
+                className="w-full justify-center border border-border hover:bg-muted"
+                onClick={() => {
+                  if (selectionMode) {
+                    clearSelection();
+                    setSelectionMode(false);
+                  } else {
+                    setSelectionMode(true);
+                    setSelectedIds(new Set(visibleConversationIds));
+                  }
+                }}
+                disabled={!filteredGroups || visibleConversationIds.length === 0}
+              >
+                {selectionMode ? "Deselect All" : "Select Visible"}
+              </Button>
+            </div>
+          )}
+
           {!loading && filteredGroups && filteredGroups.map((group) => (
             <SidebarGroup key={group.period}>
               <button
@@ -578,9 +602,9 @@ const Sidebar: React.FC<SidebarProps> = ({ onSelect, apps }) => {
                               type="button"
                               onClick={(e) => {
                                 e.stopPropagation();
-                                toggleBookmark(conversation.id);
+                                openBookmarkModal(conversation.id);
                               }}
-                              aria-label={isBookmarked ? "Remove bookmark" : "Add bookmark"}
+                              aria-label={isBookmarked ? "Edit bookmark" : "Add bookmark"}
                               className="inline-flex items-center justify-center rounded p-1 text-muted-foreground hover:bg-muted"
                             >
                               {isBookmarked ? (
@@ -666,6 +690,74 @@ const Sidebar: React.FC<SidebarProps> = ({ onSelect, apps }) => {
         </SidebarFooter>
       </UISidebar>
       <CollapsedEdgeTrigger />
+      {/* Bookmark Modal */}
+      {bookmarkModalOpen && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center">
+          <div className="absolute inset-0 bg-black/50" onClick={() => setBookmarkModalOpen(false)} />
+          <div className="relative z-[61] w-[92vw] max-w-md rounded-lg border border-border bg-background p-4 text-foreground shadow-lg">
+            <div className="mb-3 text-sm font-medium">{bookmarkedIds.has(bookmarkTargetId || "") ? "Edit bookmark" : "Add bookmark"}</div>
+            <div className="space-y-3">
+              <div>
+                <label className="mb-1 block text-xs text-muted-foreground">Folder</label>
+                <select
+                  className="w-full rounded-md border border-border bg-background px-2 py-2 text-sm"
+                  value={draftFolderId}
+                  onChange={(e) => setDraftFolderId(e.target.value)}
+                >
+                  <option value="">No folder</option>
+                  {bookmarkFolders.map((f) => (
+                    <option key={f.id} value={f.id}>
+                      {f.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label className="mb-1 block text-xs text-muted-foreground">Or create new folder</label>
+                <input
+                  type="text"
+                  placeholder="New folder name"
+                  value={draftNewFolder}
+                  onChange={(e) => setDraftNewFolder(e.target.value)}
+                  className="w-full rounded-md border border-border bg-background px-2 py-2 text-sm"
+                />
+              </div>
+              <div>
+                <label className="mb-1 block text-xs text-muted-foreground">Tags (comma separated)</label>
+                <textarea
+                  rows={2}
+                  placeholder="e.g. roadmap, Q3, priority"
+                  value={draftTags}
+                  onChange={(e) => setDraftTags(e.target.value)}
+                  className="w-full rounded-md border border-border bg-background px-2 py-2 text-sm"
+                />
+              </div>
+            </div>
+            <div className="mt-4 flex items-center justify-between gap-2">
+              <div className="text-xs text-muted-foreground">
+                {draftFolderId
+                  ? `Folder: ${(bookmarkFolders.find((f) => f.id === draftFolderId)?.name) || "(new)"}`
+                  : draftNewFolder
+                  ? `Folder: ${draftNewFolder}`
+                  : "No folder"}
+              </div>
+              <div className="flex items-center gap-2">
+                {bookmarkedIds.has(bookmarkTargetId || "") && (
+                  <Button variant="outline" size="sm" className="border-border hover:bg-muted" onClick={handleRemoveBookmark}>
+                    Remove
+                  </Button>
+                )}
+                <Button variant="outline" size="sm" className="border-border hover:bg-muted" onClick={() => setBookmarkModalOpen(false)}>
+                  Cancel
+                </Button>
+                <Button size="sm" className="bg-primary text-primary-foreground hover:opacity-90" onClick={saveBookmark}>
+                  Save
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </SidebarProvider>
   );
 };
