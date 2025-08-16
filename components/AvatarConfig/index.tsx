@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import {
   AvatarQuality,
   ElevenLabsModel,
@@ -36,8 +36,33 @@ export const AvatarConfig: React.FC<AvatarConfigProps> = ({
   };
   const [showMore, setShowMore] = useState<boolean>(false);
 
+  const [avatarOptions, setAvatarOptions] = useState(AVATARS);
+
+  useEffect(() => {
+    let cancelled = false;
+    const fetchAvatars = async () => {
+      try {
+        const res = await fetch("/api/avatars", { cache: "no-store" });
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const json = await res.json();
+        const list = Array.isArray(json?.data) ? json.data : [];
+        const mapped = list.map((a: any) => ({
+          avatar_id: a.avatar_id,
+          name: a.pose_name || a.normal_preview || a.default_voice || a.avatar_id,
+        }));
+        if (!cancelled && mapped.length) setAvatarOptions(mapped);
+      } catch (_err) {
+        // fallback to built-in AVATARS already in state
+      }
+    };
+    fetchAvatars();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
   const selectedAvatar = useMemo(() => {
-    const avatar = AVATARS.find(
+    const avatar = avatarOptions.find(
       (avatar) => avatar.avatar_id === config.avatarName,
     );
 
@@ -54,7 +79,13 @@ export const AvatarConfig: React.FC<AvatarConfigProps> = ({
         avatarId: avatar.avatar_id,
       };
     }
-  }, [config.avatarName]);
+  }, [config.avatarName, avatarOptions]);
+
+  const customIdValid = useMemo(() => {
+    if (!selectedAvatar?.isCustom) return true;
+    if (!config.avatarName) return false;
+    return avatarOptions.some((a) => a.avatar_id === config.avatarName);
+  }, [selectedAvatar?.isCustom, config.avatarName, avatarOptions]);
 
   return (
     <div className="relative flex flex-col gap-4 w-[550px] py-8 max-h-full overflow-y-auto px-4">
@@ -72,7 +103,7 @@ export const AvatarConfig: React.FC<AvatarConfigProps> = ({
               ? !!selectedAvatar?.isCustom
               : option.avatar_id === selectedAvatar?.avatarId
           }
-          options={[...AVATARS, "CUSTOM"]}
+          options={[...avatarOptions, "CUSTOM"]}
           placeholder="Select Avatar"
           renderOption={(option) => {
             return typeof option === "string"
@@ -98,6 +129,13 @@ export const AvatarConfig: React.FC<AvatarConfigProps> = ({
             value={config.avatarName}
             onChange={(value) => onChange("avatarName", value)}
           />
+          {config.avatarName ? (
+            customIdValid ? (
+              <div className="text-green-400 text-xs mt-1">Avatar ID found</div>
+            ) : (
+              <div className="text-red-400 text-xs mt-1">Avatar ID not found in available avatars</div>
+            )
+          ) : null}
         </Field>
       )}
       <Field label="Language">
@@ -189,7 +227,9 @@ export const AvatarConfig: React.FC<AvatarConfigProps> = ({
         <button
           className="px-4 py-2 rounded-md bg-blue-600 text-white disabled:opacity-50 w-full"
           onClick={() => startSession()}
-          disabled={isConnecting}
+          disabled={
+            isConnecting || (selectedAvatar?.isCustom && !!config.avatarName && !customIdValid)
+          }
         >
           {isConnecting ? "Connecting..." : "Start Session"}
         </button>
