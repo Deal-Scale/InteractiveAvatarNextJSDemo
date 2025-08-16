@@ -1,5 +1,4 @@
 import type { StartAvatarRequest } from "@heygen/streaming-avatar";
-import { VoiceChatTransport } from "@heygen/streaming-avatar";
 
 import { useEffect, useState } from "react";
 import { z } from "zod";
@@ -24,6 +23,8 @@ import {
   UserSettingsSchema,
   AppGlobalSettingsSchema,
 } from "@/lib/schemas/global";
+import { languagesOptions, loadAvatarOptions, loadVoiceOptions, loadMcpServerOptions } from "@/data/options";
+import type { Option } from "@/data/options";
 
 interface SessionConfigModalProps {
   isConnecting: boolean;
@@ -45,6 +46,9 @@ export function SessionConfigModal({
   } = useSettingsStore();
   const { currentAgent, setAgent, setLastStarted, markClean } = useAgentStore();
   const [config, setConfig] = useState<StartAvatarRequest>(initialConfig);
+  const [avatarOptions, setAvatarOptions] = useState<Option[]>([]);
+  const [voiceOptions, setVoiceOptions] = useState<Option[]>([]);
+  const [mcpServerOptions, setMcpServerOptions] = useState<Option[]>([]);
   const [activeTab, setActiveTab] = useState<
     "session" | "global" | "user" | "agent"
   >("session");
@@ -52,6 +56,29 @@ export function SessionConfigModal({
   useEffect(() => {
     setConfig(initialConfig);
   }, [initialConfig]);
+
+  // Load dynamic select options (avatars, voices, MCP servers)
+  useEffect(() => {
+    let mounted = true;
+    (async () => {
+      try {
+        const [avatars, voices, mcp] = await Promise.all([
+          loadAvatarOptions(),
+          loadVoiceOptions(),
+          loadMcpServerOptions(),
+        ]);
+        if (!mounted) return;
+        setAvatarOptions(avatars);
+        setVoiceOptions(voices);
+        setMcpServerOptions(mcp);
+      } catch {
+        // best-effort; keep empty on failure
+      }
+    })();
+    return () => {
+      mounted = false;
+    };
+  }, []);
 
   // Prefill/merge settings into session config whenever settings change
   useEffect(() => {
@@ -62,13 +89,8 @@ export function SessionConfigModal({
         const mappedQuality = typeof q === "string" ? (q[0].toUpperCase() + q.slice(1).toLowerCase()) : q;
         next = {
           ...next,
-          voiceChatTransport: userSettings.voiceChatTransport ?? next.voiceChatTransport,
           quality: (mappedQuality as any) ?? next.quality,
           language: userSettings.language ?? next.language,
-          sttSettings: {
-            ...next.sttSettings,
-            provider: userSettings.stt?.provider ?? next.sttSettings?.provider,
-          },
         } as StartAvatarRequest;
       }
       return next;
@@ -94,6 +116,13 @@ export function SessionConfigModal({
         avatarName: latestAgent.avatarId ?? config.avatarName,
         // agent.knowledgeBaseId -> session.knowledgeId
         knowledgeId: latestAgent.knowledgeBaseId ?? config.knowledgeId,
+        // agent.voiceChatTransport -> session.voiceChatTransport
+        voiceChatTransport: latestAgent.voiceChatTransport ?? config.voiceChatTransport,
+        // agent.stt.provider -> session.sttSettings.provider
+        sttSettings: {
+          ...config.sttSettings,
+          provider: latestAgent.stt?.provider ?? config.sttSettings?.provider,
+        },
         voice: {
           ...config.voice,
           voiceId: latestAgent.voiceId ?? config.voice?.voiceId,
@@ -107,20 +136,15 @@ export function SessionConfigModal({
         },
       } as typeof config;
 
-      // Merge user/global settings into API request (transport, quality, language, stt)
+      // Merge user/global settings into API request (quality, language)
       if (userSettings) {
         // map string quality to enum if necessary
         const q = (userSettings as any).quality;
         const mappedQuality = typeof q === "string" ? (q[0].toUpperCase() + q.slice(1).toLowerCase()) : q;
         finalConfig = {
           ...finalConfig,
-          voiceChatTransport: userSettings.voiceChatTransport ?? finalConfig.voiceChatTransport,
           quality: (mappedQuality as any) ?? finalConfig.quality,
           language: userSettings.language ?? finalConfig.language,
-          sttSettings: {
-            ...finalConfig.sttSettings,
-            provider: userSettings.stt?.provider ?? finalConfig.sttSettings?.provider,
-          },
         } as typeof finalConfig;
       }
     } catch {
@@ -137,13 +161,6 @@ export function SessionConfigModal({
       userId: "local-user",
       language: "en-US",
       quality: "high",
-      voiceChatTransport: VoiceChatTransport.WEBSOCKET,
-      disableIdleTimeout: false,
-      activityIdleTimeout: 120,
-      stt: {
-        // provider left undefined by default
-        confidenceThreshold: 0.6,
-      },
     } as Partial<UserSettings>,
     mode: "onChange",
   });
@@ -317,6 +334,18 @@ export function SessionConfigModal({
                 className="space-y-3"
                 form={userForm}
                 schema={UserSettingsSchema}
+                fields={{
+                  language: { label: "Language", widget: "select", options: languagesOptions },
+                  quality: {
+                    label: "Quality",
+                    widget: "select",
+                    options: [
+                      { value: "high", label: "High" },
+                      { value: "medium", label: "Medium" },
+                      { value: "low", label: "Low" },
+                    ],
+                  },
+                }}
                 submitLabel="Save Preferences"
                 onSubmit={saveUserSettings}
               />
@@ -349,6 +378,22 @@ export function SessionConfigModal({
                 schema={AgentConfigSchema}
                 fields={{
                   temperature: { label: "Temperature", widget: "slider", min: 0, max: 2, step: 0.1 },
+                  avatarId: { label: "Avatar", widget: "select", options: avatarOptions },
+                  voiceId: { label: "Voice", widget: "select", options: voiceOptions },
+                  voiceChatTransport: { label: "Voice Chat Transport" },
+                  disableIdleTimeout: {
+                    label: "Disable Idle Timeout",
+                    widget: "select",
+                    options: [
+                      { value: "true", label: "Enabled" },
+                      { value: "false", label: "Disabled" },
+                    ],
+                  },
+                  activityIdleTimeout: { label: "Activity Idle Timeout (sec)", min: 30, max: 3600, step: 10 },
+                  stt: { label: "STT Settings" },
+                  language: { label: "Language", widget: "select", options: languagesOptions },
+                  systemPrompt: { label: "System Prompt / Knowledge Base Text", widget: "textarea" },
+                  mcpServers: { label: "MCP Servers", widget: "multiselect", options: mcpServerOptions },
                 }}
                 submitLabel="Save Agent"
                 onSubmit={saveAgentSettings}
