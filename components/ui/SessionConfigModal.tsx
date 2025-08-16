@@ -44,7 +44,7 @@ export function SessionConfigModal({
   const { isConfigModalOpen, closeConfigModal, agentSettings } = useSessionStore();
   const { userSettings, setUserSettings, globalSettings, setGlobalSettings } =
     useSettingsStore();
-  const { currentAgent, setAgent, setLastStarted, markClean } = useAgentStore();
+  const { currentAgent, setAgent, updateAgent, setLastStarted, markClean } = useAgentStore();
   const [config, setConfig] = useState<StartAvatarRequest>(initialConfig);
   const [activeTab, setActiveTab] = useState<
     "session" | "global" | "user" | "agent"
@@ -113,6 +113,26 @@ export function SessionConfigModal({
     } as z.infer<typeof AgentConfigSchema>,
     mode: "onChange",
   });
+
+  // Live-sync agent form -> agent store so sidebar reflects changes immediately
+  useEffect(() => {
+    const subscription = agentForm.watch((values) => {
+      try {
+        updateAgent(values as any);
+      } catch {
+        // noop
+      }
+    });
+    return () => {
+      try {
+        // RHF returns a subscription object with unsubscribe
+        (subscription as any)?.unsubscribe?.();
+      } catch {
+        // noop
+      }
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [agentForm, updateAgent]);
 
   const saveUserSettings = (values: z.infer<typeof UserSettingsSchema>) => {
     try {

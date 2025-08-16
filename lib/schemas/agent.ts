@@ -1,4 +1,4 @@
-import z from "zod";
+import { z } from "zod";
 import { STTProvider, VoiceChatTransport, VoiceEmotion, AvatarQuality } from "@heygen/streaming-avatar";
 
 export const AgentConfigSchema = z.object({
