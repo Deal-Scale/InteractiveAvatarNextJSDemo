@@ -1,7 +1,7 @@
 import type { StartAvatarRequest } from "@heygen/streaming-avatar";
 import { AvatarQuality, VoiceChatTransport } from "@heygen/streaming-avatar";
-
 import { useEffect, useState } from "react";
+import { z } from "zod";
 
 import { AvatarConfig } from "../AvatarConfig";
 
@@ -15,6 +15,7 @@ import {
 
 import { useSessionStore } from "@/lib/stores/session";
 import { UserSettingsSchema } from "@/lib/schemas/global";
+import { AgentConfigSchema } from "@/lib/schemas/agent";
 import { useZodForm } from "@/components/forms/useZodForm";
 import { AutoForm } from "@/components/forms/AutoForm";
 
@@ -61,7 +62,17 @@ export function SessionConfigModal({
     mode: "onChange",
   });
 
-  const saveUserSettings = (values: any) => {
+  // Agent Settings form instance
+  const agentForm = useZodForm(AgentConfigSchema, {
+    defaultValues: {
+      id: "local-agent",
+      name: "Local Agent",
+      avatarId: "",
+    } as z.infer<typeof AgentConfigSchema>,
+    mode: "onChange",
+  });
+
+  const saveUserSettings = (values: z.infer<typeof UserSettingsSchema>) => {
     try {
       if (typeof window !== "undefined") {
         localStorage.setItem("userSettings", JSON.stringify(values));
@@ -72,6 +83,37 @@ export function SessionConfigModal({
       console.warn("Failed to persist user settings", e);
     }
   };
+
+  const saveAgentSettings = (values: z.infer<typeof AgentConfigSchema>) => {
+    try {
+      if (typeof window !== "undefined") {
+        localStorage.setItem("agentSettings", JSON.stringify(values));
+      }
+      console.log("Agent settings saved:", values);
+    } catch (e) {
+      console.warn("Failed to persist agent settings", e);
+    }
+  };
+
+  // Load saved settings on mount
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    try {
+      const savedUser = localStorage.getItem("userSettings");
+      if (savedUser) {
+        const parsed = JSON.parse(savedUser);
+        userForm.reset(parsed);
+      }
+      const savedAgent = localStorage.getItem("agentSettings");
+      if (savedAgent) {
+        const parsed = JSON.parse(savedAgent);
+        agentForm.reset(parsed);
+      }
+    } catch (e) {
+      console.warn("Failed to load saved settings", e);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   return (
     <Dialog open={isConfigModalOpen} onOpenChange={closeConfigModal}>
@@ -149,8 +191,18 @@ export function SessionConfigModal({
           )}
 
           {activeTab === "agent" && (
-            <div className="text-sm text-zinc-400">
-              Agent configuration coming soon.
+            <div className="space-y-4">
+              <p className="text-sm text-zinc-400">
+                Configure your agent’s defaults. These persist locally in your
+                browser.
+              </p>
+              <AutoForm
+                className="space-y-3"
+                form={agentForm}
+                schema={AgentConfigSchema}
+                submitLabel="Save Agent"
+                onSubmit={saveAgentSettings}
+              />
             </div>
           )}
         </div>
