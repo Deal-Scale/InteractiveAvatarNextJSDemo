@@ -14,6 +14,8 @@ import { Select } from "../Select";
 import { Field } from "./Field";
 
 import { AVATARS, STT_LANGUAGE_LIST } from "@/app/lib/constants";
+import { useAgentStore } from "@/lib/stores/agent";
+import type { AgentConfig } from "@/lib/schemas/agent";
 import { BorderBeam } from "@/components/magicui/border-beam";
 import {
   Tooltip,
@@ -35,11 +37,46 @@ export const AvatarConfig: React.FC<AvatarConfigProps> = ({
   isConnecting,
   startSession,
 }) => {
+  const { currentAgent, updateAgent } = useAgentStore();
+
   const onChange = <T extends keyof StartAvatarRequest>(
     key: T,
     value: StartAvatarRequest[T],
   ) => {
-    onConfigChange({ ...config, [key]: value });
+    // Update the sidebar session config
+    const nextConfig = { ...config, [key]: value } as StartAvatarRequest;
+    onConfigChange(nextConfig);
+
+    // Also reflect relevant fields into the agent store
+    try {
+      const patch: Partial<AgentConfig> = {};
+      if (key === "language") {
+        patch.language = value as string;
+      } else if (key === "avatarName") {
+        patch.avatarId = value as string;
+      } else if (key === "knowledgeId") {
+        patch.knowledgeBaseId = value as string;
+      } else if (key === "voice") {
+        const v = value as StartAvatarRequest["voice"];
+        patch.voice = {
+          ...(currentAgent?.voice ?? {}),
+          voiceId: v?.voiceId,
+          rate: v?.rate,
+          emotion: v?.emotion as any,
+          elevenlabs_settings: {
+            ...(currentAgent?.voice?.elevenlabs_settings ?? {}),
+            model_id: (v?.model as any) ?? currentAgent?.voice?.elevenlabs_settings?.model_id,
+          },
+        } as any;
+        // Also mirror the top-level voiceId if present in schema
+        if (v?.voiceId) {
+          (patch as any).voiceId = v.voiceId;
+        }
+      }
+      if (Object.keys(patch).length) updateAgent(patch);
+    } catch {
+      // noop; do not block UI if agent store update fails
+    }
   };
   const [showMore, setShowMore] = useState<boolean>(false);
 
@@ -67,6 +104,28 @@ export const AvatarConfig: React.FC<AvatarConfigProps> = ({
       cancelled = true;
     };
   }, []);
+
+  // When the agent store updates, reflect values into the sidebar session config
+  useEffect(() => {
+    if (!currentAgent) return;
+    const merged: StartAvatarRequest = {
+      ...config,
+      language: currentAgent.language ?? config.language,
+      avatarName: currentAgent.avatarId ?? config.avatarName,
+      knowledgeId: currentAgent.knowledgeBaseId ?? config.knowledgeId,
+      voice: {
+        ...config.voice,
+        voiceId: currentAgent.voiceId ?? config.voice?.voiceId,
+        rate: currentAgent.voice?.rate ?? config.voice?.rate,
+        emotion: (currentAgent.voice?.emotion as any) ?? config.voice?.emotion,
+        model:
+          (currentAgent.voice?.elevenlabs_settings?.model_id as any) ??
+          (config.voice?.model as any),
+      },
+    } as StartAvatarRequest;
+    onConfigChange(merged);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentAgent]);
 
   const selectedAvatar = useMemo(() => {
     const avatar = avatarOptions.find(

@@ -6,6 +6,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Slider } from "@/components/ui/slider";
 import { useSessionStore } from "@/lib/stores/session";
+import { useAgentStore } from "@/lib/stores/agent";
+import { useSettingsStore } from "@/lib/stores/settings";
 import { useRouter } from "next/navigation";
 import { useBookmarkStore } from "@/lib/stores/bookmarks";
 import {
@@ -21,6 +23,8 @@ import {
   SidebarFooter,
   useSidebar,
 } from "@/components/ui/sidebar";
+
+import { AVATARS, STT_LANGUAGE_LIST } from "@/app/lib/constants";
 
 // Compact number formatter for better UI (e.g., 1.2K, 3.4M)
 const compactNumberFormatter = new Intl.NumberFormat(undefined, {
@@ -200,9 +204,12 @@ const Sidebar: React.FC<SidebarProps> = ({ onSelect, apps }) => {
   const [groups, setGroups] = useState<ConversationGroup[] | null>(() => loadFromCache());
   const [loading, setLoading] = useState<boolean>(!groups);
   const { agentSettings } = useSessionStore();
+  const { currentAgent, updateAgent } = useAgentStore();
   const [query, setQuery] = useState("");
   const [starterScale, setStarterScale] = useState<number>(1);
   const [collapsedStarter, setCollapsedStarter] = useState<boolean>(false);
+  const [showGlobalForm, setShowGlobalForm] = useState<boolean>(true);
+  const { globalSettings, setGlobalSettings, clearGlobalSettings } = useSettingsStore();
   const [collapsedAssets, setCollapsedAssets] = useState<boolean>(false);
   const [collapsedAgents, setCollapsedAgents] = useState<boolean>(false);
   const [collapsedGroups, setCollapsedGroups] = useState<Set<string>>(new Set());
@@ -497,6 +504,153 @@ const Sidebar: React.FC<SidebarProps> = ({ onSelect, apps }) => {
                     <span>{starterScale.toFixed(1)}x</span>
                   </div>
                   <Slider value={[starterScale]} min={0.8} max={1.4} step={0.1} onValueChange={(v) => setStarterScale(v[0] ?? 1)} />
+                </div>
+
+                {/* Inline Agent Controls */}
+                <div className="px-2 py-2 space-y-2 text-xs group-data-[state=collapsed]/sidebar:hidden">
+                  <div className="font-medium text-zinc-500">Agent quick settings</div>
+                  <div className="grid grid-cols-1 gap-2">
+                    {/* Language */}
+                    <label className="grid gap-1">
+                      <span className="text-[10px] uppercase tracking-wide text-muted-foreground">Language</span>
+                      <select
+                        className="h-8 rounded-md border border-border bg-background px-2 text-sm"
+                        value={currentAgent?.language ?? "en"}
+                        onChange={(e) => updateAgent({ language: e.target.value })}
+                      >
+                        {STT_LANGUAGE_LIST.map((l) => (
+                          <option key={l.value} value={l.value}>{l.label}</option>
+                        ))}
+                      </select>
+                    </label>
+
+                    {/* Avatar */}
+                    <label className="grid gap-1">
+                      <span className="text-[10px] uppercase tracking-wide text-muted-foreground">Avatar</span>
+                      <select
+                        className="h-8 rounded-md border border-border bg-background px-2 text-sm"
+                        value={currentAgent?.avatarId ?? ""}
+                        onChange={(e) => updateAgent({ avatarId: e.target.value })}
+                      >
+                        <option value="">Custom...</option>
+                        {AVATARS.map((a) => (
+                          <option key={a.avatar_id} value={a.avatar_id}>{a.name}</option>
+                        ))}
+                      </select>
+                    </label>
+
+                    {/* Voice ID */}
+                    <label className="grid gap-1">
+                      <span className="text-[10px] uppercase tracking-wide text-muted-foreground">Voice ID</span>
+                      <input
+                        className="h-8 rounded-md border border-border bg-background px-2 text-sm"
+                        placeholder="elevenlabs voice id"
+                        value={
+                          currentAgent?.voiceId ??
+                          currentAgent?.voice?.voiceId ??
+                          ""
+                        }
+                        onChange={(e) => updateAgent({ voiceId: e.target.value, voice: { ...(currentAgent?.voice ?? {}), voiceId: e.target.value } as any })}
+                      />
+                    </label>
+
+                    {/* Knowledge Base ID */}
+                    <label className="grid gap-1">
+                      <span className="text-[10px] uppercase tracking-wide text-muted-foreground">Knowledge Base ID</span>
+                      <input
+                        className="h-8 rounded-md border border-border bg-background px-2 text-sm"
+                        placeholder="kb_..."
+                        value={currentAgent?.knowledgeBaseId ?? ""}
+                        onChange={(e) => updateAgent({ knowledgeBaseId: e.target.value })}
+                      />
+                    </label>
+
+                    {/* Temperature */}
+                    <div className="grid gap-1">
+                      <div className="flex items-center justify-between">
+                        <span className="text-[10px] uppercase tracking-wide text-muted-foreground">Temperature</span>
+                        <span className="text-[10px] text-muted-foreground">{(currentAgent?.temperature ?? 1).toFixed(1)}</span>
+                      </div>
+                      <Slider
+                        value={[currentAgent?.temperature ?? 1]}
+                        min={0}
+                        max={2}
+                        step={0.1}
+                        onValueChange={(v) => updateAgent({ temperature: v[0] ?? 1 })}
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Inline Global Settings */}
+                <div className="px-2 py-2 space-y-2 text-xs group-data-[state=collapsed]/sidebar:hidden">
+                  <button
+                    type="button"
+                    className="flex w-full items-center justify-between rounded-md px-2 py-1 text-left hover:bg-zinc-100 dark:hover:bg-zinc-700/60"
+                    onClick={() => setShowGlobalForm((v) => !v)}
+                  >
+                    <span className="font-medium text-zinc-500">Global settings</span>
+                    <ChevronRight className={`size-3 transition-transform ${showGlobalForm ? "rotate-90" : "rotate-0"}`} />
+                  </button>
+                  {showGlobalForm && (
+                    <div className="grid grid-cols-1 gap-2">
+                      {(() => {
+                        const defaults = { theme: "system", telemetryEnabled: false, apiBaseUrl: "https://api.heygen.com" } as const;
+                        const gs = globalSettings ?? (defaults as any);
+                        return (
+                          <>
+                            {/* Theme */}
+                            <label className="grid gap-1">
+                              <span className="text-[10px] uppercase tracking-wide text-muted-foreground">Theme</span>
+                              <select
+                                className="h-8 rounded-md border border-border bg-background px-2 text-sm"
+                                value={(gs as any).theme}
+                                onChange={(e) => setGlobalSettings({ ...(gs as any), theme: e.target.value as any })}
+                              >
+                                <option value="system">System</option>
+                                <option value="light">Light</option>
+                                <option value="dark">Dark</option>
+                              </select>
+                            </label>
+
+                            {/* Telemetry */}
+                            <label className="flex items-center justify-between gap-2">
+                              <span className="text-[10px] uppercase tracking-wide text-muted-foreground">Telemetry</span>
+                              <input
+                                type="checkbox"
+                                className="size-4 accent-primary"
+                                checked={!!(gs as any).telemetryEnabled}
+                                onChange={(e) => setGlobalSettings({ ...(gs as any), telemetryEnabled: e.target.checked })}
+                              />
+                            </label>
+
+                            {/* API Base URL */}
+                            <label className="grid gap-1">
+                              <span className="text-[10px] uppercase tracking-wide text-muted-foreground">API Base URL</span>
+                              <input
+                                className="h-8 rounded-md border border-border bg-background px-2 text-sm"
+                                placeholder="https://api.heygen.com"
+                                value={(gs as any).apiBaseUrl ?? ""}
+                                onChange={(e) => setGlobalSettings({ ...(gs as any), apiBaseUrl: e.target.value })}
+                              />
+                            </label>
+
+                            {/* Actions */}
+                            <div className="mt-1 flex items-center gap-2">
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                className="h-7 px-2"
+                                onClick={() => clearGlobalSettings()}
+                              >
+                                Reset
+                              </Button>
+                            </div>
+                          </>
+                        );
+                      })()}
+                    </div>
+                  )}
                 </div>
                 <SidebarMenu>
                   {(
