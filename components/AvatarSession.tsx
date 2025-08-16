@@ -65,6 +65,11 @@ export function AvatarSession({
   const [bottomSize, setBottomSize] = useState<number>(15); // % height of chat when docked bottom
   const [rightSize, setRightSize] = useState<number>(24); // % width of chat when docked right
   const [resizing, setResizing] = useState<null | "bottom" | "right">(null);
+  // Minimum bottom overlay size so the grab handle remains accessible
+  const MIN_BOTTOM_SIZE_PCT = 8; // percent of container height (~min 80px below)
+  // Side (right) chat width constraints
+  const MIN_RIGHT_SIZE_PCT = 16; // ensure usable width
+  const MAX_RIGHT_SIZE_PCT = 60; // avoid overly large side panel
 
   const isConnected = useMemo(
     () => sessionState === StreamingAvatarSessionState.CONNECTED,
@@ -357,11 +362,14 @@ export function AvatarSession({
       if (resizing === "bottom") {
         // chat height percent from bottom edge
         const chatPct = ((rect.bottom - e.clientY) / rect.height) * 100;
-        setBottomSize(Math.max(0, Math.min(50, chatPct)));
+        // Clamp to keep overlay resizable and visible, allow up to full height (100%)
+        setBottomSize(Math.max(MIN_BOTTOM_SIZE_PCT, Math.min(100, chatPct)));
       } else if (resizing === "right") {
         // chat width percent from right edge
         const chatPct = ((rect.right - e.clientX) / rect.width) * 100;
-        setRightSize(Math.max(0, Math.min(40, chatPct)));
+        setRightSize(
+          Math.max(MIN_RIGHT_SIZE_PCT, Math.min(MAX_RIGHT_SIZE_PCT, chatPct)),
+        );
       }
     };
     const onUp = () => setResizing(null);
@@ -521,31 +529,42 @@ export function AvatarSession({
         {avatarVideoPanel}
       </div>
 
-      {/* Docked resizer + chat (bottom or right) */}
-      {!isFloating && (
-        <>
-          {/* Resize handle */}
+      {/* Right dock as overlay (does not affect video size) */}
+      {!isFloating && isRight && rightSize > 0 && (
+        <div
+          className="pointer-events-auto z-30 absolute top-0 bottom-0 right-0"
+          style={{ width: `${rightSize}%`, minWidth: 280, maxWidth: "95vw" }}
+        >
+          {/* Left-edge resize handle inside overlay */}
           <div
             role="separator"
-            aria-orientation={isRight ? "vertical" : "horizontal"}
-            className={cn(
-              "bg-zinc-700/60 hover:bg-zinc-600 transition-colors",
-              isRight ? "w-1 cursor-col-resize" : "h-1 cursor-row-resize",
-            )}
-            onPointerDown={() => setResizing(isRight ? "right" : "bottom")}
+            aria-orientation="vertical"
+            className="w-1 h-full cursor-col-resize bg-zinc-700/60 hover:bg-zinc-600 transition-colors absolute left-0 top-0"
+            onPointerDown={() => setResizing("right")}
           />
-          {/* Chat panel wrapper with dynamic size */}
-          <div
-            className={cn("overflow-hidden")}
-            style={
-              isRight
-                ? { width: `${rightSize}%` }
-                : { height: `${bottomSize}%` }
-            }
-          >
+          <div className="overflow-hidden h-full pl-[4px]">
             {chatPanel}
           </div>
-        </>
+        </div>
+      )}
+
+      {/* Bottom dock as overlay (does not affect video size) */}
+      {!isFloating && !isRight && bottomSize > 0 && (
+        <div
+          className="pointer-events-auto z-30 absolute left-0 right-0"
+          style={{ bottom: 0, height: `${bottomSize}%`, minHeight: 80 }}
+        >
+          {/* Top-edge resize handle inside overlay */}
+          <div
+            role="separator"
+            aria-orientation="horizontal"
+            className="h-1 cursor-row-resize bg-zinc-700/60 hover:bg-zinc-600 transition-colors"
+            onPointerDown={() => setResizing("bottom")}
+          />
+          <div className="overflow-hidden h-[calc(100%-4px)]">
+            {chatPanel}
+          </div>
+        </div>
       )}
 
       {/* Floating chat overlay */}
