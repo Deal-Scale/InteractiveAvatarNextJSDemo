@@ -1,10 +1,10 @@
 import type { StartAvatarRequest } from "@heygen/streaming-avatar";
 import { VoiceChatTransport } from "@heygen/streaming-avatar";
+
 import { useEffect, useState } from "react";
 import { z } from "zod";
 
 import { AvatarConfig } from "../AvatarConfig";
-
 import {
   Dialog,
   DialogContent,
@@ -13,12 +13,15 @@ import {
   DialogTitle,
 } from "./dialog";
 
-import { useSessionStore } from "@/lib/stores/session";
-import { UserSettingsSchema } from "@/lib/schemas/global";
-import type { UserSettings } from "@/lib/schemas/global";
-import { AgentConfigSchema } from "@/lib/schemas/agent";
-import { useZodForm } from "@/components/forms/useZodForm";
 import { AutoForm } from "@/components/forms/AutoForm";
+import { useZodForm } from "@/components/forms/useZodForm";
+import { useSessionStore } from "@/lib/stores/session";
+import { AgentConfigSchema } from "@/lib/schemas/agent";
+import type { UserSettings, AppGlobalSettings } from "@/lib/schemas/global";
+import {
+  UserSettingsSchema,
+  AppGlobalSettingsSchema,
+} from "@/lib/schemas/global";
 
 interface SessionConfigModalProps {
   isConnecting: boolean;
@@ -33,9 +36,9 @@ export function SessionConfigModal({
 }: SessionConfigModalProps) {
   const { isConfigModalOpen, closeConfigModal } = useSessionStore();
   const [config, setConfig] = useState<StartAvatarRequest>(initialConfig);
-  const [activeTab, setActiveTab] = useState<"session" | "user" | "agent">(
-    "session",
-  );
+  const [activeTab, setActiveTab] = useState<
+    "session" | "global" | "user" | "agent"
+  >("session");
 
   useEffect(() => {
     setConfig(initialConfig);
@@ -63,6 +66,16 @@ export function SessionConfigModal({
     mode: "onChange",
   });
 
+  // Global (App) Settings form instance
+  const globalForm = useZodForm(AppGlobalSettingsSchema, {
+    defaultValues: {
+      theme: "system",
+      telemetryEnabled: false,
+      apiBaseUrl: "https://api.heygen.com",
+    } as Partial<AppGlobalSettings>,
+    mode: "onChange",
+  });
+
   // Agent Settings form instance
   const agentForm = useZodForm(AgentConfigSchema, {
     defaultValues: {
@@ -85,6 +98,19 @@ export function SessionConfigModal({
     }
   };
 
+  const saveGlobalSettings = (
+    values: z.infer<typeof AppGlobalSettingsSchema>,
+  ) => {
+    try {
+      if (typeof window !== "undefined") {
+        localStorage.setItem("globalSettings", JSON.stringify(values));
+      }
+      console.log("Global settings saved:", values);
+    } catch (e) {
+      console.warn("Failed to persist global settings", e);
+    }
+  };
+
   const saveAgentSettings = (values: z.infer<typeof AgentConfigSchema>) => {
     try {
       if (typeof window !== "undefined") {
@@ -100,11 +126,18 @@ export function SessionConfigModal({
   useEffect(() => {
     if (typeof window === "undefined") return;
     try {
+      const savedGlobal = localStorage.getItem("globalSettings");
+      if (savedGlobal) {
+        const parsed = JSON.parse(savedGlobal);
+        globalForm.reset(parsed);
+      }
+
       const savedUser = localStorage.getItem("userSettings");
       if (savedUser) {
         const parsed = JSON.parse(savedUser);
         userForm.reset(parsed);
       }
+
       const savedAgent = localStorage.getItem("agentSettings");
       if (savedAgent) {
         const parsed = JSON.parse(savedAgent);
@@ -118,68 +151,76 @@ export function SessionConfigModal({
 
   return (
     <Dialog open={isConfigModalOpen} onOpenChange={closeConfigModal}>
-      <DialogContent className="max-w-4xl w-full">
-        <DialogHeader>
-          <DialogTitle>Session Configuration</DialogTitle>
-          <DialogDescription>
-            Adjust your avatar and voice settings before starting the session.
-          </DialogDescription>
-        </DialogHeader>
+      <DialogContent
+        className="w-[96vw] md:w-[92vw] max-w-[1280px] p-0 overflow-hidden bg-white text-zinc-900 dark:bg-zinc-950 dark:text-zinc-100"
+      >
+        {/* Modal Header */}
+        <div className="px-6 py-5 border-b border-zinc-200 dark:border-zinc-800">
+          <DialogHeader>
+            <DialogTitle className="text-lg md:text-xl font-semibold">
+              Session Configuration
+            </DialogTitle>
+            <DialogDescription className="text-sm text-zinc-600 dark:text-zinc-400">
+              Adjust your avatar and voice settings before starting the session.
+            </DialogDescription>
+          </DialogHeader>
+        </div>
+
         {/* Tabs Header */}
-        <div className="px-4">
-          <div className="mb-4 flex gap-2 border-b border-zinc-800">
-            <button
-              className={`px-3 py-2 text-sm ${
-                activeTab === "session"
-                  ? "border-b-2 border-blue-500 text-zinc-100"
-                  : "text-zinc-400 hover:text-zinc-200"
-              }`}
-              type="button"
-              onClick={() => setActiveTab("session")}
-            >
-              Session
-            </button>
-            <button
-              className={`px-3 py-2 text-sm ${
-                activeTab === "user"
-                  ? "border-b-2 border-blue-500 text-zinc-100"
-                  : "text-zinc-400 hover:text-zinc-200"
-              }`}
-              type="button"
-              onClick={() => setActiveTab("user")}
-            >
-              User Settings
-            </button>
-            <button
-              className={`px-3 py-2 text-sm ${
-                activeTab === "agent"
-                  ? "border-b-2 border-blue-500 text-zinc-100"
-                  : "text-zinc-400 hover:text-zinc-200"
-              }`}
-              type="button"
-              onClick={() => setActiveTab("agent")}
-            >
-              Agent
-            </button>
+        <div className="sticky top-0 z-10 bg-white dark:bg-zinc-950">
+          <div
+            role="tablist"
+            aria-label="Session configuration sections"
+            className="flex gap-1 border-b border-zinc-200 dark:border-zinc-800 px-4 md:px-6"
+          >
+            {([
+              { key: "session", label: "Session" },
+              { key: "global", label: "Global Settings" },
+              { key: "user", label: "User Settings" },
+              { key: "agent", label: "Agent" },
+            ] as const).map((t) => (
+              <button
+                key={t.key}
+                role="tab"
+                aria-selected={activeTab === t.key}
+                className={`relative -mb-px px-3 md:px-4 py-3 text-sm font-medium outline-none transition-colors ${
+                  activeTab === t.key
+                    ? "text-zinc-900 dark:text-zinc-100"
+                    : "text-zinc-600 hover:text-zinc-800 dark:text-zinc-400 dark:hover:text-zinc-200"
+                }`}
+                type="button"
+                onClick={() => setActiveTab(t.key)}
+              >
+                {t.label}
+                <span
+                  className={`absolute inset-x-2 -bottom-px h-0.5 rounded-full transition-opacity ${
+                    activeTab === t.key
+                      ? "bg-blue-500 opacity-100"
+                      : "opacity-0"
+                  }`}
+                />
+              </button>
+            ))}
           </div>
         </div>
 
         {/* Tabs Content */}
-        <div className="max-h-[70vh] overflow-y-auto p-4">
+        <div className="max-h-[70vh] overflow-y-auto p-4 md:p-6">
           {activeTab === "session" && (
-            <AvatarConfig
-              config={config}
-              isConnecting={isConnecting}
-              startSession={handleStartSession}
-              onConfigChange={setConfig}
-            />
+            <div className="rounded-xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-900 p-4 md:p-6 shadow-sm">
+              <AvatarConfig
+                config={config}
+                isConnecting={isConnecting}
+                startSession={handleStartSession}
+                onConfigChange={setConfig}
+              />
+            </div>
           )}
 
           {activeTab === "user" && (
-            <div className="space-y-4">
-              <p className="text-sm text-zinc-400">
-                Configure your preferences. These persist locally in your
-                browser.
+            <div className="space-y-4 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-900 p-4 md:p-6 shadow-sm">
+              <p className="text-sm text-zinc-700 dark:text-zinc-400">
+                Configure your preferences. These persist locally in your browser.
               </p>
               <AutoForm
                 className="space-y-3"
@@ -191,11 +232,25 @@ export function SessionConfigModal({
             </div>
           )}
 
+          {activeTab === "global" && (
+            <div className="space-y-4 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-900 p-4 md:p-6 shadow-sm">
+              <p className="text-sm text-zinc-700 dark:text-zinc-400">
+                Configure app-wide options (theme, telemetry, API base URL). These persist locally in your browser.
+              </p>
+              <AutoForm
+                className="space-y-3"
+                form={globalForm}
+                schema={AppGlobalSettingsSchema}
+                submitLabel="Save Global Settings"
+                onSubmit={saveGlobalSettings}
+              />
+            </div>
+          )}
+
           {activeTab === "agent" && (
-            <div className="space-y-4">
-              <p className="text-sm text-zinc-400">
-                Configure your agent’s defaults. These persist locally in your
-                browser.
+            <div className="space-y-4 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-900 p-4 md:p-6 shadow-sm">
+              <p className="text-sm text-zinc-700 dark:text-zinc-400">
+                Configure your agent’s defaults. These persist locally in your browser.
               </p>
               <AutoForm
                 className="space-y-3"
