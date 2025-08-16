@@ -34,3 +34,12 @@ export const UserSettingsSchema = z.object({
 });
 
 export type UserSettings = z.infer<typeof UserSettingsSchema>;
+
+// App-level (global) settings for the demo UI
+export const AppGlobalSettingsSchema = z.object({
+  theme: z.enum(["system", "dark", "light"]).default("system"),
+  telemetryEnabled: z.boolean().default(false),
+  apiBaseUrl: z.string().url().default("https://api.heygen.com"),
+});
+
+export type AppGlobalSettings = z.infer<typeof AppGlobalSettingsSchema>;
