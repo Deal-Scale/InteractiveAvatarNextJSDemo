@@ -13,8 +13,6 @@ export const AgentConfigSchema = z.object({
   video: z
     .object({
       resolution: z.enum(["720p", "1080p"]).optional(),
-
-
       
       background: z.enum(["transparent", "blur", "none"]).optional(),
       fps: z.number().int().positive().optional(),
@@ -53,3 +51,5 @@ export const AgentConfigSchema = z.object({
 
   knowledgeBaseId: z.string().optional(), // if tied to a knowledge base
 });
+
+export type AgentConfig = z.infer<typeof AgentConfigSchema>;
