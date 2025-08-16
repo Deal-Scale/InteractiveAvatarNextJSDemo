@@ -71,6 +71,10 @@ export function AvatarSession({
   const MIN_RIGHT_SIZE_PCT = 16; // ensure usable width
   const MAX_RIGHT_SIZE_PCT = 60; // avoid overly large side panel
 
+  // Remember previous sizes when maximizing so we can restore on minimize
+  const prevBottomSizeRef = useRef<number | null>(null);
+  const prevRightSizeRef = useRef<number | null>(null);
+
   const isConnected = useMemo(
     () => sessionState === StreamingAvatarSessionState.CONNECTED,
     [sessionState],
@@ -394,6 +398,37 @@ export function AvatarSession({
     setFloatingPos({ x, y });
   }, [dock, expanded]);
 
+  // Toggle expand/minimize for current dock mode
+  const toggleExpand = useCallback(() => {
+    if (dock === "floating") {
+      setExpanded((e) => !e);
+      return;
+    }
+    if (dock === "bottom") {
+      if (!expanded) {
+        prevBottomSizeRef.current = bottomSize;
+        setBottomSize(100);
+        setExpanded(true);
+      } else {
+        const restore = prevBottomSizeRef.current ?? 15;
+        setBottomSize(Math.max(MIN_BOTTOM_SIZE_PCT, Math.min(100, restore)));
+        setExpanded(false);
+      }
+      return;
+    }
+    if (dock === "right") {
+      if (!expanded) {
+        prevRightSizeRef.current = rightSize;
+        setRightSize(100); // overlay will cap via maxWidth
+        setExpanded(true);
+      } else {
+        const restore = prevRightSizeRef.current ?? 24;
+        setRightSize(Math.max(MIN_RIGHT_SIZE_PCT, Math.min(100, restore)));
+        setExpanded(false);
+      }
+    }
+  }, [dock, expanded, bottomSize, rightSize]);
+
   const chatPanel = (
     <div
       className={cn(
@@ -413,44 +448,48 @@ export function AvatarSession({
           <span>Chat</span>
         </div>
         <div className="flex items-center gap-1">
-          <Button
-            size="icon"
-            title="Dock bottom"
-            variant="ghost"
-            onClick={() => setDock("bottom")}
-          >
-            <PanelBottomOpenIcon className="h-4 w-4" />
-          </Button>
-          <Button
-            size="icon"
-            title="Dock right"
-            variant="ghost"
-            onClick={() => setDock("right")}
-          >
-            <PanelRightOpenIcon className="h-4 w-4" />
-          </Button>
-          <Button
-            size="icon"
-            title="Float"
-            variant="ghost"
-            onClick={() => setDock("floating")}
-          >
-            <MoveIcon className="h-4 w-4" />
-          </Button>
-          {dock === "floating" && (
+          {dock !== "bottom" && (
             <Button
               size="icon"
-              title={expanded ? "Collapse" : "Expand"}
+              title="Dock bottom"
               variant="ghost"
-              onClick={() => setExpanded((e) => !e)}
+              onClick={() => setDock("bottom")}
             >
-              {expanded ? (
-                <Minimize2Icon className="h-4 w-4" />
-              ) : (
-                <Maximize2Icon className="h-4 w-4" />
-              )}
+              <PanelBottomOpenIcon className="h-4 w-4" />
             </Button>
           )}
+          {dock !== "right" && (
+            <Button
+              size="icon"
+              title="Dock right"
+              variant="ghost"
+              onClick={() => setDock("right")}
+            >
+              <PanelRightOpenIcon className="h-4 w-4" />
+            </Button>
+          )}
+          {dock !== "floating" && (
+            <Button
+              size="icon"
+              title="Float"
+              variant="ghost"
+              onClick={() => setDock("floating")}
+            >
+              <MoveIcon className="h-4 w-4" />
+            </Button>
+          )}
+          <Button
+            size="icon"
+            title={expanded ? "Collapse" : "Expand"}
+            variant="ghost"
+            onClick={toggleExpand}
+          >
+            {expanded ? (
+              <Minimize2Icon className="h-4 w-4" />
+            ) : (
+              <Maximize2Icon className="h-4 w-4" />
+            )}
+          </Button>
         </div>
       </div>
       <div
