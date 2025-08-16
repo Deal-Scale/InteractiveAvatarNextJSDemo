@@ -11,7 +11,6 @@ import { nanoid } from "nanoid";
 
 import { AvatarControls } from "./AvatarSession/AvatarControls";
 import { AvatarVideo } from "./AvatarSession/AvatarVideo";
-import ConnectionIndicator from "./AvatarSession/ConnectionIndicator";
 import { UserVideo } from "./AvatarSession/UserVideo";
 import { useMessageHistory } from "./logic/useMessageHistory";
 import { StreamingAvatarSessionState } from "./logic/context";
@@ -608,9 +607,6 @@ export function AvatarSession({
   const avatarVideoPanel = (
     <div className="relative w-full h-full bg-black overflow-hidden">
       <AvatarVideo ref={mediaStream} />
-      <div className="absolute top-4 right-4 flex flex-col gap-2">
-        <ConnectionIndicator sessionState={sessionState} />
-      </div>
       {userVideoStream && (
         <div className="absolute bottom-4 right-4 w-48 h-36 rounded-lg overflow-hidden border-2 border-gray-700">
           <UserVideo userVideoStream={userVideoStream} />
