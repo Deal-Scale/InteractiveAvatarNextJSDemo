@@ -26,6 +26,12 @@ interface SessionState {
   // UI flags
   isChatSolidBg: boolean;
   setChatSolidBg: (solid: boolean) => void;
+
+  // Credits
+  creditsRemaining: number; // user's remaining credits
+  setCreditsRemaining: (val: number) => void;
+  creditsPerMinute: number; // estimated burn rate while connected
+  setCreditsPerMinute: (val: number) => void;
 }
 
 export const useSessionStore = create<SessionState>()(
@@ -73,6 +79,12 @@ export const useSessionStore = create<SessionState>()(
       // UI flags
       isChatSolidBg: false,
       setChatSolidBg: (solid) => set({ isChatSolidBg: solid }),
+
+      // Credits (defaults can be adjusted or fetched later)
+      creditsRemaining: 1000,
+      setCreditsRemaining: (val) => set({ creditsRemaining: Math.max(0, val) }),
+      creditsPerMinute: 120,
+      setCreditsPerMinute: (val) => set({ creditsPerMinute: Math.max(0, val) }),
     }),
     {
       name: "session-store",
@@ -81,6 +93,8 @@ export const useSessionStore = create<SessionState>()(
       partialize: (state) => ({
         messages: state.messages,
         chatMode: state.chatMode,
+        creditsRemaining: state.creditsRemaining,
+        creditsPerMinute: state.creditsPerMinute,
       }),
     },
   ),
