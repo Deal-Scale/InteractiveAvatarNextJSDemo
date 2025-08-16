@@ -16,6 +16,8 @@ import {
 import { AutoForm } from "@/components/forms/AutoForm";
 import { useZodForm } from "@/components/forms/useZodForm";
 import { useSessionStore } from "@/lib/stores/session";
+import { useSettingsStore } from "@/lib/stores/settings";
+import { useAgentStore } from "@/lib/stores/agent";
 import { AgentConfigSchema } from "@/lib/schemas/agent";
 import type { UserSettings, AppGlobalSettings } from "@/lib/schemas/global";
 import {
@@ -34,16 +36,14 @@ export function SessionConfigModal({
   initialConfig,
   startSession,
 }: SessionConfigModalProps) {
+  const { isConfigModalOpen, closeConfigModal, agentSettings } = useSessionStore();
   const {
-    isConfigModalOpen,
-    closeConfigModal,
     userSettings,
     setUserSettings,
     globalSettings,
     setGlobalSettings,
-    agentSettings,
-    setAgentSettings,
-  } = useSessionStore();
+  } = useSettingsStore();
+  const { currentAgent, setAgent, setLastStarted, markClean } = useAgentStore();
   const [config, setConfig] = useState<StartAvatarRequest>(initialConfig);
   const [activeTab, setActiveTab] = useState<
     "session" | "global" | "user" | "agent"
@@ -53,8 +53,81 @@ export function SessionConfigModal({
     setConfig(initialConfig);
   }, [initialConfig]);
 
+  // Prefill/merge settings into session config whenever settings change
+  useEffect(() => {
+    setConfig((prev) => {
+      let next = { ...prev } as StartAvatarRequest;
+      if (userSettings) {
+        const q = (userSettings as any).quality;
+        const mappedQuality = typeof q === "string" ? (q[0].toUpperCase() + q.slice(1).toLowerCase()) : q;
+        next = {
+          ...next,
+          voiceChatTransport: userSettings.voiceChatTransport ?? next.voiceChatTransport,
+          quality: (mappedQuality as any) ?? next.quality,
+          language: userSettings.language ?? next.language,
+          sttSettings: {
+            ...next.sttSettings,
+            provider: userSettings.stt?.provider ?? next.sttSettings?.provider,
+          },
+        } as StartAvatarRequest;
+      }
+      return next;
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [userSettings, globalSettings]);
+
   const handleStartSession = () => {
-    startSession(config);
+    // Capture the latest agent form values and merge into session config
+    let finalConfig = config;
+    try {
+      const latestAgent = agentForm.getValues();
+      // Persist the agent config used to start
+      setLastStarted(latestAgent as any);
+      markClean();
+
+      // Map AgentConfig -> StartAvatarRequest fields where applicable
+      finalConfig = {
+        ...config,
+        // agent.language -> session.language
+        language: latestAgent.language ?? config.language,
+        // agent.avatarId -> session.avatarName
+        avatarName: latestAgent.avatarId ?? config.avatarName,
+        // agent.knowledgeBaseId -> session.knowledgeId
+        knowledgeId: latestAgent.knowledgeBaseId ?? config.knowledgeId,
+        voice: {
+          ...config.voice,
+          voiceId: latestAgent.voiceId ?? config.voice?.voiceId,
+          rate: latestAgent.voice?.rate ?? config.voice?.rate,
+          emotion: (latestAgent.voice?.emotion as any) ?? config.voice?.emotion,
+          // Prefer explicit voice.model on agent.voice; fallback to elevenlabs_settings.model_id
+          model:
+            (latestAgent.voice as any)?.model ??
+            (latestAgent.voice?.elevenlabs_settings?.model_id as any) ??
+            config.voice?.model,
+        },
+      } as typeof config;
+
+      // Merge user/global settings into API request (transport, quality, language, stt)
+      if (userSettings) {
+        // map string quality to enum if necessary
+        const q = (userSettings as any).quality;
+        const mappedQuality = typeof q === "string" ? (q[0].toUpperCase() + q.slice(1).toLowerCase()) : q;
+        finalConfig = {
+          ...finalConfig,
+          voiceChatTransport: userSettings.voiceChatTransport ?? finalConfig.voiceChatTransport,
+          quality: (mappedQuality as any) ?? finalConfig.quality,
+          language: userSettings.language ?? finalConfig.language,
+          sttSettings: {
+            ...finalConfig.sttSettings,
+            provider: userSettings.stt?.provider ?? finalConfig.sttSettings?.provider,
+          },
+        } as typeof finalConfig;
+      }
+    } catch {
+      // if form not ready, use current config
+    }
+
+    startSession(finalConfig);
     closeConfigModal();
   };
 
@@ -127,7 +200,8 @@ export function SessionConfigModal({
       if (typeof window !== "undefined") {
         localStorage.setItem("agentSettings", JSON.stringify(values));
       }
-      setAgentSettings(values);
+      // Sync to dedicated agent store as current editable config
+      setAgent(values as any);
       console.log("Agent settings saved:", values);
     } catch (e) {
       console.warn("Failed to persist agent settings", e);
@@ -151,9 +225,11 @@ export function SessionConfigModal({
         const savedUser = localStorage.getItem("userSettings");
         if (savedUser) userForm.reset(JSON.parse(savedUser));
       }
-
-      if (agentSettings) {
-        agentForm.reset(agentSettings);
+      // Load agent from the dedicated agent store first, fallback to legacy session store or localStorage
+      if (currentAgent) {
+        agentForm.reset(currentAgent as any);
+      } else if (agentSettings) {
+        agentForm.reset(agentSettings as any);
       } else {
         const savedAgent = localStorage.getItem("agentSettings");
         if (savedAgent) agentForm.reset(JSON.parse(savedAgent));
@@ -271,6 +347,9 @@ export function SessionConfigModal({
                 className="space-y-3"
                 form={agentForm}
                 schema={AgentConfigSchema}
+                fields={{
+                  temperature: { label: "Temperature", widget: "slider", min: 0, max: 2, step: 0.1 },
+                }}
                 submitLabel="Save Agent"
                 onSubmit={saveAgentSettings}
               />
