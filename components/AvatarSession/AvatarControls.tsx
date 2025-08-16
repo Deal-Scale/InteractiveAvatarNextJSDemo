@@ -12,9 +12,9 @@ export const AvatarControls: React.FC<AvatarControlsProps> = ({ stopSession }) =
 
   return (
     <div className="absolute inset-0 pointer-events-none z-20">
-      {/* Floating controls in the bottom-right over the video */}
-      <div className="absolute bottom-4 right-4 pointer-events-auto">
-        <div className="flex gap-2">
+      {/* Floating controls in the top-center over the video */}
+      <div className="absolute top-3 left-1/2 -translate-x-1/2 pointer-events-auto">
+        <div className="flex gap-2 items-center">
           <Button className="!bg-zinc-700 !text-white" onClick={interrupt}>
             Interrupt
           </Button>
