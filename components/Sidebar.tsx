@@ -563,8 +563,10 @@ const Sidebar: React.FC<SidebarProps> = ({ onSelect, apps }) => {
 
           {/* Conversations count above chats */}
           {!loading && (
-            <div className="px-2 pb-1 text-center text-xs text-muted-foreground group-data-[state=collapsed]/sidebar:hidden">
-              {formatCompactNumber(totalCount)} conversations • {formatCompactNumber(archivedList.length)} archived
+            <div className="px-2 pb-1 text-center text-xs group-data-[state=collapsed]/sidebar:hidden">
+              <span className="inline-block px-1 bg-aurora animate-aurora-text bg-clip-text text-transparent will-change-[background-position]">
+                {formatCompactNumber(totalCount)} conversations • {formatCompactNumber(archivedList.length)} archived
+              </span>
             </div>
           )}
 

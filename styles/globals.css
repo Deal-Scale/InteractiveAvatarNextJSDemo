@@ -37,6 +37,10 @@ li {
     --chart-4: 43 74% 66%;
     --chart-5: 27 87% 67%;
     --radius: 0.5rem;
+    /* Aurora gradient stops (light theme) - use vibrant chart hues for visibility */
+    --aurora-1: var(--chart-3); /* blue */
+    --aurora-2: var(--chart-2); /* green */
+    --aurora-3: var(--chart-4); /* yellow */
   }
   .dark {
     --background: 222.2 84% 4.9%;
@@ -63,6 +67,10 @@ li {
     --chart-3: 30 80% 55%;
     --chart-4: 280 65% 60%;
     --chart-5: 340 75% 55%;
+    /* Aurora gradient stops (dark theme) */
+    --aurora-1: var(--chart-5);
+    --aurora-2: var(--chart-4);
+    --aurora-3: var(--chart-1);
   }
 }
 
@@ -74,5 +82,44 @@ li {
   }
   body {
     @apply bg-background text-foreground;
+  }
+}
+
+@layer utilities {
+  /* Aurora-ready background for use with animate-aurora */
+  .bg-aurora {
+    background-image: linear-gradient(
+      90deg,
+      hsl(var(--aurora-1)) 0%,
+      hsl(var(--aurora-2)) 50%,
+      hsl(var(--aurora-3)) 100%
+    );
+    background-size: 300% 100%;
+    background-position: 0% 50%;
+    background-repeat: no-repeat;
+  }
+
+  /* Static gradient text */
+  .text-gradient {
+    background-image: linear-gradient(90deg, hsl(var(--primary)), hsl(var(--accent)));
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+
+  /* Shimmering gradient text that pairs with animate-shimmer-text */
+  .text-shimmer {
+    background-image: linear-gradient(
+      90deg,
+      transparent 0%,
+      hsl(var(--foreground)) 25%,
+      hsl(var(--muted-foreground)) 50%,
+      hsl(var(--foreground)) 75%,
+      transparent 100%
+    );
+    background-size: 300% 100%;
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
   }
 }
