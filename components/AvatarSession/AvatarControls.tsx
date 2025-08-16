@@ -32,39 +32,39 @@ export const AvatarControls: React.FC<AvatarControlsProps> = ({ stopSession }) =
           {/* Video first */}
           <Button
             title="Video"
-            className={`h-9 w-9 aspect-square !p-0 rounded-xl flex items-center justify-center !text-white ${
+            className={`h-9 w-9 aspect-square !p-0 rounded-xl flex items-center justify-center flex-shrink-0 !text-white ${
               viewTab === "video" ? "!bg-[#7559FF]" : "!bg-zinc-800"
             }`}
             onClick={() => setViewTab("video")}
           >
-            <Play className="h-4 w-4" />
+            <Play className="h-4 w-4 text-white" />
           </Button>
           <Button
             title="Brain"
-            className={`h-9 w-9 aspect-square !p-0 rounded-xl flex items-center justify-center !text-white ${
+            className={`h-9 w-9 aspect-square !p-0 rounded-xl flex items-center justify-center flex-shrink-0 !text-white ${
               viewTab === "brain" ? "!bg-[#7559FF]" : "!bg-zinc-800"
             }`}
             onClick={() => setViewTab("brain")}
           >
-            <Brain className="h-4 w-4" />
+            <Brain className="h-4 w-4 text-white" />
           </Button>
           <Button
             title="Data"
-            className={`h-9 w-9 aspect-square !p-0 rounded-xl flex items-center justify-center !text-white ${
+            className={`h-9 w-9 aspect-square !p-0 rounded-xl flex items-center justify-center flex-shrink-0 !text-white ${
               viewTab === "data" ? "!bg-[#7559FF]" : "!bg-zinc-800"
             }`}
             onClick={() => setViewTab("data")}
           >
-            <Database className="h-4 w-4" />
+            <Database className="h-4 w-4 text-white" />
           </Button>
           <Button
             title="Actions"
-            className={`h-9 w-9 aspect-square !p-0 rounded-xl flex items-center justify-center !text-white ${
+            className={`h-9 w-9 aspect-square !p-0 rounded-xl flex items-center justify-center flex-shrink-0 !text-white ${
               viewTab === "actions" ? "!bg-[#7559FF]" : "!bg-zinc-800"
             }`}
             onClick={() => setViewTab("actions")}
           >
-            <LayoutDashboard className="h-4 w-4" />
+            <LayoutDashboard className="h-4 w-4 text-white" />
           </Button>
         </div>
       </div>

@@ -1,4 +1,3 @@
-export const formatAttachmentSummary = (files: File[]) =>
-  files
-    .map((f) => `${f.name} (${Math.max(1, Math.round(f.size / 1024))} KB)`)
-    .join(", ");
+// Backward-compatible barrel that re-exports utilities from ./utils/
+// This keeps existing imports like `./utils` working while we modularize.
+export * from "./utils";
