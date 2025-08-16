@@ -32,6 +32,10 @@ interface SessionState {
   setCreditsRemaining: (val: number) => void;
   creditsPerMinute: number; // estimated burn rate while connected
   setCreditsPerMinute: (val: number) => void;
+
+  // Video panel tab/view selection
+  viewTab: "video" | "brain" | "data" | "actions";
+  setViewTab: (tab: "video" | "brain" | "data" | "actions") => void;
 }
 
 export const useSessionStore = create<SessionState>()(
@@ -85,6 +89,10 @@ export const useSessionStore = create<SessionState>()(
       setCreditsRemaining: (val) => set({ creditsRemaining: Math.max(0, val) }),
       creditsPerMinute: 120,
       setCreditsPerMinute: (val) => set({ creditsPerMinute: Math.max(0, val) }),
+
+      // View tab
+      viewTab: "video",
+      setViewTab: (tab) => set({ viewTab: tab }),
     }),
     {
       name: "session-store",
@@ -95,6 +103,7 @@ export const useSessionStore = create<SessionState>()(
         chatMode: state.chatMode,
         creditsRemaining: state.creditsRemaining,
         creditsPerMinute: state.creditsPerMinute,
+        viewTab: state.viewTab,
       }),
     },
   ),
