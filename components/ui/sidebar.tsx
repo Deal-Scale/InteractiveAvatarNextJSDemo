@@ -106,13 +106,13 @@ export function SidebarMenu({ children }: { children: React.ReactNode }) {
   return <ul className="flex flex-col gap-0.5">{children}</ul>;
 }
 
-export function SidebarMenuButton({ children, onClick }: { children: React.ReactNode; onClick?: () => void }) {
+export function SidebarMenuButton({ children, onClick, className = "" }: { children: React.ReactNode; onClick?: () => void; className?: string }) {
   return (
     <li>
       <button
         type="button"
         onClick={onClick}
-        className="w-full text-left rounded-md px-3 py-2 hover:bg-zinc-700/70"
+        className={`w-full text-left rounded-md px-3 py-2 hover:bg-zinc-700/70 ${className}`}
       >
         {children}
       </button>
