@@ -40,7 +40,7 @@ export function AvatarSession({
   sessionState,
 }: AvatarSessionProps) {
   const { apiService } = useApiService();
-  const { messages, addMessage } = useSessionStore();
+  const { messages, addMessage, isChatSolidBg, setChatSolidBg } = useSessionStore();
   const { startVoiceChat, stopVoiceChat, isVoiceChatActive } = useVoiceChat();
   const { navigateHistory, resetHistory } = useMessageHistory(messages);
   const [userVideoStream, setUserVideoStream] = useState<MediaStream | null>(
@@ -51,6 +51,10 @@ export function AvatarSession({
   const [dock, setDock] = useState<DockMode>("bottom");
   const [expanded, setExpanded] = useState(false);
   const [floatingPos, setFloatingPos] = useState({ x: 24, y: 24 });
+  const [floatingSize, setFloatingSize] = useState<{ w: number; h: number }>({
+    w: 360,
+    h: 340,
+  });
   const [chatInput, setChatInput] = useState("");
   const [isSending, setIsSending] = useState(false);
   const panelRef = useRef<HTMLDivElement | null>(null);
@@ -64,7 +68,13 @@ export function AvatarSession({
   // Docked resize state (percentages of container size)
   const [bottomSize, setBottomSize] = useState<number>(15); // % height of chat when docked bottom
   const [rightSize, setRightSize] = useState<number>(24); // % width of chat when docked right
-  const [resizing, setResizing] = useState<null | "bottom" | "right">(null);
+  const [resizing, setResizing] = useState<null | "bottom" | "right" | "floating">(null);
+  const floatingResizeState = useRef<{
+    startX: number;
+    startY: number;
+    startW: number;
+    startH: number;
+  } | null>(null);
   // Minimum bottom overlay size so the grab handle remains accessible
   const MIN_BOTTOM_SIZE_PCT = 8; // percent of container height (~min 80px below)
   // Side (right) chat width constraints
@@ -79,6 +89,11 @@ export function AvatarSession({
     () => sessionState === StreamingAvatarSessionState.CONNECTED,
     [sessionState],
   );
+
+  // Mock chat mode allows chatting without a live session
+  const [mockChatEnabled, setMockChatEnabled] = useState(false);
+  const [mockVoiceActive, setMockVoiceActive] = useState(false);
+  const canChat = isConnected || mockChatEnabled;
 
   // Simple helpers to format MCP results for chat
   const formatAsCodeBlock = (obj: unknown) => {
@@ -212,6 +227,18 @@ export function AvatarSession({
     }
   };
 
+  // Simulated OpenRouter text API call (mock)
+  const mockOpenRouter = async (prompt: string) => {
+    await new Promise((r) => setTimeout(r, 400));
+    const tips = [
+      "(mock) Here's a helpful answer.",
+      "(mock) I can assist with that.",
+      "(mock) Consider breaking the task into steps.",
+    ];
+    const tip = tips[Math.floor(Math.random() * tips.length)];
+    return `${tip}\n\nYou said: "${prompt.slice(0, 160)}"`;
+  };
+
   const handleSendMessage = useMemoizedFn(async (text: string) => {
     if (!text.trim()) {
       return;
@@ -230,7 +257,11 @@ export function AvatarSession({
       sender: MessageSender.CLIENT,
     });
     try {
-      if (apiService) {
+      if (mockChatEnabled) {
+        // Simulate text response via OpenRouter (mock)
+        const reply = await mockOpenRouter(text);
+        addAvatarMessage(reply);
+      } else if (apiService) {
         // If user typed an MCP command, route to MCP API and do not send to avatar
         if (text.trim().toLowerCase().startsWith("/mcp")) {
           await handleMcpCommand(text);
@@ -258,6 +289,12 @@ export function AvatarSession({
 
   const startVoiceChatVoid = useMemoizedFn(async () => {
     try {
+      if (mockChatEnabled) {
+        // Simulated VAPI start (mock)
+        setMockVoiceActive(true);
+        addAvatarMessage("(mock) Voice chat started via VAPI.");
+        return;
+      }
       // Capture only local webcam video for PIP. Do NOT include audio here.
       // Let the HeyGen SDK acquire the microphone itself so it can
       // choose constraints that match its internal AudioContext (e.g., 16kHz).
@@ -275,11 +312,29 @@ export function AvatarSession({
   });
 
   const stopVoiceChatVoid = useMemoizedFn(() => {
+    if (mockChatEnabled) {
+      setMockVoiceActive(false);
+      addAvatarMessage("(mock) Voice chat stopped.");
+      return;
+    }
     stopVoiceChat();
     if (userVideoStream) {
       userVideoStream.getTracks().forEach((track) => track.stop());
       setUserVideoStream(null);
     }
+  });
+
+  // Start mock chat and open UI in bottom expanded mode
+  const startMockChat = useMemoizedFn(() => {
+    // Switch to bottom dock if needed
+    if (dock !== "bottom") setDock("bottom");
+    setMockChatEnabled(true);
+    // Force full-height expansion for bottom dock immediately
+    prevBottomSizeRef.current = bottomSize;
+    setBottomSize(100);
+    setExpanded(true);
+    // Make chat background solid while in mock mode
+    setChatSolidBg(true);
   });
 
   // Auxiliary handlers required by Chat
@@ -374,6 +429,18 @@ export function AvatarSession({
         setRightSize(
           Math.max(MIN_RIGHT_SIZE_PCT, Math.min(MAX_RIGHT_SIZE_PCT, chatPct)),
         );
+      } else if (resizing === "floating") {
+        // bottom-right corner resize of floating panel
+        const state = floatingResizeState.current;
+        if (!state) return;
+        const deltaX = e.clientX - state.startX;
+        const deltaY = e.clientY - state.startY;
+        const maxW = rect.width - floatingPos.x - 16; // keep some margin
+        const maxH = rect.height - floatingPos.y - 16;
+        const nextW = Math.max(320, Math.min(maxW, state.startW + deltaX));
+        const nextH = Math.max(220, Math.min(maxH, state.startH + deltaY));
+        setFloatingSize({ w: nextW, h: nextH });
+        if (expanded) setExpanded(false); // resizing exits expanded mode
       }
     };
     const onUp = () => setResizing(null);
@@ -385,18 +452,20 @@ export function AvatarSession({
     };
   }, [resizing]);
 
-  // When in floating mode, snap the chat panel to bottom-right by default
+  // When switching to floating mode, snap the chat panel to bottom-right once.
+  // Do NOT depend on floatingSize here to avoid jumping while user resizes.
   useEffect(() => {
     if (dock !== "floating") return;
     const parent = panelRef.current?.parentElement;
     if (!parent) return;
     const parentRect = parent.getBoundingClientRect();
-    const width = expanded ? 520 : 340;
-    const height = expanded ? 520 : 340;
+    const width = expanded ? 520 : floatingSize.w;
+    const height = expanded ? 520 : floatingSize.h;
     const x = Math.max(0, parentRect.width - width - 24);
     const y = Math.max(0, parentRect.height - height - 24);
     setFloatingPos({ x, y });
-  }, [dock, expanded]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [dock]);
 
   // Toggle expand/minimize for current dock mode
   const toggleExpand = useCallback(() => {
@@ -432,13 +501,16 @@ export function AvatarSession({
   const chatPanel = (
     <div
       className={cn(
-        "bg-gray-800/95 text-white rounded-lg shadow-lg border border-gray-700 overflow-hidden flex flex-col h-full w-full",
+        // Solid vs translucent background depending on UI flag
+        isChatSolidBg ? "bg-gray-800" : "bg-gray-800/95",
+        "text-white rounded-lg shadow-lg border border-gray-700 overflow-hidden flex flex-col h-full w-full",
         dock === "bottom" && "flex flex-col gap-3 relative w-full items-center",
       )}
     >
       <div
         className={cn(
-          "flex items-center justify-between gap-2 px-3 py-2 border-b border-gray-700 bg-gray-900/80",
+          "flex items-center justify-between gap-2 px-3 py-2 border-b border-gray-700",
+          isChatSolidBg ? "bg-gray-900" : "bg-gray-900/80",
           dock === "floating" && "cursor-grab active:cursor-grabbing",
         )}
         onPointerDown={handlePointerDown}
@@ -499,11 +571,12 @@ export function AvatarSession({
           "min-h-0",
         )}
       >
-        {isConnected ? (
+        {canChat ? (
           <Chat
             chatInput={chatInput}
+            inputOnly={!expanded}
             isSending={isSending}
-            isVoiceChatActive={isVoiceChatActive}
+            isVoiceChatActive={isVoiceChatActive || mockVoiceActive}
             messages={messages}
             onArrowDown={handleArrowDown}
             onArrowUp={handleArrowUp}
@@ -522,6 +595,9 @@ export function AvatarSession({
                   ? "Connecting to avatar session..."
                   : "Waiting to start session..."}
               </p>
+              <Button size="sm" variant="secondary" onClick={startMockChat}>
+                Start chat without session
+              </Button>
             </div>
           </div>
         )}
@@ -614,11 +690,31 @@ export function AvatarSession({
           style={{
             left: floatingPos.x,
             top: floatingPos.y,
-            width: expanded ? 520 : 360,
-            height: expanded ? 520 : 340,
+            width: expanded ? 520 : floatingSize.w,
+            height: expanded ? 520 : floatingSize.h,
           }}
         >
           {chatPanel}
+          {/* Resize handle (bottom-right corner) - more noticeable */}
+          <div
+            role="presentation"
+            className="absolute bottom-1 right-1 w-5 h-5 cursor-nwse-resize rounded-md border-2 border-zinc-300/90 bg-zinc-700/60 shadow-sm hover:bg-zinc-600/70 hover:border-white/90"
+            style={{
+              backgroundImage:
+                "repeating-linear-gradient(135deg, rgba(255,255,255,0.9) 0 2px, transparent 2px 6px)",
+              backgroundClip: "padding-box",
+            }}
+            onPointerDown={(e) => {
+              floatingResizeState.current = {
+                startX: e.clientX,
+                startY: e.clientY,
+                startW: expanded ? 520 : floatingSize.w,
+                startH: expanded ? 520 : floatingSize.h,
+              };
+              setResizing("floating");
+              (e.target as Element).setPointerCapture?.(e.pointerId);
+            }}
+          />
         </div>
       )}
 

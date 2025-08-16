@@ -22,6 +22,8 @@ interface ChatProps {
   isSending: boolean;
   isVoiceChatActive: boolean;
   messages: MessageType[];
+  // When true, render only the input area (no messages/scroll area)
+  inputOnly?: boolean;
   onArrowDown: () => void;
   onArrowUp: () => void;
   onChatInputChange: (value: string) => void;
@@ -36,6 +38,7 @@ export const Chat: React.FC<ChatProps> = ({
   isSending,
   isVoiceChatActive,
   messages,
+  inputOnly = false,
   onArrowDown,
   onArrowUp,
   onChatInputChange,
@@ -168,43 +171,45 @@ export const Chat: React.FC<ChatProps> = ({
 
   return (
     <div className="flex flex-col w-full h-full p-4">
-      <ChatContainerRoot className="flex-1 min-h-0 text-white">
-        <ChatContainerContent>
-          {messages.map((message) => (
-            <MessageItem
-              key={message.id}
-              isStreaming={
-                isAvatarTalking && message.sender === MessageSender.AVATAR
-              }
-              lastCopiedId={lastCopiedId}
-              message={message}
-              streamMode="typewriter"
-              streamSpeed={28}
-              voteState={voteState}
-              handleCopy={handleCopy}
-              handleEditToInput={handleEditToInput}
-              setVote={setVote}
-            />
-          ))}
-          {isAvatarTalking && (
-            <Message className="flex gap-2 items-start">
-              <MessageAvatar alt="Avatar" fallback="A" src="/heygen-logo.png" />
-              <div className="flex flex-col items-start gap-1">
-                <p className="text-xs text-zinc-400">Avatar</p>
-                <div className="prose break-words whitespace-normal rounded-lg bg-secondary bg-zinc-700 p-2 text-sm text-foreground">
-                  <div className="py-1">
-                    <Loader variant="typing" />
+      {!inputOnly && (
+        <ChatContainerRoot className="flex-1 min-h-0 text-white">
+          <ChatContainerContent>
+            {messages.map((message) => (
+              <MessageItem
+                key={message.id}
+                isStreaming={
+                  isAvatarTalking && message.sender === MessageSender.AVATAR
+                }
+                lastCopiedId={lastCopiedId}
+                message={message}
+                streamMode="typewriter"
+                streamSpeed={28}
+                voteState={voteState}
+                handleCopy={handleCopy}
+                handleEditToInput={handleEditToInput}
+                setVote={setVote}
+              />
+            ))}
+            {isAvatarTalking && (
+              <Message className="flex gap-2 items-start">
+                <MessageAvatar alt="Avatar" fallback="A" src="/heygen-logo.png" />
+                <div className="flex flex-col items-start gap-1">
+                  <p className="text-xs text-zinc-400">Avatar</p>
+                  <div className="prose break-words whitespace-normal rounded-lg bg-secondary bg-zinc-700 p-2 text-sm text-foreground">
+                    <div className="py-1">
+                      <Loader variant="typing" />
+                    </div>
                   </div>
                 </div>
-              </div>
-            </Message>
-          )}
-        </ChatContainerContent>
-        <ChatContainerScrollAnchor />
-        <div className="absolute bottom-4 right-4">
-          <ScrollButton className="shadow-sm" />
-        </div>
-      </ChatContainerRoot>
+              </Message>
+            )}
+          </ChatContainerContent>
+          <ChatContainerScrollAnchor />
+          <div className="absolute bottom-4 right-4">
+            <ScrollButton className="shadow-sm" />
+          </div>
+        </ChatContainerRoot>
+      )}
       <ChatInput
         attachments={attachments}
         chatInput={chatInput}

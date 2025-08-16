@@ -22,6 +22,10 @@ interface SessionState {
   addMessage: (message: Message) => void;
   appendMessageChunk: (sender: MessageSender, chunk: string) => void;
   clearMessages: () => void;
+
+  // UI flags
+  isChatSolidBg: boolean;
+  setChatSolidBg: (solid: boolean) => void;
 }
 
 export const useSessionStore = create<SessionState>()(
@@ -65,6 +69,10 @@ export const useSessionStore = create<SessionState>()(
           };
         }),
       clearMessages: () => set({ messages: [] }),
+
+      // UI flags
+      isChatSolidBg: false,
+      setChatSolidBg: (solid) => set({ isChatSolidBg: solid }),
     }),
     {
       name: "session-store",
