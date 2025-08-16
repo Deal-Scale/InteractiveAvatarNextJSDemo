@@ -22,6 +22,16 @@ import {
   useSidebar,
 } from "@/components/ui/sidebar";
 
+// Compact number formatter for better UI (e.g., 1.2K, 3.4M)
+const compactNumberFormatter = new Intl.NumberFormat(undefined, {
+  notation: "compact",
+  maximumFractionDigits: 1,
+});
+function formatCompactNumber(n: number): string {
+  if (!Number.isFinite(n)) return "0";
+  return compactNumberFormatter.format(n);
+}
+
 type Conversation = {
   id: string;
   title: string;
@@ -551,6 +561,13 @@ const Sidebar: React.FC<SidebarProps> = ({ onSelect, apps }) => {
             </div>
           )}
 
+          {/* Conversations count above chats */}
+          {!loading && (
+            <div className="px-2 pb-1 text-xs text-muted-foreground group-data-[state=collapsed]/sidebar:hidden">
+              {formatCompactNumber(totalCount)} conversations • {formatCompactNumber(archivedList.length)} archived
+            </div>
+          )}
+
           {!loading && filteredGroups && filteredGroups.map((group) => (
             <SidebarGroup key={group.period}>
               <button
@@ -684,9 +701,7 @@ const Sidebar: React.FC<SidebarProps> = ({ onSelect, apps }) => {
         </SidebarContent>
 
         <SidebarFooter className="px-2">
-          <div className="text-xs text-muted-foreground group-data-[state=collapsed]/sidebar:hidden">
-            {totalCount} conversations • {archivedList.length} archived
-          </div>
+          <div className="h-2" />
         </SidebarFooter>
       </UISidebar>
       <CollapsedEdgeTrigger />
