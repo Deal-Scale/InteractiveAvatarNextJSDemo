@@ -24,6 +24,8 @@ import ApplicationsStarter from "@/components/Sidebar/ApplicationsStarter";
 import AssetsSection from "@/components/Sidebar/AssetsSection";
 import AgentsSection from "@/components/Sidebar/AgentsSection";
 import BookmarkModal from "@/components/Sidebar/BookmarkModal";
+import BookmarksSection from "@/components/Sidebar/BookmarksSection";
+import KnowledgebaseSection from "@/components/Sidebar/KnowledgebaseSection";
 import useSidebarCollapse from "@/components/Sidebar/hooks/useSidebarCollapse";
 import useConversations from "@/components/Sidebar/hooks/useConversations";
 import useBookmarkModal from "@/components/Sidebar/hooks/useBookmarkModal";
@@ -96,6 +98,39 @@ const Sidebar: React.FC<SidebarProps> = ({ onSelect, apps }) => {
   const openBookmarkModal = bookmark.openBookmarkModal;
 
   const totalCount = conv.totalCount;
+
+  // Build a map of conversations by ID for fast lookup in bookmarks tree
+  const conversationsById = useMemo(() => {
+    const map: Record<string, import("@/components/Sidebar/types").Conversation> = {};
+    if (conv.groups) {
+      for (const g of conv.groups) {
+        for (const c of g.conversations) {
+          map[c.id] = c;
+        }
+      }
+    }
+    return map;
+  }, [conv.groups]);
+
+  // Placeholder knowledge base tree (folders/files). Replace with real data.
+  const knowledgeTree = useMemo(
+    () => [
+      {
+        id: "kb-guides",
+        name: "Guides",
+        children: [
+          { id: "kb-getting-started", name: "Getting Started" },
+          { id: "kb-integrations", name: "Integrations" },
+        ],
+      },
+      {
+        id: "kb-faq",
+        name: "FAQ",
+        children: [{ id: "kb-general", name: "General" }],
+      },
+    ],
+    [],
+  );
 
   return (
     <SidebarProvider>
@@ -188,6 +223,36 @@ const Sidebar: React.FC<SidebarProps> = ({ onSelect, apps }) => {
             agents={agents as any}
             collapsedAgents={collapse.collapsedAgents}
             setCollapsedAgents={collapse.setCollapsedAgents}
+          />
+
+          {/* Bookmarks (File Tree) */}
+          <BookmarksSection
+            bookmarkFolders={bookmark.bookmarkFolders}
+            bookmarkedIds={bookmark.bookmarkedIds}
+            bookmarkMeta={bookmark.bookmarkMeta}
+            collapsedBookmarks={collapse.collapsedBookmarks}
+            conversationsById={conversationsById}
+            onOpenChat={(c) => onSelect?.(c)}
+            setCollapsedBookmarks={collapse.setCollapsedBookmarks}
+          />
+
+          {/* Knowledge Base (File Tree) */}
+          <KnowledgebaseSection
+            collapsedKnowledge={collapse.collapsedKnowledge}
+            setCollapsedKnowledge={collapse.setCollapsedKnowledge}
+            tree={knowledgeTree as any}
+            onOpenItem={(id) => {
+              // TODO: implement real navigation when KB is integrated
+              console.debug("Open KB item", id);
+            }}
+            onOpenMarkdown={() => {
+              // Navigate to a markdown viewer route (replace with your implementation)
+              router.push("/knowledge/markdown");
+            }}
+            onStartApiSync={() => {
+              // Trigger OAuth flow for API sync (replace with your real auth)
+              console.debug("KB OAuth: begin auth flow");
+            }}
           />
 
           {/* Messages Section (threads grouped under their own dropdown) */}
