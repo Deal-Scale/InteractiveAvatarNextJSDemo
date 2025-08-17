@@ -26,6 +26,67 @@
 
 ---
 
+### 2.5. SSR & Browser API Safety
+
+- **Problem:** Directly accessing `window`/`document` during SSR causes runtime errors in Next.js.
+- **Solution:** Use SSR-safe helpers and client-only patterns.
+
+Helpers (in `lib/utils.ts`):
+
+```ts
+export function safeWindow(): Window | null {
+  return typeof window !== "undefined" ? window : null;
+}
+export function safeDocument(): Document | null {
+  return typeof document !== "undefined" ? document : null;
+}
+```
+
+Usage patterns:
+
+```tsx
+"use client";
+import * as React from "react";
+import { safeWindow, safeDocument } from "@/lib/utils";
+
+export function ExampleClientComp() {
+  const w = safeWindow();
+  const d = safeDocument();
+
+  // Window-bound listeners in effects (client-only)
+  React.useEffect(() => {
+    if (!w) return;
+    const onResize = () => {/* ... */};
+    w.addEventListener("resize", onResize);
+    return () => w.removeEventListener("resize", onResize);
+  }, [w]);
+
+  // Document manipulation safely
+  React.useEffect(() => {
+    if (!d) return;
+    d.body.classList.add("example-mounted");
+    return () => d.body.classList.remove("example-mounted");
+  }, [d]);
+
+  return null;
+}
+```
+
+Portals safely:
+
+```tsx
+import { createPortal } from "react-dom";
+import { safeDocument } from "@/lib/utils";
+
+function Overlay({ children }: { children: React.ReactNode }) {
+  const target = safeDocument()?.body ?? null;
+  if (!target) return null; // SSR-safe
+  return createPortal(children, target);
+}
+```
+
+---
+
 ### 3. Implementation Plan
 
 #### a) State & Registry
@@ -198,4 +259,29 @@ export default function FindPage() {
 - **Observability:** Log user queries and errors (anonymized) to improve prompt quality and UI flows over time.
 
 ---
+
+### 8. Code Updates & Adoption Guide
+
+- **New helpers:** `safeWindow`, `safeDocument` in `lib/utils.ts`.
+- **Updated components:**
+  - `components/ThemeBridge.tsx` — guards `document.documentElement` access.
+  - `components/ui/file-upload.tsx` — guards `createPortal` target via `document.body` check.
+
+- **Adoption checklist:**
+  - Prefer client components (`"use client"`) when you must touch the DOM.
+  - Wrap all direct `window`/`document` access with `safeWindow()` / `safeDocument()`.
+  - Bind global listeners (resize, drag/drop) inside `useEffect` only.
+  - For portals, compute target with `safeDocument()?.body ?? null`; return `null` if absent.
+
+- **Refactoring example:**
+
+```tsx
+const w = safeWindow();
+React.useEffect(() => {
+  if (!w) return;
+  const onScroll = () => {/* ... */};
+  w.addEventListener("scroll", onScroll);
+  return () => w.removeEventListener("scroll", onScroll);
+}, [w]);
+```
 

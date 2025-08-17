@@ -1,8 +1,9 @@
 "use client";
 
-import React, { useMemo } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 
 import { usePlacementStore } from "@/lib/stores/placement";
+import { safeWindow } from "@/lib/utils";
 
 // Bottom-docked drawer whose height is controlled by usePlacementStore.bottomHeightFrac.
 // Includes a top grab handle for resizing. Hides itself when height ~ 0.
@@ -25,9 +26,10 @@ export function BottomDrawer({
   const show = dockMode === "bottom" && heightFrac > 0.001;
 
   const heightPx = useMemo(() => {
-    if (typeof window === "undefined") return 0;
+    const w = safeWindow();
 
-    return Math.round((heightFrac || 0) * window.innerHeight);
+    if (!w) return 0;
+    return Math.round((heightFrac || 0) * w.innerHeight);
   }, [heightFrac]);
 
   const onHandlePointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
@@ -36,7 +38,8 @@ export function BottomDrawer({
     const startFrac = heightFrac;
 
     const onMove = (ev: PointerEvent) => {
-      const vh = window.innerHeight || 1;
+      const w = safeWindow();
+      const vh = (w?.innerHeight || 1);
       const dy = startY - ev.clientY; // dragging up increases height
       const newFrac = Math.max(0, Math.min(0.95, startFrac + dy / vh));
 
@@ -48,12 +51,20 @@ export function BottomDrawer({
       const snapThreshold = Math.max(0.01, minFrac + 0.01);
 
       if (current <= snapThreshold) setHeightFrac(0);
-      window.removeEventListener("pointermove", onMove);
-      window.removeEventListener("pointerup", onUp);
+      const w = safeWindow();
+
+      if (w) {
+        w.removeEventListener("pointermove", onMove);
+        w.removeEventListener("pointerup", onUp);
+      }
     };
 
-    window.addEventListener("pointermove", onMove, { passive: true });
-    window.addEventListener("pointerup", onUp, { once: true });
+    const w = safeWindow();
+
+    if (w) {
+      w.addEventListener("pointermove", onMove, { passive: true });
+      w.addEventListener("pointerup", onUp, { once: true });
+    }
   };
 
   if (!show) return null;

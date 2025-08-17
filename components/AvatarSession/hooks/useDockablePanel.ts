@@ -1,8 +1,15 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import { safeWindow } from "@/lib/utils";
 
 import { usePlacementStore } from "@/lib/stores/placement";
+
+// Local typing for Zustand persist middleware API injected at runtime
+type PersistAPI = {
+  hasHydrated?: () => boolean;
+  onFinishHydration?: (cb: () => void) => void;
+};
 
 export type DockMode = "right" | "bottom" | "floating";
 
@@ -33,16 +40,17 @@ export function useDockablePanel(
   const [hydrated, setHydrated] = useState<boolean>(() => {
     // Zustand persist API may exist; if not, assume hydrated to avoid blocking
     try {
-      // @ts-expect-error - persist API is attached at runtime by middleware
-      return !!usePlacementStore.persist?.hasHydrated?.();
+      const api = (usePlacementStore as unknown as { persist?: PersistAPI }).persist;
+
+      return !!api?.hasHydrated?.();
     } catch {
       return true;
     }
   });
   useEffect(() => {
     try {
-      // @ts-expect-error - persist API is attached at runtime by middleware
-      const api = usePlacementStore.persist;
+      const api = (usePlacementStore as unknown as { persist?: PersistAPI }).persist;
+
       if (api?.hasHydrated?.()) {
         setHydrated(true);
       }
@@ -110,12 +118,20 @@ export function useDockablePanel(
 
   useEffect(() => {
     console.debug("[dockable] mount listeners");
-    window.addEventListener("pointermove", onGlobalPointerMove);
-    window.addEventListener("pointerup", onGlobalPointerUp);
+    const w = safeWindow();
+
+    if (w) {
+      w.addEventListener("pointermove", onGlobalPointerMove);
+      w.addEventListener("pointerup", onGlobalPointerUp);
+    }
 
     return () => {
-      window.removeEventListener("pointermove", onGlobalPointerMove);
-      window.removeEventListener("pointerup", onGlobalPointerUp);
+      const w = safeWindow();
+
+      if (w) {
+        w.removeEventListener("pointermove", onGlobalPointerMove);
+        w.removeEventListener("pointerup", onGlobalPointerUp);
+      }
     };
   }, [onGlobalPointerMove, onGlobalPointerUp]);
 
@@ -169,12 +185,20 @@ export function useDockablePanel(
     };
     const onUp = () => setResizing(null);
 
-    window.addEventListener("pointermove", onMove);
-    window.addEventListener("pointerup", onUp);
+    const w = safeWindow();
+
+    if (w) {
+      w.addEventListener("pointermove", onMove);
+      w.addEventListener("pointerup", onUp);
+    }
 
     return () => {
-      window.removeEventListener("pointermove", onMove);
-      window.removeEventListener("pointerup", onUp);
+      const w = safeWindow();
+
+      if (w) {
+        w.removeEventListener("pointermove", onMove);
+        w.removeEventListener("pointerup", onUp);
+      }
     };
   }, [
     resizing,
