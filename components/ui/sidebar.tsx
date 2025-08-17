@@ -76,8 +76,8 @@ export function Sidebar({ children, className = "" }: SidebarProps) {
       aria-label="Primary"
       data-state={open ? "open" : "collapsed"}
       className={
-        "group/sidebar transition-[width] duration-200 bg-white text-zinc-900 dark:bg-zinc-900 dark:text-zinc-100 " +
-        (open ? "w-[320px] border-r border-zinc-200 dark:border-zinc-800" : "w-0 border-r-0") +
+        "group/sidebar transition-[width] duration-200 bg-background text-foreground " +
+        (open ? "w-[320px] border-r border-border" : "w-0 border-r-0") +
         (className ? ` ${className}` : "")
       }
     >
@@ -101,7 +101,7 @@ export function SidebarGroup({ children }: { children: React.ReactNode }) {
 }
 
 export function SidebarGroupLabel({ children }: { children: React.ReactNode }) {
-  return <div className="px-2 pb-1 text-xs uppercase tracking-wide text-zinc-400">{children}</div>;
+  return <div className="px-2 pb-1 text-xs uppercase tracking-wide text-muted-foreground">{children}</div>;
 }
 
 export function SidebarMenu({ children }: { children: React.ReactNode }) {
