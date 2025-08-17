@@ -1,6 +1,7 @@
 "use client";
 
-import React, { createContext, useContext, useState } from "react";
+import React, { createContext, useContext } from "react";
+import { usePlacementStore } from "@/lib/stores/placement";
 
 // Basic provider to manage open/close state for a collapsible sidebar
 type SidebarCtx = {
@@ -11,23 +12,11 @@ type SidebarCtx = {
 const Ctx = createContext<SidebarCtx | null>(null);
 
 export function SidebarProvider({ children }: { children: React.ReactNode }) {
-  // Persist open state for better UX between reloads
-  const [open, setOpen] = useState<boolean>(() => {
-    if (typeof window === "undefined") return true;
-    try {
-      const v = window.localStorage.getItem("ui.sidebar.open");
-      return v === null ? true : v === "1";
-    } catch {
-      return true;
-    }
-  });
-  const setAndPersist = (v: boolean) => {
-    setOpen(v);
-    try {
-      window.localStorage.setItem("ui.sidebar.open", v ? "1" : "0");
-    } catch {}
-  };
-  return <Ctx.Provider value={{ open, setOpen: setAndPersist }}>{children}</Ctx.Provider>;
+  const sidebarCollapsed = usePlacementStore((s) => s.sidebarCollapsed);
+  const setSidebarCollapsed = usePlacementStore((s) => s.setSidebarCollapsed);
+  const open = !sidebarCollapsed;
+  const setOpen = (v: boolean) => setSidebarCollapsed(!v);
+  return <Ctx.Provider value={{ open, setOpen }}>{children}</Ctx.Provider>;
 }
 
 export function useSidebar() {
@@ -69,18 +58,26 @@ interface SidebarProps {
 }
 
 export function Sidebar({ children, className = "" }: SidebarProps) {
-  const { open } = useSidebar();
+  const { open, setOpen } = useSidebar();
   return (
     <aside
       role="navigation"
       aria-label="Primary"
       data-state={open ? "open" : "collapsed"}
       className={
-        "group/sidebar transition-[width] duration-200 bg-background text-foreground " +
+        "relative group/sidebar transition-[width] duration-200 bg-background text-foreground " +
         (open ? "w-[320px] border-r border-border" : "w-0 border-r-0") +
         (className ? ` ${className}` : "")
       }
     >
+      {!open && (
+        <button
+          type="button"
+          aria-label="Open sidebar"
+          className="fixed left-0 top-1/2 -translate-y-1/2 z-40 h-16 w-3 rounded-r bg-border hover:bg-primary/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+          onClick={() => setOpen(true)}
+        />
+      )}
       <div className="flex h-full flex-col gap-4 py-4 max-h-full overflow-y-auto px-2 pb-20 group-data-[state=collapsed]/sidebar:hidden">
         {children}
       </div>
