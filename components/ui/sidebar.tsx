@@ -85,7 +85,7 @@ export function Sidebar({ children, className = "" }: SidebarProps) {
       {!open && (
         <button
           aria-label="Open sidebar"
-          className="fixed left-0 top-1/2 -translate-y-1/2 z-40 h-16 w-3 rounded-r bg-border hover:bg-primary/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+          className="fixed left-0 top-1/2 -translate-y-1/2 z-40 h-16 w-3 rounded-r border border-primary/40 bg-primary/10 hover:bg-primary/15 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary backdrop-blur supports-[backdrop-filter]:bg-primary/10"
           type="button"
           onClick={() => setOpen(true)}
         />

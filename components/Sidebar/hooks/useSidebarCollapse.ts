@@ -3,9 +3,11 @@
 import { useEffect, useState } from "react";
 
 export default function useSidebarCollapse() {
-  const [collapsedStarter, setCollapsedStarter] = useState<boolean>(false);
-  const [collapsedAssets, setCollapsedAssets] = useState<boolean>(false);
-  const [collapsedAgents, setCollapsedAgents] = useState<boolean>(false);
+  // Defaults: only Messages open by default
+  const [collapsedStarter, setCollapsedStarter] = useState<boolean>(true);
+  const [collapsedAssets, setCollapsedAssets] = useState<boolean>(true);
+  const [collapsedAgents, setCollapsedAgents] = useState<boolean>(true);
+  const [collapsedMessages, setCollapsedMessages] = useState<boolean>(false);
   const [collapsedGroups, setCollapsedGroups] = useState<Set<string>>(
     new Set(),
   );
@@ -14,13 +16,15 @@ export default function useSidebarCollapse() {
   useEffect(() => {
     if (typeof window === "undefined") return;
     try {
-      const raw = localStorage.getItem("sidebar.collapsed.v1");
+      // bump version to v2 to apply new defaults for users
+      const raw = localStorage.getItem("sidebar.collapsed.v2");
 
       if (raw) {
         const data = JSON.parse(raw) as {
           starter?: boolean;
           assets?: boolean;
           agents?: boolean;
+          messages?: boolean;
           groups?: string[];
         };
 
@@ -28,6 +32,8 @@ export default function useSidebarCollapse() {
           setCollapsedStarter(data.starter);
         if (typeof data.assets === "boolean") setCollapsedAssets(data.assets);
         if (typeof data.agents === "boolean") setCollapsedAgents(data.agents);
+        if (typeof data.messages === "boolean")
+          setCollapsedMessages(data.messages);
         if (Array.isArray(data.groups))
           setCollapsedGroups(new Set(data.groups));
       }
@@ -39,16 +45,23 @@ export default function useSidebarCollapse() {
     if (typeof window === "undefined") return;
     try {
       localStorage.setItem(
-        "sidebar.collapsed.v1",
+        "sidebar.collapsed.v2",
         JSON.stringify({
           starter: collapsedStarter,
           assets: collapsedAssets,
           agents: collapsedAgents,
+          messages: collapsedMessages,
           groups: Array.from(collapsedGroups),
         }),
       );
     } catch {}
-  }, [collapsedStarter, collapsedAssets, collapsedAgents, collapsedGroups]);
+  }, [
+    collapsedStarter,
+    collapsedAssets,
+    collapsedAgents,
+    collapsedMessages,
+    collapsedGroups,
+  ]);
 
   return {
     collapsedStarter,
@@ -57,7 +70,10 @@ export default function useSidebarCollapse() {
     setCollapsedAssets,
     collapsedAgents,
     setCollapsedAgents,
+    collapsedMessages,
+    setCollapsedMessages,
     collapsedGroups,
     setCollapsedGroups,
   } as const;
 }
+
