@@ -1,4 +1,4 @@
-import { ClipboardCopy, ThumbsUp, ThumbsDown, Pencil, Paperclip, Reply, GitBranch } from "lucide-react";
+import { ClipboardCopy, ThumbsUp, ThumbsDown, Pencil, Paperclip, RotateCcw, GitBranch, SplitSquareHorizontal } from "lucide-react";
 
 import { Message as MessageType, MessageSender, type MessageAsset } from "@/lib/types";
 import { Button } from "@/components/ui/button";
@@ -22,6 +22,7 @@ import {
 import { JSXPreview } from "@/components/ui/jsx-preview";
 import { Tool } from "@/components/ui/tool";
 import { Source, SourceContent, SourceTrigger } from "@/components/ui/source";
+import { StatBadge } from "@/components/PromptKit/StatBadge";
 
 interface MessageItemProps {
   message: MessageType;
@@ -30,6 +31,9 @@ interface MessageItemProps {
   handleCopy: (id: string, content: string) => void;
   setVote: (id: string, dir: "up" | "down") => void;
   handleEditToInput: (content: string, id: string) => void;
+  onBranch?: (content: string, id: string) => void;
+  onRetry?: (id: string, content: string) => void;
+  onCompare?: (content: string, id: string) => void;
   // Optional streaming controls for avatar messages
   streamMode?: ResponseStreamMode; // "typewriter" | "fade"
   streamSpeed?: number; // 1-100
@@ -49,6 +53,9 @@ export const MessageItem: React.FC<MessageItemProps> = ({
   handleCopy,
   setVote,
   handleEditToInput,
+  onBranch,
+  onRetry,
+  onCompare,
   streamMode = "typewriter",
   streamSpeed = 20,
   fadeDuration,
@@ -124,7 +131,7 @@ export const MessageItem: React.FC<MessageItemProps> = ({
           {message.sender === MessageSender.AVATAR ? "Avatar" : "You"}
         </p>
         {message.sender === MessageSender.AVATAR ? (
-          <div className="prose break-words whitespace-normal rounded-lg bg-muted p-2 text-sm text-foreground">
+          <div className="break-words whitespace-normal rounded-lg bg-muted p-2 text-sm text-foreground">
             {reasoning && (
               <div className="mb-2">
                 <Reasoning isStreaming={isStreaming}>
@@ -142,22 +149,22 @@ export const MessageItem: React.FC<MessageItemProps> = ({
             )}
             {hasJsx ? (
               <div className="w-full">
+                {message.content && (
+                  <MessageContent markdown className="mb-2 bg-muted">
+                    {message.content}
+                  </MessageContent>
+                )}
                 <JSXPreview
                   isStreaming={Boolean(isStreaming && !jsxStream.isComplete)}
                   jsx={jsxStream.displayedText}
+                  components={{ StatBadge: StatBadge as unknown as React.ComponentType<any> }}
                 />
               </div>
             ) : (
-              <ResponseStream
-                as="div"
-                characterChunkSize={characterChunkSize}
-                className="whitespace-pre-wrap"
-                fadeDuration={fadeDuration}
-                mode={streamMode}
-                segmentDelay={segmentDelay}
-                speed={streamSpeed}
-                textStream={message.content}
-              />
+              // Render markdown for avatar messages (tables, code fences, etc.)
+              <MessageContent markdown className="bg-muted">
+                {message.content}
+              </MessageContent>
             )}
             {Array.isArray(message.toolParts) &&
               message.toolParts.length > 0 && (
@@ -202,22 +209,32 @@ export const MessageItem: React.FC<MessageItemProps> = ({
         <MessageActions>
           {message.sender === MessageSender.AVATAR ? (
             <>
-              <MessageAction tooltip={"Reply"}>
+              <MessageAction tooltip={"Retry (regenerate)"}>
                 <Button
-                  aria-label="Reply"
+                  aria-label="Retry"
                   size="icon"
-                  variant="ghost"
-                  onClick={() => handleEditToInput(message.content, message.id)}
+                  variant={onRetry ? "secondary" : "ghost"}
+                  onClick={() => (onRetry ? onRetry(message.id, message.content) : handleEditToInput(message.content, message.id))}
                 >
-                  <Reply className="h-4 w-4" />
+                  <RotateCcw className="h-4 w-4" />
                 </Button>
               </MessageAction>
-              <MessageAction tooltip={"Branch conversation"}>
+              <MessageAction tooltip={"Compare outputs"}>
                 <Button
-                  aria-label="Branch conversation"
+                  aria-label="Compare outputs"
                   size="icon"
-                  variant="ghost"
-                  onClick={() => handleEditToInput(message.content, message.id)}
+                  variant={onCompare ? "secondary" : "ghost"}
+                  onClick={() => (onCompare ? onCompare(message.content, message.id) : handleEditToInput(message.content, message.id))}
+                >
+                  <SplitSquareHorizontal className="h-4 w-4" />
+                </Button>
+              </MessageAction>
+              <MessageAction tooltip={"Branch to agent"}>
+                <Button
+                  aria-label="Branch to agent"
+                  size="icon"
+                  variant={onBranch ? "secondary" : "ghost"}
+                  onClick={() => (onBranch ? onBranch(message.content, message.id) : handleEditToInput(message.content, message.id))}
                 >
                   <GitBranch className="h-4 w-4" />
                 </Button>

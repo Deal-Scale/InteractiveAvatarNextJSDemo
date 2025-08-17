@@ -1,5 +1,4 @@
-import { marked } from "marked";
-import { memo, useId, useMemo } from "react";
+import { memo, useId } from "react";
 import ReactMarkdown, { Components } from "react-markdown";
 import remarkBreaks from "remark-breaks";
 import remarkGfm from "remark-gfm";
@@ -14,12 +13,6 @@ export type MarkdownProps = {
   className?: string;
   components?: Partial<Components>;
 };
-
-function parseMarkdownIntoBlocks(markdown: string): string[] {
-  const tokens = marked.lexer(markdown);
-
-  return tokens.map((token) => token.raw);
-}
 
 function extractLanguage(className?: string): string {
   if (!className) return "plaintext";
@@ -61,30 +54,6 @@ const INITIAL_COMPONENTS: Partial<Components> = {
   },
 };
 
-const MemoizedMarkdownBlock = memo(
-  function MarkdownBlock({
-    content,
-    components = INITIAL_COMPONENTS,
-  }: {
-    content: string;
-    components?: Partial<Components>;
-  }) {
-    return (
-      <ReactMarkdown
-        components={components}
-        remarkPlugins={[remarkGfm, remarkBreaks]}
-      >
-        {content}
-      </ReactMarkdown>
-    );
-  },
-  function propsAreEqual(prevProps, nextProps) {
-    return prevProps.content === nextProps.content;
-  },
-);
-
-MemoizedMarkdownBlock.displayName = "MemoizedMarkdownBlock";
-
 function MarkdownComponent({
   children,
   id,
@@ -93,17 +62,11 @@ function MarkdownComponent({
 }: MarkdownProps) {
   const generatedId = useId();
   const blockId = id ?? generatedId;
-  const blocks = useMemo(() => parseMarkdownIntoBlocks(children), [children]);
-
   return (
-    <div className={className}>
-      {blocks.map((block, index) => (
-        <MemoizedMarkdownBlock
-          key={`${blockId}-block-${index}`}
-          components={components}
-          content={block}
-        />
-      ))}
+    <div className={className} id={blockId}>
+      <ReactMarkdown components={components} remarkPlugins={[remarkGfm, remarkBreaks]}>
+        {children}
+      </ReactMarkdown>
     </div>
   );
 }
