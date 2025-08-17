@@ -19,11 +19,9 @@ export function RightTab({
   label = "Chat",
   children,
 }: RightTabProps) {
-  const dockMode = usePlacementStore((s) => s.dockMode);
   const widthFrac = usePlacementStore((s) => s.rightWidthFrac);
   const setWidthFrac = usePlacementStore((s) => s.setRightWidthFrac);
 
-  const isRight = dockMode === "right";
   const isClosed = widthFrac <= 0.01;
 
   const widthPx = useMemo(() => {
@@ -66,8 +64,6 @@ export function RightTab({
       setWidthFrac(defaultFrac);
     }
   };
-
-  if (!isRight) return null;
 
   if (!isClosed) {
     return (
