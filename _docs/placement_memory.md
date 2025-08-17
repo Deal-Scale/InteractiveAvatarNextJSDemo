@@ -104,3 +104,24 @@ Feature: Persistent Chat and Sidebar UI State
 - Continuously test state restoration across reloads, logins, and device changes.
 
 See `components/ui/bottom-tab.tsx`, `components/ui/right-tab.tsx`, and `lib/stores/placement.ts` for example usage and integration with the Zustand store.
+
+### Known issue (2025-08-16)
+
+Positions aren’t restoring after a browser refresh for some users. The store (`lib/stores/placement.ts`) correctly persists `dockMode`, `bottomHeightFrac`, `rightWidthFrac`, and `floating` geometry per user, but the active UI hook wiring may not be fully reading/writing from this store yet in all paths.
+
+Suspected areas:
+
+- `components/AvatarSession.tsx` → `useDockablePanel()` manages `floatingPos`, `floatingSize`, and sizing without directly binding to `usePlacementStore`. If it uses internal state instead of the store setters, changes won’t persist.
+- Ensure `setUserId(userId)` is called after auth resolution so the correct per-user namespace is hydrated before UI reads from the store.
+
+Planned fix:
+
+1. Wire `useDockablePanel()` to placement store:
+   - Read: `dockMode`, `bottomHeightFrac`, `rightWidthFrac`, `floating`.
+   - Write via: `setDockMode`, `setBottomHeightFrac`, `setRightWidthFrac`, `setWindowPosition`, `setWindowSize` (or `setFloating`).
+2. On mount of `AvatarSession`, ensure initial UI derives from the store (avoid shadow state that diverges).
+3. Verify `BottomTab`/`RightTab` are reading fractions from the store and not maintaining their own persisted copies.
+4. Confirm `setUserId()` is invoked on login/logout transitions; add a no-op anonymous fallback for logged-out usage.
+5. QA: manual resize/move, refresh, and re-open app; confirm restoration for bottom/right/floating.
+
+Status: Pending integration audit and wiring. Tracking in TODO: "Investigate and fix: Dock/floating positions not persisted on refresh; update placement store and hydration."

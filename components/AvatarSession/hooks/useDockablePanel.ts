@@ -1,4 +1,8 @@
+"use client";
+
 import { useCallback, useEffect, useRef, useState } from "react";
+
+import { usePlacementStore } from "@/lib/stores/placement";
 
 export type DockMode = "right" | "bottom" | "floating";
 
@@ -10,13 +14,23 @@ export function useDockablePanel(
   rootRef: React.RefObject<HTMLDivElement | null>,
   panelRef: React.RefObject<HTMLDivElement | null>,
 ) {
-  const [dock, setDock] = useState<DockMode>("bottom");
-  const [expanded, setExpanded] = useState(false);
-  const [floatingPos, setFloatingPos] = useState({ x: 24, y: 24 });
-  const [floatingSize, setFloatingSize] = useState({ w: 360, h: 340 });
+  // Persistent placement store bindings
+  const dock = usePlacementStore((s) => s.dockMode) as DockMode;
+  const setDockMode = usePlacementStore((s) => s.setDockMode);
+  const bottomHeightFrac = usePlacementStore((s) => s.bottomHeightFrac);
+  const setBottomHeightFrac = usePlacementStore((s) => s.setBottomHeightFrac);
+  const rightWidthFrac = usePlacementStore((s) => s.rightWidthFrac);
+  const setRightWidthFrac = usePlacementStore((s) => s.setRightWidthFrac);
+  // Select primitives to avoid object identity changes on every render
+  const posX = usePlacementStore((s) => s.floating.x);
+  const posY = usePlacementStore((s) => s.floating.y);
+  const setWindowPosition = usePlacementStore((s) => s.setWindowPosition);
+  const sizeW = usePlacementStore((s) => s.floating.width);
+  const sizeH = usePlacementStore((s) => s.floating.height);
+  const setWindowSize = usePlacementStore((s) => s.setWindowSize);
 
-  const [bottomSize, setBottomSize] = useState<number>(15);
-  const [rightSize, setRightSize] = useState<number>(24);
+  // Local-only UI state
+  const [expanded, setExpanded] = useState(false);
   const [resizing, setResizing] = useState<
     null | "bottom" | "right" | "floating"
   >(null);
@@ -63,9 +77,9 @@ export function useDockablePanel(
 
       x = Math.max(0, Math.min(x, parentRect.width - width));
       y = Math.max(0, Math.min(y, parentRect.height - height));
-      setFloatingPos({ x, y });
+      setWindowPosition({ x, y });
     },
-    [dock, panelRef],
+    [dock, panelRef, setWindowPosition],
   );
 
   const onGlobalPointerUp = useCallback(() => {
@@ -93,26 +107,37 @@ export function useDockablePanel(
 
       if (resizing === "bottom") {
         const chatPct = ((rect.bottom - e.clientY) / rect.height) * 100;
+        const clamped = Math.max(MIN_BOTTOM_SIZE_PCT, Math.min(100, chatPct));
 
-        setBottomSize(Math.max(MIN_BOTTOM_SIZE_PCT, Math.min(100, chatPct)));
+        const nextFrac = clamped / 100;
+        if (Math.abs((bottomHeightFrac || 0) - nextFrac) > 0.001) {
+          setBottomHeightFrac(nextFrac);
+        }
       } else if (resizing === "right") {
         const chatPct = ((rect.right - e.clientX) / rect.width) * 100;
-
-        setRightSize(
-          Math.max(MIN_RIGHT_SIZE_PCT, Math.min(MAX_RIGHT_SIZE_PCT, chatPct)),
+        const clamped = Math.max(
+          MIN_RIGHT_SIZE_PCT,
+          Math.min(MAX_RIGHT_SIZE_PCT, chatPct),
         );
+
+        const nextFrac = clamped / 100;
+        if (Math.abs(rightWidthFrac - nextFrac) > 0.001) {
+          setRightWidthFrac(nextFrac);
+        }
       } else if (resizing === "floating") {
         const state = floatingResizeState.current;
 
         if (!state) return;
         const deltaX = e.clientX - state.startX;
         const deltaY = e.clientY - state.startY;
-        const maxW = rect.width - floatingPos.x - 16;
-        const maxH = rect.height - floatingPos.y - 16;
+        const maxW = rect.width - posX - 16;
+        const maxH = rect.height - posY - 16;
         const nextW = Math.max(320, Math.min(maxW, state.startW + deltaX));
         const nextH = Math.max(220, Math.min(maxH, state.startH + deltaY));
 
-        setFloatingSize({ w: nextW, h: nextH });
+        if (Math.abs(sizeW - nextW) > 0.5 || Math.abs(sizeH - nextH) > 0.5) {
+          setWindowSize({ width: nextW, height: nextH });
+        }
         if (expanded) setExpanded(false);
       }
     };
@@ -125,17 +150,38 @@ export function useDockablePanel(
       window.removeEventListener("pointermove", onMove);
       window.removeEventListener("pointerup", onUp);
     };
-  }, [resizing, rootRef, floatingPos, expanded]);
+  }, [
+    resizing,
+    rootRef,
+    posX,
+    posY,
+    expanded,
+    bottomHeightFrac,
+    rightWidthFrac,
+    sizeW,
+    sizeH,
+    setBottomHeightFrac,
+    setRightWidthFrac,
+    setWindowSize,
+  ]);
 
   // Ensure a visible size when switching docks so overlays render
   useEffect(() => {
-    if (dock === "right" && rightSize <= 0) {
-      setRightSize(24);
-    } else if (dock === "bottom" && bottomSize <= 0) {
-      setBottomSize(15);
+    const rightPct = Math.round((rightWidthFrac || 0) * 100);
+    const bottomPct = Math.round((bottomHeightFrac || 0) * 100);
+
+    if (dock === "right" && rightPct <= 0) {
+      const next = 24 / 100;
+      if (Math.abs((rightWidthFrac || 0) - next) > 0.001) {
+        setRightWidthFrac(next);
+      }
+    } else if (dock === "bottom" && bottomPct <= 0) {
+      const next = 15 / 100;
+      if (Math.abs((bottomHeightFrac || 0) - next) > 0.001) {
+        setBottomHeightFrac(next);
+      }
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [dock]);
+  }, [dock, rightWidthFrac, bottomHeightFrac, setRightWidthFrac, setBottomHeightFrac]);
 
   // Snap when switching to floating
   useEffect(() => {
@@ -144,14 +190,15 @@ export function useDockablePanel(
 
     if (!parent) return;
     const parentRect = parent.getBoundingClientRect();
-    const width = expanded ? 520 : floatingSize.w;
-    const height = expanded ? 520 : floatingSize.h;
+    const width = expanded ? 520 : sizeW;
+    const height = expanded ? 520 : sizeH;
     const x = Math.max(0, parentRect.width - width - 24);
     const y = Math.max(0, parentRect.height - height - 24);
 
-    setFloatingPos({ x, y });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [dock]);
+    if (Math.abs(posX - x) > 0.5 || Math.abs(posY - y) > 0.5) {
+      setWindowPosition({ x, y });
+    }
+  }, [dock, expanded, sizeW, sizeH, posX, posY, setWindowPosition]);
 
   const toggleExpand = useCallback(() => {
     if (dock === "floating") {
@@ -161,13 +208,13 @@ export function useDockablePanel(
     }
     if (dock === "bottom") {
       if (!expanded) {
-        prevBottomSizeRef.current = bottomSize;
-        setBottomSize(100);
+        prevBottomSizeRef.current = Math.round((bottomHeightFrac || 0) * 100);
+        setBottomHeightFrac(1);
         setExpanded(true);
       } else {
         const restore = prevBottomSizeRef.current ?? 15;
-
-        setBottomSize(Math.max(MIN_BOTTOM_SIZE_PCT, Math.min(100, restore)));
+        const clamped = Math.max(MIN_BOTTOM_SIZE_PCT, Math.min(100, restore));
+        setBottomHeightFrac(clamped / 100);
         setExpanded(false);
       }
 
@@ -175,24 +222,24 @@ export function useDockablePanel(
     }
     if (dock === "right") {
       if (!expanded) {
-        prevRightSizeRef.current = rightSize;
-        setRightSize(100);
+        prevRightSizeRef.current = Math.round((rightWidthFrac || 0) * 100);
+        setRightWidthFrac(1);
         setExpanded(true);
       } else {
         const restore = prevRightSizeRef.current ?? 24;
-
-        setRightSize(Math.max(MIN_RIGHT_SIZE_PCT, Math.min(100, restore)));
+        const clamped = Math.max(MIN_RIGHT_SIZE_PCT, Math.min(100, restore));
+        setRightWidthFrac(clamped / 100);
         setExpanded(false);
       }
     }
-  }, [dock, expanded, bottomSize, rightSize]);
+  }, [dock, expanded, bottomHeightFrac, rightWidthFrac, setBottomHeightFrac, setRightWidthFrac]);
 
   const startFloatingResize = (e: React.PointerEvent) => {
     floatingResizeState.current = {
       startX: e.clientX,
       startY: e.clientY,
-      startW: expanded ? 520 : floatingSize.w,
-      startH: expanded ? 520 : floatingSize.h,
+      startW: expanded ? 520 : sizeW,
+      startH: expanded ? 520 : sizeH,
     };
     setResizing("floating");
     (e.target as Element).setPointerCapture?.(e.pointerId);
@@ -202,15 +249,18 @@ export function useDockablePanel(
     // state
     dock,
     expanded,
-    floatingPos,
-    floatingSize,
-    bottomSize,
-    rightSize,
+    floatingPos: { x: posX, y: posY },
+    floatingSize: { w: sizeW, h: sizeH },
+    bottomSize: Math.round((bottomHeightFrac || 0) * 100),
+    rightSize: Math.round((rightWidthFrac || 0) * 100),
 
     // setters/actions
-    setDock,
-    setBottomSize,
-    setRightSize,
+    setDock: (mode: DockMode) => setDockMode(mode),
+    setBottomSize: (pct: number) => setBottomHeightFrac(Math.max(MIN_BOTTOM_SIZE_PCT, Math.min(100, pct)) / 100),
+    setRightSize: (pct: number) =>
+      setRightWidthFrac(
+        Math.max(MIN_RIGHT_SIZE_PCT, Math.min(MAX_RIGHT_SIZE_PCT, pct)) / 100,
+      ),
     toggleExpand,
     setResizing,
     startFloatingResize,
