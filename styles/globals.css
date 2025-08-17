@@ -8,8 +8,6 @@ li {
   padding: 2px;
 }
 
-
-
 @layer base {
   :root {
     --background: 0 0% 100%;
@@ -72,6 +70,9 @@ li {
     --aurora-2: var(--chart-4);
     --aurora-3: var(--chart-1);
   }
+  .theme {
+    --animate-grid: grid 15s linear infinite;
+  }
 }
 
 /* Emotion themes (light variants) */
@@ -91,8 +92,6 @@ li {
 .surprise-dark { --background: 285 25% 10%; --foreground: 290 60% 90%; --card: 222.2 84% 4.9%; --card-foreground: 290 60% 90%; --primary: 285 70% 70%; --accent: 300 65% 65%; --muted: 290 20% 15%; --ring: 290 70% 65%; }
 .disgust-dark { --background: 120 20% 10%; --foreground: 110 50% 90%; --card: 222.2 84% 4.9%; --card-foreground: 110 50% 90%; --primary: 120 55% 60%; --accent: 100 55% 55%; --muted: 110 20% 15%; --ring: 110 55% 60%; }
 .neutral-dark { --background: 222.2 84% 4.9%; --foreground: 210 40% 98%; --card: 222.2 84% 4.9%; --card-foreground: 210 40% 98%; --primary: 210 40% 98%; --accent: 217.2 32.6% 17.5%; --muted: 217.2 32.6% 17.5%; --ring: 212.7 26.8% 83.9%; }
-
-
 
 @layer base {
   * {
@@ -139,5 +138,16 @@ li {
     -webkit-background-clip: text;
     background-clip: text;
     color: transparent;
+  }
+}
+
+@theme inline {
+  @keyframes grid {
+  0% {
+    transform: translateY(-50%);
+    }
+  100% {
+    transform: translateY(0);
+    }
   }
 }

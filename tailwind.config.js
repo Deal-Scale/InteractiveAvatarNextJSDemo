@@ -65,6 +65,7 @@ module.exports = {
       animation: {
         aurora: 'aurora 8s ease-in-out infinite alternate',
         'aurora-text': 'aurora-text 8s ease-in-out infinite alternate',
+        grid: 'grid 15s linear infinite',
         typing: 'typing 1.2s ease-in-out infinite',
         'loading-dots': 'loading-dots 1.2s ease-in-out infinite',
         wave: 'wave 1s ease-in-out infinite',
@@ -79,6 +80,10 @@ module.exports = {
         'spinner-fade': 'spinner-fade .6s ease-in-out both',
       },
       keyframes: {
+        grid: {
+          '0%': { transform: 'translateY(-50%)' },
+          '100%': { transform: 'translateY(0)' },
+        },
         aurora: {
           '0%': { backgroundPosition: '0% 50%', transform: 'rotate(-5deg) scale(0.9)' },
           '25%': { backgroundPosition: '50% 100%', transform: 'rotate(5deg) scale(1.1)' },
