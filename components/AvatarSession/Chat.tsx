@@ -1,3 +1,5 @@
+"use client";
+
 import { useKeyPress } from "ahooks";
 import React, { useMemo, useState } from "react";
 
@@ -136,17 +138,19 @@ export const Chat: React.FC<ChatProps> = ({
     setIsEditing(true);
     onChatInputChange(content);
 
-    const el = document.querySelector<HTMLTextAreaElement>(
-      'textarea[aria-label="Chat input"]',
-    );
+    // Defer focus and caret placement until after the DOM updates with new value
+    requestAnimationFrame(() => {
+      const el = document.querySelector<HTMLTextAreaElement>(
+        'textarea[aria-label="Chat input"]',
+      );
 
-    if (el) {
-      el.focus();
+      if (el) {
+        el.focus();
 
-      const len = el.value.length;
-
-      el.setSelectionRange(len, len);
-    }
+        const len = el.value.length;
+        el.setSelectionRange(len, len);
+      }
+    });
   };
 
   const cancelEdit = () => {
