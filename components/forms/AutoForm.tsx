@@ -54,8 +54,8 @@ export function AutoForm<TSchema extends z.ZodObject<any, any>>({
               ? ((def as any)._def.shape() as Record<string, z.ZodTypeAny>)
               : ((def as any).shape as Record<string, z.ZodTypeAny>);
           return (
-            <fieldset key={key} className="rounded-md border border-zinc-200 p-2 dark:border-zinc-800">
-              <legend className="px-1 text-xs uppercase tracking-wide text-zinc-500 dark:text-zinc-400">{key}</legend>
+            <fieldset key={key} className="rounded-md border border-border p-2">
+              <legend className="px-1 text-xs uppercase tracking-wide text-muted-foreground">{key}</legend>
               <div className="space-y-2">
                 {Object.keys(innerShape).map((childKey) => {
                   const name = `${key}.${childKey}`;
@@ -86,7 +86,7 @@ export function AutoForm<TSchema extends z.ZodObject<any, any>>({
         );
       })}
       <button
-        className="inline-flex items-center rounded-md bg-zinc-900 px-4 py-2 text-white hover:bg-zinc-800 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-200 disabled:opacity-50"
+        className="inline-flex items-center rounded-md bg-primary px-4 py-2 text-primary-foreground hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary disabled:opacity-50"
         disabled={!formState.isValid}
         type="submit"
       >

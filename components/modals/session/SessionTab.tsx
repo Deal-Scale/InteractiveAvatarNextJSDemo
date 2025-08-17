@@ -11,7 +11,7 @@ interface SessionTabProps {
 
 export function SessionTab({ config, isConnecting, onConfigChange, onStart }: SessionTabProps) {
   return (
-    <div className="rounded-xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-900 p-4 md:p-6 shadow-sm">
+    <div className="rounded-xl border border-border bg-card p-4 md:p-6 shadow-sm">
       <AvatarConfig
         config={config}
         isConnecting={isConnecting}
