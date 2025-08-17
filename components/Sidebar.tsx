@@ -244,6 +244,7 @@ const Sidebar: React.FC<SidebarProps> = ({ onSelect, apps }) => {
             collapsedBookmarks={collapse.collapsedBookmarks}
             conversationsById={conversationsById}
             onOpenChat={(c) => onSelect?.(c)}
+            onOpenBookmarkMove={(id) => bookmark.openBookmarkModal(id)}
             setCollapsedBookmarks={collapse.setCollapsedBookmarks}
           />
 
@@ -255,6 +256,10 @@ const Sidebar: React.FC<SidebarProps> = ({ onSelect, apps }) => {
             onOpenItem={(id) => {
               // TODO: implement real navigation when KB is integrated
               console.debug("Open KB item", id);
+            }}
+            onMoveItem={(id) => {
+              // TODO: implement real KB move modal/flow
+              console.debug("KB: move item", id);
             }}
             onOpenMarkdown={() => {
               // Navigate to a markdown viewer route (replace with your implementation)
