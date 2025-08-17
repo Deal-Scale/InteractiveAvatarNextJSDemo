@@ -13,6 +13,8 @@ import { Chat } from "./Chat";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Loader } from "@/components/ui/loader";
+import { BottomTab } from "@/components/ui/bottom-tab";
+import { RightTab } from "@/components/ui/right-tab";
 import { Message } from "@/lib/types";
 
 export type DockMode = "right" | "bottom" | "floating";
@@ -63,19 +65,181 @@ export function ChatPanel({
   sessionState,
   onStartMockChat,
 }: ChatPanelProps) {
+  // Bottom dock uses the global BottomTab to manage expand/minimize/drag and persistence.
+  if (dock === "bottom") {
+    return (
+      <BottomTab label="Chat">
+        <div className={cn("flex h-full w-full flex-col", "min-h-0")}>
+          {/* Inline action header for bottom mode (preserves original controls) */}
+          <div className={cn(
+            "flex items-center justify-between gap-2 px-3 py-2 border-b border-border",
+            isChatSolidBg ? "bg-card" : "bg-popover/80",
+          )}
+          >
+            <div className="flex items-center gap-2 text-xs text-muted-foreground">
+              <span>Chat</span>
+            </div>
+            <div className="flex items-center gap-1">
+              {/* Bottom mode: offer docking to right or floating */}
+              <Button
+                size="icon"
+                title="Dock right"
+                variant="ghost"
+                onClick={() => onDock("right")}
+              >
+                <PanelRightOpenIcon className="h-4 w-4" />
+              </Button>
+              <Button
+                size="icon"
+                title="Float"
+                variant="ghost"
+                onClick={() => onDock("floating")}
+              >
+                <MoveIcon className="h-4 w-4" />
+              </Button>
+              <Button
+                size="icon"
+                title={expanded ? "Collapse" : "Expand"}
+                variant="ghost"
+                onClick={onToggleExpand}
+              >
+                {expanded ? (
+                  <Minimize2Icon className="h-4 w-4" />
+                ) : (
+                  <Maximize2Icon className="h-4 w-4" />
+                )}
+              </Button>
+            </div>
+          </div>
+          {canChat ? (
+            <Chat
+              chatInput={chatInput}
+              inputOnly={!expanded}
+              isSending={isSending}
+              isVoiceChatActive={isVoiceActive}
+              messages={messages}
+              onArrowDown={onArrowDown}
+              onArrowUp={onArrowUp}
+              onChatInputChange={onChatInputChange}
+              onCopy={onCopy}
+              onSendMessage={onSendMessage}
+              onStartVoiceChat={onStartVoiceChat}
+              onStopVoiceChat={onStopVoiceChat}
+            />
+          ) : (
+            <div className="flex flex-1 items-center justify-center h-full">
+              <div className="flex flex-col items-center gap-3 text-foreground">
+                <Loader size="lg" variant="classic" />
+                <p className="text-sm text-muted-foreground">
+                  {sessionState === StreamingAvatarSessionState.CONNECTING
+                    ? "Connecting to avatar session..."
+                    : "Waiting to start session..."}
+                </p>
+                <Button size="sm" variant="secondary" onClick={onStartMockChat}>
+                  Start chat without session
+                </Button>
+              </div>
+            </div>
+          )}
+        </div>
+      </BottomTab>
+    );
+  }
+
+  // Right dock uses RightTab to manage expand/minimize/drag and persistence.
+  if (dock === "right") {
+    return (
+      <RightTab label="Chat">
+        <div className={cn("flex h-full w-full flex-col", "min-h-0")}>
+          {/* Inline action header for right mode (preserves original controls) */}
+          <div
+            className={cn(
+              "flex items-center justify-between gap-2 px-3 py-2 border-b border-border",
+              isChatSolidBg ? "bg-card" : "bg-popover/80",
+            )}
+          >
+            <div className="flex items-center gap-2 text-xs text-muted-foreground">
+              <span>Chat</span>
+            </div>
+            <div className="flex items-center gap-1">
+              {/* Right mode: offer docking to bottom or floating */}
+              <Button
+                onClick={() => onDock("bottom")}
+                size="icon"
+                title="Dock bottom"
+                variant="ghost"
+              >
+                <PanelBottomOpenIcon className="h-4 w-4" />
+              </Button>
+              <Button
+                onClick={() => onDock("floating")}
+                size="icon"
+                title="Float"
+                variant="ghost"
+              >
+                <MoveIcon className="h-4 w-4" />
+              </Button>
+              <Button
+                size="icon"
+                title={expanded ? "Collapse" : "Expand"}
+                variant="ghost"
+                onClick={onToggleExpand}
+              >
+                {expanded ? (
+                  <Minimize2Icon className="h-4 w-4" />
+                ) : (
+                  <Maximize2Icon className="h-4 w-4" />
+                )}
+              </Button>
+            </div>
+          </div>
+          {canChat ? (
+            <Chat
+              chatInput={chatInput}
+              inputOnly={!expanded}
+              isSending={isSending}
+              isVoiceChatActive={isVoiceActive}
+              messages={messages}
+              onArrowDown={onArrowDown}
+              onArrowUp={onArrowUp}
+              onChatInputChange={onChatInputChange}
+              onCopy={onCopy}
+              onSendMessage={onSendMessage}
+              onStartVoiceChat={onStartVoiceChat}
+              onStopVoiceChat={onStopVoiceChat}
+            />
+          ) : (
+            <div className="flex flex-1 items-center justify-center h-full">
+              <div className="flex flex-col items-center gap-3 text-foreground">
+                <Loader size="lg" variant="classic" />
+                <p className="text-sm text-muted-foreground">
+                  {sessionState === StreamingAvatarSessionState.CONNECTING
+                    ? "Connecting to avatar session..."
+                    : "Waiting to start session..."}
+                </p>
+                <Button size="sm" variant="secondary" onClick={onStartMockChat}>
+                  Start chat without session
+                </Button>
+              </div>
+            </div>
+          )}
+        </div>
+      </RightTab>
+    );
+  }
+
   return (
     <div
       className={cn(
         isChatSolidBg ? "bg-card" : "bg-popover/95",
         "text-foreground rounded-lg shadow-lg border border-border overflow-hidden flex flex-col h-full w-full",
-        dock === "bottom" && "flex flex-col gap-3 relative w-full items-center",
       )}
     >
       <div
         className={cn(
           "flex items-center justify-between gap-2 px-3 py-2 border-b border-border",
           isChatSolidBg ? "bg-card" : "bg-popover/80",
-          dock === "floating" && "cursor-grab active:cursor-grabbing",
+          "cursor-grab active:cursor-grabbing",
         )}
         onPointerDown={onHeaderPointerDown}
       >
@@ -84,36 +248,23 @@ export function ChatPanel({
           <span>Chat</span>
         </div>
         <div className="flex items-center gap-1">
-          {dock !== "bottom" && (
-            <Button
-              size="icon"
-              title="Dock bottom"
-              variant="ghost"
-              onClick={() => onDock("bottom")}
-            >
-              <PanelBottomOpenIcon className="h-4 w-4" />
-            </Button>
-          )}
-          {dock !== "right" && (
-            <Button
-              size="icon"
-              title="Dock right"
-              variant="ghost"
-              onClick={() => onDock("right")}
-            >
-              <PanelRightOpenIcon className="h-4 w-4" />
-            </Button>
-          )}
-          {dock !== "floating" && (
-            <Button
-              size="icon"
-              title="Float"
-              variant="ghost"
-              onClick={() => onDock("floating")}
-            >
-              <MoveIcon className="h-4 w-4" />
-            </Button>
-          )}
+          {/* Floating mode: offer docking to bottom or right */}
+          <Button
+            size="icon"
+            title="Dock bottom"
+            variant="ghost"
+            onClick={() => onDock("bottom")}
+          >
+            <PanelBottomOpenIcon className="h-4 w-4" />
+          </Button>
+          <Button
+            size="icon"
+            title="Dock right"
+            variant="ghost"
+            onClick={() => onDock("right")}
+          >
+            <PanelRightOpenIcon className="h-4 w-4" />
+          </Button>
           <Button
             size="icon"
             title={expanded ? "Collapse" : "Expand"}
