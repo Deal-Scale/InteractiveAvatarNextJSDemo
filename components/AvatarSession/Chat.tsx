@@ -1,7 +1,7 @@
 "use client";
 
 import { useKeyPress } from "ahooks";
-import React, { useMemo, useRef, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 
 import { ChatInput } from "./ChatInput";
 import { MessageItem } from "./MessageItem";
@@ -18,7 +18,8 @@ import { Loader } from "@/components/ui/loader";
 import { Message, MessageAvatar } from "@/components/ui/message";
 import { ScrollButton } from "@/components/ui/scroll-button";
 import { useToast } from "@/components/ui/toaster";
-import { Message as MessageType, MessageSender } from "@/lib/types";
+import { Message as MessageType, MessageSender, MessageAsset } from "@/lib/types";
+import { StickToBottom } from "use-stick-to-bottom";
 
 interface ChatProps {
   chatInput: string;
@@ -31,7 +32,7 @@ interface ChatProps {
   onArrowUp: () => void;
   onChatInputChange: (value: string) => void;
   onCopy: (text: string) => void;
-  onSendMessage: (text: string) => void;
+  onSendMessage: (text: string, assets?: MessageAsset[]) => void;
   onStartVoiceChat: () => void;
   onStopVoiceChat: () => void;
 }
@@ -71,8 +72,29 @@ export const Chat: React.FC<ChatProps> = ({
     [],
   );
 
+  // Adjacent de-duplication by id + content to avoid rendering repeated messages
+  const dedupedMessages = useMemo(() => {
+    const out: MessageType[] = [];
+    let prevKey: string | null = null;
+    for (const m of messages) {
+      const key = `${m.id}|${m.content}`;
+      if (key !== prevKey) {
+        out.push(m);
+      }
+      prevKey = key;
+    }
+    if (out.length !== messages.length) {
+      console.debug("[Chat] deduped messages", {
+        before: messages.length,
+        after: out.length,
+      });
+    }
+    return out;
+  }, [messages]);
+
   const onFilesAdded = (files: File[]) => {
     if (files.length) {
+      console.debug("[Chat] onFilesAdded", { count: files.length, names: files.map((f) => f.name) });
       setAttachments((prev) => [...prev, ...files]);
     }
   };
@@ -81,6 +103,12 @@ export const Chat: React.FC<ChatProps> = ({
     setAttachments((prev) => prev.filter((_, i) => i !== idx));
 
   const sendWithAttachments = (text: string) => {
+    console.debug("[Chat] sendWithAttachments invoked", {
+      textLength: (text ?? "").length,
+      hasFiles: attachments.length > 0,
+      fileCount: attachments.length,
+      composerCount: composerAttachments.length,
+    });
     const trimmed = (text ?? "").trim();
 
     if (!trimmed && attachments.length === 0 && composerAttachments.length === 0) {
@@ -91,15 +119,26 @@ export const Chat: React.FC<ChatProps> = ({
     if (attachments.length) {
       parts.push(formatAttachmentSummary(attachments));
     }
-    if (composerAttachments.length) {
-      const assetsPart = composerAttachments
-        .map((a) => (a.url ? `${a.name} <${a.url}>` : a.name))
-        .join(", ");
-      parts.push(assetsPart);
-    }
     const suffix = parts.length ? `\n\n[Attachments: ${parts.join(", ")}]` : "";
 
-    onSendMessage(`${trimmed}${suffix}`);
+    // Build structured assets from composer attachments
+    const assets: MessageAsset[] | undefined = composerAttachments.length
+      ? composerAttachments.map((a) => ({
+          id: a.id,
+          name: a.name,
+          url: a.url,
+          thumbnailUrl: a.thumbnailUrl,
+          mimeType: a.mimeType,
+        }))
+      : undefined;
+
+    console.debug("[Chat] built outgoing payload", {
+      text: `${trimmed}${suffix}`,
+      assets,
+    });
+
+    onSendMessage(`${trimmed}${suffix}`, assets);
+    console.debug("[Chat] onSendMessage called; clearing attachments");
     setAttachments([]);
     clearComposerAttachments();
     onChatInputChange("");
@@ -112,6 +151,25 @@ export const Chat: React.FC<ChatProps> = ({
 
   const [isEditing, setIsEditing] = useState(false);
   const [inputBackup, setInputBackup] = useState<string>("");
+
+  // Track ChatInput height to prevent message overlap
+  const inputWrapRef = useRef<HTMLDivElement | null>(null);
+  const [inputHeight, setInputHeight] = useState<number>(0);
+
+  useEffect(() => {
+    const el = inputWrapRef.current;
+    if (!el || typeof ResizeObserver === "undefined") return;
+    const ro = new ResizeObserver((entries) => {
+      for (const entry of entries) {
+        const h = entry.contentRect.height;
+        setInputHeight(Math.ceil(h));
+      }
+    });
+    ro.observe(el);
+    // Initialize immediately
+    setInputHeight(Math.ceil(el.getBoundingClientRect().height));
+    return () => ro.disconnect();
+  }, []);
 
   const handleCopy = async (id: string, content: string) => {
     try {
@@ -169,15 +227,9 @@ export const Chat: React.FC<ChatProps> = ({
   };
 
   const confirmEdit = () => {
-    const text = (chatInput ?? "").trim();
-
-    if (!text) {
-      cancelEdit();
-
-      return;
-    }
-
-    onSendMessage(text);
+    const text = chatInput ?? "";
+    console.debug("[Chat] confirmEdit", { textLength: text.length });
+    sendWithAttachments(text);
     setIsEditing(false);
     onChatInputChange("");
     publish({ description: "Edited message sent.", title: "Edited" });
@@ -186,68 +238,76 @@ export const Chat: React.FC<ChatProps> = ({
   return (
     <div className="flex flex-col w-full h-full p-4">
       {!inputOnly && (
-        <ChatContainerRoot className="flex-1 min-h-0 text-foreground">
-          <ChatContainerContent>
-            {messages.map((message) => (
-              <MessageItem
-                key={message.id}
-                handleCopy={handleCopy}
-                handleEditToInput={handleEditToInput}
-                isStreaming={
-                  isAvatarTalking && message.sender === MessageSender.AVATAR
-                }
-                lastCopiedId={lastCopiedId}
-                message={message}
-                setVote={setVote}
-                streamMode="typewriter"
-                streamSpeed={28}
-                voteState={voteState}
-              />
-            ))}
-            {isAvatarTalking && (
-              <Message className="flex gap-2 items-start">
-                <MessageAvatar
-                  alt="Avatar"
-                  fallback="A"
-                  src="/heygen-logo.png"
+        <StickToBottom className="flex-1 min-h-0 text-foreground">
+          {/* Dynamically pad bottom by input height to avoid overlap */}
+          <ChatContainerRoot
+            className="flex-1 min-h-0 text-foreground"
+            style={{ paddingBottom: Math.max(16, inputHeight + 8) }}
+          >
+            <ChatContainerContent>
+              {dedupedMessages.map((message) => (
+                <MessageItem
+                  key={message.id}
+                  handleCopy={handleCopy}
+                  handleEditToInput={handleEditToInput}
+                  isStreaming={
+                    isAvatarTalking && message.sender === MessageSender.AVATAR
+                  }
+                  lastCopiedId={lastCopiedId}
+                  message={message}
+                  setVote={setVote}
+                  streamMode="typewriter"
+                  streamSpeed={28}
+                  voteState={voteState}
                 />
-                <div className="flex flex-col items-start gap-1">
-                  <p className="text-xs text-muted-foreground">Avatar</p>
-                  <div className="prose break-words whitespace-normal rounded-lg bg-secondary p-2 text-sm text-foreground">
-                    <div className="py-1">
-                      <Loader variant="typing" />
+              ))}
+              {isAvatarTalking && (
+                <Message className="flex gap-2 items-start">
+                  <MessageAvatar alt="Avatar" fallback="A" src="/heygen-logo.png" />
+                  <div className="flex flex-col items-start gap-1">
+                    <p className="text-xs text-muted-foreground">Avatar</p>
+                    <div className="prose break-words whitespace-normal rounded-lg bg-secondary p-2 text-sm text-foreground">
+                      <div className="py-1">
+                        <Loader variant="typing" />
+                      </div>
                     </div>
                   </div>
-                </div>
-              </Message>
-            )}
-          </ChatContainerContent>
-          <ChatContainerScrollAnchor />
-          <div className="absolute bottom-4 right-4">
-            <ScrollButton className="shadow-sm" />
-          </div>
-        </ChatContainerRoot>
+                </Message>
+              )}
+            </ChatContainerContent>
+            <ChatContainerScrollAnchor />
+            <div className="absolute bottom-4 right-4">
+              <ScrollButton className="shadow-sm" />
+            </div>
+          </ChatContainerRoot>
+        </StickToBottom>
       )}
-      <ChatInput
-        attachments={attachments}
-        composerAttachments={composerAttachments}
-        cancelEdit={cancelEdit}
-        chatInput={chatInput}
-        confirmEdit={confirmEdit}
-        inputRef={inputRef}
-        isEditing={isEditing}
-        isSending={isSending}
-        isVoiceChatActive={isVoiceChatActive}
-        isVoiceChatLoading={isVoiceChatLoading}
-        promptSuggestions={promptSuggestions}
-        removeAttachment={removeAttachment}
-        removeComposerAttachment={removeComposerAttachment}
-        sendWithAttachments={sendWithAttachments}
-        onChatInputChange={onChatInputChange}
-        onFilesAdded={onFilesAdded}
-        onStartVoiceChat={onStartVoiceChat}
-        onStopVoiceChat={onStopVoiceChat}
-      />
+      {/* Ensure input section never shrinks and visually docks under messages */}
+      <div
+        ref={inputWrapRef}
+        className="shrink-0 border-t border-border pt-3 bg-background"
+      >
+        <ChatInput
+          attachments={attachments}
+          composerAttachments={composerAttachments}
+          cancelEdit={cancelEdit}
+          chatInput={chatInput}
+          confirmEdit={confirmEdit}
+          inputRef={inputRef}
+          isEditing={isEditing}
+          isSending={isSending}
+          isVoiceChatActive={isVoiceChatActive}
+          isVoiceChatLoading={isVoiceChatLoading}
+          promptSuggestions={promptSuggestions}
+          removeAttachment={removeAttachment}
+          removeComposerAttachment={removeComposerAttachment}
+          sendWithAttachments={sendWithAttachments}
+          onChatInputChange={onChatInputChange}
+          onFilesAdded={onFilesAdded}
+          onStartVoiceChat={onStartVoiceChat}
+          onStopVoiceChat={onStopVoiceChat}
+        />
+      </div>
     </div>
   );
-};
+}

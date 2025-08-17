@@ -56,27 +56,63 @@ function FileUpload({
   );
 
   useEffect(() => {
+    const isCustomAssetDrag = (e: DragEvent) => {
+      try {
+        const types = Array.from(e.dataTransfer?.types || []);
+        return types.includes("application/x-asset");
+      } catch {
+        return false;
+      }
+    };
+
     const handleDrag = (e: DragEvent) => {
+      if (isCustomAssetDrag(e)) {
+        // Do not interfere with custom asset drags from sidebar
+        // This prevents the full-screen overlay flicker
+        // console.debug("[FileUpload] ignore dragover for custom asset");
+        return;
+      }
+      console.debug("[FileUpload] dragover window");
       e.preventDefault();
       e.stopPropagation();
+      // Keep overlay active while dragging over window for normal file drags
+      if (!isDragging) setIsDragging(true);
     };
 
     const handleDragIn = (e: DragEvent) => {
+      if (isCustomAssetDrag(e)) {
+        // console.debug("[FileUpload] ignore dragenter for custom asset");
+        return;
+      }
       handleDrag(e);
       dragCounter.current++;
-      if (e.dataTransfer?.items.length) setIsDragging(true);
+      // Some browsers may not populate items until later; show overlay on any non-custom drag
+      setIsDragging(true);
+      const types = Array.from(e.dataTransfer?.types || []);
+      console.debug("[FileUpload] dragenter window", { dragCounter: dragCounter.current, types });
     };
 
     const handleDragOut = (e: DragEvent) => {
+      if (isCustomAssetDrag(e)) {
+        // console.debug("[FileUpload] ignore dragleave for custom asset");
+        return;
+      }
       handleDrag(e);
       dragCounter.current--;
       if (dragCounter.current === 0) setIsDragging(false);
+      console.debug("[FileUpload] dragleave window", { dragCounter: dragCounter.current });
     };
 
     const handleDrop = (e: DragEvent) => {
+      if (isCustomAssetDrag(e)) {
+        // Do not consume this drop; ChatInput handles it
+        // console.debug("[FileUpload] ignore drop for custom asset");
+        return;
+      }
       handleDrag(e);
       setIsDragging(false);
       dragCounter.current = 0;
+      console.debug("[FileUpload] drop window");
       if (e.dataTransfer?.files.length) {
         handleFiles(e.dataTransfer.files);
       }

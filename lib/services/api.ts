@@ -1,6 +1,8 @@
+import type { MessageAsset } from "@/lib/types";
+
 export interface TextChatService {
-  sendMessage(message: string): void;
-  sendMessageSync(message: string): Promise<any>;
+  sendMessage(message: string, assets?: MessageAsset[]): void;
+  sendMessageSync(message: string, assets?: MessageAsset[]): Promise<any>;
   repeatMessage(message: string): void;
   repeatMessageSync(message: string): Promise<any>;
 }

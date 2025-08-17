@@ -12,6 +12,14 @@ export interface MessageSource {
   showFavicon?: boolean;
 }
 
+export interface MessageAsset {
+  id: string;
+  name: string;
+  url?: string;
+  thumbnailUrl?: string;
+  mimeType?: string;
+}
+
 export interface Message {
   id: string;
   content: string;
@@ -22,6 +30,8 @@ export interface Message {
   toolParts?: MessageToolPart[];
   // Optional list of sources used to produce this message
   sources?: MessageSource[];
+  // Optional structured assets associated with this message
+  assets?: MessageAsset[];
 }
 
 // UI-agnostic version of ToolPart from components/ui/tool.tsx

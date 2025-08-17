@@ -1,6 +1,6 @@
 import { StreamingAvatarSessionState } from "../../logic/context";
 
-import { Message } from "@/lib/types";
+import { Message, type MessageAsset } from "@/lib/types";
 
 export function useChatPanelProps(args: {
   // state
@@ -16,7 +16,7 @@ export function useChatPanelProps(args: {
   onArrowUp: () => void;
   onChatInputChange: (v: string) => void;
   onCopy: (text: string) => void;
-  onSendMessage: (text: string) => void;
+  onSendMessage: (text: string, assets?: MessageAsset[]) => void;
   onStartVoiceChat: () => void | Promise<void>;
   onStopVoiceChat: () => void | Promise<void>;
   onDock: (mode: "right" | "bottom" | "floating") => void;

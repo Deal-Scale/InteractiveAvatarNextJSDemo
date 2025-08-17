@@ -15,7 +15,7 @@ import { Button } from "@/components/ui/button";
 import { Loader } from "@/components/ui/loader";
 import { BottomTab } from "@/components/ui/bottom-tab";
 import { RightTab } from "@/components/ui/right-tab";
-import { Message } from "@/lib/types";
+import { Message, type MessageAsset } from "@/lib/types";
 
 export type DockMode = "right" | "bottom" | "floating";
 
@@ -36,7 +36,7 @@ interface ChatPanelProps {
   onArrowDown: () => void;
   onChatInputChange: (v: string) => void;
   onCopy: (text: string) => void;
-  onSendMessage: (text: string) => void;
+  onSendMessage: (text: string, assets?: MessageAsset[]) => void;
   onStartVoiceChat: () => void | Promise<void>;
   onStopVoiceChat: () => void | Promise<void>;
   sessionState: StreamingAvatarSessionState;

@@ -1,6 +1,6 @@
-import { ClipboardCopy, ThumbsUp, ThumbsDown, Pencil } from "lucide-react";
+import { ClipboardCopy, ThumbsUp, ThumbsDown, Pencil, Paperclip } from "lucide-react";
 
-import { Message as MessageType, MessageSender } from "@/lib/types";
+import { Message as MessageType, MessageSender, type MessageAsset } from "@/lib/types";
 import { Button } from "@/components/ui/button";
 import {
   Message,
@@ -69,6 +69,37 @@ export const MessageItem: React.FC<MessageItemProps> = ({
     segmentDelay,
     characterChunkSize,
   });
+
+  const renderAssets = (assets?: MessageAsset[]) => {
+    if (!assets || assets.length === 0) return null;
+    const isImg = (a: MessageAsset) => (a.mimeType?.startsWith("image/") ?? false) || /\.(png|jpe?g|webp|gif)$/i.test(a.url ?? "");
+    return (
+      <div className="mt-2 flex w-full flex-wrap gap-2">
+        {assets.map((a) => (
+          <a
+            key={`${message.id}-asset-${a.id}`}
+            href={a.url}
+            target="_blank"
+            rel="noreferrer noopener"
+            className="inline-flex items-center gap-2 rounded border border-border bg-background px-2 py-1 text-xs hover:bg-accent"
+            title={a.name}
+          >
+            {isImg(a) ? (
+              // Thumbnail preview for images
+              <img
+                src={a.thumbnailUrl || a.url}
+                alt={a.name}
+                className="h-6 w-6 rounded object-cover"
+              />
+            ) : (
+              <Paperclip className="h-4 w-4" />
+            )}
+            <span className="max-w-[180px] truncate">{a.name}</span>
+          </a>
+        ))}
+      </div>
+    );
+  };
 
   return (
     <Message
@@ -157,6 +188,7 @@ export const MessageItem: React.FC<MessageItemProps> = ({
                 ))}
               </div>
             )}
+            {renderAssets(message.assets)}
           </div>
         ) : (
           <MessageContent
@@ -166,6 +198,7 @@ export const MessageItem: React.FC<MessageItemProps> = ({
             {message.content}
           </MessageContent>
         )}
+        {message.sender !== MessageSender.AVATAR && renderAssets(message.assets)}
         <MessageActions>
           {message.sender === MessageSender.AVATAR ? (
             <>

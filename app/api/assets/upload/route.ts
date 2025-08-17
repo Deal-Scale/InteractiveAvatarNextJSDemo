@@ -14,6 +14,19 @@ async function ensureUploadsDir(root: string) {
   } catch {}
 }
 
+const MAX_FILES = 5;
+const MAX_SIZE_BYTES = 10 * 1024 * 1024; // 10MB
+const ALLOWED_MIME = new Set([
+  "image/png",
+  "image/jpeg",
+  "image/jpg",
+  "image/webp",
+  "image/gif",
+  "application/pdf",
+  "text/plain",
+  "text/markdown",
+]);
+
 export async function POST(req: Request) {
   try {
     const form = await req.formData();
@@ -22,6 +35,13 @@ export async function POST(req: Request) {
     if (!files || files.length === 0) {
       return NextResponse.json(
         { error: "No files provided under 'files'" },
+        { status: 400 },
+      );
+    }
+
+    if (files.length > MAX_FILES) {
+      return NextResponse.json(
+        { error: `Too many files. Max ${MAX_FILES} per request.` },
         { status: 400 },
       );
     }
@@ -39,6 +59,20 @@ export async function POST(req: Request) {
 
     for (const f of files) {
       if (!(f instanceof File)) continue;
+      const sizeOk = typeof f.size === "number" ? f.size <= MAX_SIZE_BYTES : true;
+      const typeOk = f.type ? ALLOWED_MIME.has(f.type) : false;
+      if (!sizeOk) {
+        return NextResponse.json(
+          { error: `File '${f.name}' exceeds 10MB limit.` },
+          { status: 400 },
+        );
+      }
+      if (!typeOk) {
+        return NextResponse.json(
+          { error: `File '${f.name}' has unsupported type '${f.type || "unknown"}'.` },
+          { status: 400 },
+        );
+      }
       const id = randomUUID();
       const name = f.name || `file-${id}`;
       const arrayBuffer = await f.arrayBuffer();
@@ -63,3 +97,4 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Upload failed" }, { status: 500 });
   }
 }
+

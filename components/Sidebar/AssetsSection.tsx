@@ -9,7 +9,7 @@ import {
   Download as DownloadIcon,
   Plus,
 } from "lucide-react";
-import React, { useMemo, useRef, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 
 import { SidebarGroup, SidebarGroupLabel } from "@/components/ui/sidebar";
 import {
@@ -20,6 +20,7 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { useAssetsStore } from "@/lib/stores/assets";
+import { useToast } from "@/components/ui/toaster";
 
 export default function AssetsSection(props: {
   assets: {
@@ -48,6 +49,8 @@ export default function AssetsSection(props: {
   const uploads = useAssetsStore((s) => s.uploads);
   const uploadFiles = useAssetsStore((s) => s.uploadFiles);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
+  const { publish } = useToast();
+  const notifiedErrors = useRef<Set<string>>(new Set());
 
   const [query, setQuery] = useState("");
   const [previewId, setPreviewId] = useState<string | null>(null);
@@ -102,6 +105,16 @@ export default function AssetsSection(props: {
     });
   }, [mergedAssets, query]);
 
+  // Surface upload errors as toasts (deduplicated per temp upload id)
+  useEffect(() => {
+    for (const u of uploads) {
+      if (u.status === "error" && u.error && !notifiedErrors.current.has(u.id)) {
+        publish({ title: "Upload failed", description: u.error, duration: 5000 });
+        notifiedErrors.current.add(u.id);
+      }
+    }
+  }, [uploads, publish]);
+
   return (
     <SidebarGroup>
       <button
@@ -134,6 +147,7 @@ export default function AssetsSection(props: {
               type="file"
               multiple
               className="hidden"
+              accept=".png,.jpg,.jpeg,.webp,.gif,.pdf,.txt,.md"
               onChange={async (e) => {
                 const files = e.currentTarget.files;
                 if (files && files.length) {
@@ -187,6 +201,21 @@ export default function AssetsSection(props: {
                     key={asset.id}
                     className="group relative rounded-md border border-border bg-background overflow-hidden"
                     title={asset.name}
+                    draggable
+                    onDragStart={(e) => {
+                      try {
+                        const payload = JSON.stringify({
+                          id: asset.id,
+                          name: asset.name,
+                          url: asset.url,
+                          thumbnailUrl: asset.thumbnailUrl,
+                          mimeType: asset.mimeType,
+                        });
+                        e.dataTransfer.setData("application/x-asset", payload);
+                        // Provide a fallback text for cross-app drag
+                        e.dataTransfer.setData("text/plain", asset.url || asset.name);
+                      } catch {}
+                    }}
                   >
                     {/* Delete button */}
                     <button

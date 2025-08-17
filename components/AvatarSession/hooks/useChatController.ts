@@ -11,7 +11,7 @@ import { useApiService } from "@/components/logic/ApiServiceContext";
 import { useVoiceChat } from "@/components/logic/useVoiceChat";
 import { useMessageHistory } from "@/components/logic/useMessageHistory";
 import { useSessionStore } from "@/lib/stores/session";
-import { MessageSender } from "@/lib/types";
+import { MessageSender, type MessageAsset } from "@/lib/types";
 
 export function useChatController(sessionState: StreamingAvatarSessionState) {
   const { apiService } = useApiService();
@@ -41,12 +41,12 @@ export function useChatController(sessionState: StreamingAvatarSessionState) {
 
   const handleMcpCommand = useMcpCommands(addAvatarMessage);
 
-  const handleSendMessage = useMemoizedFn(async (text: string) => {
+  const handleSendMessage = useMemoizedFn(async (text: string, assets?: MessageAsset[]) => {
     if (!text.trim()) return;
 
     // Begin send sequence
     setIsSending(true);
-    addMessage({ id: nanoid(), content: text, sender: MessageSender.CLIENT });
+    addMessage({ id: nanoid(), content: text, sender: MessageSender.CLIENT, assets });
 
     // Choose message handling path
     try {
@@ -58,7 +58,7 @@ export function useChatController(sessionState: StreamingAvatarSessionState) {
         if (text.trim().toLowerCase().startsWith("/mcp")) {
           await handleMcpCommand(text);
         } else {
-          await apiService.textChat.sendMessageSync(text);
+          await apiService.textChat.sendMessageSync(text, assets);
         }
       }
     } finally {
@@ -68,8 +68,8 @@ export function useChatController(sessionState: StreamingAvatarSessionState) {
     }
   });
 
-  const sendMessageVoid = useMemoizedFn((t: string) => {
-    void handleSendMessage(t);
+  const sendMessageVoid = useMemoizedFn((t: string, a?: MessageAsset[]) => {
+    void handleSendMessage(t, a);
   });
 
   const startVoiceChatVoid = useMemoizedFn(async () => {
