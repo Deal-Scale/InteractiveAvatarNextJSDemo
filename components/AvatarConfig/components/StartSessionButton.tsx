@@ -17,7 +17,7 @@ const StartSessionButton: React.FC<Props> = ({ isConnecting, disabled, onClick }
             <TooltipTrigger asChild>
               <span tabIndex={0} className="inline-flex w-full">
                 <button
-                  className="px-4 py-2 rounded-md bg-blue-600 text-white disabled:opacity-50 w-full"
+                  className="px-4 py-2 rounded-md bg-primary text-primary-foreground hover:bg-primary/90 disabled:opacity-50 w-full"
                   onClick={onClick}
                   disabled
                 >
@@ -29,7 +29,10 @@ const StartSessionButton: React.FC<Props> = ({ isConnecting, disabled, onClick }
           </Tooltip>
         </TooltipProvider>
       ) : (
-        <button className="px-4 py-2 rounded-md bg-blue-600 text-white disabled:opacity-50 w-full" onClick={onClick}>
+        <button
+          className="px-4 py-2 rounded-md bg-primary text-primary-foreground hover:bg-primary/90 disabled:opacity-50 w-full"
+          onClick={onClick}
+        >
           {isConnecting ? "Connecting..." : "Start Session"}
         </button>
       )}

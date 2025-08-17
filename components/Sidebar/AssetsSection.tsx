@@ -16,7 +16,7 @@ export default function AssetsSection(props: {
     <SidebarGroup>
       <button
         type="button"
-        className="flex w-full items-center justify-between px-2 py-1 text-left rounded-md hover:bg-zinc-100 dark:hover:bg-zinc-700/60"
+        className="flex w-full items-center justify-between px-2 py-1 text-left rounded-md hover:bg-muted"
         onClick={() => setCollapsedAssets((v) => !v)}
       >
         <SidebarGroupLabel>Assets</SidebarGroupLabel>
@@ -33,7 +33,9 @@ export default function AssetsSection(props: {
               <span className="truncate pr-2">{asset.name}</span>
             </SidebarMenuButton>
           ))}
-          {assets.length === 0 && <div className="px-3 py-2 text-xs text-zinc-500">No assets found</div>}
+          {assets.length === 0 && (
+            <div className="px-3 py-2 text-xs text-muted-foreground">No assets found</div>
+          )}
         </SidebarMenu>
       )}
     </SidebarGroup>

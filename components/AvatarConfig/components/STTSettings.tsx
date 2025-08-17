@@ -11,7 +11,7 @@ type Props = {
 const STTSettings: React.FC<Props> = ({ config, onChange }) => {
   return (
     <>
-      <h1 className="text-zinc-100 w-full text-center mt-5">STT Settings</h1>
+      <h1 className="text-foreground w-full text-center mt-5">STT Settings</h1>
       <Field label="Provider">
         <Select
           isSelected={(option) => option === config.sttSettings?.provider}

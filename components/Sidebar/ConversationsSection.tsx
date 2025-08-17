@@ -35,7 +35,7 @@ export default function ConversationsSection(props: {
         <SidebarGroup key={group.period}>
           <button
             type="button"
-            className="flex w-full items-center justify-between px-2 py-1 text-left rounded-md hover:bg-zinc-100 dark:hover:bg-zinc-700/60"
+            className="flex w-full items-center justify-between px-2 py-1 text-left rounded-md hover:bg-muted"
             onClick={() =>
               setCollapsedGroups((prev) => {
                 const next = new Set(prev);

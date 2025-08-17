@@ -1,7 +1,8 @@
 "use client";
 
-import { cn } from "@/lib/utils";
 import { motion, MotionStyle, Transition } from "motion/react";
+
+import { cn } from "@/lib/utils";
 
 interface BorderBeamProps {
   /**
@@ -55,8 +56,9 @@ export const BorderBeam = ({
   size = 50,
   delay = 0,
   duration = 6,
-  colorFrom = "#ffaa40",
-  colorTo = "#9c40ff",
+  // Use theme-driven defaults; callers can override
+  colorFrom = "hsl(var(--aurora-1))",
+  colorTo = "hsl(var(--aurora-2))",
   transition,
   style,
   reverse = false,
@@ -76,31 +78,31 @@ export const BorderBeam = ({
       }
     >
       <motion.div
-        className={cn(
-          "absolute aspect-square",
-          "bg-gradient-to-l from-[var(--color-from)] via-[var(--color-to)] to-transparent",
-          className,
-        )}
-        style={
-          {
-            width: size,
-            offsetPath: `rect(0 auto auto 0 round ${size}px)`,
-            "--color-from": colorFrom,
-            "--color-to": colorTo,
-            ...style,
-          } as MotionStyle
-        }
-        initial={{ offsetDistance: `${initialOffset}%` }}
         animate={{
           offsetDistance: reverse
             ? [`${100 - initialOffset}%`, `${-initialOffset}%`]
             : [`${initialOffset}%`, `${100 + initialOffset}%`],
         }}
+        className={cn(
+          "absolute aspect-square",
+          "bg-gradient-to-l from-[var(--color-from)] via-[var(--color-to)] to-transparent",
+          className,
+        )}
+        initial={{ offsetDistance: `${initialOffset}%` }}
+        style={
+          {
+            "--color-from": colorFrom,
+            "--color-to": colorTo,
+            offsetPath: `rect(0 auto auto 0 round ${size}px)`,
+            width: size,
+            ...style,
+          } as MotionStyle
+        }
         transition={{
-          repeat: Infinity,
-          ease: "linear",
-          duration,
           delay: -delay,
+          duration,
+          ease: "linear",
+          repeat: Infinity,
           ...transition,
         }}
       />

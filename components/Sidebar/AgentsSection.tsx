@@ -14,7 +14,7 @@ export default function AgentsSection(props: {
     <SidebarGroup>
       <button
         type="button"
-        className="flex w-full items-center justify-between px-2 py-1 text-left rounded-md hover:bg-zinc-100 dark:hover:bg-zinc-700/60"
+        className="flex w-full items-center justify-between px-2 py-1 text-left rounded-md hover:bg-muted"
         onClick={() => setCollapsedAgents((v) => !v)}
       >
         <SidebarGroupLabel>Agents</SidebarGroupLabel>
@@ -27,7 +27,9 @@ export default function AgentsSection(props: {
               <span className="truncate pr-2">{agent.name}</span>
             </SidebarMenuButton>
           ))}
-          {agents.length === 0 && <div className="px-3 py-2 text-xs text-zinc-500">No agents found</div>}
+          {agents.length === 0 && (
+            <div className="px-3 py-2 text-xs text-muted-foreground">No agents found</div>
+          )}
         </SidebarMenu>
       )}
     </SidebarGroup>
