@@ -74,7 +74,7 @@ const Sidebar: React.FC<SidebarProps> = ({ onSelect, apps }) => {
 
   return (
     <SidebarProvider>
-      <UISidebar className="bg-white text-zinc-900 dark:bg-zinc-900 dark:text-zinc-100">
+      <UISidebar className="bg-background text-foreground">
         <SidebarHeader>
           <SidebarHeaderSection
             onAssetsClick={() => {
@@ -137,9 +137,9 @@ const Sidebar: React.FC<SidebarProps> = ({ onSelect, apps }) => {
 
           {conv.loading && (
             <div className="px-2">
-              <div className="mb-2 h-3 w-24 rounded bg-zinc-200 dark:bg-zinc-700/60" />
+              <div className="mb-2 h-3 w-24 rounded bg-muted" />
               {Array.from({ length: 6 }).map((_, i) => (
-                <div key={i} className="mb-2 h-8 rounded bg-zinc-100 dark:bg-zinc-700/40" />
+                <div key={i} className="mb-2 h-8 rounded bg-muted" />
               ))}
             </div>
           )}

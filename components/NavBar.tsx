@@ -12,7 +12,7 @@ export default function NavBar() {
           <Link href="https://app.heygen.com/" target="_blank">
             <HeyGenLogo />
           </Link>
-          <div className="bg-gradient-to-br from-sky-300 to-indigo-500 bg-clip-text">
+          <div className="bg-aurora bg-clip-text">
             <p className="text-xl font-semibold text-transparent">
               HeyGen Interactive Avatar SDK NextJS Demo
             </p>
@@ -49,7 +49,7 @@ export default function NavBar() {
             href="https://github.com/HeyGen-Official/StreamingAvatarSDK"
             target="_blank"
           >
-            <GithubIcon className="text-default-500" />
+            <GithubIcon className="text-muted-foreground" />
             SDK
           </Link>
         </div>
