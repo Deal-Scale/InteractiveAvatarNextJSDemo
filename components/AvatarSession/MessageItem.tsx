@@ -1,4 +1,4 @@
-import { ClipboardCopy, ThumbsUp, ThumbsDown, Pencil, Paperclip } from "lucide-react";
+import { ClipboardCopy, ThumbsUp, ThumbsDown, Pencil, Paperclip, Reply, GitBranch } from "lucide-react";
 
 import { Message as MessageType, MessageSender, type MessageAsset } from "@/lib/types";
 import { Button } from "@/components/ui/button";
@@ -202,6 +202,26 @@ export const MessageItem: React.FC<MessageItemProps> = ({
         <MessageActions>
           {message.sender === MessageSender.AVATAR ? (
             <>
+              <MessageAction tooltip={"Reply"}>
+                <Button
+                  aria-label="Reply"
+                  size="icon"
+                  variant="ghost"
+                  onClick={() => handleEditToInput(message.content, message.id)}
+                >
+                  <Reply className="h-4 w-4" />
+                </Button>
+              </MessageAction>
+              <MessageAction tooltip={"Branch conversation"}>
+                <Button
+                  aria-label="Branch conversation"
+                  size="icon"
+                  variant="ghost"
+                  onClick={() => handleEditToInput(message.content, message.id)}
+                >
+                  <GitBranch className="h-4 w-4" />
+                </Button>
+              </MessageAction>
               <MessageAction
                 tooltip={
                   lastCopiedId === message.id ? "Copied!" : "Copy message"
