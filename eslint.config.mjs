@@ -48,6 +48,8 @@ export default [
       },
     },
     rules: {
+      // Include Next.js recommended rules (Core Web Vitals)
+      ...(nextPlugin.configs['core-web-vitals']?.rules ?? {}),
       'react/prop-types': 'off',
       'react/jsx-uses-react': 'off',
       'react/react-in-jsx-scope': 'off',

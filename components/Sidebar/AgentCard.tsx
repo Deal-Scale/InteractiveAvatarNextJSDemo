@@ -79,7 +79,6 @@ export default function AgentCard(props: {
       {/* Media */}
       <div className="flex aspect-video items-center justify-center bg-muted/40">
         {avatarUrl ? (
-          // eslint-disable-next-line @next/next/no-img-element
           <img alt={name} className="h-full w-full object-cover" src={avatarUrl} />
         ) : (
           <div className="flex h-full w-full items-center justify-center text-sm text-muted-foreground">

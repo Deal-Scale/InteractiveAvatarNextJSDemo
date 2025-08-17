@@ -1,7 +1,6 @@
 "use client";
 
 import React from "react";
-import { StickToBottom } from "use-stick-to-bottom";
 
 import { cn } from "@/lib/utils";
 
@@ -20,40 +19,30 @@ export type ChatContainerScrollAnchorProps = {
   ref?: React.RefObject<HTMLDivElement>;
 } & React.HTMLAttributes<HTMLDivElement>;
 
-function ChatContainerRoot({
-  children,
-  className,
-  ...props
-}: ChatContainerRootProps) {
+function ChatContainerRoot({ children, className, ...props }: ChatContainerRootProps) {
   return (
-    <StickToBottom
+    <div
       className={cn(
         // Make root act as the scroll container and fill available space
         "relative flex w-full min-h-0 flex-col overflow-y-auto overflow-x-auto",
         className,
       )}
-      initial="instant"
-      resize="smooth"
       role="log"
       {...props}
     >
       {children}
-    </StickToBottom>
+    </div>
   );
 }
 
-function ChatContainerContent({ // eslint-disable-line
-  children,
-  className,
-  ...props
-}: ChatContainerContentProps) {
+function ChatContainerContent({ children, className, ...props }: ChatContainerContentProps) {
   return (
-    <StickToBottom.Content
+    <div
       className={cn("flex w-full flex-1 min-h-0 min-w-0 flex-col", className)}
       {...props}
     >
       {children}
-    </StickToBottom.Content>
+    </div>
   );
 }
 
