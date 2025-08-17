@@ -1,5 +1,5 @@
 import React from "react";
-import { Brain, Database, LayoutDashboard, Play } from "lucide-react";
+import { Brain, Database, LayoutDashboard, Play, Minimize2 } from "lucide-react";
 
 import { Button } from "../Button";
 import { useInterrupt } from "../logic/useInterrupt";
@@ -18,7 +18,7 @@ export const AvatarControls: React.FC<AvatarControlsProps> = ({
   stopSession,
 }) => {
   const { interrupt } = useInterrupt();
-  const { viewTab, setViewTab } = useSessionStore();
+  const { viewTab, setViewTab, controlsMinimized, setControlsMinimized } = useSessionStore();
   const { sessionState } = useStreamingAvatarContext();
 
   // Time-based UI opacity ramp when streaming (connected)
@@ -52,8 +52,24 @@ export const AvatarControls: React.FC<AvatarControlsProps> = ({
 
   return (
     <div className="absolute inset-0 pointer-events-none z-20">
+      {/* Restore hanging icon when minimized */}
+      {controlsMinimized && (
+        <div
+          aria-label="Show controls"
+          className={
+            "fixed top-0 left-1/2 -translate-x-1/2 z-40 select-none pointer-events-auto " +
+            "flex items-center gap-2 rounded-b-md border border-primary/40 bg-primary/10 px-3 py-1.5 text-primary " +
+            "hover:bg-primary/15"
+          }
+          onClick={() => setControlsMinimized(false)}
+          role="button"
+        >
+          <span className="h-1.5 w-8 rounded-full bg-primary/50" />
+        </div>
+      )}
       {/* Floating controls in the top-center over the video */}
-      <div className="absolute top-3 left-1/2 -translate-x-1/2 pointer-events-auto group">
+      {!controlsMinimized && (
+        <div className="absolute top-3 left-1/2 -translate-x-1/2 pointer-events-auto group">
         {viewTab === "video" && (
           <div
             className={`flex gap-2 items-center justify-center transition-opacity duration-200 ${
@@ -139,8 +155,17 @@ export const AvatarControls: React.FC<AvatarControlsProps> = ({
           >
             <LayoutDashboard className="h-4 w-4" />
           </Button>
+          {/* Minimize button for the whole group */}
+          <Button
+            className="h-9 w-9 aspect-square !p-0 rounded-xl flex items-center justify-center flex-shrink-0 !bg-muted !text-foreground ml-1"
+            title="Minimize controls"
+            onClick={() => setControlsMinimized(true)}
+          >
+            <Minimize2 className="h-4 w-4" />
+          </Button>
         </div>
       </div>
+      )}
     </div>
   );
 };

@@ -29,6 +29,9 @@ interface SessionState {
   // UI flags
   isChatSolidBg: boolean;
   setChatSolidBg: (solid: boolean) => void;
+  // Minimized state for the top-center tab group (Video/Brain/Data/Actions)
+  controlsMinimized: boolean;
+  setControlsMinimized: (val: boolean) => void;
 
   // Credits
   creditsRemaining: number; // user's remaining credits
@@ -97,6 +100,8 @@ export const useSessionStore = create<SessionState>()(
       // UI flags
       isChatSolidBg: false,
       setChatSolidBg: (solid) => set({ isChatSolidBg: solid }),
+      controlsMinimized: false,
+      setControlsMinimized: (val) => set({ controlsMinimized: val }),
 
       // Credits (defaults can be adjusted or fetched later)
       creditsRemaining: 1000,
@@ -126,6 +131,7 @@ export const useSessionStore = create<SessionState>()(
         creditsRemaining: state.creditsRemaining,
         creditsPerMinute: state.creditsPerMinute,
         viewTab: state.viewTab,
+        controlsMinimized: state.controlsMinimized,
         userSettings: state.userSettings,
         globalSettings: state.globalSettings,
         agentSettings: state.agentSettings,
