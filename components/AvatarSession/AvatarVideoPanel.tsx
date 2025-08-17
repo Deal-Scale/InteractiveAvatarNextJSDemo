@@ -25,6 +25,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { BorderBeam } from "@/components/magicui/border-beam";
+import { RetroGrid } from "@/components/magicui/retro-grid";
 import { Input } from "@/components/Input";
 import {
   Tooltip,
@@ -102,7 +103,20 @@ export function AvatarVideoPanel({
   }, [knowledgeBaseId]);
 
   return (
-    <div className="relative w-full h-full bg-background overflow-hidden">
+    <div className="group relative w-full h-full bg-background overflow-hidden">
+      {viewTab === "video" && (
+        <div className="absolute inset-0 z-0 pointer-events-none">
+          <RetroGrid
+            angle={65}
+            cellSize={60}
+            className="[&>div:last-child]:hidden"
+            darkLineColor="hsl(var(--primary))"
+            lightLineColor="hsl(var(--primary))"
+            opacity={0.6}
+          />
+        </div>
+      )}
+      <div className="relative z-10 h-full">
       {viewTab === "video" ? (
         sessionState === StreamingAvatarSessionState.CONNECTED ? (
           <AvatarVideo ref={mediaStream} />
@@ -311,6 +325,7 @@ export function AvatarVideoPanel({
       )}
 
       <AvatarControls stopSession={stopSession} />
+      </div>
     </div>
   );
 }
