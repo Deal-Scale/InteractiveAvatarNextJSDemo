@@ -137,7 +137,7 @@ export function AvatarSession({
       {/* Video panel stays mounted */}
       <div
         className={cn(
-          "relative bg-black overflow-hidden",
+          "relative bg-background overflow-hidden",
           !isFloating && (isRight ? "flex-1" : "flex-1"),
           isFloating && "w-full h-full",
         )}
@@ -155,7 +155,7 @@ export function AvatarSession({
           {/* Left-edge resize handle inside overlay */}
           <div
             aria-orientation="vertical"
-            className="w-1 h-full cursor-col-resize bg-zinc-700/60 hover:bg-zinc-600 transition-colors absolute left-0 top-0"
+            className="w-1 h-full cursor-col-resize bg-muted-foreground/40 hover:bg-muted-foreground/60 transition-colors absolute left-0 top-0"
             role="separator"
             onPointerDown={() => setResizing("right")}
           />
@@ -174,7 +174,7 @@ export function AvatarSession({
           {/* Top-edge resize handle inside overlay */}
           <div
             aria-orientation="horizontal"
-            className="h-1 cursor-row-resize bg-zinc-700/60 hover:bg-zinc-600 transition-colors"
+            className="h-1 cursor-row-resize bg-muted-foreground/40 hover:bg-muted-foreground/60 transition-colors"
             role="separator"
             onPointerDown={() => setResizing("bottom")}
           />
@@ -220,7 +220,7 @@ export function AvatarSession({
           <ChatPanel dock={dock} expanded={expanded} {...chatPanelProps} />
           {/* Resize handle (bottom-right corner) - more noticeable */}
           <div
-            className="absolute bottom-1 right-1 w-5 h-5 cursor-nwse-resize rounded-md border-2 border-zinc-300/90 bg-zinc-700/60 shadow-sm hover:bg-zinc-600/70 hover:border-white/90"
+            className="absolute bottom-1 right-1 w-5 h-5 cursor-nwse-resize rounded-md border-2 border-border bg-muted-foreground/40 shadow-sm hover:bg-muted-foreground/60 hover:border-foreground/90"
             role="presentation"
             style={{
               backgroundImage:
@@ -235,7 +235,7 @@ export function AvatarSession({
       {/* Reopen tabs when docked chat is collapsed to 0% */}
       {!isFloating && !isRight && bottomSize === 0 && (
         <button
-          className="absolute bottom-0 left-1/2 -translate-x-1/2 mb-1 rounded-full bg-zinc-800 px-3 py-1 text-xs text-white shadow"
+          className="absolute bottom-0 left-1/2 -translate-x-1/2 mb-1 rounded-full bg-background border border-border px-3 py-1 text-xs text-foreground shadow hover:bg-muted"
           onClick={() => setBottomSize(15)}
         >
           Open chat
@@ -243,7 +243,7 @@ export function AvatarSession({
       )}
       {!isFloating && isRight && rightSize === 0 && (
         <button
-          className="absolute right-0 top-1/2 -translate-y-1/2 mr-1 rounded-full bg-zinc-800 px-3 py-1 text-xs text-white shadow"
+          className="absolute right-0 top-1/2 -translate-y-1/2 mr-1 rounded-full bg-background border border-border px-3 py-1 text-xs text-foreground shadow hover:bg-muted"
           onClick={() => setRightSize(24)}
         >
           Open chat
