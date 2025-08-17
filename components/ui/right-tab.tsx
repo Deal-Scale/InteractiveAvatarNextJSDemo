@@ -4,6 +4,7 @@ import React, { useEffect, useMemo, useState } from "react";
 import { Minimize2Icon, Maximize2Icon } from "lucide-react";
 
 import { usePlacementStore } from "@/lib/stores/placement";
+import { safeWindow } from "@/lib/utils";
 
 interface RightTabProps {
   minFrac?: number; // fraction considered collapsed
@@ -33,9 +34,10 @@ export function RightTab({
   const isClosed = widthFrac <= 0.01;
 
   const widthPx = useMemo(() => {
-    if (typeof window === "undefined") return 0;
+    const w = safeWindow();
 
-    return Math.round((widthFrac || 0) * window.innerWidth);
+    if (!w) return 0;
+    return Math.round((widthFrac || 0) * w.innerWidth);
   }, [widthFrac]);
 
   const onPointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
@@ -45,7 +47,8 @@ export function RightTab({
     let moving = startFrac;
 
     const onMove = (ev: PointerEvent) => {
-      const vw = window.innerWidth || 1;
+      const w = safeWindow();
+      const vw = (w?.innerWidth || 1);
       const dx = startX - ev.clientX; // dragging left increases width
       const next = Math.max(0, Math.min(0.95, startFrac + dx / vw));
 
@@ -53,10 +56,15 @@ export function RightTab({
       setWidthFrac(next);
     };
     const onUp = () => {
-      window.removeEventListener("pointermove", onMove);
-      window.removeEventListener("pointerup", onUp);
+      const w = safeWindow();
+
+      if (w) {
+        w.removeEventListener("pointermove", onMove);
+        w.removeEventListener("pointerup", onUp);
+      }
       try {
-        const vw = window.innerWidth || 1;
+        const w = safeWindow();
+        const vw = (w?.innerWidth || 1);
         const px = Math.round(moving * vw);
         const thresholdPx = Math.max(56, Math.round(0.06 * vw));
 
@@ -64,8 +72,12 @@ export function RightTab({
       } catch {}
     };
 
-    window.addEventListener("pointermove", onMove, { passive: true });
-    window.addEventListener("pointerup", onUp, { once: true });
+    const w = safeWindow();
+
+    if (w) {
+      w.addEventListener("pointermove", onMove, { passive: true });
+      w.addEventListener("pointerup", onUp, { once: true });
+    }
   };
 
   const onClick = () => {

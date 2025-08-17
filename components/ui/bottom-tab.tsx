@@ -4,6 +4,7 @@ import React, { useEffect, useMemo, useState } from "react";
 import { Maximize2Icon, Minimize2Icon } from "lucide-react";
 
 import { usePlacementStore } from "@/lib/stores/placement";
+import { safeWindow } from "@/lib/utils";
 
 // A persistent bottom tab for reopening/resizing the bottom drawer.
 // - Appears only when fully closed (height <= 0)
@@ -42,9 +43,10 @@ export function BottomTab({
   const isClosed = heightFrac <= 0.01;
 
   const heightPx = useMemo(() => {
-    if (typeof window === "undefined") return 0;
+    const w = safeWindow();
 
-    return Math.round((heightFrac || 0) * window.innerHeight);
+    if (!w) return 0;
+    return Math.round((heightFrac || 0) * w.innerHeight);
   }, [heightFrac]);
 
   const onPointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
@@ -54,7 +56,8 @@ export function BottomTab({
     let movingFrac = startFrac;
 
     const onMove = (ev: PointerEvent) => {
-      const vh = window.innerHeight || 1;
+      const w = safeWindow();
+      const vh = (w?.innerHeight || 1);
       const dy = startY - ev.clientY; // dragging up increases height
       const newFrac = Math.max(0, Math.min(0.95, startFrac + dy / vh));
 
@@ -62,12 +65,17 @@ export function BottomTab({
       setHeightFrac(newFrac);
     };
     const onUp = () => {
-      window.removeEventListener("pointermove", onMove);
-      window.removeEventListener("pointerup", onUp);
+      const w = safeWindow();
+
+      if (w) {
+        w.removeEventListener("pointermove", onMove);
+        w.removeEventListener("pointerup", onUp);
+      }
       // Snap to fully closed if near the bottom to overcome visual min-height
       // Snap threshold: 56px or 6% of viewport height, whichever is larger
       try {
-        const vh = window.innerHeight || 1;
+        const w = safeWindow();
+        const vh = (w?.innerHeight || 1);
         const px = Math.round(movingFrac * vh);
         const thresholdPx = Math.max(56, Math.round(0.06 * vh));
 
@@ -77,8 +85,12 @@ export function BottomTab({
       } catch {}
     };
 
-    window.addEventListener("pointermove", onMove, { passive: true });
-    window.addEventListener("pointerup", onUp, { once: true });
+    const w = safeWindow();
+
+    if (w) {
+      w.addEventListener("pointermove", onMove, { passive: true });
+      w.addEventListener("pointerup", onUp, { once: true });
+    }
   };
 
   const onClick = () => {

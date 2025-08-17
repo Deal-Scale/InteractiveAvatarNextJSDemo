@@ -11,7 +11,7 @@ import React, {
 } from "react";
 import { X } from "lucide-react";
 
-import { cn } from "@/lib/utils";
+import { cn, safeWindow } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 
 export type ToastItem = {
@@ -56,7 +56,9 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
     const h = m.get(id);
 
     if (h) {
-      window.clearTimeout(h);
+      const w = safeWindow();
+
+      if (w) w.clearTimeout(h);
       m.delete(id);
     }
   }, []);
@@ -80,9 +82,13 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
         { id, duration, persist, progress: t.progress ?? null, ...t },
       ]);
       if (duration > 0 && !persist) {
-        const h = window.setTimeout(() => dismiss(id), duration);
+        const w = safeWindow();
 
-        timers.current.set(id, h);
+        if (w) {
+          const h = w.setTimeout(() => dismiss(id), duration);
+
+          timers.current.set(id, h);
+        }
       }
 
       return id;
@@ -107,9 +113,13 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
         const dur = duration ?? target?.duration ?? 3000;
 
         if (dur > 0 && !willPersist) {
-          const h = window.setTimeout(() => dismiss(id), dur);
+          const w = safeWindow();
 
-          timers.current.set(id, h);
+          if (w) {
+            const h = w.setTimeout(() => dismiss(id), dur);
+
+            timers.current.set(id, h);
+          }
         }
       }
     },
@@ -288,6 +298,9 @@ export function ToastBridge() {
 
   useEffect(() => {
     if (!ctx) return;
+    const w = safeWindow();
+
+    if (!w) return;
     const { publish, update, dismiss } = ctx;
 
     function onPublish(e: Event) {
@@ -306,23 +319,17 @@ export function ToastBridge() {
       dismiss(ce.detail);
     }
 
-    window.addEventListener("app:toast:publish", onPublish as EventListener);
-    window.addEventListener("app:toast:update", onUpdate as EventListener);
-    window.addEventListener("app:toast:dismiss", onDismiss as EventListener);
+    w.addEventListener("app:toast:publish", onPublish as EventListener);
+    w.addEventListener("app:toast:update", onUpdate as EventListener);
+    w.addEventListener("app:toast:dismiss", onDismiss as EventListener);
 
-    window.mcpToast = { publish, update, dismiss };
+    w.mcpToast = { publish, update, dismiss };
 
     return () => {
-      window.removeEventListener(
-        "app:toast:publish",
-        onPublish as EventListener,
-      );
-      window.removeEventListener("app:toast:update", onUpdate as EventListener);
-      window.removeEventListener(
-        "app:toast:dismiss",
-        onDismiss as EventListener,
-      );
-      if (window.mcpToast) delete window.mcpToast;
+      w.removeEventListener("app:toast:publish", onPublish as EventListener);
+      w.removeEventListener("app:toast:update", onUpdate as EventListener);
+      w.removeEventListener("app:toast:dismiss", onDismiss as EventListener);
+      if (w.mcpToast) delete w.mcpToast;
     };
   }, [ctx]);
 
