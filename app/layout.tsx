@@ -6,6 +6,7 @@ import Script from "next/script";
 import { Fira_Code as FontMono, Inter as FontSans } from "next/font/google";
 
 import AudioDebugShim from "@/components/AudioDebugShim";
+import PlacementMount from "@/components/PlacementMount";
 import { ToastProvider } from "@/components/ui/toaster";
 import { ThemeProvider } from "@/components/ui/theme-provider";
 import ThemeBridge from "@/components/ThemeBridge";
@@ -116,6 +117,7 @@ export default function RootLayout({
             <main className="relative flex flex-col h-screen w-screen">
               <ThemeBridge />
               <AudioDebugShim />
+              <PlacementMount />
               {children}
             </main>
           </ToastProvider>
