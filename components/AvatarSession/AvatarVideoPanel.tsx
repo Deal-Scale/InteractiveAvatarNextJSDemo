@@ -242,23 +242,8 @@ export function AvatarVideoPanel({
                   <BorderBeam borderWidth={2} duration={8} size={80} />
                 </div>
               </CardFooter>
-              <BorderBeam
-                borderWidth={2}
-                colorFrom="#38bdf8"
-                colorTo="#a78bfa"
-                duration={8}
-                initialOffset={10}
-                size={120}
-              />
-              <BorderBeam
-                borderWidth={2}
-                colorFrom="#f59e0b"
-                colorTo="#ef4444"
-                duration={10}
-                initialOffset={60}
-                reverse
-                size={160}
-              />
+              <BorderBeam borderWidth={2} duration={8} initialOffset={10} size={120} />
+              <BorderBeam borderWidth={2} duration={10} initialOffset={60} reverse size={160} />
             </Card>
           </div>
         )

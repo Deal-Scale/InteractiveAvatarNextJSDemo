@@ -25,9 +25,9 @@ export const AvatarVideo = forwardRef<HTMLVideoElement>((props, ref) => {
   const LoadingBackdrop: React.FC = () => (
     <>
       <div className="absolute inset-0 -z-10 overflow-hidden">
-        <div className="absolute -top-24 -left-24 h-80 w-80 rounded-full blur-3xl bg-gradient-to-br from-fuchsia-500/30 to-indigo-500/30 animate-pulse" />
-        <div className="absolute -bottom-24 -right-24 h-96 w-96 rounded-full blur-3xl bg-gradient-to-br from-cyan-500/25 to-emerald-500/25 animate-pulse [animation-duration:4s]" />
-        <div className="absolute inset-0 opacity-[0.06] bg-[radial-gradient(circle_at_center,_#fff_1px,_transparent_1px)] [background-size:16px_16px]" />
+        <div className="absolute -top-24 -left-24 h-80 w-80 rounded-full blur-3xl bg-gradient-to-br from-primary/30 to-secondary/30 animate-pulse" />
+        <div className="absolute -bottom-24 -right-24 h-96 w-96 rounded-full blur-3xl bg-gradient-to-br from-accent/25 to-primary/25 animate-pulse [animation-duration:4s]" />
+        <div className="absolute inset-0 opacity-[0.06] bg-[radial-gradient(circle_at_center,_hsl(var(--foreground))_1px,_transparent_1px)] [background-size:16px_16px]" />
       </div>
     </>
   );
@@ -55,7 +55,7 @@ export const AvatarVideo = forwardRef<HTMLVideoElement>((props, ref) => {
     <div className="absolute inset-0 flex items-center justify-center">
       <div className="flex flex-col items-center gap-4">
         <div className="relative h-20 w-20">
-          <div className="absolute inset-0 rounded-full bg-[conic-gradient(var(--tw-gradient-stops))] from-fuchsia-500 via-indigo-500 to-cyan-500 animate-spin [animation-duration:2.5s]" />
+          <div className="absolute inset-0 rounded-full bg-[conic-gradient(var(--tw-gradient-stops))] from-primary via-secondary to-accent animate-spin [animation-duration:2.5s]" />
           <div className="absolute inset-[4px] rounded-full bg-popover/70 backdrop-blur-sm border border-border" />
         </div>
         <div className="flex items-center gap-2 text-sm text-muted-foreground">
@@ -131,7 +131,7 @@ export const AvatarVideo = forwardRef<HTMLVideoElement>((props, ref) => {
       </video>
       {/* Subtle connected glow overlay */}
       {isLoaded && (
-        <div className="pointer-events-none absolute inset-0 ring-1 ring-primary/20 shadow-[0_0_80px_-20px_rgba(59,130,246,0.35)] animate-[pulse_3s_ease-in-out_infinite]" />
+        <div className="pointer-events-none absolute inset-0 ring-1 ring-primary/20 shadow-[0_0_80px_-20px_hsl(var(--primary)/0.35)] animate-[pulse_3s_ease-in-out_infinite]" />
       )}
       {!isLoaded && <LoadingSpinnerOverlay />}
     </>

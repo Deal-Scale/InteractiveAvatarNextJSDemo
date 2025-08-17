@@ -89,11 +89,11 @@ export const MessageItem: React.FC<MessageItemProps> = ({
           message.sender === MessageSender.AVATAR ? "items-start" : "items-end"
         }`}
       >
-        <p className="text-xs text-zinc-400">
+        <p className="text-xs text-muted-foreground">
           {message.sender === MessageSender.AVATAR ? "Avatar" : "You"}
         </p>
         {message.sender === MessageSender.AVATAR ? (
-          <div className="prose break-words whitespace-normal rounded-lg bg-zinc-700 p-2 text-sm text-foreground">
+          <div className="prose break-words whitespace-normal rounded-lg bg-muted p-2 text-sm text-foreground">
             {reasoning && (
               <div className="mb-2">
                 <Reasoning isStreaming={isStreaming}>
@@ -144,7 +144,7 @@ export const MessageItem: React.FC<MessageItemProps> = ({
                 {message.sources.map((s, idx) => (
                   <Source key={`${message.id}-src-${idx}`} href={s.href}>
                     <SourceTrigger
-                      className="bg-zinc-600/50"
+                      className="bg-muted"
                       label={s.label}
                       showFavicon={s.showFavicon}
                     />
@@ -158,7 +158,7 @@ export const MessageItem: React.FC<MessageItemProps> = ({
             )}
           </div>
         ) : (
-          <MessageContent markdown className="text-sm bg-indigo-500">
+          <MessageContent markdown className="text-sm bg-primary text-primary-foreground">
             {message.content}
           </MessageContent>
         )}
