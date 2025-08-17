@@ -120,174 +120,214 @@ export const Chat: React.FC<ChatProps> = ({
   // Always append a mock JSX message at the end of the thread (demo)
   const augmentedMessages = useMemo(() => {
     const contentLines = [
-      '# Code Block',
-      'A component for displaying code snippets with syntax highlighting and customizable styling.',
-      '',
-      '## Examples',
-      '',
-      '### Basic Code Block',
-      '',
-      '```javascript',
-      'function greet(name) {',
-      '  return `Hello, ${name}!`;',
-      '}',
-      '',
-      '// Call the function',
-      'greet("World");',
-      '```',
-      '',
-      '### Code Block with Header',
-      'You can use CodeBlockGroup to add a header with metadata and actions to your code blocks.',
-      '',
-      'React',
-      '',
-      '```tsx',
-      "import { useState } from 'react';",
-      '',
-      'function Counter() {',
-      '  const [count, setCount] = useState(0);',
-      '  ',
-      '  return (',
-      '    <div>',
-      '      <p>You clicked {count} times</p>',
-      '      <button onClick={() => setCount(count + 1)}>',
-      '        Click me',
-      '      </button>',
-      '    </div>',
-      '  );',
-      '}',
-      '```',
-      '',
-      '### Different Languages',
-      'You can highlight code in various languages by changing the language prop.',
-      '',
-      '#### Python Example',
-      '',
-      '```python',
-      'def fibonacci(n):',
-      '    a, b = 0, 1',
-      '    for _ in range(n):',
-      '        yield a',
-      '        a, b = b, a + b',
-      '',
-      '# Generate the first 10 Fibonacci numbers',
-      'for number in fibonacci(10):',
-      '    print(number)',
-      '```',
-      '',
-      '#### CSS Example',
-      '',
-      '```css',
-      '.button {',
-      '  background-color: #4CAF50;',
-      '  border: none;',
-      '  color: white;',
-      '  padding: 15px 32px;',
-      '  text-align: center;',
-      '  text-decoration: none;',
-      '  display: inline-block;',
-      '  font-size: 16px;',
-      '  margin: 4px 2px;',
-      '  cursor: pointer;',
-      '  border-radius: 8px;',
-      '  transition: all 0.3s ease;',
-      '}',
-      '',
-      '.button:hover {',
-      '  background-color: #45a049;',
-      '  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);',
-      '}',
-      '```',
-      '',
-      '### Different Themes',
-      'Shiki supports many popular themes. Here are some examples:',
-      '',
-      '#### GitHub Dark Theme',
-      '',
-      'JavaScript',
-      '',
-      '```javascript',
-      'function calculateTotal(items) {',
-      '  return items',
-      '    .filter(item => item.price > 0)',
-      '    .reduce((total, item) => {',
-      '      return total + item.price * item.quantity;',
-      '    }, 0);',
-      '}',
-      '```',
-      '',
-      '#### Nord Theme',
-      '',
-      'JavaScript',
-      '',
-      '```javascript',
-      'function calculateTotal(items) {',
-      '  return items',
-      '    .filter(item => item.price > 0)',
-      '    .reduce((total, item) => {',
-      '      return total + item.price * item.quantity;',
-      '    }, 0);',
-      '}',
-      '```',
-      '',
-      '## Installation',
-      '',
-      '`npx shadcn add "https://prompt-kit.com/c/code-block.json"`',
-      '',
-      '## Component API',
-      '',
-      '### CodeBlock',
-      '',
-      '| Prop | Type | Default | Description |',
-      '| --- | --- | --- | --- |',
-      '| children | React.ReactNode |  | Child components to render |',
-      '| className | string |  | Additional CSS classes |',
-      '| ...props | React.HTMLProps<HTMLDivElement> |  | All other div props |',
-      '',
-      '### CodeBlockCode',
-      '',
-      '| Prop | Type | Default | Description |',
-      '| --- | --- | --- | --- |',
-      '| code | string |  | The code to display and highlight |',
-      '| language | string | "tsx" | The language for syntax highlighting |',
-      '| theme | string | "github-light" | The theme for syntax highlighting |',
-      '| className | string |  | Additional CSS classes |',
-      '| ...props | React.HTMLProps<HTMLDivElement> |  | All other div props |',
-      '',
-      '### CodeBlockGroup',
-      '',
-      '| Prop | Type | Default | Description |',
-      '| --- | --- | --- | --- |',
-      '| children | React.ReactNode |  | Child components to render |',
-      '| className | string |  | Additional CSS classes |',
-      '| ...props | React.HTMLAttributes<HTMLDivElement> |  | All other div props |',
-      '',
-      '## Usage with Markdown',
-      'The CodeBlock component is used internally by the Markdown component to render code blocks in markdown content. When used within the Markdown component, code blocks are automatically wrapped with the not-prose class to prevent conflicts with prose styling.',
-      '',
-      '```ts',
-      'import { Markdown } from "@/components/prompt-kit/markdown"',
-      '',
-      'function MyComponent() {',
-      '  const markdownContent = ` # Example',
-      '',
-      '  ```javascript',
-      '  function greet(name) {',
-      '',
-      '  return `Hello, ${name}!`;',
-      '  }',
-      '  ```',
-      '',
-      '  return <Markdown className="prose">{markdownContent}</Markdown>',
-      '',
-      '}',
-      '```',
-      '',
-      '## Tailwind Typography and not-prose',
-      'The CodeBlock component includes the not-prose class by default to...',
-      '',
-      'Below are live stat badges rendered via a custom JSX component.',
+      `
+# \`CodeBlock\` Component
+
+A component for displaying code snippets with syntax highlighting and customizable styling.
+
+---
+
+## ✨ Features
+
+- Syntax highlighting for multiple languages (powered by [Shiki](https://shiki.matsu.io/))
+- Support for headers, actions, tabs, and file names
+- Easily switch themes (e.g. \`github-dark\`, \`nord\`, \`dracula\`)
+- Integrates with Markdown, with prose-safe styles
+
+---
+
+## 🚀 Examples
+
+### Basic Code Block
+
+\`\`\`javascript
+function greet(name) {
+  return \`Hello, \${name}!\`;
+}
+
+// Call the function
+greet("World");
+\`\`\`
+
+---
+
+### Code Block with Header
+
+You can use \`CodeBlockGroup\` to add a header with metadata and actions to your code blocks.
+
+\`\`\`tsx file=Counter.tsx
+import { useState } from 'react';
+
+function Counter() {
+  const [count, setCount] = useState(0);
+  return (
+    <div>
+      <p>You clicked {count} times</p>
+      <button onClick={() => setCount(count + 1)}>
+        Click me
+      </button>
+    </div>
+  );
+}
+\`\`\`
+
+---
+
+### Tabs (Multiple Files)
+
+\`\`\`tabs
+--- app/page.tsx
+import { Button } from "@/components/ui/button";
+export default function Page() {
+  return <Button>Click</Button>
+}
+--- app/layout.tsx
+export default function Layout({ children }) {
+  return <html><body>{children}</body></html>
+}
+\`\`\`
+
+---
+
+### Different Languages
+
+You can highlight code in various languages by changing the \`language\` prop.
+
+#### Python Example
+
+\`\`\`python
+def fibonacci(n):
+    a, b = 0, 1
+    for _ in range(n):
+        yield a
+        a, b = b, a + b
+
+# Generate the first 10 Fibonacci numbers
+for number in fibonacci(10):
+    print(number)
+\`\`\`
+
+#### CSS Example
+
+\`\`\`css
+.button {
+  background-color: #4CAF50;
+  border: none;
+  color: white;
+  padding: 15px 32px;
+  text-align: center;
+  text-decoration: none;
+  display: inline-block;
+  font-size: 16px;
+  margin: 4px 2px;
+  cursor: pointer;
+  border-radius: 8px;
+  transition: all 0.3s ease;
+}
+
+.button:hover {
+  background-color: #45a049;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+}
+\`\`\`
+
+---
+
+### Different Themes
+
+Shiki supports many popular themes. Here are some examples:
+
+#### GitHub Dark Theme
+
+\`\`\`javascript theme=github-dark
+function calculateTotal(items) {
+  return items
+    .filter(item => item.price > 0)
+    .reduce((total, item) => {
+      return total + item.price * item.quantity;
+    }, 0);
+}
+\`\`\`
+
+#### Nord Theme
+
+\`\`\`javascript theme=nord
+function calculateTotal(items) {
+  return items
+    .filter(item => item.price > 0)
+    .reduce((total, item) => {
+      return total + item.price * item.quantity;
+    }, 0);
+}
+\`\`\`
+
+---
+
+## 📦 Installation
+
+\`\`\`bash
+npx shadcn add "https://prompt-kit.com/c/code-block.json"
+\`\`\`
+
+---
+
+## 🧩 Component API
+
+### \`<CodeBlock>\`
+
+| Prop      | Type                              | Default | Description                |
+| --------- | --------------------------------- | ------- | -------------------------- |
+| children  | \`React.ReactNode\`               |         | Child components to render |
+| className | \`string\`                        |         | Additional CSS classes     |
+| ...props  | \`React.HTMLProps<HTMLDivElement>\` |         | All other div props        |
+
+### \`<CodeBlockCode>\`
+
+| Prop      | Type                              | Default        | Description                          |
+| --------- | --------------------------------- | -------------- | ------------------------------------ |
+| code      | \`string\`                        |                | The code to display and highlight    |
+| language  | \`string\`                        | \`"tsx"\`      | The language for syntax highlighting |
+| theme     | \`string\`                        | \`"github-light"\` | The theme for syntax highlighting |
+| className | \`string\`                        |                | Additional CSS classes               |
+| ...props  | \`React.HTMLProps<HTMLDivElement>\` |                | All other div props                  |
+
+### \`<CodeBlockGroup>\`
+
+| Prop      | Type                                     | Default | Description                |
+| --------- | ---------------------------------------- | ------- | -------------------------- |
+| children  | \`React.ReactNode\`                      |         | Child components to render |
+| className | \`string\`                               |         | Additional CSS classes     |
+| ...props  | \`React.HTMLAttributes<HTMLDivElement>\` |         | All other div props        |
+
+---
+
+## 📝 Usage with Markdown
+
+The \`CodeBlock\` component is used internally by the \`Markdown\` component to render code blocks in markdown content. When used within the \`Markdown\` component, code blocks are automatically wrapped with the \`not-prose\` class to prevent conflicts with prose styling.
+
+\`\`\`tsx
+import { Markdown } from "@/components/prompt-kit/markdown"
+
+function MyComponent() {
+  const markdownContent = \`
+# Example
+
+\`\`\`javascript
+function greet(name) {
+  return \`Hello, \${name}!\`;
+}
+\`\`\`
+\`
+
+  return <Markdown className="prose">{markdownContent}</Markdown>
+}
+\`\`\`
+
+---
+      `.trim(),
     ];
+    return [{ ...baseMessages[0], content: contentLines.join("\n") }];
+  }, [baseMessages]);
     // Build prose-only (no fenced code) and code-only (only fenced code) variants
     const prose: string[] = [];
     const codeOnly: string[] = [];
