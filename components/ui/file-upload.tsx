@@ -191,7 +191,11 @@ function FileUploadContent({ className, ...props }: FileUploadContentProps) {
     />
   );
 
-  return createPortal(content, document.body);
+  const target = typeof document !== "undefined" ? document.body : null;
+
+  if (!target) return null;
+
+  return createPortal(content, target);
 }
 
 export { FileUpload, FileUploadTrigger, FileUploadContent };

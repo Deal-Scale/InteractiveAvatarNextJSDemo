@@ -1,7 +1,7 @@
 "use client";
 
 import { useKeyPress } from "ahooks";
-import React, { useMemo, useState } from "react";
+import React, { useMemo, useRef, useState } from "react";
 
 import { ChatInput } from "./ChatInput";
 import { MessageItem } from "./MessageItem";
@@ -56,6 +56,7 @@ export const Chat: React.FC<ChatProps> = ({
   const { isAvatarTalking, isVoiceChatLoading } = useStreamingAvatarContext();
 
   const [attachments, setAttachments] = useState<File[]>([]);
+  const inputRef = useRef<HTMLTextAreaElement | null>(null);
   const promptSuggestions = useMemo(
     () => [
       "What can you do?",
@@ -140,13 +141,9 @@ export const Chat: React.FC<ChatProps> = ({
 
     // Defer focus and caret placement until after the DOM updates with new value
     requestAnimationFrame(() => {
-      const el = document.querySelector<HTMLTextAreaElement>(
-        'textarea[aria-label="Chat input"]',
-      );
-
+      const el = inputRef.current;
       if (el) {
         el.focus();
-
         const len = el.value.length;
         el.setSelectionRange(len, len);
       }
@@ -223,6 +220,7 @@ export const Chat: React.FC<ChatProps> = ({
         cancelEdit={cancelEdit}
         chatInput={chatInput}
         confirmEdit={confirmEdit}
+        inputRef={inputRef}
         isEditing={isEditing}
         isSending={isSending}
         isVoiceChatActive={isVoiceChatActive}
