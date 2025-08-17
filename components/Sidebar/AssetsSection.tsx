@@ -7,6 +7,7 @@ import {
   X,
   Eye,
   Download as DownloadIcon,
+  Plus,
 } from "lucide-react";
 import React, { useMemo, useState } from "react";
 
@@ -31,8 +32,9 @@ export default function AssetsSection(props: {
   setCollapsedAssets: (fn: (v: boolean) => boolean) => void;
   assetsRef: React.MutableRefObject<HTMLDivElement | null>;
   onDelete?: (id: string) => void;
+  onAdd?: () => void;
 }) {
-  const { assets, collapsedAssets, setCollapsedAssets, assetsRef, onDelete } = props;
+  const { assets, collapsedAssets, setCollapsedAssets, assetsRef, onDelete, onAdd } = props;
 
   const [query, setQuery] = useState("");
   const [previewId, setPreviewId] = useState<string | null>(null);
@@ -80,7 +82,11 @@ export default function AssetsSection(props: {
       <div ref={assetsRef} />
       {!collapsedAssets && (
         <div className="px-2 pb-2">
-          <div className="mb-2">
+          <div className="mb-2 flex items-center gap-2">
+            <Button onClick={() => onAdd?.()} size="sm" variant="outline">
+              <Plus className="mr-1 size-3" />
+              Add New
+            </Button>
             <input
               aria-label="Search assets by name or extension"
               className="w-full rounded-md border bg-background px-2 py-1 text-xs outline-none ring-0 focus:border-primary"
@@ -101,6 +107,7 @@ export default function AssetsSection(props: {
                   <div
                     key={asset.id}
                     className="group relative rounded-md border border-border bg-background overflow-hidden"
+                    title={asset.name}
                   >
                     {/* Delete button */}
                     <button
@@ -120,6 +127,7 @@ export default function AssetsSection(props: {
                       <button
                         className="block w-full aspect-square"
                         aria-label="Open preview"
+                        title="Preview"
                         onClick={() => setPreviewId(asset.id)}
                       >
                         <img

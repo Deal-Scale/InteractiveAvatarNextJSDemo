@@ -134,7 +134,7 @@ const Tree = forwardRef<HTMLDivElement, TreeViewProps>(
       if (initialSelectedId) {
         expandSpecificTargetedElements(elements, initialSelectedId);
       }
-    }, [initialSelectedId, elements]);
+    }, [initialSelectedId, elements, expandSpecificTargetedElements]);
 
     const direction = dir === "rtl" ? "rtl" : "ltr";
 
@@ -152,10 +152,10 @@ const Tree = forwardRef<HTMLDivElement, TreeViewProps>(
           direction,
         }}
       >
-        <div className={cn("size-full", className)}>
+        <div className={cn("h-full w-full", className)}>
           <ScrollArea
             ref={ref}
-            className="relative h-full px-2"
+            className="relative h-full overflow-y-auto px-2"
             dir={dir as Direction}
           >
             <AccordionPrimitive.Root
@@ -164,7 +164,7 @@ const Tree = forwardRef<HTMLDivElement, TreeViewProps>(
               defaultValue={expandedItems}
               value={expandedItems}
               className="flex flex-col gap-1"
-              onValueChange={(value) =>
+              onValueChange={(value: string[]) =>
                 setExpandedItems((prev) => [...(prev ?? []), value[0]])
               }
               dir={dir as Direction}
@@ -179,7 +179,6 @@ const Tree = forwardRef<HTMLDivElement, TreeViewProps>(
 );
 
 Tree.displayName = "Tree";
-
 const TreeIndicator = forwardRef<
   HTMLDivElement,
   React.HTMLAttributes<HTMLDivElement>
@@ -191,7 +190,7 @@ const TreeIndicator = forwardRef<
       dir={direction}
       ref={ref}
       className={cn(
-        "absolute left-1.5 h-full w-px rounded-md bg-muted py-3 duration-300 ease-in-out hover:bg-slate-300 rtl:right-1.5",
+        "absolute left-1.5 h-full w-px rounded-md bg-border py-3 duration-300 ease-in-out hover:bg-border rtl:right-1.5",
         className,
       )}
       {...props}
@@ -209,6 +208,7 @@ type FolderProps = {
   element: string;
   isSelectable?: boolean;
   isSelect?: boolean;
+  value: string;
 } & FolderComponentProps;
 
 const Folder = forwardRef<
@@ -269,7 +269,7 @@ const Folder = forwardRef<
             className="ml-5 flex flex-col gap-1 py-1 rtl:mr-5 "
             defaultValue={expandedItems}
             value={expandedItems}
-            onValueChange={(value) => {
+            onValueChange={(value: string[]) => {
               setExpandedItems?.((prev) => [...(prev ?? []), value[0]]);
             }}
           >
@@ -353,18 +353,17 @@ const CollapseButton = forwardRef<
     };
 
     elements.forEach(expandTree);
-  }, []);
+  }, [setExpandedItems]);
 
   const closeAll = useCallback(() => {
     setExpandedItems?.([]);
-  }, []);
+  }, [setExpandedItems]);
 
   useEffect(() => {
-    console.log(expandAll);
     if (expandAll) {
       expendAllTree(elements);
     }
-  }, [expandAll]);
+  }, [expandAll, expendAllTree, elements]);
 
   return (
     <Button
