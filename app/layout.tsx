@@ -7,6 +7,8 @@ import { Fira_Code as FontMono, Inter as FontSans } from "next/font/google";
 
 import AudioDebugShim from "@/components/AudioDebugShim";
 import { ToastProvider } from "@/components/ui/toaster";
+import { ThemeProvider } from "@/components/ui/theme-provider";
+import ThemeBridge from "@/components/ThemeBridge";
 
 
 const fontSans = FontSans({
@@ -41,7 +43,7 @@ export default function RootLayout({
       lang="en"
     >
       <head />
-      <body className="min-h-screen bg-black text-white">
+      <body className="min-h-screen bg-background text-foreground">
         <Script id="audio-debug-early" strategy="beforeInteractive">{`
           (function(){
             try {
@@ -109,12 +111,15 @@ export default function RootLayout({
             } catch(_e){}
           })();
         `}</Script>
-        <ToastProvider>
-          <main className="relative flex flex-col h-screen w-screen">
-            <AudioDebugShim />
-            {children}
-          </main>
-        </ToastProvider>
+        <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
+          <ToastProvider>
+            <main className="relative flex flex-col h-screen w-screen">
+              <ThemeBridge />
+              <AudioDebugShim />
+              {children}
+            </main>
+          </ToastProvider>
+        </ThemeProvider>
       </body>
     </html>
   );
