@@ -170,16 +170,16 @@ export function BottomTab({
         (sidebarCollapsed
           ? "fixed bottom-0 left-1/2 -translate-x-1/2 "
           : "fixed bottom-0 left-[328px] ") + // small offset past the sidebar edge
-        "z-40 select-none flex items-center gap-2 rounded-t-md border border-border bg-background/95 px-3 py-1.5 " +
-        "shadow-md backdrop-blur supports-[backdrop-filter]:bg-background/70 " +
+        "z-40 select-none flex items-center gap-2 rounded-t-md border border-primary/40 bg-primary/10 text-primary px-3 py-1.5 " +
+        "shadow-md hover:bg-primary/15 backdrop-blur supports-[backdrop-filter]:bg-primary/10 " +
         className
       }
       role="button"
       onClick={onClick}
       onPointerDown={onPointerDown}
     >
-      <span className="h-1.5 w-8 rounded-full bg-muted-foreground/60" />
-      <span className="text-xs text-foreground/80">{label}</span>
+      <span className="h-1.5 w-8 rounded-full bg-primary/50" />
+      <span className="text-xs text-primary">{label}</span>
     </div>
   );
 }
