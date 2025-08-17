@@ -98,7 +98,7 @@ export const useBookmarkStore = create<BookmarkState>()(
         meta: state.meta,
         hasMigratedLegacy: state.hasMigratedLegacy,
       }),
-      onRehydrateStorage: () => (state, error) => {
+      onRehydrateStorage: () => (state, _error) => {
         if (!state) return;
         // Re-wrap bookmarkedIds as Set after hydration
 

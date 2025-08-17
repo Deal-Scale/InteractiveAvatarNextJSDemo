@@ -209,6 +209,8 @@ export function useDockablePanel(
 
     // setters/actions
     setDock,
+    setFloatingPos,
+    setFloatingSize,
     setBottomSize,
     setRightSize,
     toggleExpand,

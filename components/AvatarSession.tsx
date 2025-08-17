@@ -1,4 +1,4 @@
-import { useRef } from "react";
+import { useEffect, useRef } from "react";
 
 import { ChatPanel } from "./AvatarSession/ChatPanel";
 import { useDockablePanel } from "./AvatarSession/hooks/useDockablePanel";
@@ -9,6 +9,7 @@ import { AvatarVideoPanel } from "./AvatarSession/AvatarVideoPanel";
 import { StreamingAvatarSessionState } from "./logic/context";
 
 import { useSessionStore } from "@/lib/stores/session";
+import { usePlacementStore } from "@/lib/stores/placement";
 import { cn } from "@/lib/utils";
 
 //
@@ -31,12 +32,12 @@ export function AvatarSession({
   const rootRef = useRef<HTMLDivElement | null>(null);
   // Dock/drag/resize logic encapsulated in a hook
   const {
-    dock,
     expanded,
     floatingPos,
     floatingSize,
     setDock,
-    setBottomSize,
+    setFloatingPos,
+    setFloatingSize,
     toggleExpand,
     startFloatingResize,
     handlePointerDown,
@@ -62,12 +63,50 @@ export function AvatarSession({
     enableMockChatUi,
   } = useChatController(sessionState);
 
+  // Persisted placement store: dock mode and sizes
+  const dockMode = usePlacementStore((s) => s.dockMode);
+  const setDockMode = usePlacementStore((s) => s.setDockMode);
+  const setBottomHeightFrac = usePlacementStore((s) => s.setBottomHeightFrac);
+  const storeWindowPosition = usePlacementStore((s) => s.windowPosition);
+  const storeWindowSize = usePlacementStore((s) => s.windowSize);
+  const setWindowPosition = usePlacementStore((s) => s.setWindowPosition);
+  const setWindowSize = usePlacementStore((s) => s.setWindowSize);
+
+  // Hydrate local floating position/size from store when entering floating mode
+  useEffect(() => {
+    if (dockMode !== "floating") return;
+    if (storeWindowPosition) setFloatingPos(storeWindowPosition);
+    if (storeWindowSize)
+      setFloatingSize({ w: storeWindowSize.width, h: storeWindowSize.height });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [dockMode]);
+
+  // Persist local floating position/size to store
+  useEffect(() => {
+    if (dockMode !== "floating") return;
+    setWindowPosition({ x: floatingPos.x, y: floatingPos.y });
+  }, [dockMode, floatingPos, setWindowPosition]);
+
+  useEffect(() => {
+    if (dockMode !== "floating") return;
+    const width = expanded ? 520 : floatingSize.w;
+    const height = expanded ? 520 : floatingSize.h;
+
+    setWindowSize({ width, height });
+  }, [dockMode, floatingSize, expanded, setWindowSize]);
+
   // Start mock chat and open UI in bottom expanded mode
   const startMockChat = useStartMockChat({
-    dock,
+    dock: dockMode,
     expanded,
-    setDock,
-    setBottomSize,
+    setDock: (m) => {
+      setDock(m);
+      setDockMode(m);
+    },
+    setBottomSize: (pct) => {
+      // pct is 0..100; store expects 0..1
+      setBottomHeightFrac(Math.max(0, Math.min(1, pct / 100)));
+    },
     toggleExpand,
     enableMockChatUi,
   });
@@ -76,7 +115,8 @@ export function AvatarSession({
   const startWithoutAvatar = () => {
     // Ensure docked at bottom and fully expanded
     setDock("bottom");
-    setBottomSize(100);
+    setDockMode("bottom");
+    setBottomHeightFrac(1);
     if (!expanded) toggleExpand();
   };
 
@@ -102,7 +142,10 @@ export function AvatarSession({
     onSendMessage: sendMessageVoid,
     onStartVoiceChat: startVoiceChatVoid,
     onStopVoiceChat: stopVoiceChatVoid,
-    onDock: setDock,
+    onDock: (m) => {
+      setDock(m);
+      setDockMode(m);
+    },
     onHeaderPointerDown: handlePointerDown,
     onToggleExpand: toggleExpand,
     onStartMockChat: startMockChat,
@@ -119,8 +162,8 @@ export function AvatarSession({
   );
 
   // Unified, stable render tree to avoid video remounts
-  const isRight = dock === "right";
-  const isFloating = dock === "floating";
+  const isRight = dockMode === "right";
+  const isFloating = dockMode === "floating";
 
   return (
     <div
@@ -144,7 +187,7 @@ export function AvatarSession({
 
       {/* Let RightTab/BottomTab render their own fixed drawers via ChatPanel */}
       {!isFloating && (
-        <ChatPanel dock={dock} expanded={expanded} {...chatPanelProps} />
+        <ChatPanel dock={dockMode} expanded={expanded} {...chatPanelProps} />
       )}
 
       {/* Floating chat overlay */}
@@ -159,7 +202,7 @@ export function AvatarSession({
             height: expanded ? 520 : floatingSize.h,
           }}
         >
-          <ChatPanel dock={dock} expanded={expanded} {...chatPanelProps} />
+          <ChatPanel dock={dockMode} expanded={expanded} {...chatPanelProps} />
           {/* Resize handle (bottom-right corner) - more noticeable */}
           <div
             className="absolute bottom-1 right-1 w-5 h-5 cursor-nwse-resize rounded-md border-2 border-border bg-muted-foreground/40 shadow-sm hover:bg-muted-foreground/60 hover:border-foreground/90"
