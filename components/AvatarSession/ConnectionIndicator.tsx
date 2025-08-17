@@ -11,27 +11,27 @@ const stateStyles: Record<
 > = {
   [StreamingAvatarSessionState.CONNECTING]: {
     label: "Connecting",
-    dot: "bg-yellow-400 animate-pulse",
-    bg: "bg-yellow-500/10",
-    text: "text-yellow-400",
+    dot: "bg-ring animate-pulse",
+    bg: "bg-secondary",
+    text: "text-foreground",
   },
   [StreamingAvatarSessionState.CONNECTED]: {
     label: "Connected",
-    dot: "bg-green-500",
-    bg: "bg-green-500/10",
-    text: "text-green-400",
+    dot: "bg-primary",
+    bg: "bg-primary/10",
+    text: "text-primary",
   },
   [StreamingAvatarSessionState.INACTIVE]: {
     label: "Inactive",
-    dot: "bg-gray-400",
-    bg: "bg-gray-500/10",
-    text: "text-gray-300",
+    dot: "bg-muted-foreground",
+    bg: "bg-muted",
+    text: "text-muted-foreground",
   },
   Unknown: {
     label: "Unknown",
-    dot: "bg-gray-400",
-    bg: "bg-gray-500/10",
-    text: "text-gray-300",
+    dot: "bg-muted-foreground",
+    bg: "bg-muted",
+    text: "text-muted-foreground",
   },
 };
 
@@ -40,7 +40,7 @@ export function ConnectionIndicator({ sessionState }: Props) {
 
   return (
     <div
-      className={`inline-flex items-center gap-2 rounded-full px-3 py-1 text-xs font-medium ${style.bg} ${style.text} border border-white/10`}
+      className={`inline-flex items-center gap-2 rounded-full px-3 py-1 text-xs font-medium ${style.bg} ${style.text} border border-border`}
       title={`Session: ${style.label}`}
     >
       <span className={`h-2.5 w-2.5 rounded-full ${style.dot}`} />

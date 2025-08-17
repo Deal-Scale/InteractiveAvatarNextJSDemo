@@ -93,13 +93,13 @@ export function AvatarVideoPanel({
   }, [knowledgeBaseId]);
 
   return (
-    <div className="relative w-full h-full bg-black overflow-hidden">
+    <div className="relative w-full h-full bg-background overflow-hidden">
       {viewTab === "video" ? (
         sessionState === StreamingAvatarSessionState.CONNECTED ? (
           <AvatarVideo ref={mediaStream} />
         ) : (
           <div className="absolute inset-0 flex items-center justify-center">
-            <Card className="relative w-[360px] overflow-hidden border-zinc-700 bg-zinc-900/80 backdrop-blur">
+            <Card className="relative w-[360px] overflow-hidden border-border bg-card/80 backdrop-blur">
               <CardHeader>
                 <CardTitle>Select an avatar to start session</CardTitle>
                 <CardDescription>
@@ -109,18 +109,18 @@ export function AvatarVideoPanel({
               <CardContent>
                 <div className="grid gap-4">
                   <div className="flex flex-col gap-2">
-                    <label className="text-sm text-zinc-300">Avatar</label>
+                    <label className="text-sm text-muted-foreground">Avatar</label>
                     <Select
                       value={selectedAvatar}
                       onValueChange={(v) => setSelectedAvatar(v)}
                     >
-                      <SelectTrigger className="bg-zinc-800/90 border-zinc-600 text-zinc-100 hover:bg-zinc-800 focus:ring-2 focus:ring-zinc-500/50">
+                      <SelectTrigger className="bg-popover/90 border-border text-popover-foreground hover:bg-popover focus:ring-2 focus:ring-ring/50">
                         <SelectValue placeholder="Select an avatar" />
                       </SelectTrigger>
                       <SelectContent
                         align="start"
                         avoidCollisions={false}
-                        className="z-50 bg-zinc-900/95 text-zinc-100 border border-zinc-700 shadow-xl backdrop-blur"
+                        className="z-50 bg-popover/95 text-popover-foreground border border-border shadow-xl backdrop-blur"
                         position="popper"
                         side="bottom"
                         sideOffset={4}
@@ -129,14 +129,14 @@ export function AvatarVideoPanel({
                           <SelectItem
                             key={opt.avatar_id}
                             value={opt.avatar_id}
-                            className="cursor-pointer text-zinc-100 focus:bg-zinc-800 data-[highlighted]:bg-zinc-800 data-[state=checked]:bg-zinc-800"
+                            className="cursor-pointer text-foreground focus:bg-accent data-[highlighted]:bg-accent data-[state=checked]:bg-accent"
                           >
                             {opt.name}
                           </SelectItem>
                         ))}
                         <SelectItem
                           value="CUSTOM"
-                          className="cursor-pointer text-zinc-100 focus:bg-zinc-800 data-[highlighted]:bg-zinc-800"
+                          className="cursor-pointer text-foreground focus:bg-accent data-[highlighted]:bg-accent"
                         >
                           Custom Avatar ID
                         </SelectItem>
@@ -151,11 +151,11 @@ export function AvatarVideoPanel({
                         />
                         {customAvatarId ? (
                           customIdValid ? (
-                            <div className="text-green-400 text-xs mt-1">
+                            <div className="text-primary text-xs mt-1">
                               Agent ID found
                             </div>
                           ) : (
-                            <div className="text-red-400 text-xs mt-1">
+                            <div className="text-destructive text-xs mt-1">
                               Agent ID not found in available avatars
                             </div>
                           )
@@ -164,7 +164,7 @@ export function AvatarVideoPanel({
                     )}
                     {/* Knowledge Base ID (optional) */}
                     <div className="mt-3 flex flex-col gap-2">
-                      <label className="text-sm text-zinc-300">Knowledge Base ID (optional)</label>
+                      <label className="text-sm text-muted-foreground">Knowledge Base ID (optional)</label>
                       <Input
                         placeholder="Enter knowledge base ID (if any)"
                         value={knowledgeBaseId}
@@ -172,9 +172,9 @@ export function AvatarVideoPanel({
                       />
                       {knowledgeBaseId ? (
                         kbIdValid ? (
-                          <div className="text-green-400 text-xs">Knowledge Base ID format looks good</div>
+                          <div className="text-primary text-xs">Knowledge Base ID format looks good</div>
                         ) : (
-                          <div className="text-red-400 text-xs">Invalid Knowledge Base ID format</div>
+                          <div className="text-destructive text-xs">Invalid Knowledge Base ID format</div>
                         )
                       ) : null}
                     </div>
@@ -183,7 +183,7 @@ export function AvatarVideoPanel({
               </CardContent>
               <CardFooter className="flex justify-between gap-2">
                 <Button
-                  className="border-zinc-600 bg-zinc-900/70 text-zinc-100 hover:bg-zinc-800"
+                  className="border-border bg-background/70 text-foreground hover:bg-muted"
                   onClick={onStartWithoutAvatar}
                   size="sm"
                   variant="outline"
@@ -203,7 +203,7 @@ export function AvatarVideoPanel({
                             <TooltipTrigger asChild>
                               <span tabIndex={0} className="inline-flex">
                                 <Button
-                                  className="bg-zinc-800 text-zinc-100"
+                                  className="bg-secondary text-secondary-foreground"
                                   disabled
                                   onClick={() =>
                                     onStartSession?.(
@@ -226,7 +226,7 @@ export function AvatarVideoPanel({
                     }
                     return (
                       <Button
-                        className="bg-zinc-800 text-zinc-100"
+                        className="bg-secondary text-secondary-foreground"
                         onClick={() =>
                           onStartSession?.(
                             selectedAvatar === "CUSTOM" ? customAvatarId : selectedAvatar,
@@ -263,27 +263,27 @@ export function AvatarVideoPanel({
           </div>
         )
       ) : (
-        <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-b from-zinc-900 to-black">
-          <div className="text-center text-zinc-200">
+        <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-b from-muted to-background">
+          <div className="text-center text-foreground">
             <div className="mb-3 flex items-center justify-center">
               {viewTab === "brain" && (
-                <Brain className="h-8 w-8 text-indigo-400" />
+                <Brain className="h-8 w-8 text-primary" />
               )}
               {viewTab === "data" && (
-                <Database className="h-8 w-8 text-sky-400" />
+                <Database className="h-8 w-8 text-accent-foreground" />
               )}
               {viewTab === "actions" && (
-                <LayoutDashboard className="h-8 w-8 text-emerald-400" />
+                <LayoutDashboard className="h-8 w-8 text-secondary-foreground" />
               )}
             </div>
             <div className="text-lg font-medium capitalize">{viewTab}</div>
-            <div className="text-sm text-zinc-400">Alternate view panel</div>
+            <div className="text-sm text-muted-foreground">Alternate view panel</div>
           </div>
         </div>
       )}
 
       {userVideoStream && (
-        <div className="absolute bottom-4 right-4 w-48 h-36 rounded-lg overflow-hidden border-2 border-gray-700">
+        <div className="absolute bottom-4 right-4 w-48 h-36 rounded-lg overflow-hidden border-2 border-border">
           <UserVideo userVideoStream={userVideoStream} />
         </div>
       )}
