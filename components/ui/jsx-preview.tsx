@@ -66,9 +66,11 @@ function completeJsxTag(code: string) {
 export type JSXPreviewProps = {
   jsx: string;
   isStreaming?: boolean;
-} & JsxParserProps;
+  // Allow loose component typing to avoid React type incompatibilities across module boundaries
+  components?: Record<string, React.ComponentType<any>>;
+} & Omit<JsxParserProps, "components" | "jsx">;
 
-function JSXPreview({ jsx, isStreaming = false, ...props }: JSXPreviewProps) {
+function JSXPreview({ jsx, isStreaming = false, components, ...props }: JSXPreviewProps) {
   const processedJsx = React.useMemo(
     () => (isStreaming ? completeJsxTag(jsx) : jsx),
     [jsx, isStreaming],
@@ -77,7 +79,13 @@ function JSXPreview({ jsx, isStreaming = false, ...props }: JSXPreviewProps) {
   // Cast JsxParser to any to work around the type incompatibility
   const Parser = JsxParser as unknown as React.ComponentType<JsxParserProps>;
 
-  return <Parser jsx={processedJsx} {...props} />;
+  const forwarded: Partial<JsxParserProps> = {
+    ...(props as unknown as Partial<JsxParserProps>),
+    components: components as any,
+    jsx: processedJsx,
+  };
+
+  return <Parser {...(forwarded as JsxParserProps)} />;
 }
 
 export { JSXPreview };
