@@ -30,7 +30,7 @@ function ChatContainerRoot({
       className={cn(
         // Make root act as the scroll container and fill available space
         "relative flex w-full min-h-0 flex-col overflow-y-auto overflow-x-auto",
-        className
+        className,
       )}
       initial="instant"
       resize="smooth"
@@ -63,8 +63,8 @@ function ChatContainerScrollAnchor({ // eslint-disable-line
 }: ChatContainerScrollAnchorProps) {
   return (
     <div
-      className={cn("h-px w-full shrink-0 scroll-mt-4", className)}
       aria-hidden="true"
+      className={cn("h-px w-full shrink-0 scroll-mt-4", className)}
       {...props}
     />
   );

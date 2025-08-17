@@ -22,7 +22,9 @@ export function triggerAnimation(opts: MCPAnimationTrigger): void {
 
 export function stopAnimation(name?: string, target?: string): void {
   if (!hasWindow()) return;
-  window.dispatchEvent(new CustomEvent(ANIM_STOP_EVENT, { detail: { name, target } }));
+  window.dispatchEvent(
+    new CustomEvent(ANIM_STOP_EVENT, { detail: { name, target } }),
+  );
 }
 
 // Optional global

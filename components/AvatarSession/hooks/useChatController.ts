@@ -4,6 +4,7 @@ import { nanoid } from "nanoid";
 
 import { mockOpenRouter } from "../utils/mock";
 import { StreamingAvatarSessionState } from "../../logic/context";
+
 import { useMcpCommands } from "./useMcpCommands";
 
 import { useApiService } from "@/components/logic/ApiServiceContext";
@@ -51,6 +52,7 @@ export function useChatController(sessionState: StreamingAvatarSessionState) {
     try {
       if (mockChatEnabled) {
         const reply = await mockOpenRouter(text);
+
         addAvatarMessage(reply);
       } else if (apiService) {
         if (text.trim().toLowerCase().startsWith("/mcp")) {
@@ -75,6 +77,7 @@ export function useChatController(sessionState: StreamingAvatarSessionState) {
       if (mockChatEnabled) {
         setMockVoiceActive(true);
         addAvatarMessage("(mock) Voice chat started via VAPI.");
+
         return;
       }
 
@@ -83,6 +86,7 @@ export function useChatController(sessionState: StreamingAvatarSessionState) {
         video: true,
         audio: false,
       });
+
       setUserVideoStream(videoOnly);
 
       // Start voice chat without injecting our own MediaStream.
@@ -97,6 +101,7 @@ export function useChatController(sessionState: StreamingAvatarSessionState) {
     if (mockChatEnabled) {
       setMockVoiceActive(false);
       addAvatarMessage("(mock) Voice chat stopped.");
+
       return;
     }
     stopVoiceChat();
@@ -117,11 +122,13 @@ export function useChatController(sessionState: StreamingAvatarSessionState) {
 
   const handleArrowUp = useMemoizedFn(() => {
     const prev = navigateHistory("up");
+
     if (prev) setChatInput(prev);
   });
 
   const handleArrowDown = useMemoizedFn(() => {
     const next = navigateHistory("down");
+
     if (next) setChatInput(next);
   });
 

@@ -1,91 +1,72 @@
 ## Persistent UI State Management for Chat and Sidebar
 
-To deliver a seamless, user-centric chat experience, implement a state management system that persistently remembers UI customizations across reloads and devices. This ensures users always return to their preferred layout, even when switching devices or logging in/out.
+This project ships with a per-user persistent placement store at `lib/stores/placement.ts` that remembers docking, sizes, floating window geometry, sidebar state, and active tab. It is powered by Zustand with `persist` and a user-scoped storage key.
 
-### State Requirements
+### Implemented State Shape
 
-- **Zustand Store Design**  
-  Create a single Zustand store (e.g., `usePlacementStore`) to manage the following UI states:
-  - **Chat Container Positioning**
-    - `bottomOffset`: Number – the pixel distance from the bottom of the chat container to the window (accounts for docked/undocked state and sidebar positioning).
-    - `isWindowed`: Boolean – whether the chat is in a floating window mode.
-    - `windowPosition`: `{ x: number, y: number }` – coordinates of the chat window when undocked.
-    - `windowSize`: `{ width: number, height: number }` – dimensions of the windowed chat container.
-  - **Sidebar State**
-    - `sidebarExpanded`: Boolean – whether the sidebar is expanded or collapsed.
-  - **Active Video Tab**
-    - `activeTab`: String – currently selected tab in the video container (e.g., "data", "tasks", etc.).
-  - **User-Specific UI Settings**
-    - Store all UI-related preferences in a structure keyed by user ID to enable per-user persistence (using a "user storage" pattern).
+- **Docking and Sizes**
+  - `dockMode`: `"bottom" | "right" | "floating"`
+  - `bottomHeightFrac`: number (0..1) — bottom drawer height as viewport fraction
+  - `rightWidthFrac`: number (0..1) — right drawer width as viewport fraction
+  - `setDockMode(frac)`, `setBottomHeightFrac(frac)`, `setRightWidthFrac(frac)`
 
-- **Persistence Logic**
-  - Use Zustand's `persist` middleware with a custom storage key that includes the user ID (e.g., `placement-state-{userId}`).
-  - Persist all relevant properties to `localStorage` (or another cache) on every change.
-  - On app load, hydrate the Zustand store from storage, restoring the last known state for the current user.
-  - Listen for user login/logout events to update the storage key (and migrate/clear state as needed).
+- **Floating Window Geometry**
+  - `floating`: `{ x, y, width, height, visible }`
+  - `setFloating(partial)`
+  - Aliases for convenience:
+    - `isWindowed` ↔ `dockMode === "floating"`, `setIsWindowed(v)`
+    - `windowPosition` `{ x, y }`, `setWindowPosition(pos)`
+    - `windowSize` `{ width, height }`, `setWindowSize(size)`
 
-- **Integration Guidelines**
-  - Review existing stores (`useSessionStore`, etc.) to ensure no duplication; extend or compose with current stores as appropriate.
-  - Only the minimal, UI-relevant state should be persisted; do not store sensitive or transient data.
-  - UI components (e.g., chat container, sidebar, video tab) should read/write their state via this store for consistent synchronization.
+- **Sidebar**
+  - `sidebarCollapsed: boolean`, `setSidebarCollapsed(v)`
+  - Alias: `sidebarExpanded` (derived), `setSidebarExpanded(v)`
 
-### Example Zustand Store (TypeScript)
+- **Active Tab**
+  - `activeVideoTab: "video" | "brain" | "data" | "actions"`, `setActiveVideoTab(tab)`
+  - Alias: `activeTab: string`, `setActiveTab(tab)`
+
+- **Other**
+  - `bottomOffset?: number`, `setBottomOffset(px)` — optional pixel offset used by some UI placements
+  - `update(patch)`, `reset()`
+  - `schemaVersion`, `updatedAt`
+
+### Per-User Persistence
+
+- The store persists using a user-scoped key: `placement-store-{userId}`.
+- Call `usePlacementStore.getState().setUserId(userId)` after login to switch the storage namespace. The store will:
+  - Load that user’s last saved state if available, or
+  - Reset to defaults while keeping `userId` if no state exists.
+- Data is stored in `localStorage` via a small wrapper so each user has separate state.
+
+### Usage Examples
 
 ```ts
-import { create } from "zustand";
-import { persist } from "zustand/middleware";
+import { usePlacementStore } from "@/lib/stores/placement";
 
-type PlacementState = {
-  bottomOffset: number;
-  isWindowed: boolean;
-  windowPosition: { x: number; y: number };
-  windowSize: { width: number; height: number };
-  sidebarExpanded: boolean;
-  activeTab: string;
-  setBottomOffset: (n: number) => void;
-  setIsWindowed: (v: boolean) => void;
-  setWindowPosition: (pos: { x: number; y: number }) => void;
-  setWindowSize: (size: { width: number; height: number }) => void;
-  setSidebarExpanded: (v: boolean) => void;
-  setActiveTab: (tab: string) => void;
-};
+// Set user after login
+usePlacementStore.getState().setUserId(session.user?.id);
 
-const getUserKey = () => {
-  // Replace with your user identity selector
-  const userId = typeof window !== "undefined" ? localStorage.getItem("userId") : "anon";
-  return `placement-state-${userId}`;
-};
+// Read values in a component
+const dockMode = usePlacementStore((s) => s.dockMode);
+const bottomH = usePlacementStore((s) => s.bottomHeightFrac);
+const isWindowed = usePlacementStore((s) => s.isWindowed);
+const sidebarExpanded = usePlacementStore((s) => s.sidebarExpanded);
+const activeTab = usePlacementStore((s) => s.activeTab);
 
-export const usePlacementStore = create<PlacementState>()(
-  persist(
-    (set) => ({
-      bottomOffset: 0,
-      isWindowed: false,
-      windowPosition: { x: 100, y: 100 },
-      windowSize: { width: 400, height: 600 },
-      sidebarExpanded: true,
-      activeTab: "data",
-      setBottomOffset: (n) => set({ bottomOffset: n }),
-      setIsWindowed: (v) => set({ isWindowed: v }),
-      setWindowPosition: (pos) => set({ windowPosition: pos }),
-      setWindowSize: (size) => set({ windowSize: size }),
-      setSidebarExpanded: (v) => set({ sidebarExpanded: v }),
-      setActiveTab: (tab) => set({ activeTab: tab }),
-    }),
-    {
-      name: getUserKey(),
-      // Optionally, customize storage, versioning, or migrate logic here
-    }
-  )
-);
+// Update values
+const setBottom = usePlacementStore((s) => s.setBottomHeightFrac);
+const setRight = usePlacementStore((s) => s.setRightWidthFrac);
+const setDock = usePlacementStore((s) => s.setDockMode);
+const setActiveTab = usePlacementStore((s) => s.setActiveTab);
 ```
 
 ### Integration Notes
 
-- In your chat, sidebar, and video container components, use selectors from `usePlacementStore` to read and update persistent state.
-- Whenever the user logs in/out, rehydrate/migrate state keyed by the new user ID.
-- Avoid duplicating state in multiple stores; unify through `usePlacementStore` (or extend as needed).
-- For global UI settings, compose additional stores if necessary, but keep per-user persistence in mind.
+- Use selectors to avoid re-renders; prefer `(s) => s.field`.
+- Persist only UI state. Do not store sensitive data.
+- When the auth user changes, call `setUserId(newId)` to switch to that user’s saved layout.
+- The bottom and right dock components (`components/ui/bottom-tab.tsx`, `components/ui/right-tab.tsx`) already read/write fractions in this store.
 
 ### Gherkin Acceptance Criteria
 
@@ -122,4 +103,4 @@ Feature: Persistent Chat and Sidebar UI State
 - Document all customizations and state shape in the codebase.
 - Continuously test state restoration across reloads, logins, and device changes.
 
-See [`components/ui/bottom-tab.tsx`](../components/ui/bottom-tab.tsx) and [`components/ui/sidebar.tsx`](../components/ui/sidebar.tsx) for example usage and integration with the Zustand store.
+See `components/ui/bottom-tab.tsx`, `components/ui/right-tab.tsx`, and `lib/stores/placement.ts` for example usage and integration with the Zustand store.

@@ -2,6 +2,7 @@
 
 import React, { useMemo } from "react";
 import { Maximize2Icon, Minimize2Icon } from "lucide-react";
+
 import { usePlacementStore } from "@/lib/stores/placement";
 
 // A persistent bottom tab for reopening/resizing the bottom drawer.
@@ -51,6 +52,7 @@ export function BottomTab({
       const vh = window.innerHeight || 1;
       const dy = startY - ev.clientY; // dragging up increases height
       const newFrac = Math.max(0, Math.min(0.95, startFrac + dy / vh));
+
       movingFrac = newFrac;
       setHeightFrac(newFrac);
     };
@@ -63,6 +65,7 @@ export function BottomTab({
         const vh = window.innerHeight || 1;
         const px = Math.round(movingFrac * vh);
         const thresholdPx = Math.max(56, Math.round(0.06 * vh));
+
         if (px <= thresholdPx) {
           setHeightFrac(0);
         }
@@ -88,9 +91,7 @@ export function BottomTab({
   if (!isClosed) {
     return (
       <div
-        role="region"
         aria-label="Chat drawer"
-        style={{ height: heightPx }}
         className={
           // When sidebar is open, start at 320px to avoid covering it
           (sidebarCollapsed
@@ -100,13 +101,15 @@ export function BottomTab({
           "flex min-h-[48px] flex-col overflow-hidden " +
           className
         }
+        role="region"
+        style={{ height: heightPx }}
       >
         <div className="relative flex h-9 w-full items-center justify-center border-b border-border/60">
           {/* Resize handle area (full bar) */}
           <div
-            role="separator"
             aria-label="Resize chat"
             className="absolute inset-y-0 left-0 right-40 cursor-ns-resize"
+            role="separator"
             onPointerDown={onPointerDown}
           />
           {/* Grip */}
@@ -114,23 +117,23 @@ export function BottomTab({
           {/* Actions on the right */}
           <div className="absolute right-2 top-1/2 -translate-y-1/2 z-10 flex items-center gap-1">
             <button
-              type="button"
               aria-label="Maximize chat height"
               className="inline-flex h-8 w-8 items-center justify-center rounded-md border border-border bg-background/80 text-foreground/75 shadow-sm hover:bg-muted/60"
-              onClick={() => setHeightFrac(1)}
               title="Maximize"
+              type="button"
+              onClick={() => setHeightFrac(1)}
             >
               <Maximize2Icon className="h-4 w-4" />
             </button>
             <button
-              type="button"
               aria-label="Minimize chat"
               className="inline-flex h-8 w-8 items-center justify-center rounded-md border border-border bg-background/80 text-foreground/75 shadow-sm hover:bg-muted/60"
+              title="Minimize"
+              type="button"
               onClick={() => {
                 if (dockMode === "bottom") setHeightFrac(0);
                 else if (dockMode === "right") setRightWidthFrac(0);
               }}
-              title="Minimize"
             >
               <Minimize2Icon className="h-4 w-4" />
             </button>
@@ -145,7 +148,6 @@ export function BottomTab({
   // Collapsed tab
   return (
     <div
-      role="button"
       aria-label="Open chat drawer"
       className={
         (sidebarCollapsed
@@ -155,8 +157,9 @@ export function BottomTab({
         "shadow-md backdrop-blur supports-[backdrop-filter]:bg-background/70 " +
         className
       }
-      onPointerDown={onPointerDown}
+      role="button"
       onClick={onClick}
+      onPointerDown={onPointerDown}
     >
       <span className="h-1.5 w-8 rounded-full bg-muted-foreground/60" />
       <span className="text-xs text-foreground/80">{label}</span>

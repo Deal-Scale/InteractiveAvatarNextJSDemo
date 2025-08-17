@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+
 import { useBookmarkStore } from "@/lib/stores/bookmarks";
 
 export default function useBookmarkModal() {
@@ -24,6 +25,7 @@ export default function useBookmarkModal() {
   const openBookmarkModal = (id: string) => {
     setBookmarkTargetId(id);
     const existing = bookmarkMeta[id];
+
     setDraftFolderId(existing?.folderId ?? "");
     setDraftNewFolder("");
     setDraftTags((existing?.tags ?? []).join(", "));
@@ -35,6 +37,7 @@ export default function useBookmarkModal() {
   const saveBookmark = () => {
     if (!bookmarkTargetId) return;
     let folderId = draftFolderId;
+
     if (!folderId && draftNewFolder.trim()) {
       folderId = upsertFolder(draftNewFolder);
     }
@@ -42,6 +45,7 @@ export default function useBookmarkModal() {
       .split(/[\,\n]/)
       .map((t) => t.trim())
       .filter(Boolean);
+
     addBm(bookmarkTargetId!);
     setBmMeta(bookmarkTargetId!, { folderId: folderId || undefined, tags });
     setBookmarkModalOpen(false);

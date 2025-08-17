@@ -8,7 +8,10 @@ export const PublicAgentSchema = z.object({
     .string()
     .url("Avatar image must be a valid URL")
     .describe("Public avatar image URL"),
-  isPublic: z.boolean().default(false).describe("Whether the agent is publicly listed"),
+  isPublic: z
+    .boolean()
+    .default(false)
+    .describe("Whether the agent is publicly listed"),
   monetize: z
     .boolean()
     .default(false)

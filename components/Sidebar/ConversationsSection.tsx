@@ -1,8 +1,18 @@
 "use client";
 
+import type {
+  Conversation,
+  ConversationGroup,
+} from "@/components/Sidebar/types";
+
 import { ChevronRight, Bookmark, BookmarkCheck } from "lucide-react";
-import { SidebarGroup, SidebarGroupLabel, SidebarMenu, SidebarMenuButton } from "@/components/ui/sidebar";
-import type { Conversation, ConversationGroup } from "@/components/Sidebar/types";
+
+import {
+  SidebarGroup,
+  SidebarGroupLabel,
+  SidebarMenu,
+  SidebarMenuButton,
+} from "@/components/ui/sidebar";
 
 export default function ConversationsSection(props: {
   groups: ConversationGroup[];
@@ -34,13 +44,15 @@ export default function ConversationsSection(props: {
       {groups.map((group) => (
         <SidebarGroup key={group.period}>
           <button
-            type="button"
             className="flex w-full items-center justify-between px-2 py-1 text-left rounded-md hover:bg-muted"
+            type="button"
             onClick={() =>
               setCollapsedGroups((prev) => {
                 const next = new Set(prev);
+
                 if (next.has(group.period)) next.delete(group.period);
                 else next.add(group.period);
+
                 return next;
               })
             }
@@ -57,28 +69,39 @@ export default function ConversationsSection(props: {
                 .map((conversation) => {
                   const isBookmarked = bookmarkedIds.has(conversation.id);
                   const isSelected = selectedIds.has(conversation.id);
+
                   return (
                     <SidebarMenuButton
                       key={conversation.id}
+                      className=""
                       onClick={() => {
                         if (selectionMode) toggleSelect(conversation.id);
                         else onSelect?.(conversation);
                       }}
-                      className=""
                     >
                       <div className="flex w-full items-center gap-2">
                         {selectionMode && (
                           <input
-                            type="checkbox"
+                            aria-label={
+                              isSelected
+                                ? "Deselect conversation"
+                                : "Select conversation"
+                            }
                             checked={isSelected}
+                            className="size-4 accent-primary"
+                            type="checkbox"
                             onChange={() => toggleSelect(conversation.id)}
                             onClick={(e) => e.stopPropagation()}
-                            className="size-4 accent-primary"
-                            aria-label={isSelected ? "Deselect conversation" : "Select conversation"}
                           />
                         )}
-                        <div className="min-w-0 flex-1 truncate pr-2">{conversation.title}</div>
+                        <div className="min-w-0 flex-1 truncate pr-2">
+                          {conversation.title}
+                        </div>
                         <span
+                          aria-label={
+                            isBookmarked ? "Edit bookmark" : "Add bookmark"
+                          }
+                          className="inline-flex cursor-pointer items-center justify-center rounded p-1 text-muted-foreground hover:bg-muted focus:outline-none focus:ring-2 focus:ring-primary/40"
                           role="button"
                           tabIndex={0}
                           onClick={(e) => {
@@ -92,8 +115,6 @@ export default function ConversationsSection(props: {
                               openBookmarkModal(conversation.id);
                             }
                           }}
-                          aria-label={isBookmarked ? "Edit bookmark" : "Add bookmark"}
-                          className="inline-flex cursor-pointer items-center justify-center rounded p-1 text-muted-foreground hover:bg-muted focus:outline-none focus:ring-2 focus:ring-primary/40"
                         >
                           {isBookmarked ? (
                             <BookmarkCheck className="size-4 text-primary" />

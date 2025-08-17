@@ -69,27 +69,27 @@ export function ChatPanel({
   if (dock === "bottom") {
     return (
       <BottomTab
-        label="Chat"
         actions={
           <>
             <Button
-              onClick={() => onDock("right")}
               size="icon"
               title="Dock right"
               variant="ghost"
+              onClick={() => onDock("right")}
             >
               <PanelRightOpenIcon className="h-4 w-4" />
             </Button>
             <Button
-              onClick={() => onDock("floating")}
               size="icon"
               title="Float"
               variant="ghost"
+              onClick={() => onDock("floating")}
             >
               <MoveIcon className="h-4 w-4" />
             </Button>
           </>
         }
+        label="Chat"
       >
         <div className={cn("flex h-full w-full flex-col", "min-h-0")}>
           {canChat ? (
@@ -131,27 +131,27 @@ export function ChatPanel({
   if (dock === "right") {
     return (
       <RightTab
-        label="Chat"
         actions={
           <>
             <Button
-              onClick={() => onDock("bottom")}
               size="icon"
               title="Dock bottom"
               variant="ghost"
+              onClick={() => onDock("bottom")}
             >
               <PanelBottomOpenIcon className="h-4 w-4" />
             </Button>
             <Button
-              onClick={() => onDock("floating")}
               size="icon"
               title="Float"
               variant="ghost"
+              onClick={() => onDock("floating")}
             >
               <MoveIcon className="h-4 w-4" />
             </Button>
           </>
         }
+        label="Chat"
       >
         <div className={cn("flex h-full w-full flex-col", "min-h-0")}>
           {canChat ? (
@@ -259,7 +259,7 @@ export function ChatPanel({
         ) : (
           <div className="flex flex-1 items-center justify-center h-full">
             <div className="flex flex-col items-center gap-3 text-foreground">
-              <Loader variant="classic" size="lg" />
+              <Loader size="lg" variant="classic" />
               <p className="text-sm text-muted-foreground">
                 {sessionState === StreamingAvatarSessionState.CONNECTING
                   ? "Connecting to avatar session..."

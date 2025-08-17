@@ -6,6 +6,7 @@ export const SensitiveInput: React.FC<{
   register: UseFormRegister<any>;
 }> = ({ name, register }) => {
   const [show, setShow] = React.useState(false);
+
   return (
     <div className="relative">
       <input

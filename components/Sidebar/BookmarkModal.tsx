@@ -70,7 +70,9 @@ export default function BookmarkModal(props: {
 
         <div className="space-y-3">
           <div>
-            <label className="mb-1 block text-xs text-muted-foreground">Folder</label>
+            <label className="mb-1 block text-xs text-muted-foreground">
+              Folder
+            </label>
             <Select value={draftFolderId} onValueChange={setDraftFolderId}>
               <SelectTrigger>
                 <SelectValue placeholder="No folder" />
@@ -86,19 +88,23 @@ export default function BookmarkModal(props: {
             </Select>
           </div>
           <div>
-            <label className="mb-1 block text-xs text-muted-foreground">Or create new folder</label>
+            <label className="mb-1 block text-xs text-muted-foreground">
+              Or create new folder
+            </label>
             <Input
-              type="text"
               placeholder="New folder name"
+              type="text"
               value={draftNewFolder}
               onChange={(e) => setDraftNewFolder(e.target.value)}
             />
           </div>
           <div>
-            <label className="mb-1 block text-xs text-muted-foreground">Tags (comma separated)</label>
+            <label className="mb-1 block text-xs text-muted-foreground">
+              Tags (comma separated)
+            </label>
             <Textarea
-              rows={2}
               placeholder="e.g. roadmap, Q3, priority"
+              rows={2}
               value={draftTags}
               onChange={(e) => setDraftTags(e.target.value)}
             />
@@ -108,19 +114,20 @@ export default function BookmarkModal(props: {
           <div className="text-xs text-muted-foreground">
             {draftFolderId
               ? `Folder: ${
-                  bookmarkFolders.find((f) => f.id === draftFolderId)?.name || "(new)"
+                  bookmarkFolders.find((f) => f.id === draftFolderId)?.name ||
+                  "(new)"
                 }`
               : draftNewFolder
-              ? `Folder: ${draftNewFolder}`
-              : "No folder"}
+                ? `Folder: ${draftNewFolder}`
+                : "No folder"}
           </div>
           <div className="flex items-center gap-2">
             {bookmarkedIds.has(bookmarkTargetId || "") && onRemove && (
-              <Button variant="outline" size="sm" onClick={onRemove}>
+              <Button size="sm" variant="outline" onClick={onRemove}>
                 Remove
               </Button>
             )}
-            <Button variant="outline" size="sm" onClick={onClose}>
+            <Button size="sm" variant="outline" onClick={onClose}>
               Cancel
             </Button>
             <Button size="sm" onClick={onSave}>
@@ -132,4 +139,3 @@ export default function BookmarkModal(props: {
     </Dialog>
   );
 }
-

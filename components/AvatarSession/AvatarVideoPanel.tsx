@@ -2,10 +2,10 @@ import { Brain, Database, LayoutDashboard } from "lucide-react";
 import React, { useEffect, useMemo, useState } from "react";
 
 import { StreamingAvatarSessionState } from "../logic/context";
+
 import { AvatarVideo } from "./AvatarVideo";
 import { UserVideo } from "./UserVideo";
 import { AvatarControls } from "./AvatarControls";
-
 
 import { useSessionStore } from "@/lib/stores/session";
 import { Button } from "@/components/ui/button";
@@ -51,7 +51,9 @@ export function AvatarVideoPanel({
   const { viewTab } = useSessionStore();
   const [selectedAvatar, setSelectedAvatar] = useState<string>("");
   const [customAvatarId, setCustomAvatarId] = useState<string>("");
-  const [avatarOptions, setAvatarOptions] = useState<Array<{ avatar_id: string; name: string }>>([]);
+  const [avatarOptions, setAvatarOptions] = useState<
+    Array<{ avatar_id: string; name: string }>
+  >([]);
   const [knowledgeBaseId, setKnowledgeBaseId] = useState<string>("");
 
   useEffect(() => {
@@ -59,19 +61,24 @@ export function AvatarVideoPanel({
     const fetchAvatars = async () => {
       try {
         const res = await fetch("/api/avatars", { cache: "no-store" });
+
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         const json = await res.json();
         const list = Array.isArray(json?.data) ? json.data : [];
         const mapped = list.map((a: any) => ({
           avatar_id: a.avatar_id,
-          name: a.pose_name || a.normal_preview || a.default_voice || a.avatar_id,
+          name:
+            a.pose_name || a.normal_preview || a.default_voice || a.avatar_id,
         }));
+
         if (!cancelled && mapped.length) setAvatarOptions(mapped);
       } catch {
         // leave empty -> dropdown will have only Custom option
       }
     };
+
     fetchAvatars();
+
     return () => {
       cancelled = true;
     };
@@ -80,6 +87,7 @@ export function AvatarVideoPanel({
   const customIdValid = useMemo(() => {
     if (selectedAvatar !== "CUSTOM") return true;
     if (!customAvatarId) return false;
+
     return avatarOptions.some((a) => a.avatar_id === customAvatarId);
   }, [selectedAvatar, customAvatarId, avatarOptions]);
 
@@ -89,6 +97,7 @@ export function AvatarVideoPanel({
     if (!knowledgeBaseId) return true; // optional
     const uuidLike = /^[0-9a-fA-F-]{10,}$/;
     const generic = /^[A-Za-z0-9_-]{10,}$/;
+
     return uuidLike.test(knowledgeBaseId) || generic.test(knowledgeBaseId);
   }, [knowledgeBaseId]);
 
@@ -109,7 +118,9 @@ export function AvatarVideoPanel({
               <CardContent>
                 <div className="grid gap-4">
                   <div className="flex flex-col gap-2">
-                    <label className="text-sm text-muted-foreground">Avatar</label>
+                    <label className="text-sm text-muted-foreground">
+                      Avatar
+                    </label>
                     <Select
                       value={selectedAvatar}
                       onValueChange={(v) => setSelectedAvatar(v)}
@@ -128,15 +139,15 @@ export function AvatarVideoPanel({
                         {avatarOptions.map((opt) => (
                           <SelectItem
                             key={opt.avatar_id}
-                            value={opt.avatar_id}
                             className="cursor-pointer text-foreground focus:bg-accent data-[highlighted]:bg-accent data-[state=checked]:bg-accent"
+                            value={opt.avatar_id}
                           >
                             {opt.name}
                           </SelectItem>
                         ))}
                         <SelectItem
-                          value="CUSTOM"
                           className="cursor-pointer text-foreground focus:bg-accent data-[highlighted]:bg-accent"
+                          value="CUSTOM"
                         >
                           Custom Avatar ID
                         </SelectItem>
@@ -164,7 +175,9 @@ export function AvatarVideoPanel({
                     )}
                     {/* Knowledge Base ID (optional) */}
                     <div className="mt-3 flex flex-col gap-2">
-                      <label className="text-sm text-muted-foreground">Knowledge Base ID (optional)</label>
+                      <label className="text-sm text-muted-foreground">
+                        Knowledge Base ID (optional)
+                      </label>
                       <Input
                         placeholder="Enter knowledge base ID (if any)"
                         value={knowledgeBaseId}
@@ -172,9 +185,13 @@ export function AvatarVideoPanel({
                       />
                       {knowledgeBaseId ? (
                         kbIdValid ? (
-                          <div className="text-primary text-xs">Knowledge Base ID format looks good</div>
+                          <div className="text-primary text-xs">
+                            Knowledge Base ID format looks good
+                          </div>
                         ) : (
-                          <div className="text-destructive text-xs">Invalid Knowledge Base ID format</div>
+                          <div className="text-destructive text-xs">
+                            Invalid Knowledge Base ID format
+                          </div>
                         )
                       ) : null}
                     </div>
@@ -184,9 +201,9 @@ export function AvatarVideoPanel({
               <CardFooter className="flex justify-between gap-2">
                 <Button
                   className="border-border bg-background/70 text-foreground hover:bg-muted"
-                  onClick={onStartWithoutAvatar}
                   size="sm"
                   variant="outline"
+                  onClick={onStartWithoutAvatar}
                 >
                   Start without avatar
                 </Button>
@@ -194,24 +211,28 @@ export function AvatarVideoPanel({
                   {(() => {
                     const isDisabled =
                       !selectedAvatar ||
-                      (selectedAvatar === "CUSTOM" && (!customAvatarId || !customIdValid)) ||
+                      (selectedAvatar === "CUSTOM" &&
+                        (!customAvatarId || !customIdValid)) ||
                       (!!knowledgeBaseId && !kbIdValid);
+
                     if (isDisabled) {
                       return (
                         <TooltipProvider>
                           <Tooltip>
                             <TooltipTrigger asChild>
-                              <span tabIndex={0} className="inline-flex">
+                              <span className="inline-flex" tabIndex={0}>
                                 <Button
-                                  className="bg-secondary text-secondary-foreground"
                                   disabled
-                                  onClick={() =>
-                                    onStartSession?.(
-                                      selectedAvatar === "CUSTOM" ? customAvatarId : selectedAvatar,
-                                    )
-                                  }
+                                  className="bg-secondary text-secondary-foreground"
                                   size="sm"
                                   variant="secondary"
+                                  onClick={() =>
+                                    onStartSession?.(
+                                      selectedAvatar === "CUSTOM"
+                                        ? customAvatarId
+                                        : selectedAvatar,
+                                    )
+                                  }
                                 >
                                   Start Session
                                 </Button>
@@ -224,16 +245,19 @@ export function AvatarVideoPanel({
                         </TooltipProvider>
                       );
                     }
+
                     return (
                       <Button
                         className="bg-secondary text-secondary-foreground"
-                        onClick={() =>
-                          onStartSession?.(
-                            selectedAvatar === "CUSTOM" ? customAvatarId : selectedAvatar,
-                          )
-                        }
                         size="sm"
                         variant="secondary"
+                        onClick={() =>
+                          onStartSession?.(
+                            selectedAvatar === "CUSTOM"
+                              ? customAvatarId
+                              : selectedAvatar,
+                          )
+                        }
                       >
                         Start Session
                       </Button>
@@ -242,8 +266,19 @@ export function AvatarVideoPanel({
                   <BorderBeam borderWidth={2} duration={8} size={80} />
                 </div>
               </CardFooter>
-              <BorderBeam borderWidth={2} duration={8} initialOffset={10} size={120} />
-              <BorderBeam borderWidth={2} duration={10} initialOffset={60} reverse size={160} />
+              <BorderBeam
+                borderWidth={2}
+                duration={8}
+                initialOffset={10}
+                size={120}
+              />
+              <BorderBeam
+                reverse
+                borderWidth={2}
+                duration={10}
+                initialOffset={60}
+                size={160}
+              />
             </Card>
           </div>
         )
@@ -262,7 +297,9 @@ export function AvatarVideoPanel({
               )}
             </div>
             <div className="text-lg font-medium capitalize">{viewTab}</div>
-            <div className="text-sm text-muted-foreground">Alternate view panel</div>
+            <div className="text-sm text-muted-foreground">
+              Alternate view panel
+            </div>
           </div>
         </div>
       )}

@@ -1,4 +1,5 @@
 import type { StartAvatarRequest } from "@heygen/streaming-avatar";
+import type { UserSettings, AppGlobalSettings } from "@/lib/schemas/global";
 
 import { useEffect, useState } from "react";
 import { z } from "zod";
@@ -25,7 +26,6 @@ import { useSettingsStore } from "@/lib/stores/settings";
 import { useAgentStore } from "@/lib/stores/agent";
 import { useThemeStore } from "@/lib/stores/theme";
 import { AgentConfigSchema } from "@/lib/schemas/agent";
-import type { UserSettings, AppGlobalSettings } from "@/lib/schemas/global";
 import {
   UserSettingsSchema,
   AppGlobalSettingsSchema,
@@ -43,11 +43,13 @@ export function SessionConfigModal({
   initialConfig,
   startSession,
 }: SessionConfigModalProps) {
-  const { isConfigModalOpen, closeConfigModal, agentSettings } = useSessionStore();
+  const { isConfigModalOpen, closeConfigModal, agentSettings } =
+    useSessionStore();
   const { userSettings, setUserSettings, globalSettings, setGlobalSettings } =
     useSettingsStore();
   const setThemeMode = useThemeStore((s) => s.setMode);
-  const { currentAgent, setAgent, updateAgent, setLastStarted, markClean } = useAgentStore();
+  const { currentAgent, setAgent, updateAgent, setLastStarted, markClean } =
+    useAgentStore();
   const [config, setConfig] = useState<StartAvatarRequest>(initialConfig);
   const [activeTab, setActiveTab] = useState<
     "session" | "global" | "user" | "agent"
@@ -67,7 +69,6 @@ export function SessionConfigModal({
   // Prefill/merge settings into session config whenever settings change
   useEffect(() => {
     setConfig((prev) => applyUserSettingsToConfig(prev, userSettings));
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [userSettings, globalSettings]);
 
   // Sync global theme to theme store (ThemeBridge will apply next-themes + emotion class)
@@ -79,8 +80,10 @@ export function SessionConfigModal({
 
   const handleStartSession = () => {
     let finalConfig = config;
+
     try {
       const latestAgent = agentForm.getValues();
+
       setLastStarted(latestAgent as any);
       markClean();
       finalConfig = mapAgentAndSettingsToConfig(
@@ -134,6 +137,7 @@ export function SessionConfigModal({
         // noop
       }
     });
+
     return () => {
       try {
         // RHF returns a subscription object with unsubscribe
@@ -142,7 +146,6 @@ export function SessionConfigModal({
         // noop
       }
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [agentForm, updateAgent]);
 
   const saveUserSettings = (values: z.infer<typeof UserSettingsSchema>) => {
@@ -221,8 +224,8 @@ export function SessionConfigModal({
           {activeTab === "user" && (
             <UserSettingsTab
               form={userForm as any}
-              schema={UserSettingsSchema as any}
               languagesOptions={languagesOptions}
+              schema={UserSettingsSchema as any}
               onSubmit={saveUserSettings as any}
             />
           )}
@@ -237,15 +240,15 @@ export function SessionConfigModal({
 
           {activeTab === "agent" && (
             <AgentSettingsTab
-              form={agentForm as any}
-              schema={AgentConfigSchema as any}
               avatarOptions={avatarOptions}
-              voiceOptions={voiceOptions}
+              form={agentForm as any}
               knowledgeBaseOptions={knowledgeBaseOptions}
-              mcpServerOptions={mcpServerOptions}
               languagesOptions={languagesOptions}
-              onSubmit={saveAgentSettings as any}
+              mcpServerOptions={mcpServerOptions}
+              schema={AgentConfigSchema as any}
+              voiceOptions={voiceOptions}
               onPublish={() => setPublishOpen(true)}
+              onSubmit={saveAgentSettings as any}
             />
           )}
         </div>

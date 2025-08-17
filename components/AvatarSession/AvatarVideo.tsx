@@ -7,17 +7,16 @@ import { StreamingAvatarSessionState } from "../logic";
 import { CloseIcon } from "../Icons";
 import { Button } from "../Button";
 import { Loader } from "../ui/loader";
-import { useSessionStore } from "@/lib/stores/session";
+
 import ConnectionIndicator from "./ConnectionIndicator";
+
+import { useSessionStore } from "@/lib/stores/session";
 
 export const AvatarVideo = forwardRef<HTMLVideoElement>((props, ref) => {
   const { sessionState, stopAvatar } = useStreamingAvatarSession();
   const { connectionQuality } = useConnectionQuality();
-  const {
-    creditsRemaining,
-    creditsPerMinute,
-    setCreditsRemaining,
-  } = useSessionStore();
+  const { creditsRemaining, creditsPerMinute, setCreditsRemaining } =
+    useSessionStore();
 
   const isLoaded = sessionState === StreamingAvatarSessionState.CONNECTED;
 
@@ -44,7 +43,8 @@ export const AvatarVideo = forwardRef<HTMLVideoElement>((props, ref) => {
         <div className="flex items-center gap-2 text-xs">
           <span className="inline-flex h-2 w-2 rounded-full bg-primary animate-pulse" />
           <span>
-            {Math.round(creditsPerMinute)} cpm • {Math.max(0, Math.floor(creditsRemaining))} left
+            {Math.round(creditsPerMinute)} cpm •{" "}
+            {Math.max(0, Math.floor(creditsRemaining))} left
           </span>
         </div>
       </div>
@@ -62,7 +62,9 @@ export const AvatarVideo = forwardRef<HTMLVideoElement>((props, ref) => {
           <Loader size="sm" />
           <span>Preparing avatar…</span>
         </div>
-        <p className="text-xs text-muted-foreground">Your session will start shortly.</p>
+        <p className="text-xs text-muted-foreground">
+          Your session will start shortly.
+        </p>
       </div>
     </div>
   );
@@ -74,29 +76,36 @@ export const AvatarVideo = forwardRef<HTMLVideoElement>((props, ref) => {
     const id = setInterval(() => {
       const current = useSessionStore.getState().creditsRemaining;
       const next = Math.max(0, current - perSecond);
+
       setCreditsRemaining(next);
     }, 1000);
+
     return () => clearInterval(id);
   }, [isLoaded, creditsPerMinute, setCreditsRemaining]);
 
   // Attach track-level diagnostics (replaces inline IIFE for clarity)
   useEffect(() => {
     const videoEl = (ref as React.RefObject<HTMLVideoElement>)?.current;
+
     if (!videoEl || (videoEl as any)._listenersAttached === true) return;
     (videoEl as any)._listenersAttached = true;
     const attach = () => {
       const src = videoEl.srcObject as MediaStream | null;
+
       if (!src) return;
       src.getTracks().forEach((t) => {
         const onEnded = () => console.warn("[AvatarVideo] track ended", t.kind);
         const onMute = () => console.warn("[AvatarVideo] track mute", t.kind);
-        const onUnmute = () => console.warn("[AvatarVideo] track unmute", t.kind);
+        const onUnmute = () =>
+          console.warn("[AvatarVideo] track unmute", t.kind);
+
         t.addEventListener("ended", onEnded);
         t.addEventListener("mute", onMute);
         t.addEventListener("unmute", onUnmute);
       });
     };
     const id = setTimeout(attach, 0);
+
     return () => clearTimeout(id);
     // ref is stable from forwardRef usage
   }, [ref]);
@@ -117,8 +126,6 @@ export const AvatarVideo = forwardRef<HTMLVideoElement>((props, ref) => {
         ref={ref}
         autoPlay
         playsInline
-        onError={(e) => console.error("[AvatarVideo] video error", e)}
-        onLoadedData={() => console.debug("[AvatarVideo] loadeddata")}
         style={{
           position: "absolute",
           inset: 0,
@@ -126,6 +133,8 @@ export const AvatarVideo = forwardRef<HTMLVideoElement>((props, ref) => {
           height: "100%",
           objectFit: "cover",
         }}
+        onError={(e) => console.error("[AvatarVideo] video error", e)}
+        onLoadedData={() => console.debug("[AvatarVideo] loadeddata")}
       >
         <track kind="captions" />
       </video>

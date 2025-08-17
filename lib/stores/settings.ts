@@ -1,7 +1,7 @@
+import type { UserSettings, AppGlobalSettings } from "@/lib/schemas/global";
+
 import { create } from "zustand";
 import { persist, createJSONStorage } from "zustand/middleware";
-
-import type { UserSettings, AppGlobalSettings } from "@/lib/schemas/global";
 
 interface SettingsState {
   userSettings?: UserSettings;

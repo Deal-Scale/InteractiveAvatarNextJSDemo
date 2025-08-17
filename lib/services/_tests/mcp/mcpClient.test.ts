@@ -13,6 +13,7 @@ vi.mock("@modelcontextprotocol/sdk/client/streamableHttp.js", () => {
       lastHttpUrl = url.toString();
     }
   }
+
   return { StreamableHTTPClientTransport };
 });
 
@@ -24,6 +25,7 @@ vi.mock("@modelcontextprotocol/sdk/client/stdio.js", () => {
       lastTransportType = "stdio";
     }
   }
+
   return { StdioClientTransport };
 });
 
@@ -31,7 +33,9 @@ vi.mock("@modelcontextprotocol/sdk/client/stdio.js", () => {
 const clientApi = {
   connect: vi.fn(async () => {}),
   listTools: vi.fn(async () => ({ tools: [{ name: "mock-tool" }] })),
-  listResources: vi.fn(async () => ({ resources: [{ uri: "resource://mock" }] })),
+  listResources: vi.fn(async () => ({
+    resources: [{ uri: "resource://mock" }],
+  })),
   listPrompts: vi.fn(async () => ({ prompts: [{ name: "mock-prompt" }] })),
   getPrompt: vi.fn(async (_: any) => ({ messages: [] })),
   readResource: vi.fn(async (_: any) => ({ contents: [] })),
@@ -49,7 +53,8 @@ vi.mock("@modelcontextprotocol/sdk/client/index.js", () => {
       this.version = opts.version;
       // reset clientApi spies per construction
       Object.values(clientApi).forEach((fn) => {
-        if (typeof (fn as any)?.mockReset === "function") (fn as any).mockReset();
+        if (typeof (fn as any)?.mockReset === "function")
+          (fn as any).mockReset();
       });
       clientApi.connect.mockResolvedValue(undefined);
     }
@@ -63,6 +68,7 @@ vi.mock("@modelcontextprotocol/sdk/client/index.js", () => {
     complete = clientApi.complete;
     close = clientApi.close;
   }
+
   return { Client };
 });
 
@@ -70,7 +76,11 @@ vi.mock("@modelcontextprotocol/sdk/client/index.js", () => {
 async function importFreshClient() {
   // Ensure a fresh module instance each time
   const modPath = "@/lib/services/mcpClient";
-  const moduleNode = await vi.importActual<typeof import("@/lib/services/mcp/client/mcpClient")>(modPath);
+  const moduleNode =
+    await vi.importActual<typeof import("@/lib/services/mcp/client/mcpClient")>(
+      modPath,
+    );
+
   return moduleNode;
 }
 
@@ -84,6 +94,7 @@ afterEach(async () => {
   lastHttpUrl = null;
   // Close any existing client
   const { mcpClient } = await importFreshClient();
+
   await mcpClient.close();
 });
 
@@ -93,6 +104,7 @@ describe("mcpClient transport selection", () => {
     const { mcpClient } = await importFreshClient();
 
     const res = await mcpClient.listTools();
+
     expect(res.tools[0].name).toBe("mock-tool");
     expect(lastTransportType).toBe("http");
     expect(lastHttpUrl).toBe("http://localhost:8000/mcp");
@@ -102,10 +114,11 @@ describe("mcpClient transport selection", () => {
     const { mcpClient } = await importFreshClient();
 
     const res = await mcpClient.listResources();
+
     expect(res.resources[0].uri).toBe("resource://mock");
     expect(lastTransportType).toBe("stdio");
   });
-})
+});
 
 describe("mcpClient method passthroughs", () => {
   it("calls tools with provided args", async () => {
@@ -113,17 +126,24 @@ describe("mcpClient method passthroughs", () => {
     const { mcpClient } = await importFreshClient();
 
     await mcpClient.callTool("do_it", { a: 1 });
-    expect(clientApi.callTool).toHaveBeenCalledWith({ name: "do_it", arguments: { a: 1 } });
+    expect(clientApi.callTool).toHaveBeenCalledWith({
+      name: "do_it",
+      arguments: { a: 1 },
+    });
   });
 
   it("reads resource with given uri", async () => {
     const { mcpClient } = await importFreshClient();
+
     await mcpClient.readResource("resource://x");
-    expect(clientApi.readResource).toHaveBeenCalledWith({ uri: "resource://x" });
+    expect(clientApi.readResource).toHaveBeenCalledWith({
+      uri: "resource://x",
+    });
   });
 
   it("completes with context arguments as strings record", async () => {
     const { mcpClient } = await importFreshClient();
+
     await mcpClient.complete({
       ref: { type: "ref/prompt", name: "p" },
       argument: { name: "arg", value: "va" },
@@ -131,4 +151,4 @@ describe("mcpClient method passthroughs", () => {
     });
     expect(clientApi.complete).toHaveBeenCalled();
   });
-})
+});

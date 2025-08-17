@@ -29,6 +29,7 @@ export function RightTab({
 
   const widthPx = useMemo(() => {
     if (typeof window === "undefined") return 0;
+
     return Math.round((widthFrac || 0) * window.innerWidth);
   }, [widthFrac]);
 
@@ -42,6 +43,7 @@ export function RightTab({
       const vw = window.innerWidth || 1;
       const dx = startX - ev.clientX; // dragging left increases width
       const next = Math.max(0, Math.min(0.95, startFrac + dx / vw));
+
       moving = next;
       setWidthFrac(next);
     };
@@ -52,6 +54,7 @@ export function RightTab({
         const vw = window.innerWidth || 1;
         const px = Math.round(moving * vw);
         const thresholdPx = Math.max(56, Math.round(0.06 * vw));
+
         if (px <= thresholdPx) setWidthFrac(0);
       } catch {}
     };
@@ -60,7 +63,6 @@ export function RightTab({
     window.addEventListener("pointerup", onUp, { once: true });
   };
 
-  
   const onClick = () => {
     if (widthFrac <= minFrac + 0.001 || widthFrac < defaultFrac * 0.9) {
       setWidthFrac(defaultFrac);
@@ -93,18 +95,18 @@ export function RightTab({
             <button
               aria-label="Maximize chat width"
               className="inline-flex h-8 w-8 items-center justify-center rounded-md border border-border bg-background/80 text-foreground/75 shadow-sm hover:bg-muted/60"
+              title="Maximize"
               type="button"
               onClick={() => setWidthFrac(0.95)}
-              title="Maximize"
             >
               <Maximize2Icon className="h-4 w-4" />
             </button>
             <button
               aria-label="Minimize chat"
               className="inline-flex h-8 w-8 items-center justify-center rounded-md border border-border bg-background/80 text-foreground/75 shadow-sm hover:bg-muted/60"
+              title="Minimize"
               type="button"
               onClick={() => setWidthFrac(0)}
-              title="Minimize"
             >
               <Minimize2Icon className="h-4 w-4" />
             </button>

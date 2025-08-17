@@ -5,7 +5,7 @@ import { StreamableHTTPClientTransport } from "@modelcontextprotocol/sdk/client/
 // Coerce loose argument maps into the string-only records expected by MCP SDK
 function toStringRecord(args: Record<string, unknown>): Record<string, string> {
   const out: Record<string, string> = {};
-  
+
   for (const [k, v] of Object.entries(args)) {
     if (v === undefined) continue;
     if (v === null) {

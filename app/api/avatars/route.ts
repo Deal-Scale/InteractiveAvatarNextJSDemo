@@ -25,6 +25,7 @@ export async function GET() {
     });
 
     const data = await res.json();
+
     if (!res.ok) {
       return NextResponse.json(
         { error: data?.message || "Failed to fetch avatars" },

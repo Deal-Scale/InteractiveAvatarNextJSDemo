@@ -1,4 +1,5 @@
 import { useCallback } from "react";
+
 import { useApiService } from "./ApiServiceContext";
 
 export const useTextChat = () => {
@@ -8,28 +9,28 @@ export const useTextChat = () => {
     (message: string) => {
       apiService?.textChat.sendMessage(message);
     },
-    [apiService]
+    [apiService],
   );
 
   const sendMessageSync = useCallback(
     async (message: string) => {
       return await apiService?.textChat.sendMessageSync(message);
     },
-    [apiService]
+    [apiService],
   );
 
   const repeatMessage = useCallback(
     (message: string) => {
       apiService?.textChat.repeatMessage(message);
     },
-    [apiService]
+    [apiService],
   );
 
   const repeatMessageSync = useCallback(
     async (message: string) => {
       return await apiService?.textChat.repeatMessageSync(message);
     },
-    [apiService]
+    [apiService],
   );
 
   return {

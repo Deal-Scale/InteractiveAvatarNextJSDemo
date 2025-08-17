@@ -1,11 +1,15 @@
 import React from "react";
 import { StartAvatarRequest, STTProvider } from "@heygen/streaming-avatar";
+
 import { Field } from "../Field";
 import { Select } from "../../Select";
 
 type Props = {
   config: StartAvatarRequest;
-  onChange: <T extends keyof StartAvatarRequest>(key: T, value: StartAvatarRequest[T]) => void;
+  onChange: <T extends keyof StartAvatarRequest>(
+    key: T,
+    value: StartAvatarRequest[T],
+  ) => void;
 };
 
 const STTSettings: React.FC<Props> = ({ config, onChange }) => {

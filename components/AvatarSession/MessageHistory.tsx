@@ -1,7 +1,7 @@
 import React from "react";
+
 import { MessageSender } from "@/lib/types";
 import { useSessionStore } from "@/lib/stores/session";
-
 import {
   ChatContainerContent,
   ChatContainerRoot,
@@ -45,4 +45,3 @@ export const MessageHistory: React.FC = () => {
     </ChatContainerRoot>
   );
 };
-

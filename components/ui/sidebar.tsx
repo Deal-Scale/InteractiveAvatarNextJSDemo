@@ -1,6 +1,7 @@
 "use client";
 
 import React, { createContext, useContext } from "react";
+
 import { usePlacementStore } from "@/lib/stores/placement";
 
 // Basic provider to manage open/close state for a collapsible sidebar
@@ -16,23 +17,33 @@ export function SidebarProvider({ children }: { children: React.ReactNode }) {
   const setSidebarCollapsed = usePlacementStore((s) => s.setSidebarCollapsed);
   const open = !sidebarCollapsed;
   const setOpen = (v: boolean) => setSidebarCollapsed(!v);
+
   return <Ctx.Provider value={{ open, setOpen }}>{children}</Ctx.Provider>;
 }
 
 export function useSidebar() {
   const ctx = useContext(Ctx);
+
   if (!ctx) throw new Error("useSidebar must be used within SidebarProvider");
+
   return ctx;
 }
 
-export function SidebarTrigger({ className, children }: { className?: string; children?: React.ReactNode }) {
+export function SidebarTrigger({
+  className,
+  children,
+}: {
+  className?: string;
+  children?: React.ReactNode;
+}) {
   const { open, setOpen } = useSidebar();
+
   return (
     <button
-      type="button"
       aria-label="Toggle sidebar"
       aria-pressed={open}
       className={className}
+      type="button"
       onClick={() => setOpen(!open)}
     >
       {children ?? (
@@ -59,22 +70,23 @@ interface SidebarProps {
 
 export function Sidebar({ children, className = "" }: SidebarProps) {
   const { open, setOpen } = useSidebar();
+
   return (
     <aside
-      role="navigation"
       aria-label="Primary"
-      data-state={open ? "open" : "collapsed"}
       className={
         "relative group/sidebar transition-[width] duration-200 bg-background text-foreground " +
         (open ? "w-[320px] border-r border-border" : "w-0 border-r-0") +
         (className ? ` ${className}` : "")
       }
+      data-state={open ? "open" : "collapsed"}
+      role="navigation"
     >
       {!open && (
         <button
-          type="button"
           aria-label="Open sidebar"
           className="fixed left-0 top-1/2 -translate-y-1/2 z-40 h-16 w-3 rounded-r bg-border hover:bg-primary/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+          type="button"
           onClick={() => setOpen(true)}
         />
       )}
@@ -85,11 +97,23 @@ export function Sidebar({ children, className = "" }: SidebarProps) {
   );
 }
 
-export function SidebarHeader({ children, className = "" }: { children: React.ReactNode; className?: string }) {
+export function SidebarHeader({
+  children,
+  className = "",
+}: {
+  children: React.ReactNode;
+  className?: string;
+}) {
   return <div className={`shrink-0 ${className}`}>{children}</div>;
 }
 
-export function SidebarContent({ children, className = "" }: { children: React.ReactNode; className?: string }) {
+export function SidebarContent({
+  children,
+  className = "",
+}: {
+  children: React.ReactNode;
+  className?: string;
+}) {
   return <div className={`flex-1 min-h-0 ${className}`}>{children}</div>;
 }
 
@@ -98,20 +122,32 @@ export function SidebarGroup({ children }: { children: React.ReactNode }) {
 }
 
 export function SidebarGroupLabel({ children }: { children: React.ReactNode }) {
-  return <div className="px-2 pb-1 text-xs uppercase tracking-wide text-muted-foreground">{children}</div>;
+  return (
+    <div className="px-2 pb-1 text-xs uppercase tracking-wide text-muted-foreground">
+      {children}
+    </div>
+  );
 }
 
 export function SidebarMenu({ children }: { children: React.ReactNode }) {
   return <ul className="flex flex-col gap-0.5">{children}</ul>;
 }
 
-export function SidebarMenuButton({ children, onClick, className = "" }: { children: React.ReactNode; onClick?: () => void; className?: string }) {
+export function SidebarMenuButton({
+  children,
+  onClick,
+  className = "",
+}: {
+  children: React.ReactNode;
+  onClick?: () => void;
+  className?: string;
+}) {
   return (
     <li>
       <button
+        className={`w-full text-left rounded-md px-3 py-2 text-foreground hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 ${className}`}
         type="button"
         onClick={onClick}
-        className={`w-full text-left rounded-md px-3 py-2 text-foreground hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 ${className}`}
       >
         {children}
       </button>
@@ -119,6 +155,12 @@ export function SidebarMenuButton({ children, onClick, className = "" }: { child
   );
 }
 
-export function SidebarFooter({ children, className = "" }: { children?: React.ReactNode; className?: string }) {
+export function SidebarFooter({
+  children,
+  className = "",
+}: {
+  children?: React.ReactNode;
+  className?: string;
+}) {
   return <div className={`mt-auto shrink-0 ${className}`}>{children}</div>;
 }

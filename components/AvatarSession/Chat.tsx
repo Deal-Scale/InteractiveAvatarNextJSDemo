@@ -177,22 +177,26 @@ export const Chat: React.FC<ChatProps> = ({
             {messages.map((message) => (
               <MessageItem
                 key={message.id}
+                handleCopy={handleCopy}
+                handleEditToInput={handleEditToInput}
                 isStreaming={
                   isAvatarTalking && message.sender === MessageSender.AVATAR
                 }
                 lastCopiedId={lastCopiedId}
                 message={message}
+                setVote={setVote}
                 streamMode="typewriter"
                 streamSpeed={28}
                 voteState={voteState}
-                handleCopy={handleCopy}
-                handleEditToInput={handleEditToInput}
-                setVote={setVote}
               />
             ))}
             {isAvatarTalking && (
               <Message className="flex gap-2 items-start">
-                <MessageAvatar alt="Avatar" fallback="A" src="/heygen-logo.png" />
+                <MessageAvatar
+                  alt="Avatar"
+                  fallback="A"
+                  src="/heygen-logo.png"
+                />
                 <div className="flex flex-col items-start gap-1">
                   <p className="text-xs text-muted-foreground">Avatar</p>
                   <div className="prose break-words whitespace-normal rounded-lg bg-secondary p-2 text-sm text-foreground">
@@ -212,20 +216,20 @@ export const Chat: React.FC<ChatProps> = ({
       )}
       <ChatInput
         attachments={attachments}
+        cancelEdit={cancelEdit}
         chatInput={chatInput}
+        confirmEdit={confirmEdit}
         isEditing={isEditing}
         isSending={isSending}
         isVoiceChatActive={isVoiceChatActive}
         isVoiceChatLoading={isVoiceChatLoading}
         promptSuggestions={promptSuggestions}
-        cancelEdit={cancelEdit}
-        confirmEdit={confirmEdit}
+        removeAttachment={removeAttachment}
+        sendWithAttachments={sendWithAttachments}
         onChatInputChange={onChatInputChange}
         onFilesAdded={onFilesAdded}
         onStartVoiceChat={onStartVoiceChat}
         onStopVoiceChat={onStopVoiceChat}
-        removeAttachment={removeAttachment}
-        sendWithAttachments={sendWithAttachments}
       />
     </div>
   );

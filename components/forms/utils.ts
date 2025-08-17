@@ -45,13 +45,13 @@ export function unwrapType(t: z.ZodTypeAny): z.ZodTypeAny {
   }
   if (process.env.NODE_ENV !== "production") {
     try {
-      // eslint-disable-next-line no-console
       console.debug("unwrapType trace", {
         wrappers: trace,
         base: cur?._def?.typeName,
       });
     } catch {}
   }
+
   return cur as z.ZodTypeAny;
 }
 
@@ -79,6 +79,7 @@ export function booleanSelectOptions(
 
 export function isSensitiveString(def: any, cfg?: FieldConfig) {
   const desc = def?.description?.toLowerCase?.() ?? "";
+
   return (
     desc.includes("sensitive") ||
     desc.includes("password") ||
@@ -88,5 +89,6 @@ export function isSensitiveString(def: any, cfg?: FieldConfig) {
 
 export function isMultilineString(def: any, cfg?: FieldConfig) {
   const desc = def?.description?.toLowerCase?.() ?? "";
+
   return desc.includes("multiline") || cfg?.widget === "textarea";
 }

@@ -1,4 +1,8 @@
-import { STTProvider, VoiceChatTransport, VoiceEmotion } from "@heygen/streaming-avatar";
+import {
+  STTProvider,
+  VoiceChatTransport,
+  VoiceEmotion,
+} from "@heygen/streaming-avatar";
 
 export type Option = { value: string; label: string };
 
@@ -9,7 +13,8 @@ export const enumToOptions = (e: Record<string, string | number>): Option[] => {
     .map((v) => ({ value: v, label: v }));
 };
 
-export const arrayToOptions = (arr: string[]): Option[] => arr.map((v) => ({ value: v, label: v }));
+export const arrayToOptions = (arr: string[]): Option[] =>
+  arr.map((v) => ({ value: v, label: v }));
 
 // Common static option sets (extend as needed)
 export const languagesOptions: Option[] = arrayToOptions([
@@ -26,9 +31,15 @@ export const languagesOptions: Option[] = arrayToOptions([
 ]);
 
 // HeyGen SDK enums
-export const sttProviderOptions: Option[] = enumToOptions(STTProvider as unknown as Record<string, string | number>);
-export const voiceChatTransportOptions: Option[] = enumToOptions(VoiceChatTransport as unknown as Record<string, string | number>);
-export const voiceEmotionOptions: Option[] = enumToOptions(VoiceEmotion as unknown as Record<string, string | number>);
+export const sttProviderOptions: Option[] = enumToOptions(
+  STTProvider as unknown as Record<string, string | number>,
+);
+export const voiceChatTransportOptions: Option[] = enumToOptions(
+  VoiceChatTransport as unknown as Record<string, string | number>,
+);
+export const voiceEmotionOptions: Option[] = enumToOptions(
+  VoiceEmotion as unknown as Record<string, string | number>,
+);
 
 // Placeholder loaders for future API-driven lists
 export const loadAvatarOptions = async (): Promise<Option[]> => {
@@ -45,9 +56,13 @@ export const loadAvatarOptions = async (): Promise<Option[]> => {
       .map((item: any) => {
         const id = item?.avatarId || item?.avatar_id || item?.id;
         const name = item?.name || item?.avatarName || item?.avatar_name || id;
-        return id ? { value: String(id), label: String(name ?? id) } : undefined;
+
+        return id
+          ? { value: String(id), label: String(name ?? id) }
+          : undefined;
       })
       .filter(Boolean);
+
     return opts;
   } catch {
     return [];
@@ -67,9 +82,13 @@ export const loadVoiceOptions = async (): Promise<Option[]> => {
       .map((item: any) => {
         const id = item?.voiceId || item?.voice_id || item?.id;
         const name = item?.name || item?.voiceName || item?.voice_name || id;
-        return id ? { value: String(id), label: String(name ?? id) } : undefined;
+
+        return id
+          ? { value: String(id), label: String(name ?? id) }
+          : undefined;
       })
       .filter(Boolean);
+
     return opts;
   } catch {
     return [];
@@ -88,9 +107,13 @@ export const loadMcpServerOptions = async (): Promise<Option[]> => {
       .map((s: any) => {
         const id = s?.id || s?.name;
         const label = s?.description || id;
-        return id ? { value: String(id), label: String(label ?? id) } : undefined;
+
+        return id
+          ? { value: String(id), label: String(label ?? id) }
+          : undefined;
       })
       .filter(Boolean);
+
     return opts;
   } catch {
     return [];
@@ -101,6 +124,7 @@ export const loadMcpServerOptions = async (): Promise<Option[]> => {
 export const loadKnowledgeBaseOptions = async (): Promise<Option[]> => {
   try {
     const res = await fetch("/api/knowledge-bases", { cache: "no-store" });
+
     if (!res.ok) return [];
     const json: any = await res.json();
     const list =
@@ -111,9 +135,13 @@ export const loadKnowledgeBaseOptions = async (): Promise<Option[]> => {
       .map((kb: any) => {
         const id = kb?.id || kb?.knowledgeBaseId || kb?.knowledge_base_id;
         const name = kb?.name || kb?.title || id;
-        return id ? { value: String(id), label: String(name ?? id) } : undefined;
+
+        return id
+          ? { value: String(id), label: String(name ?? id) }
+          : undefined;
       })
       .filter(Boolean);
+
     return opts;
   } catch {
     return [];
