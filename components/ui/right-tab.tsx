@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useMemo } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { Minimize2Icon, Maximize2Icon } from "lucide-react";
 
 import { usePlacementStore } from "@/lib/stores/placement";
@@ -22,6 +22,11 @@ export function RightTab({
   children,
   actions,
 }: RightTabProps) {
+  // Avoid SSR/CSR mismatch from window-dependent sizing by rendering after mount
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => setMounted(true), []);
+
   const widthFrac = usePlacementStore((s) => s.rightWidthFrac);
   const setWidthFrac = usePlacementStore((s) => s.setRightWidthFrac);
 
@@ -68,6 +73,8 @@ export function RightTab({
       setWidthFrac(defaultFrac);
     }
   };
+
+  if (!mounted) return null;
 
   if (!isClosed) {
     return (

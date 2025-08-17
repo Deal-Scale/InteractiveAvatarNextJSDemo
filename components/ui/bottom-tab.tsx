@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useMemo } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { Maximize2Icon, Minimize2Icon } from "lucide-react";
 
 import { usePlacementStore } from "@/lib/stores/placement";
@@ -27,6 +27,11 @@ export function BottomTab({
   children,
   actions,
 }: BottomTabProps) {
+  // Avoid SSR/CSR mismatch from window-dependent sizing by rendering after mount
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => setMounted(true), []);
+
   const dockMode = usePlacementStore((s) => s.dockMode);
   const heightFrac = usePlacementStore((s) => s.bottomHeightFrac);
   const setHeightFrac = usePlacementStore((s) => s.setBottomHeightFrac);
@@ -86,7 +91,7 @@ export function BottomTab({
   };
 
   // When open, render the drawer panel. When closed, render the reopen tab.
-  if (!isBottom) return null;
+  if (!isBottom || !mounted) return null;
 
   if (!isClosed) {
     return (
