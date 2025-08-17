@@ -27,6 +27,7 @@ export default function ThemeBridge() {
   // Apply emotion CSS class to <html>
   const applyEmotionClass = React.useCallback(
     (emo: ThemeEmotion, resolved: string | null | undefined) => {
+      if (typeof document === "undefined") return;
       const root = document.documentElement;
       const cls = computeEmotionClass(emo, resolved);
       // remove previous classes

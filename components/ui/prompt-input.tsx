@@ -56,6 +56,7 @@ type PromptInputProps = {
   children: React.ReactNode;
   className?: string;
   disabled?: boolean;
+  textareaRef?: React.RefObject<HTMLTextAreaElement | null>;
 };
 
 function PromptInput({
@@ -67,9 +68,11 @@ function PromptInput({
   onSubmit,
   children,
   disabled = false,
+  textareaRef: externalTextareaRef,
 }: PromptInputProps) {
   const [internalValue, setInternalValue] = useState(value || "");
-  const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const internalTextareaRef = useRef<HTMLTextAreaElement>(null);
+  const textareaRef = externalTextareaRef ?? internalTextareaRef;
 
   const handleChange = (newValue: string) => {
     setInternalValue(newValue);

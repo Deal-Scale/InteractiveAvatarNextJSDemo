@@ -41,6 +41,7 @@ interface ChatInputProps {
   cancelEdit: () => void;
   removeAttachment: (idx: number) => void;
   onFilesAdded: (files: File[]) => void;
+  inputRef?: React.RefObject<HTMLTextAreaElement | null>;
 }
 
 export const ChatInput: React.FC<ChatInputProps> = ({
@@ -59,6 +60,7 @@ export const ChatInput: React.FC<ChatInputProps> = ({
   cancelEdit,
   removeAttachment,
   onFilesAdded,
+  inputRef,
 }) => {
   return (
     <PromptInput
@@ -66,6 +68,7 @@ export const ChatInput: React.FC<ChatInputProps> = ({
       disabled={false}
       maxHeight={320}
       value={chatInput}
+      textareaRef={inputRef}
       onSubmit={() =>
         isEditing ? confirmEdit() : sendWithAttachments(chatInput)
       }
