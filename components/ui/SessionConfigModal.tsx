@@ -23,6 +23,7 @@ import { useZodForm } from "@/components/forms/useZodForm";
 import { useSessionStore } from "@/lib/stores/session";
 import { useSettingsStore } from "@/lib/stores/settings";
 import { useAgentStore } from "@/lib/stores/agent";
+import { useThemeStore } from "@/lib/stores/theme";
 import { AgentConfigSchema } from "@/lib/schemas/agent";
 import type { UserSettings, AppGlobalSettings } from "@/lib/schemas/global";
 import {
@@ -45,6 +46,7 @@ export function SessionConfigModal({
   const { isConfigModalOpen, closeConfigModal, agentSettings } = useSessionStore();
   const { userSettings, setUserSettings, globalSettings, setGlobalSettings } =
     useSettingsStore();
+  const setThemeMode = useThemeStore((s) => s.setMode);
   const { currentAgent, setAgent, updateAgent, setLastStarted, markClean } = useAgentStore();
   const [config, setConfig] = useState<StartAvatarRequest>(initialConfig);
   const [activeTab, setActiveTab] = useState<
@@ -67,6 +69,13 @@ export function SessionConfigModal({
     setConfig((prev) => applyUserSettingsToConfig(prev, userSettings));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [userSettings, globalSettings]);
+
+  // Sync global theme to theme store (ThemeBridge will apply next-themes + emotion class)
+  useEffect(() => {
+    if (globalSettings?.theme) {
+      setThemeMode(globalSettings.theme as any);
+    }
+  }, [globalSettings?.theme, setThemeMode]);
 
   const handleStartSession = () => {
     let finalConfig = config;
@@ -192,7 +201,7 @@ export function SessionConfigModal({
 
   return (
     <Dialog open={isConfigModalOpen} onOpenChange={closeConfigModal}>
-      <DialogContent className="w-[96vw] md:w-[92vw] max-w-[1280px] p-0 overflow-hidden bg-white text-zinc-900 dark:bg-zinc-950 dark:text-zinc-100">
+      <DialogContent className="w-[96vw] md:w-[92vw] max-w-[1280px] p-0 overflow-hidden bg-card text-foreground">
         <SessionConfigHeader />
 
         {/* Tabs Header */}

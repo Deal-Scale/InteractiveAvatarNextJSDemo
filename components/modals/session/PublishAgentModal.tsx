@@ -28,10 +28,10 @@ export function PublishAgentModal({ open, onOpenChange, onSubmit }: PublishAgent
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="w-[92vw] md:w-[640px] max-w-[96vw] p-4 md:p-6 overflow-hidden bg-white text-zinc-900 dark:bg-zinc-950 dark:text-zinc-100">
+      <DialogContent className="w-[92vw] md:w-[640px] max-w-[96vw] p-4 md:p-6 overflow-hidden bg-card text-foreground">
         <div className="mb-3">
           <h2 className="text-lg font-semibold">Publish Agent</h2>
-          <p className="text-sm text-zinc-600 dark:text-zinc-400">
+          <p className="text-sm text-muted-foreground">
             Provide public-facing details for your agent.
           </p>
         </div>

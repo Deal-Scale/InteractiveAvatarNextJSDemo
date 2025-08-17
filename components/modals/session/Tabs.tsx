@@ -16,11 +16,11 @@ export function TabsHeader({ activeTab, setActiveTab }: TabsHeaderProps) {
   ];
 
   return (
-    <div className="sticky top-0 z-10 bg-white dark:bg-zinc-950">
+    <div className="sticky top-0 z-10 bg-card">
       <div
         role="tablist"
         aria-label="Session configuration sections"
-        className="flex gap-1 border-b border-zinc-200 dark:border-zinc-800 px-4 md:px-6"
+        className="flex gap-1 border-b border-border px-4 md:px-6"
       >
         {tabs.map((t) => (
           <button
@@ -29,8 +29,8 @@ export function TabsHeader({ activeTab, setActiveTab }: TabsHeaderProps) {
             aria-selected={activeTab === t.key}
             className={`relative -mb-px px-3 md:px-4 py-3 text-sm font-medium outline-none transition-colors ${
               activeTab === t.key
-                ? "text-zinc-900 dark:text-zinc-100"
-                : "text-zinc-600 hover:text-zinc-800 dark:text-zinc-400 dark:hover:text-zinc-200"
+                ? "text-foreground"
+                : "text-muted-foreground hover:text-foreground"
             }`}
             type="button"
             onClick={() => setActiveTab(t.key)}
@@ -38,7 +38,7 @@ export function TabsHeader({ activeTab, setActiveTab }: TabsHeaderProps) {
             {t.label}
             <span
               className={`absolute inset-x-2 -bottom-px h-0.5 rounded-full transition-opacity ${
-                activeTab === t.key ? "bg-blue-500 opacity-100" : "opacity-0"
+                activeTab === t.key ? "bg-primary opacity-100" : "opacity-0"
               }`}
             />
           </button>

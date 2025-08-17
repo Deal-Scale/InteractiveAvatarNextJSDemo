@@ -37,7 +37,7 @@ export const AutoField: React.FC<AutoFieldProps> = ({ name, def, form, fields = 
       const current = (getValues() as any)[name] ?? [];
       return (
         <div className="flex flex-col gap-1">
-          <label className="text-sm text-zinc-600 dark:text-zinc-300">{label}</label>
+          <label className="text-sm text-muted-foreground">{label}</label>
           <select
             multiple
             value={current as string[]}
@@ -45,7 +45,7 @@ export const AutoField: React.FC<AutoFieldProps> = ({ name, def, form, fields = 
               const selected = Array.from(e.target.selectedOptions).map((o) => o.value);
               setValue(name as any, selected as any, { shouldValidate: true, shouldDirty: true });
             }}
-            className="rounded-md border border-zinc-300 bg-white px-3 py-2 text-zinc-900 shadow-sm focus:outline-none focus:ring-2 focus:ring-zinc-500 focus:border-zinc-500 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100"
+            className="rounded-md border border-border bg-background px-3 py-2 text-foreground shadow-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary"
           >
             {opts.map((o) => (
               <option key={o.value} value={o.value}>
@@ -60,9 +60,9 @@ export const AutoField: React.FC<AutoFieldProps> = ({ name, def, form, fields = 
 
     return (
       <div className="flex flex-col gap-1">
-        <label className="text-sm text-zinc-600 dark:text-zinc-300">{label}</label>
+        <label className="text-sm text-muted-foreground">{label}</label>
         <select
-          className="rounded-md border border-zinc-300 bg-white px-3 py-2 text-zinc-900 shadow-sm focus:outline-none focus:ring-2 focus:ring-zinc-500 focus:border-zinc-500 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100"
+          className="rounded-md border border-border bg-background px-3 py-2 text-foreground shadow-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary"
           defaultValue=""
           {...register(name as any)}
         >
@@ -150,9 +150,9 @@ export const AutoField: React.FC<AutoFieldProps> = ({ name, def, form, fields = 
       const current = (getValues() as any)[name] as string[] | undefined;
       return (
         <div className="flex flex-col gap-1">
-          <label className="text-sm text-zinc-600 dark:text-zinc-300">{label}</label>
+          <label className="text-sm text-muted-foreground">{label}</label>
           <textarea
-            className="min-h-24 max-h-[60vh] w-full resize-y rounded-md border border-zinc-300 bg-white px-3 py-2 text-zinc-900 shadow-sm focus:outline-none focus:ring-2 focus:ring-zinc-500 focus:border-zinc-500 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100"
+            className="min-h-24 max-h-[60vh] w-full resize-y rounded-md border border-border bg-background px-3 py-2 text-foreground shadow-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary"
             rows={cfg.rows ?? 5}
             placeholder={cfg.placeholder ?? "Enter values, one per line"}
             value={(current ?? []).join("\n")}
@@ -175,9 +175,9 @@ export const AutoField: React.FC<AutoFieldProps> = ({ name, def, form, fields = 
       const value = typeof current === "boolean" ? String(current) : "";
       return (
         <div className="flex flex-col gap-1">
-          <label className="text-sm text-zinc-600 dark:text-zinc-300">{label}</label>
+          <label className="text-sm text-muted-foreground">{label}</label>
           <select
-            className="rounded-md border border-zinc-300 bg-white px-3 py-2 text-zinc-900 shadow-sm focus:outline-none focus:ring-2 focus:ring-zinc-500 focus:border-zinc-500 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100"
+            className="rounded-md border border-border bg-background px-3 py-2 text-foreground shadow-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary"
             value={value}
             onChange={(e) => {
               const v = e.target.value;
@@ -201,8 +201,8 @@ export const AutoField: React.FC<AutoFieldProps> = ({ name, def, form, fields = 
 
     return (
       <label className="flex items-center justify-between gap-3">
-        <span className="text-sm text-zinc-600 dark:text-zinc-300">{label}</span>
-        <input className="h-4 w-4 accent-zinc-900 dark:accent-zinc-100" type="checkbox" {...register(name as any)} />
+        <span className="text-sm text-muted-foreground">{label}</span>
+        <input className="h-4 w-4 accent-primary" type="checkbox" {...register(name as any)} />
       </label>
     );
   }
@@ -212,9 +212,9 @@ export const AutoField: React.FC<AutoFieldProps> = ({ name, def, form, fields = 
     if ((cfg as any).widget === "slider") {
       return (
         <div className="flex flex-col gap-1">
-          <label className="text-sm text-zinc-600 dark:text-zinc-300">{label}</label>
+          <label className="text-sm text-muted-foreground">{label}</label>
           <input
-            className="w-full accent-zinc-900 dark:accent-zinc-100"
+            className="w-full accent-primary"
             type="range"
             min={(cfg as any).min}
             max={(cfg as any).max}
@@ -228,9 +228,9 @@ export const AutoField: React.FC<AutoFieldProps> = ({ name, def, form, fields = 
 
     return (
       <div className="flex flex-col gap-1">
-        <label className="text-sm text-zinc-600 dark:text-zinc-300">{label}</label>
+        <label className="text-sm text-muted-foreground">{label}</label>
         <input
-          className="rounded-md border border-zinc-300 bg-white px-3 py-2 text-zinc-900 shadow-sm focus:outline-none focus:ring-2 focus:ring-zinc-500 focus:border-zinc-500 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100"
+          className="rounded-md border border-border bg-background px-3 py-2 text-foreground shadow-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary"
           type="number"
           {...register(name as any, { valueAsNumber: true })}
         />
@@ -254,7 +254,7 @@ export const AutoField: React.FC<AutoFieldProps> = ({ name, def, form, fields = 
     if (sensitive) {
       return (
         <div className="flex flex-col gap-1">
-          <label className="text-sm text-zinc-600 dark:text-zinc-300">{label}</label>
+          <label className="text-sm text-muted-foreground">{label}</label>
           <SensitiveInput name={name} register={register} />
           {error && <span className="text-xs text-red-500 dark:text-red-400">{error}</span>}
         </div>
@@ -269,14 +269,14 @@ export const AutoField: React.FC<AutoFieldProps> = ({ name, def, form, fields = 
     if (multiline) {
       return (
         <div className="flex flex-col gap-1">
-          <label className="text-sm text-zinc-600 dark:text-zinc-300">{label}</label>
-          <details className="rounded-md border border-zinc-300 open:bg-white dark:border-zinc-700 dark:open:bg-zinc-900">
-            <summary className="cursor-pointer select-none bg-zinc-100 px-2 py-1 text-xs text-zinc-700 dark:bg-zinc-800 dark:text-zinc-300">
+          <label className="text-sm text-muted-foreground">{label}</label>
+          <details className="rounded-md border border-border open:bg-card">
+            <summary className="cursor-pointer select-none bg-muted px-2 py-1 text-xs text-muted-foreground">
               {`Edit ${label}`}
             </summary>
             <div className="p-2">
               <textarea
-                className="min-h-24 max-h-[60vh] w-full resize-y rounded-md border border-zinc-300 bg-white px-3 py-2 text-zinc-900 shadow-sm focus:outline-none focus:ring-2 focus:ring-zinc-500 focus:border-zinc-500 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100"
+                className="min-h-24 max-h-[60vh] w-full resize-y rounded-md border border-border bg-background px-3 py-2 text-foreground shadow-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary"
                 rows={(cfg as any).rows ?? 5}
                 {...register(name as any)}
               />
@@ -289,9 +289,9 @@ export const AutoField: React.FC<AutoFieldProps> = ({ name, def, form, fields = 
 
     return (
       <div className="flex flex-col gap-1">
-        <label className="text-sm text-zinc-600 dark:text-zinc-300">{label}</label>
+        <label className="text-sm text-muted-foreground">{label}</label>
         <input
-          className="rounded-md border border-zinc-300 bg-white px-3 py-2 text-zinc-900 shadow-sm focus:outline-none focus:ring-2 focus:ring-zinc-500 focus:border-zinc-500 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100"
+          className="rounded-md border border-border bg-background px-3 py-2 text-foreground shadow-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary"
           placeholder={(cfg as any).placeholder}
           pattern={regexCheck?.regex ? regexCheck.regex.source : undefined}
           title={regexCheck?.regex ? regexCheck.regex.toString() : undefined}
@@ -307,11 +307,11 @@ export const AutoField: React.FC<AutoFieldProps> = ({ name, def, form, fields = 
   if ((def as any).description === "file-upload") {
     return (
       <div className="flex flex-col gap-1">
-        <label className="text-sm text-zinc-600 dark:text-zinc-300">{label}</label>
+        <label className="text-sm text-muted-foreground">{label}</label>
         <input
           multiple
           type="file"
-          className="rounded-md border border-zinc-300 bg-white px-3 py-2 text-zinc-900 file:mr-4 file:rounded file:border-0 file:bg-zinc-200 file:px-2 file:py-1 file:text-zinc-700 focus:outline-none focus:ring-2 focus:ring-zinc-500 focus:border-zinc-500 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100 dark:file:bg-zinc-700 dark:file:text-zinc-300"
+          className="rounded-md border border-border bg-background px-3 py-2 text-foreground file:mr-4 file:rounded file:border-0 file:bg-muted file:px-2 file:py-1 file:text-foreground focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary"
           {...register(name as any)}
         />
         {error && <span className="text-xs text-red-500 dark:text-red-400">{error}</span>}
@@ -322,9 +322,9 @@ export const AutoField: React.FC<AutoFieldProps> = ({ name, def, form, fields = 
   // Default text input
   return (
     <div className="flex flex-col gap-1">
-      <label className="text-sm text-zinc-600 dark:text-zinc-300">{label}</label>
+      <label className="text-sm text-muted-foreground">{label}</label>
       <input
-        className="rounded-md border border-zinc-300 bg-white px-3 py-2 text-zinc-900 shadow-sm focus:outline-none focus:ring-2 focus:ring-zinc-500 focus:border-zinc-500 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100"
+        className="rounded-md border border-border bg-background px-3 py-2 text-foreground shadow-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary"
         type="text"
         {...register(name as any)}
       />

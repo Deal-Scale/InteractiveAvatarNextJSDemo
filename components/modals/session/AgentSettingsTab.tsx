@@ -27,8 +27,8 @@ export function AgentSettingsTab({
   onPublish,
 }: AgentSettingsTabProps) {
   return (
-    <div className="space-y-4 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-900 p-4 md:p-6 shadow-sm">
-      <p className="text-sm text-zinc-700 dark:text-zinc-400">
+    <div className="space-y-4 rounded-xl border border-border bg-card p-4 md:p-6 shadow-sm">
+      <p className="text-sm text-muted-foreground">
         Configure your agent’s defaults. These persist locally in your browser.
       </p>
       <AutoForm
@@ -63,7 +63,7 @@ export function AgentSettingsTab({
       <div className="flex items-center justify-end">
         <button
           type="button"
-          className="inline-flex items-center rounded-md bg-indigo-600 px-3 py-1.5 text-sm font-medium text-white shadow hover:bg-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-400 disabled:opacity-50"
+          className="inline-flex items-center rounded-md bg-primary px-3 py-1.5 text-sm font-medium text-primary-foreground shadow hover:opacity-90 focus:outline-none focus:ring-2 focus:ring-primary disabled:opacity-50"
           onClick={() => onPublish?.()}
         >
           Publish Agent

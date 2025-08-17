@@ -87,6 +87,16 @@ const Sidebar: React.FC<SidebarProps> = ({ onSelect, apps }) => {
         </SidebarHeader>
 
         <SidebarContent className="pt-2">
+          {/* Theme controls under header (Zola chat/avatar area) */}
+          <div className="px-2 pb-2">
+            <div className="flex items-center gap-2 rounded-md border border-border bg-background px-2 py-2">
+              <span className="text-xs text-muted-foreground group-data-[state=collapsed]/sidebar:hidden">Theme</span>
+              <ThemeEmotionSelect className="group-data-[state=collapsed]/sidebar:hidden" />
+              <div className="ml-auto">
+                <ThemeToggle />
+              </div>
+            </div>
+          </div>
           <div className="px-2">
             <Button
               variant="outline"
@@ -187,16 +197,7 @@ const Sidebar: React.FC<SidebarProps> = ({ onSelect, apps }) => {
           <AgentsSection agents={agents as any} collapsedAgents={collapse.collapsedAgents} setCollapsedAgents={collapse.setCollapsedAgents} />
         </SidebarContent>
 
-        <SidebarFooter className="px-2">
-          <div className="flex items-center gap-2 rounded-md border border-border bg-background px-2 py-2">
-            <span className="text-xs text-muted-foreground group-data-[state=collapsed]/sidebar:hidden">Theme</span>
-            <ThemeEmotionSelect className="group-data-[state=collapsed]/sidebar:hidden" />
-            <div className="ml-auto">
-              <ThemeToggle />
-            </div>
-          </div>
-          <div className="h-2" />
-        </SidebarFooter>
+        <SidebarFooter className="px-2" />
       </UISidebar>
       <CollapsedEdgeTrigger />
       {/* Bookmark Modal */}

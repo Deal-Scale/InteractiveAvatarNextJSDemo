@@ -12,8 +12,8 @@ interface UserSettingsTabProps {
 
 export function UserSettingsTab({ form, schema, languagesOptions, onSubmit }: UserSettingsTabProps) {
   return (
-    <div className="space-y-4 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-900 p-4 md:p-6 shadow-sm">
-      <p className="text-sm text-zinc-700 dark:text-zinc-400">
+    <div className="space-y-4 rounded-xl border border-border bg-card p-4 md:p-6 shadow-sm">
+      <p className="text-sm text-muted-foreground">
         Configure your preferences. These persist locally in your browser.
       </p>
       <AutoForm
