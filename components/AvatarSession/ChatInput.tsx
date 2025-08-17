@@ -8,6 +8,7 @@ import {
   XCircle,
 } from "lucide-react";
 import React from "react";
+import type { ComposerAsset } from "@/lib/stores/composer";
 
 import { PromptSuggestions } from "./PromptSuggestions";
 
@@ -32,6 +33,7 @@ interface ChatInputProps {
   isEditing: boolean;
   isVoiceChatLoading: boolean;
   attachments: File[];
+  composerAttachments: ComposerAsset[];
   promptSuggestions: string[];
   onChatInputChange: (value: string) => void;
   onStartVoiceChat: () => void;
@@ -40,6 +42,7 @@ interface ChatInputProps {
   confirmEdit: () => void;
   cancelEdit: () => void;
   removeAttachment: (idx: number) => void;
+  removeComposerAttachment: (id: string) => void;
   onFilesAdded: (files: File[]) => void;
   inputRef?: React.RefObject<HTMLTextAreaElement | null>;
 }
@@ -51,6 +54,7 @@ export const ChatInput: React.FC<ChatInputProps> = ({
   isEditing,
   isVoiceChatLoading,
   attachments,
+  composerAttachments,
   promptSuggestions,
   onChatInputChange,
   onStartVoiceChat,
@@ -59,6 +63,7 @@ export const ChatInput: React.FC<ChatInputProps> = ({
   confirmEdit,
   cancelEdit,
   removeAttachment,
+  removeComposerAttachment,
   onFilesAdded,
   inputRef,
 }) => {
@@ -177,14 +182,31 @@ export const ChatInput: React.FC<ChatInputProps> = ({
         </PromptInputActions>
       </div>
       {/* FileUpload handles file selection and drag/drop */}
-      {attachments.length > 0 && (
+      {(attachments.length > 0 || composerAttachments.length > 0) && (
         <div className="flex flex-wrap items-center gap-2 px-2 pt-2">
+          {composerAttachments.map((a) => (
+            <div
+              key={`asset-${a.id}`}
+              className="bg-secondary text-secondary-foreground border border-border px-2 py-1 rounded-full text-xs inline-flex items-center gap-1"
+              title={a.url ? `${a.name} – ${a.url}` : a.name}
+            >
+              <span className="max-w-[200px] truncate">{a.name}</span>
+              <button
+                aria-label={`Remove ${a.name}`}
+                className="hover:text-destructive"
+                type="button"
+                onClick={() => removeComposerAttachment(a.id)}
+              >
+                <X className="h-3 w-3" />
+              </button>
+            </div>
+          ))}
           {attachments.map((file, idx) => (
             <div
               key={`${file.name}-${idx}`}
               className="bg-secondary text-secondary-foreground border border-border px-2 py-1 rounded-full text-xs inline-flex items-center gap-1"
             >
-              <span className="max-w-[180px] truncate">{file.name}</span>
+              <span className="max-w-[200px] truncate">{file.name}</span>
               <button
                 aria-label={`Remove ${file.name}`}
                 className="hover:text-destructive"

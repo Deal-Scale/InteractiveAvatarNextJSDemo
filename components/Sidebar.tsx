@@ -31,6 +31,7 @@ import useConversations from "@/components/Sidebar/hooks/useConversations";
 import useBookmarkModal from "@/components/Sidebar/hooks/useBookmarkModal";
 import SidebarHeaderSection from "@/components/Sidebar/SidebarHeaderSection";
 import MessagesSection from "@/components/Sidebar/MessagesSection";
+import { useComposerStore } from "@/lib/stores/composer";
 
 // types, utils, and subcomponents are imported from components/Sidebar/*
 
@@ -96,6 +97,7 @@ const Sidebar: React.FC<SidebarProps> = ({ onSelect, apps }) => {
     return base;
   }, [agentSettings]);
   const openBookmarkModal = bookmark.openBookmarkModal;
+  const addAssetAttachment = useComposerStore((s) => s.addAssetAttachment);
 
   const totalCount = conv.totalCount;
 
@@ -215,6 +217,15 @@ const Sidebar: React.FC<SidebarProps> = ({ onSelect, apps }) => {
             assetsRef={assetsRef}
             collapsedAssets={collapse.collapsedAssets}
             onDelete={(id) => setAssets((prev) => prev.filter((a: any) => a.id !== id))}
+            onAttach={(asset) =>
+              addAssetAttachment({
+                id: asset.id,
+                name: asset.name,
+                url: asset.url,
+                thumbnailUrl: asset.thumbnailUrl,
+                mimeType: (asset as any).mimeType,
+              })
+            }
             setCollapsedAssets={collapse.setCollapsedAssets}
           />
 
