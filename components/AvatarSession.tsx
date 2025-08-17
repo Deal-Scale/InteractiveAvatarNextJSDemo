@@ -152,10 +152,10 @@ export function AvatarSession({
           className="pointer-events-auto z-30 absolute top-0 bottom-0 right-0"
           style={{ width: `${rightSize}%`, minWidth: 280, maxWidth: "95vw" }}
         >
-          {/* Left-edge resize handle inside overlay */}
+          {/* Left-edge resize handle inside overlay (thicker for easier grab) */}
           <div
             aria-orientation="vertical"
-            className="w-1 h-full cursor-col-resize bg-muted-foreground/40 hover:bg-muted-foreground/60 transition-colors absolute left-0 top-0"
+            className="w-3 h-full cursor-col-resize bg-muted-foreground/30 hover:bg-muted-foreground/60 transition-colors absolute left-0 top-0"
             role="separator"
             onPointerDown={() => setResizing("right")}
           />

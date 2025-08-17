@@ -149,50 +149,30 @@ export function ChatPanel({
   // Right dock uses RightTab to manage expand/minimize/drag and persistence.
   if (dock === "right") {
     return (
-      <RightTab label="Chat">
+      <RightTab
+        label="Chat"
+        actions={
+          <>
+            <Button
+              onClick={() => onDock("bottom")}
+              size="icon"
+              title="Dock bottom"
+              variant="ghost"
+            >
+              <PanelBottomOpenIcon className="h-4 w-4" />
+            </Button>
+            <Button
+              onClick={() => onDock("floating")}
+              size="icon"
+              title="Float"
+              variant="ghost"
+            >
+              <MoveIcon className="h-4 w-4" />
+            </Button>
+          </>
+        }
+      >
         <div className={cn("flex h-full w-full flex-col", "min-h-0")}>
-          {/* Inline action header for right mode (preserves original controls) */}
-          <div
-            className={cn(
-              "flex items-center justify-between gap-2 px-3 py-2 border-b border-border",
-              isChatSolidBg ? "bg-card" : "bg-popover/80",
-            )}
-          >
-            <div className="flex items-center gap-2 text-xs text-muted-foreground">
-              <span>Chat</span>
-            </div>
-            <div className="flex items-center gap-1">
-              {/* Right mode: offer docking to bottom or floating */}
-              <Button
-                onClick={() => onDock("bottom")}
-                size="icon"
-                title="Dock bottom"
-                variant="ghost"
-              >
-                <PanelBottomOpenIcon className="h-4 w-4" />
-              </Button>
-              <Button
-                onClick={() => onDock("floating")}
-                size="icon"
-                title="Float"
-                variant="ghost"
-              >
-                <MoveIcon className="h-4 w-4" />
-              </Button>
-              <Button
-                size="icon"
-                title={expanded ? "Collapse" : "Expand"}
-                variant="ghost"
-                onClick={onToggleExpand}
-              >
-                {expanded ? (
-                  <Minimize2Icon className="h-4 w-4" />
-                ) : (
-                  <Maximize2Icon className="h-4 w-4" />
-                )}
-              </Button>
-            </div>
-          </div>
           {canChat ? (
             <Chat
               chatInput={chatInput}
