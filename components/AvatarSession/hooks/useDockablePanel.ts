@@ -117,6 +117,16 @@ export function useDockablePanel(
     };
   }, [resizing, rootRef, floatingPos, expanded]);
 
+  // Ensure a visible size when switching docks so overlays render
+  useEffect(() => {
+    if (dock === "right" && rightSize <= 0) {
+      setRightSize(24);
+    } else if (dock === "bottom" && bottomSize <= 0) {
+      setBottomSize(15);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [dock]);
+
   // Snap when switching to floating
   useEffect(() => {
     if (dock !== "floating") return;
