@@ -108,18 +108,18 @@ function ToastCard({ t, onDismiss }: { t: ToastItem; onDismiss: (id: string) => 
   const preset = useMemo(() => {
     const variant = t.variant ?? "default";
     const map = {
-      default: { base: "bg-background/95 border-border/60 text-foreground", bar: "bg-foreground/30", emoji: "ℹ️" },
-      success: { base: "bg-green-600/15 border-green-600/40 text-green-800 dark:text-green-200", bar: "bg-green-500", emoji: "✅" },
-      error: { base: "bg-red-600/15 border-red-600/40 text-red-800 dark:text-red-200", bar: "bg-red-500", emoji: "❌" },
-      warning: { base: "bg-amber-500/15 border-amber-500/40 text-amber-800 dark:text-amber-200", bar: "bg-amber-500", emoji: "⚠️" },
-      loading: { base: "bg-foreground/5 border-border/60 text-foreground", bar: "bg-foreground/30", emoji: "" },
+      default: { base: "bg-card border-border/60 text-card-foreground", bar: "bg-foreground/30", emoji: "ℹ️" },
+      success: { base: "bg-accent/20 border-accent/40 text-foreground", bar: "bg-accent", emoji: "✅" },
+      error: { base: "bg-destructive/20 border-destructive/40 text-foreground", bar: "bg-destructive", emoji: "❌" },
+      warning: { base: "bg-secondary/20 border-secondary/40 text-foreground", bar: "bg-secondary", emoji: "⚠️" },
+      loading: { base: "bg-muted border-border/60 text-foreground", bar: "bg-foreground/30", emoji: "" },
       custom: { base: "", bar: "", emoji: "✨" },
     } as const;
     return map[variant];
   }, [t.variant]);
 
   // Support custom color for custom variant
-  const customColor = t.variant === "custom" ? (t.color ?? "#7c3aed") : undefined;
+  const customColor = t.variant === "custom" ? (t.color ?? "hsl(var(--accent))") : undefined;
 
   return (
     <div
@@ -127,7 +127,7 @@ function ToastCard({ t, onDismiss }: { t: ToastItem; onDismiss: (id: string) => 
         "pointer-events-auto rounded-lg border p-3 shadow-lg backdrop-blur",
         "text-sm",
         preset.base,
-        t.type === "foreground" && "ring-1 ring-black/5"
+        t.type === "foreground" && "ring-1 ring-foreground/5"
       )}
     >
       <div className="flex items-start gap-3">
