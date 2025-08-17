@@ -109,7 +109,7 @@ export default function BookmarksSection(props: {
               {tree.map((folder) => (
                 <Folder key={folder.id} element={folder.name} value={folder.id}>
                   {(folder.children || []).map((child) => (
-                    <div key={child.id} className="flex items-center justify-between gap-2">
+                    <div key={child.id} className="flex items-center justify-between gap-1">
                       <div className="min-w-0 flex-1">
                         <File
                           value={child.id}
@@ -126,7 +126,7 @@ export default function BookmarksSection(props: {
                           <button
                             type="button"
                             aria-label="Bookmark actions"
-                            className="mr-2 rounded-md border border-border bg-card p-1 hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background rtl:ml-2 rtl:mr-0"
+                            className="shrink-0 rounded-md border border-border bg-card p-1 hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
                             onClick={(e) => e.stopPropagation()}
                           >
                             <MoreVertical className="size-3" />

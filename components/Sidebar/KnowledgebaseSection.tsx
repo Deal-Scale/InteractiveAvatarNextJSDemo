@@ -83,7 +83,7 @@ export default function KnowledgebaseSection(props: {
                             <button
                               type="button"
                               aria-label="Knowledgebase actions"
-                              className="mr-2 rounded-md border border-border bg-card p-1 hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background rtl:ml-2 rtl:mr-0"
+                              className="shrink-0 rounded-md border border-border bg-card p-1 hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
                               onClick={(e) => e.stopPropagation()}
                             >
                               <MoreVertical className="size-3" />
