@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useMemo } from "react";
-import { ChevronRight } from "lucide-react";
+import { ChevronRight, MoreVertical } from "lucide-react";
 
 import { SidebarGroup, SidebarGroupLabel } from "@/components/ui/sidebar";
 import {
@@ -11,6 +11,12 @@ import {
   type TreeViewElement,
 } from "@/components/magicui/file-tree";
 import type { Conversation } from "@/components/Sidebar/types";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@radix-ui/react-dropdown-menu";
 
 export default function BookmarksSection(props: {
   collapsedBookmarks: boolean;
@@ -23,6 +29,7 @@ export default function BookmarksSection(props: {
   >;
   conversationsById: Record<string, Conversation | undefined>;
   onOpenChat?: (c: Conversation) => void;
+  onOpenBookmarkMove?: (id: string) => void;
 }) {
   const {
     collapsedBookmarks,
@@ -32,6 +39,7 @@ export default function BookmarksSection(props: {
     bookmarkMeta,
     conversationsById,
     onOpenChat,
+    onOpenBookmarkMove,
   } = props;
 
   const tree: TreeViewElement[] = useMemo(() => {
@@ -101,16 +109,57 @@ export default function BookmarksSection(props: {
               {tree.map((folder) => (
                 <Folder key={folder.id} element={folder.name} value={folder.id}>
                   {(folder.children || []).map((child) => (
-                    <File
-                      key={child.id}
-                      value={child.id}
-                      onClick={() => {
-                        const c = conversationsById[child.id];
-                        if (c) onOpenChat?.(c);
-                      }}
-                    >
-                      {child.name}
-                    </File>
+                    <div key={child.id} className="flex items-center justify-between gap-2">
+                      <div className="min-w-0 flex-1">
+                        <File
+                          value={child.id}
+                          onClick={() => {
+                            const c = conversationsById[child.id];
+                            if (c) onOpenChat?.(c);
+                          }}
+                        >
+                          <span className="block truncate whitespace-nowrap">{child.name}</span>
+                        </File>
+                      </div>
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <button
+                            type="button"
+                            aria-label="Bookmark actions"
+                            className="mr-2 rounded-md border border-border bg-card p-1 hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background rtl:ml-2 rtl:mr-0"
+                            onClick={(e) => e.stopPropagation()}
+                          >
+                            <MoreVertical className="size-3" />
+                          </button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent
+                          className="z-50 min-w-[12rem] rounded-md border border-border bg-card p-1 text-xs shadow-md"
+                          sideOffset={4}
+                          align="start"
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          <DropdownMenuItem
+                            className="relative flex cursor-pointer select-none items-center rounded-sm px-2 py-1.5 outline-none data-[highlighted]:bg-muted"
+                            onSelect={(e) => {
+                              e.preventDefault();
+                              const c = conversationsById[child.id];
+                              if (c) onOpenChat?.(c);
+                            }}
+                          >
+                            View Chat
+                          </DropdownMenuItem>
+                          <DropdownMenuItem
+                            className="relative flex cursor-pointer select-none items-center rounded-sm px-2 py-1.5 outline-none data-[highlighted]:bg-muted"
+                            onSelect={(e) => {
+                              e.preventDefault();
+                              onOpenBookmarkMove?.(child.id);
+                            }}
+                          >
+                            Move
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </div>
                   ))}
                 </Folder>
               ))}
