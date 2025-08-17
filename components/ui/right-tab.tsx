@@ -105,12 +105,12 @@ export function RightTab({
           {/* Resize handle area (left edge) */}
           <div
             aria-label="Resize chat"
-            className="absolute left-0 top-0 bottom-0 w-3 cursor-ew-resize bg-primary/30 hover:bg-primary/60 transition-colors"
+            className="absolute left-0 top-0 bottom-0 w-3 cursor-ew-resize bg-muted/20 hover:bg-muted/40 transition-colors"
             role="separator"
             onPointerDown={onPointerDown}
           />
           {/* Actions stack */}
-          <div className="flex flex-col items-center gap-2 px-1">
+          <div className="flex flex-col items-center gap-2 px-1 py-2">
             <button
               aria-label="Maximize chat width"
               className="inline-flex h-8 w-8 items-center justify-center rounded-md border border-border bg-background/80 text-foreground/75 shadow-sm hover:bg-muted/60"
@@ -137,21 +137,21 @@ export function RightTab({
     );
   }
 
-  // Collapsed tab (centered vertically at right edge)
+  // Collapsed tab (centered vertically at right edge) - themed like BottomTab
   return (
     <div
       aria-label="Open chat drawer"
       className={
         "fixed right-0 top-1/2 -translate-y-1/2 z-40 select-none " +
-        "flex items-center gap-2 rounded-l-md border border-primary/40 bg-primary/10 px-2 py-2 text-primary shadow-md " +
-        "hover:bg-primary/15 backdrop-blur supports-[backdrop-filter]:bg-primary/10"
+        "flex items-center gap-2 rounded-l-md border border-border bg-background/95 px-2 py-2 text-foreground shadow-md " +
+        "hover:bg-muted/60 backdrop-blur supports-[backdrop-filter]:bg-background/70"
       }
       role="button"
       onClick={onClick}
       onPointerDown={onPointerDown}
     >
-      <span className="h-1.5 w-8 rounded-full bg-primary/50" />
-      <span className="text-xs">{label}</span>
+      <span className="h-1.5 w-8 rounded-full bg-muted-foreground/60" />
+      <span className="text-xs text-foreground/80">{label}</span>
     </div>
   );
 }
