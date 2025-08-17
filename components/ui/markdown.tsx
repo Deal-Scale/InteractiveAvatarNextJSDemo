@@ -1,4 +1,5 @@
 import { memo, useId } from "react";
+import * as React from "react";
 import ReactMarkdown, { Components } from "react-markdown";
 import remarkBreaks from "remark-breaks";
 import remarkGfm from "remark-gfm";
@@ -42,10 +43,55 @@ const INITIAL_COMPONENTS: Partial<Components> = {
     }
 
     const language = extractLanguage(className);
+    const codeStr = String(children ?? "");
+    const [copied, setCopied] = React.useState(false);
+
+    const handleCopy = React.useCallback(async () => {
+      try {
+        await navigator.clipboard.writeText(codeStr);
+        setCopied(true);
+        window.setTimeout(() => setCopied(false), 1500);
+      } catch (e) {
+        // noop
+      }
+    }, [codeStr]);
+
+    const handleShare = React.useCallback(async () => {
+      const payload = { title: "Code snippet", text: codeStr } as ShareData;
+      try {
+        if (navigator.share) {
+          await navigator.share(payload);
+        } else {
+          await navigator.clipboard.writeText(codeStr);
+          setCopied(true);
+          window.setTimeout(() => setCopied(false), 1500);
+        }
+      } catch (e) {
+        // user cancelled or unsupported
+      }
+    }, [codeStr]);
 
     return (
       <CodeBlock className={className}>
-        <CodeBlockCode code={children as string} language={language} />
+        <div className="not-prose flex items-center justify-end gap-2 border-b border-border bg-muted/40 px-2 py-1">
+          <button
+            type="button"
+            aria-label="Copy code"
+            onClick={handleCopy}
+            className="rounded-md border border-border bg-background px-2 py-0.5 text-xs hover:bg-accent"
+          >
+            {copied ? "Copied" : "Copy"}
+          </button>
+          <button
+            type="button"
+            aria-label="Share code"
+            onClick={handleShare}
+            className="rounded-md border border-border bg-background px-2 py-0.5 text-xs hover:bg-accent"
+          >
+            Share
+          </button>
+        </div>
+        <CodeBlockCode code={codeStr} language={language} />
       </CodeBlock>
     );
   },
