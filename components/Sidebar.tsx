@@ -8,6 +8,8 @@ import { useAgentStore } from "@/lib/stores/agent";
 import { useSettingsStore } from "@/lib/stores/settings";
 import { useRouter } from "next/navigation";
 import { Sidebar as UISidebar, SidebarContent, SidebarHeader, SidebarProvider, SidebarFooter } from "@/components/ui/sidebar";
+import { ThemeToggle } from "@/components/ui/theme-toggle";
+import ThemeEmotionSelect from "@/components/ui/theme-emotion-select";
 
 import type { SidebarProps } from "@/components/Sidebar/types";
 import { formatCompactNumber } from "@/components/Sidebar/utils/format";
@@ -186,6 +188,13 @@ const Sidebar: React.FC<SidebarProps> = ({ onSelect, apps }) => {
         </SidebarContent>
 
         <SidebarFooter className="px-2">
+          <div className="flex items-center gap-2 rounded-md border border-border bg-background px-2 py-2">
+            <span className="text-xs text-muted-foreground group-data-[state=collapsed]/sidebar:hidden">Theme</span>
+            <ThemeEmotionSelect className="group-data-[state=collapsed]/sidebar:hidden" />
+            <div className="ml-auto">
+              <ThemeToggle />
+            </div>
+          </div>
           <div className="h-2" />
         </SidebarFooter>
       </UISidebar>
