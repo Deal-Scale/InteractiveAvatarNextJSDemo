@@ -57,17 +57,17 @@ export const AvatarControls: React.FC<AvatarControlsProps> = ({ stopSession }) =
             }`}
             style={sessionState === StreamingAvatarSessionState.CONNECTED ? rampStyle : undefined}
           >
-            <Button className="!bg-zinc-700 !text-white" onClick={interrupt}>
+            <Button className="!bg-secondary !text-foreground" onClick={interrupt}>
               Interrupt
             </Button>
-            <Button className="!bg-red-600 !text-white" onClick={stopSession}>
+            <Button className="!bg-destructive !text-destructive-foreground" onClick={stopSession}>
               Stop
             </Button>
           </div>
         )}
         {/* Tab switcher */}
         <div
-          className={`mt-2 flex items-center justify-center gap-2 bg-black/40 border border-white/10 rounded-full px-2 py-1 backdrop-blur-sm transition-opacity duration-200 ${
+          className={`mt-2 flex items-center justify-center gap-2 bg-popover/60 border border-border rounded-full px-2 py-1 backdrop-blur-sm transition-opacity duration-200 ${
             sessionState === StreamingAvatarSessionState.CONNECTED
               ? "opacity-[var(--ui-opacity)] group-hover:opacity-100"
               : "opacity-100"
@@ -77,42 +77,42 @@ export const AvatarControls: React.FC<AvatarControlsProps> = ({ stopSession }) =
           {/* Video first */}
           <Button
             title="Video"
-            className={`h-9 w-9 aspect-square !p-0 rounded-xl flex items-center justify-center flex-shrink-0 !text-white ${
-              viewTab === "video" ? "!bg-[#7559FF]" : "!bg-zinc-800"
+            className={`h-9 w-9 aspect-square !p-0 rounded-xl flex items-center justify-center flex-shrink-0 ${
+              viewTab === "video" ? "!bg-primary !text-primary-foreground" : "!bg-muted !text-foreground"
             }`}
             onClick={() => setViewTab("video")}
           >
-            <Play className="h-4 w-4 text-white" />
+            <Play className="h-4 w-4" />
           </Button>
           <Button
             title="Brain"
-            className={`h-9 w-9 aspect-square !p-0 rounded-xl flex items-center justify-center flex-shrink-0 !text-white ${
-              viewTab === "brain" ? "!bg-[#7559FF]" : "!bg-zinc-800"
+            className={`h-9 w-9 aspect-square !p-0 rounded-xl flex items-center justify-center flex-shrink-0 ${
+              viewTab === "brain" ? "!bg-primary !text-primary-foreground" : "!bg-muted !text-foreground"
             }`}
             onClick={() => setViewTab("brain")}
           >
-            <Brain className="h-4 w-4 text-white" />
+            <Brain className="h-4 w-4" />
           </Button>
           <Button
             title="Data"
-            className={`h-9 w-9 aspect-square !p-0 rounded-xl flex items-center justify-center flex-shrink-0 !text-white ${
-              viewTab === "data" ? "!bg-[#7559FF]" : "!bg-zinc-800"
+            className={`h-9 w-9 aspect-square !p-0 rounded-xl flex items-center justify-center flex-shrink-0 ${
+              viewTab === "data" ? "!bg-primary !text-primary-foreground" : "!bg-muted !text-foreground"
             }`}
             onClick={() => setViewTab("data")}
           >
-            <Database className="h-4 w-4 text-white" />
+            <Database className="h-4 w-4" />
           </Button>
           <Button
             title="Actions"
-            className={`h-9 w-9 aspect-square !p-0 rounded-xl flex items-center justify-center flex-shrink-0 !text-white ${
-              viewTab === "actions" ? "!bg-[#7559FF]" : "!bg-zinc-800"
+            className={`h-9 w-9 aspect-square !p-0 rounded-xl flex items-center justify-center flex-shrink-0 ${
+              viewTab === "actions" ? "!bg-primary !text-primary-foreground" : "!bg-muted !text-foreground"
             }`}
             onClick={() => setViewTab("actions")}
           >
-            <LayoutDashboard className="h-4 w-4 text-white" />
+            <LayoutDashboard className="h-4 w-4" />
           </Button>
         </div>
       </div>
     </div>
   );
-};
+}

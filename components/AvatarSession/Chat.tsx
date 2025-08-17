@@ -172,7 +172,7 @@ export const Chat: React.FC<ChatProps> = ({
   return (
     <div className="flex flex-col w-full h-full p-4">
       {!inputOnly && (
-        <ChatContainerRoot className="flex-1 min-h-0 text-white">
+        <ChatContainerRoot className="flex-1 min-h-0 text-foreground">
           <ChatContainerContent>
             {messages.map((message) => (
               <MessageItem
@@ -194,8 +194,8 @@ export const Chat: React.FC<ChatProps> = ({
               <Message className="flex gap-2 items-start">
                 <MessageAvatar alt="Avatar" fallback="A" src="/heygen-logo.png" />
                 <div className="flex flex-col items-start gap-1">
-                  <p className="text-xs text-zinc-400">Avatar</p>
-                  <div className="prose break-words whitespace-normal rounded-lg bg-secondary bg-zinc-700 p-2 text-sm text-foreground">
+                  <p className="text-xs text-muted-foreground">Avatar</p>
+                  <div className="prose break-words whitespace-normal rounded-lg bg-secondary p-2 text-sm text-foreground">
                     <div className="py-1">
                       <Loader variant="typing" />
                     </div>

@@ -66,20 +66,20 @@ export function ChatPanel({
   return (
     <div
       className={cn(
-        isChatSolidBg ? "bg-gray-800" : "bg-gray-800/95",
-        "text-white rounded-lg shadow-lg border border-gray-700 overflow-hidden flex flex-col h-full w-full",
+        isChatSolidBg ? "bg-card" : "bg-popover/95",
+        "text-foreground rounded-lg shadow-lg border border-border overflow-hidden flex flex-col h-full w-full",
         dock === "bottom" && "flex flex-col gap-3 relative w-full items-center",
       )}
     >
       <div
         className={cn(
-          "flex items-center justify-between gap-2 px-3 py-2 border-b border-gray-700",
-          isChatSolidBg ? "bg-gray-900" : "bg-gray-900/80",
+          "flex items-center justify-between gap-2 px-3 py-2 border-b border-border",
+          isChatSolidBg ? "bg-card" : "bg-popover/80",
           dock === "floating" && "cursor-grab active:cursor-grabbing",
         )}
         onPointerDown={onHeaderPointerDown}
       >
-        <div className="flex items-center gap-2 text-xs text-gray-300">
+        <div className="flex items-center gap-2 text-xs text-muted-foreground">
           <MoveIcon className="h-4 w-4" />
           <span>Chat</span>
         </div>
@@ -146,9 +146,9 @@ export function ChatPanel({
           />
         ) : (
           <div className="flex flex-1 items-center justify-center h-full">
-            <div className="flex flex-col items-center gap-3 text-white">
+            <div className="flex flex-col items-center gap-3 text-foreground">
               <Loader variant="classic" size="lg" />
-              <p className="text-sm text-zinc-300">
+              <p className="text-sm text-muted-foreground">
                 {sessionState === StreamingAvatarSessionState.CONNECTING
                   ? "Connecting to avatar session..."
                   : "Waiting to start session..."}

@@ -14,7 +14,7 @@ export const MessageHistory: React.FC = () => {
   const messages = useSessionStore((s) => s.messages);
 
   return (
-    <ChatContainerRoot className="relative w-[600px] text-white self-center max-h-[150px]">
+    <ChatContainerRoot className="relative w-[600px] text-foreground self-center max-h-[150px]">
       <ChatContainerContent>
         {messages.map((message) => (
           <Message
@@ -25,14 +25,14 @@ export const MessageHistory: React.FC = () => {
                 : "items-end"
             }`}
           >
-            <p className="text-xs text-zinc-400">
+            <p className="text-xs text-muted-foreground">
               {message.sender === MessageSender.AVATAR ? "Avatar" : "You"}
             </p>
             <MessageContent
               className={`text-sm ${
                 message.sender === MessageSender.AVATAR
-                  ? "bg-zinc-700"
-                  : "bg-blue-500"
+                  ? "bg-secondary"
+                  : "bg-primary text-primary-foreground"
               }`}
             >
               {message.content}

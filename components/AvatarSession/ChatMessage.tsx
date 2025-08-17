@@ -30,12 +30,16 @@ const ChatMessage: React.FC<ChatMessageProps> = ({ message, onCopy }) => {
       <div
         className={`flex flex-col gap-1 ${message.sender === MessageSender.AVATAR ? "items-start" : "items-end"}`}
       >
-        <p className="text-xs text-zinc-400">
+        <p className="text-xs text-muted-foreground">
           {message.sender === MessageSender.AVATAR ? "Avatar" : "You"}
         </p>
         <MessageContent
           markdown
-          className={`text-sm ${message.sender === MessageSender.AVATAR ? "bg-zinc-700" : "bg-indigo-500"}`}
+          className={`text-sm ${
+            message.sender === MessageSender.AVATAR
+              ? "bg-secondary"
+              : "bg-primary text-primary-foreground"
+          }`}
         >
           {message.content}
         </MessageContent>

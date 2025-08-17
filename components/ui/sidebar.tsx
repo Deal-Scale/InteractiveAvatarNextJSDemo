@@ -122,6 +122,6 @@ export function SidebarMenuButton({ children, onClick, className = "" }: { child
   );
 }
 
-export function SidebarFooter({ children, className = "" }: { children: React.ReactNode; className?: string }) {
+export function SidebarFooter({ children, className = "" }: { children?: React.ReactNode; className?: string }) {
   return <div className={`mt-auto shrink-0 ${className}`}>{children}</div>;
 }

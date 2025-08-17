@@ -36,13 +36,13 @@ export const AvatarVideo = forwardRef<HTMLVideoElement>((props, ref) => {
     <div className="absolute top-3 left-3 flex flex-col gap-2">
       <ConnectionIndicator sessionState={sessionState} />
       {connectionQuality !== ConnectionQuality.UNKNOWN && (
-        <div className="bg-black/70 text-white rounded-lg px-3 py-2 border border-white/10 backdrop-blur-sm">
+        <div className="bg-popover/70 text-popover-foreground rounded-lg px-3 py-2 border border-border backdrop-blur-sm">
           Connection Quality: {connectionQuality}
         </div>
       )}
-      <div className="bg-black/70 text-white rounded-lg px-3 py-2 border border-white/10 backdrop-blur-sm">
+      <div className="bg-popover/70 text-popover-foreground rounded-lg px-3 py-2 border border-border backdrop-blur-sm">
         <div className="flex items-center gap-2 text-xs">
-          <span className="inline-flex h-2 w-2 rounded-full bg-emerald-400 animate-pulse" />
+          <span className="inline-flex h-2 w-2 rounded-full bg-primary animate-pulse" />
           <span>
             {Math.round(creditsPerMinute)} cpm • {Math.max(0, Math.floor(creditsRemaining))} left
           </span>
@@ -56,13 +56,13 @@ export const AvatarVideo = forwardRef<HTMLVideoElement>((props, ref) => {
       <div className="flex flex-col items-center gap-4">
         <div className="relative h-20 w-20">
           <div className="absolute inset-0 rounded-full bg-[conic-gradient(var(--tw-gradient-stops))] from-fuchsia-500 via-indigo-500 to-cyan-500 animate-spin [animation-duration:2.5s]" />
-          <div className="absolute inset-[4px] rounded-full bg-black/70 backdrop-blur-sm border border-white/10" />
+          <div className="absolute inset-[4px] rounded-full bg-popover/70 backdrop-blur-sm border border-border" />
         </div>
-        <div className="flex items-center gap-2 text-sm text-zinc-200">
+        <div className="flex items-center gap-2 text-sm text-muted-foreground">
           <Loader size="sm" />
           <span>Preparing avatar…</span>
         </div>
-        <p className="text-xs text-zinc-400">Your session will start shortly.</p>
+        <p className="text-xs text-muted-foreground">Your session will start shortly.</p>
       </div>
     </div>
   );
@@ -107,7 +107,7 @@ export const AvatarVideo = forwardRef<HTMLVideoElement>((props, ref) => {
       <StatusPanel />
       {isLoaded && (
         <Button
-          className="absolute top-3 right-3 !p-2 bg-zinc-700 bg-opacity-50 z-10"
+          className="absolute top-3 right-3 !p-2 bg-secondary/70 z-10"
           onClick={stopAvatar}
         >
           <CloseIcon />
@@ -131,7 +131,7 @@ export const AvatarVideo = forwardRef<HTMLVideoElement>((props, ref) => {
       </video>
       {/* Subtle connected glow overlay */}
       {isLoaded && (
-        <div className="pointer-events-none absolute inset-0 ring-1 ring-emerald-400/20 shadow-[0_0_80px_-20px_rgba(16,185,129,0.35)] animate-[pulse_3s_ease-in-out_infinite]" />
+        <div className="pointer-events-none absolute inset-0 ring-1 ring-primary/20 shadow-[0_0_80px_-20px_rgba(59,130,246,0.35)] animate-[pulse_3s_ease-in-out_infinite]" />
       )}
       {!isLoaded && <LoadingSpinnerOverlay />}
     </>
