@@ -1,9 +1,18 @@
 "use client";
 
-import React, { useMemo, useState } from "react";
-import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import type { Agent } from "./AgentCard";
+
+import React, { useMemo, useState } from "react";
+
+import AgentPreview from "./AgentPreview";
+
+import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 
 export default function AgentModal(props: {
   agent: Agent | null;
@@ -56,33 +65,7 @@ export default function AgentModal(props: {
         </div>
 
         {tab === "details" ? (
-          <div className="space-y-3">
-            <div className="flex items-start gap-3">
-              <div className="h-20 w-32 overflow-hidden rounded bg-muted/50">
-                {working.avatarUrl ? (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img alt={working.name} className="h-full w-full object-cover" src={working.avatarUrl} />
-                ) : (
-                  <div className="flex h-full w-full items-center justify-center text-muted-foreground">
-                    {working.name?.substring(0, 1).toUpperCase()}
-                  </div>
-                )}
-              </div>
-              <div className="min-w-0">
-                <div className="text-sm text-muted-foreground">{working.role || "Agent"}</div>
-                {working.description && <p className="mt-1 text-sm">{working.description}</p>}
-                {working.tags && working.tags.length > 0 && (
-                  <div className="mt-2 flex flex-wrap gap-1 text-xs text-muted-foreground">
-                    {working.tags.map((t) => (
-                      <span key={t} className="rounded bg-muted px-1.5 py-0.5">
-                        #{t}
-                      </span>
-                    ))}
-                  </div>
-                )}
-              </div>
-            </div>
-          </div>
+          <AgentPreview agent={working as Agent} />
         ) : (
           <form
             className="space-y-3"

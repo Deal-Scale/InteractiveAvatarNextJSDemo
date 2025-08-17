@@ -9,7 +9,7 @@ import {
   Download as DownloadIcon,
   Plus,
 } from "lucide-react";
-import React, { useMemo, useState } from "react";
+import React, { useMemo, useRef, useState } from "react";
 
 import { SidebarGroup, SidebarGroupLabel } from "@/components/ui/sidebar";
 import {
@@ -19,6 +19,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
+import { useAssetsStore } from "@/lib/stores/assets";
 
 export default function AssetsSection(props: {
   assets: {
@@ -33,12 +34,23 @@ export default function AssetsSection(props: {
   assetsRef: React.MutableRefObject<HTMLDivElement | null>;
   onDelete?: (id: string) => void;
   onAdd?: () => void;
+  onAttach?: (asset: {
+    id: string;
+    name: string;
+    thumbnailUrl?: string;
+    url?: string;
+    mimeType?: string;
+  }) => void;
 }) {
-  const { assets, collapsedAssets, setCollapsedAssets, assetsRef, onDelete, onAdd } = props;
+  const { assets, collapsedAssets, setCollapsedAssets, assetsRef, onDelete, onAdd, onAttach } = props;
+
+  const storeAssets = useAssetsStore((s) => s.assets);
+  const uploads = useAssetsStore((s) => s.uploads);
+  const uploadFiles = useAssetsStore((s) => s.uploadFiles);
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   const [query, setQuery] = useState("");
   const [previewId, setPreviewId] = useState<string | null>(null);
-  const previewAsset = useMemo(() => assets.find((a) => a.id === previewId), [assets, previewId]);
 
   const isImage = (a: {
     mimeType?: string;
@@ -50,9 +62,32 @@ export default function AssetsSection(props: {
     return /(\.png|\.jpg|\.jpeg|\.gif|\.webp|\.bmp|\.svg)$/i.test(src);
   };
 
+  const mergedAssets = useMemo(() => {
+    const seen = new Set<string>();
+    const out: typeof assets = [];
+    for (const a of storeAssets) {
+      if (!seen.has(a.id)) {
+        seen.add(a.id);
+        out.push({ id: a.id, name: a.name, url: a.url, thumbnailUrl: a.thumbnailUrl, mimeType: a.mimeType });
+      }
+    }
+    for (const a of assets) {
+      if (!seen.has(a.id)) {
+        seen.add(a.id);
+        out.push(a);
+      }
+    }
+    return out;
+  }, [storeAssets, assets]);
+
+  const previewAsset = useMemo(
+    () => mergedAssets.find((a) => a.id === previewId),
+    [mergedAssets, previewId],
+  );
+
   const filteredAssets = useMemo(() => {
     const q = query.trim().toLowerCase();
-    if (!q) return assets;
+    if (!q) return mergedAssets;
     const isExtQuery = q.startsWith(".") || q.startsWith("ext:");
     const wanted = q.startsWith("ext:") ? q.slice(4) : q.startsWith(".") ? q.slice(1) : q;
     const getExt = (a: { name: string; url?: string; thumbnailUrl?: string }) => {
@@ -60,12 +95,12 @@ export default function AssetsSection(props: {
       const m = /\.([a-z0-9]+)(?:$|\?)/i.exec(src);
       return (m?.[1] || "").toLowerCase();
     };
-    return assets.filter((a) => {
+    return mergedAssets.filter((a) => {
       const nameHit = a.name.toLowerCase().includes(q);
       if (!isExtQuery) return nameHit;
       return getExt(a) === wanted;
     });
-  }, [assets, query]);
+  }, [mergedAssets, query]);
 
   return (
     <SidebarGroup>
@@ -83,10 +118,31 @@ export default function AssetsSection(props: {
       {!collapsedAssets && (
         <div className="px-2 pb-2">
           <div className="mb-2 flex items-center gap-2">
-            <Button onClick={() => onAdd?.()} size="sm" variant="outline">
+            <Button
+              onClick={() => {
+                if (onAdd) return onAdd();
+                fileInputRef.current?.click();
+              }}
+              size="sm"
+              variant="outline"
+            >
               <Plus className="mr-1 size-3" />
               Add New
             </Button>
+            <input
+              ref={fileInputRef}
+              type="file"
+              multiple
+              className="hidden"
+              onChange={async (e) => {
+                const files = e.currentTarget.files;
+                if (files && files.length) {
+                  await uploadFiles(files);
+                  // reset so selecting the same file again triggers change
+                  e.currentTarget.value = "";
+                }
+              }}
+            />
             <input
               aria-label="Search assets by name or extension"
               className="w-full rounded-md border bg-background px-2 py-1 text-xs outline-none ring-0 focus:border-primary"
@@ -96,6 +152,29 @@ export default function AssetsSection(props: {
               value={query}
             />
           </div>
+
+          {uploads.length > 0 && (
+            <div className="mb-2 space-y-1 px-1">
+              {uploads.map((u) => (
+                <div key={u.id} className="flex items-center gap-2 text-xs text-muted-foreground">
+                  <div className="min-w-0 flex-1 truncate">{u.name}</div>
+                  <div className="w-24">
+                    <div className="h-1.5 w-full overflow-hidden rounded bg-muted">
+                      <div
+                        className={`h-full ${u.status === "error" ? "bg-destructive" : "bg-primary"}`}
+                        style={{ width: `${Math.round((u.progress ?? 0) * 100)}%` }}
+                      />
+                    </div>
+                  </div>
+                  <div className="w-14 text-right">
+                    {u.status === "uploading" && "Uploading"}
+                    {u.status === "pending" && "Queued"}
+                    {u.status === "error" && "Error"}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
           {filteredAssets.length === 0 ? (
             <div className="px-1 py-2 text-xs text-muted-foreground">No assets found</div>
           ) : (
@@ -149,6 +228,17 @@ export default function AssetsSection(props: {
                         <span className="truncate" title={asset.name}>{asset.name}</span>
                       </span>
                       <span className="ml-auto inline-flex items-center gap-1">
+                        {onAttach ? (
+                          <button
+                            aria-label="Attach to message"
+                            className="rounded p-1 hover:bg-muted"
+                            onClick={() => onAttach(asset)}
+                            title="Attach"
+                          >
+                            <Plus className="size-3" />
+                            <span className="sr-only">Attach</span>
+                          </button>
+                        ) : null}
                         {img && src ? (
                           <button
                             aria-label="Open preview"

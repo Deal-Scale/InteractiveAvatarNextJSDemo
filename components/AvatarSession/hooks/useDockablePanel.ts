@@ -64,6 +64,37 @@ export function useDockablePanel(
     null | "bottom" | "right" | "floating"
   >(null);
 
+  // Detect mobile viewport to restrict modal/floating behavior
+  const [isMobile, setIsMobile] = useState<boolean>(() => {
+    const w = safeWindow();
+    try {
+      return !!w?.matchMedia?.("(max-width: 640px)")?.matches; // Tailwind sm breakpoint
+    } catch {
+      return false;
+    }
+  });
+  useEffect(() => {
+    const w = safeWindow();
+    if (!w?.matchMedia) return;
+    const mq = w.matchMedia("(max-width: 640px)");
+    const handler = (e: MediaQueryListEvent) => setIsMobile(!!e.matches);
+    // Initial sync in case SSR hydration mismatch
+    setIsMobile(!!mq.matches);
+    try {
+      mq.addEventListener("change", handler);
+    } catch {
+      // Safari fallback
+      mq.addListener(handler as any);
+    }
+    return () => {
+      try {
+        mq.removeEventListener("change", handler);
+      } catch {
+        mq.removeListener(handler as any);
+      }
+    };
+  }, []);
+
   const dragState = useRef({ dragging: false, offsetX: 0, offsetY: 0 });
   const floatingResizeState = useRef<{
     startX: number;
@@ -237,6 +268,18 @@ export function useDockablePanel(
     }
   }, [hydrated, dock, rightWidthFrac, bottomHeightFrac, setRightWidthFrac, setBottomHeightFrac]);
 
+  // Enforce: on mobile, do not allow floating. If currently floating, switch to bottom and expand.
+  useEffect(() => {
+    if (!hydrated) return;
+    if (isMobile && dock === "floating") {
+      console.debug("[dockable] mobile restriction -> force bottom expanded");
+      setDockMode("bottom");
+      // Ensure visible and expanded input
+      setBottomHeightFrac(1);
+      if (!expanded) setExpanded(true);
+    }
+  }, [isMobile, dock, hydrated, setDockMode, setBottomHeightFrac, expanded]);
+
   // Snap when switching to floating
   useEffect(() => {
     if (dock !== "floating") return;
@@ -310,7 +353,19 @@ export function useDockablePanel(
     rightSize: Math.round((rightWidthFrac || 0) * 100),
 
     // setters/actions
-    setDock: (mode: DockMode) => setDockMode(mode),
+    setDock: (mode: DockMode) => {
+      // Coerce forbidden modes on mobile
+      const next = isMobile && mode === "floating" ? "bottom" : mode;
+      if (next !== mode) {
+        console.debug("[dockable] mobile restriction: coerce setDock", { requested: mode, next });
+      }
+      setDockMode(next);
+      if (isMobile && next === "bottom") {
+        // Favor an expanded bottom chat on mobile for accessibility
+        setBottomHeightFrac(1);
+        if (!expanded) setExpanded(true);
+      }
+    },
     setBottomSize: (pct: number) => setBottomHeightFrac(Math.max(MIN_BOTTOM_SIZE_PCT, Math.min(100, pct)) / 100),
     setRightSize: (pct: number) =>
       setRightWidthFrac(

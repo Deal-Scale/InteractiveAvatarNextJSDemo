@@ -6,6 +6,7 @@ import React, { useMemo, useRef, useState } from "react";
 import { ChatInput } from "./ChatInput";
 import { MessageItem } from "./MessageItem";
 import { formatAttachmentSummary } from "./utils";
+import { useComposerStore } from "@/lib/stores/composer";
 
 import { useStreamingAvatarContext } from "@/components/logic/context";
 import {
@@ -56,6 +57,9 @@ export const Chat: React.FC<ChatProps> = ({
   const { isAvatarTalking, isVoiceChatLoading } = useStreamingAvatarContext();
 
   const [attachments, setAttachments] = useState<File[]>([]);
+  const composerAttachments = useComposerStore((s) => s.assetAttachments);
+  const clearComposerAttachments = useComposerStore((s) => s.clearAssetAttachments);
+  const removeComposerAttachment = useComposerStore((s) => s.removeAssetAttachment);
   const inputRef = useRef<HTMLTextAreaElement | null>(null);
   const promptSuggestions = useMemo(
     () => [
@@ -79,16 +83,25 @@ export const Chat: React.FC<ChatProps> = ({
   const sendWithAttachments = (text: string) => {
     const trimmed = (text ?? "").trim();
 
-    if (!trimmed && attachments.length === 0) {
+    if (!trimmed && attachments.length === 0 && composerAttachments.length === 0) {
       return;
     }
 
-    const suffix = attachments.length
-      ? `\n\n[Attachments: ${formatAttachmentSummary(attachments)}]`
-      : "";
+    const parts: string[] = [];
+    if (attachments.length) {
+      parts.push(formatAttachmentSummary(attachments));
+    }
+    if (composerAttachments.length) {
+      const assetsPart = composerAttachments
+        .map((a) => (a.url ? `${a.name} <${a.url}>` : a.name))
+        .join(", ");
+      parts.push(assetsPart);
+    }
+    const suffix = parts.length ? `\n\n[Attachments: ${parts.join(", ")}]` : "";
 
     onSendMessage(`${trimmed}${suffix}`);
     setAttachments([]);
+    clearComposerAttachments();
     onChatInputChange("");
   };
 
@@ -217,6 +230,7 @@ export const Chat: React.FC<ChatProps> = ({
       )}
       <ChatInput
         attachments={attachments}
+        composerAttachments={composerAttachments}
         cancelEdit={cancelEdit}
         chatInput={chatInput}
         confirmEdit={confirmEdit}
@@ -227,6 +241,7 @@ export const Chat: React.FC<ChatProps> = ({
         isVoiceChatLoading={isVoiceChatLoading}
         promptSuggestions={promptSuggestions}
         removeAttachment={removeAttachment}
+        removeComposerAttachment={removeComposerAttachment}
         sendWithAttachments={sendWithAttachments}
         onChatInputChange={onChatInputChange}
         onFilesAdded={onFilesAdded}
