@@ -19,10 +19,8 @@ import {
 } from "@/components/ui/sidebar";
 import { ThemeToggle } from "@/components/ui/theme-toggle";
 import ThemeEmotionSelect from "@/components/ui/theme-emotion-select";
-import { formatCompactNumber } from "@/components/Sidebar/utils/format";
 import CollapsedEdgeTrigger from "@/components/Sidebar/CollapsedEdgeTrigger";
 import ApplicationsStarter from "@/components/Sidebar/ApplicationsStarter";
-import ConversationsSection from "@/components/Sidebar/ConversationsSection";
 import AssetsSection from "@/components/Sidebar/AssetsSection";
 import AgentsSection from "@/components/Sidebar/AgentsSection";
 import BookmarkModal from "@/components/Sidebar/BookmarkModal";
@@ -30,6 +28,7 @@ import useSidebarCollapse from "@/components/Sidebar/hooks/useSidebarCollapse";
 import useConversations from "@/components/Sidebar/hooks/useConversations";
 import useBookmarkModal from "@/components/Sidebar/hooks/useBookmarkModal";
 import SidebarHeaderSection from "@/components/Sidebar/SidebarHeaderSection";
+import MessagesSection from "@/components/Sidebar/MessagesSection";
 
 // types, utils, and subcomponents are imported from components/Sidebar/*
 
@@ -50,14 +49,30 @@ const Sidebar: React.FC<SidebarProps> = ({ onSelect, apps }) => {
 
   // collapse and archived persistence moved into hooks
 
-  // Placeholder assets and agents; agents include current store agent when present
-  const assets = useMemo(
-    () => [
-      { id: "asset-1", name: "Default Avatar 1" },
-      { id: "asset-2", name: "Studio Background" },
-      { id: "asset-3", name: "Office Background" },
-    ],
-    [],
+  // Placeholder assets (in state so delete works)
+  const [assets, setAssets] = React.useState(
+    [
+      {
+        id: "asset-1",
+        name: "Demo Image",
+        thumbnailUrl: "/demo.png",
+        url: "/demo.png",
+        mimeType: "image/png",
+      },
+      {
+        id: "asset-2",
+        name: "Spec Sheet.pdf",
+        url: "/demo.png", // placeholder; replace with real file URL
+        mimeType: "application/pdf",
+      },
+      {
+        id: "asset-3",
+        name: "Scene Background.jpg",
+        thumbnailUrl: "/demo.png",
+        url: "/demo.png",
+        mimeType: "image/jpeg",
+      },
+    ] as any[],
   );
 
   const agents = useMemo(() => {
@@ -159,70 +174,45 @@ const Sidebar: React.FC<SidebarProps> = ({ onSelect, apps }) => {
             </div>
           )}
 
-          {/* Selection toggle above chats */}
-          {!conv.loading && (
-            <div className="px-2 pb-2 group-data-[state=collapsed]/sidebar:hidden">
-              <Button
-                className="w-full justify-center border border-border hover:bg-muted"
-                disabled={
-                  !conv.filteredGroups ||
-                  conv.visibleConversationIds.length === 0
-                }
-                variant="outline"
-                onClick={() => {
-                  if (conv.selectionMode) {
-                    conv.clearSelection();
-                    conv.setSelectionMode(false);
-                  } else {
-                    conv.setSelectionMode(true);
-                    conv.setSelectedIds(new Set(conv.visibleConversationIds));
-                  }
-                }}
-              >
-                {conv.selectionMode ? "Deselect All" : "Select Visible"}
-              </Button>
-            </div>
-          )}
-
-          {/* Conversations count above chats */}
-          {!conv.loading && (
-            <div className="px-2 pb-1 text-center text-xs group-data-[state=collapsed]/sidebar:hidden">
-              <span className="inline-block px-1 bg-aurora bg-clip-text text-transparent">
-                {formatCompactNumber(totalCount)} conversations •{" "}
-                {formatCompactNumber(conv.archivedList.length)} archived
-              </span>
-            </div>
-          )}
-
-          {!conv.loading && conv.filteredGroups && (
-            <ConversationsSection
-              archivedIds={conv.archivedIds}
-              bookmarkedIds={bookmark.bookmarkedIds}
-              collapsedGroups={collapse.collapsedGroups}
-              groups={conv.filteredGroups}
-              openBookmarkModal={openBookmarkModal}
-              selectedIds={conv.selectedIds}
-              selectionMode={conv.selectionMode}
-              setCollapsedGroups={collapse.setCollapsedGroups}
-              toggleSelect={conv.toggleSelect}
-              onSelect={onSelect}
-            />
-          )}
-
-          {/* Assets (moved after messages) */}
+          {/* Assets */}
           <AssetsSection
             assets={assets as any}
             assetsRef={assetsRef}
             collapsedAssets={collapse.collapsedAssets}
+            onDelete={(id) => setAssets((prev) => prev.filter((a: any) => a.id !== id))}
             setCollapsedAssets={collapse.setCollapsedAssets}
           />
 
-          {/* Agents (moved after messages) */}
+          {/* Agents */}
           <AgentsSection
             agents={agents as any}
             collapsedAgents={collapse.collapsedAgents}
             setCollapsedAgents={collapse.setCollapsedAgents}
           />
+
+          {/* Messages Section (threads grouped under their own dropdown) */}
+          {!conv.loading && conv.filteredGroups && (
+            <MessagesSection
+              archivedCount={conv.archivedList.length}
+              archivedIds={conv.archivedIds}
+              bookmarkedIds={bookmark.bookmarkedIds}
+              collapsedGroups={collapse.collapsedGroups}
+              collapsedMessages={collapse.collapsedMessages}
+              clearSelection={conv.clearSelection}
+              groups={conv.filteredGroups}
+              onSelect={onSelect}
+              openBookmarkModal={openBookmarkModal}
+              selectedIds={conv.selectedIds}
+              selectionMode={conv.selectionMode}
+              setCollapsedGroups={collapse.setCollapsedGroups}
+              setCollapsedMessages={collapse.setCollapsedMessages}
+              setSelectedIds={conv.setSelectedIds}
+              setSelectionMode={conv.setSelectionMode}
+              toggleSelect={conv.toggleSelect}
+              totalCount={totalCount}
+              visibleConversationIds={conv.visibleConversationIds}
+            />
+          )}
         </SidebarContent>
 
         <SidebarFooter className="px-2" />

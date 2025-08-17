@@ -11,6 +11,7 @@
     "test:watch": "vitest"
   },
   "dependencies": {
+    "3d-force-graph": "^1.78.4",
     "@heygen/streaming-avatar": "^2.0.13",
     "@hookform/resolvers": "^5.2.1",
     "@modelcontextprotocol/sdk": "^1.17.3",
