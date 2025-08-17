@@ -136,7 +136,7 @@ export function AvatarSession({
     <div
       ref={rootRef}
       className={cn(
-        "relative w-full h-full",
+        "group relative w-full h-full",
         !isFloating && (isRight ? "flex flex-row" : "flex flex-col"),
       )}
     >
