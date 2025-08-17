@@ -106,13 +106,13 @@ const DEFAULTS = {
 
 // Per-user storage key helper
 const ANON_ID = "anon";
-let currentUserIdForStorage: string | undefined = undefined;
-const keyForUser = (id?: string) => `placement-store-${id || ANON_ID}`;
+// Initialize to anon so SSR/first CSR read uses a stable key
+let currentUserIdForStorage: string | undefined = ANON_ID;
 
 const userScopedStorage = {
-  getItem: (_name: string): string | null => {
+  getItem: (name: string): string | null => {
     try {
-      const k = keyForUser(currentUserIdForStorage);
+      const k = `${name}-${currentUserIdForStorage || ANON_ID}`;
 
       return localStorage.getItem(k);
     } catch {
@@ -120,9 +120,9 @@ const userScopedStorage = {
     }
   },
 
-  setItem: (_name: string, _value: string): void => {
+  setItem: (name: string, _value: string): void => {
     try {
-      const k = keyForUser(currentUserIdForStorage);
+      const k = `${name}-${currentUserIdForStorage || ANON_ID}`;
 
       localStorage.setItem(k, _value);
     } catch {
@@ -130,9 +130,9 @@ const userScopedStorage = {
     }
   },
 
-  removeItem: (_name: string): void => {
+  removeItem: (name: string): void => {
     try {
-      const k = keyForUser(currentUserIdForStorage);
+      const k = `${name}-${currentUserIdForStorage || ANON_ID}`;
 
       localStorage.removeItem(k);
     } catch {
@@ -145,7 +145,8 @@ function loadPersistedForUser(
   id?: string,
 ): Partial<PlacementState> | undefined {
   try {
-    const raw = localStorage.getItem(keyForUser(id));
+    const storageKey = `placement-store-${id || ANON_ID}`;
+    const raw = localStorage.getItem(storageKey);
 
     if (!raw) return undefined;
     const parsed = JSON.parse(raw);
@@ -167,51 +168,86 @@ export const usePlacementStore = create<PlacementState>()(
       userId: undefined,
 
       dockMode: DEFAULTS.dockMode,
-      setDockMode: (mode) => set({ dockMode: mode, updatedAt: Date.now() }),
+      setDockMode: (mode) => {
+        const prev = get().dockMode;
+        if (prev === mode) return;
+        console.debug("[placement] setDockMode", { userId: get().userId, prev, mode });
+        set({ dockMode: mode, updatedAt: Date.now() });
+      },
 
       bottomHeightFrac: DEFAULTS.bottomHeightFrac,
-      setBottomHeightFrac: (frac) =>
-        set({ bottomHeightFrac: clamp01(frac), updatedAt: Date.now() }),
+      setBottomHeightFrac: (frac) => {
+        const next = clamp01(frac);
+        const prev = get().bottomHeightFrac;
+        if (Math.abs(prev - next) < 0.0005) return;
+        console.debug("[placement] setBottomHeightFrac", {
+          userId: get().userId,
+          prev,
+          next,
+        });
+        set({ bottomHeightFrac: next, updatedAt: Date.now() });
+      },
 
       bottomOffset: 0,
-      setBottomOffset: (px) =>
-        set({
-          bottomOffset: Math.max(0, Math.floor(px)),
-          updatedAt: Date.now(),
-        }),
+      setBottomOffset: (px) => {
+        const next = Math.max(0, Math.floor(px));
+        const prev = get().bottomOffset || 0;
+        if (prev === next) return;
+        console.debug("[placement] setBottomOffset", { userId: get().userId, prev, next });
+        set({ bottomOffset: next, updatedAt: Date.now() });
+      },
 
       rightWidthFrac: DEFAULTS.rightWidthFrac,
-      setRightWidthFrac: (frac) =>
-        set({ rightWidthFrac: clamp01(frac), updatedAt: Date.now() }),
+      setRightWidthFrac: (frac) => {
+        const next = clamp01(frac);
+        const prev = get().rightWidthFrac;
+        if (Math.abs(prev - next) < 0.0005) return;
+        console.debug("[placement] setRightWidthFrac", {
+          userId: get().userId,
+          prev,
+          next,
+        });
+        set({ rightWidthFrac: next, updatedAt: Date.now() });
+      },
 
       floating: DEFAULTS.floating,
-      setFloating: (rect) =>
-        set({
-          floating: { ...get().floating, ...rect },
-          updatedAt: Date.now(),
-        }),
+      setFloating: (rect) => {
+        const prev = get().floating;
+        const next = { ...prev, ...rect };
+        console.debug("[placement] setFloating", { userId: get().userId, prev, patch: rect, next });
+        set({ floating: next, updatedAt: Date.now() });
+      },
 
       // Aliases
       get isWindowed() {
         return get().dockMode === "floating";
       },
-      setIsWindowed: (v) =>
-        set({
-          dockMode: v ? "floating" : DEFAULTS.dockMode,
-          updatedAt: Date.now(),
-        }),
+      setIsWindowed: (v) => {
+        const prev = get().dockMode;
+        const next = v ? "floating" : DEFAULTS.dockMode;
+        if (prev === next) return;
+        console.debug("[placement] setIsWindowed", { userId: get().userId, prev, next });
+        set({ dockMode: next, updatedAt: Date.now() });
+      },
       get windowPosition() {
         return { x: get().floating.x, y: get().floating.y };
       },
-      setWindowPosition: (pos) =>
+      setWindowPosition: (pos) => {
+        const prev = { x: get().floating.x, y: get().floating.y };
+        if (Math.abs(prev.x - pos.x) < 0.5 && Math.abs(prev.y - pos.y) < 0.5) return;
+        console.debug("[placement] setWindowPosition", { userId: get().userId, prev, pos });
         set({
           floating: { ...get().floating, x: pos.x, y: pos.y },
           updatedAt: Date.now(),
-        }),
+        });
+      },
       get windowSize() {
         return { width: get().floating.width, height: get().floating.height };
       },
-      setWindowSize: (size) =>
+      setWindowSize: (size) => {
+        const prev = { width: get().floating.width, height: get().floating.height };
+        if (Math.abs(prev.width - size.width) < 0.5 && Math.abs(prev.height - size.height) < 0.5) return;
+        console.debug("[placement] setWindowSize", { userId: get().userId, prev, size });
         set({
           floating: {
             ...get().floating,
@@ -219,30 +255,47 @@ export const usePlacementStore = create<PlacementState>()(
             height: size.height,
           },
           updatedAt: Date.now(),
-        }),
+        });
+      },
 
       sidebarCollapsed: DEFAULTS.sidebarCollapsed,
-      setSidebarCollapsed: (collapsed) =>
-        set({ sidebarCollapsed: !!collapsed, updatedAt: Date.now() }),
+      setSidebarCollapsed: (collapsed) => {
+        const next = !!collapsed;
+        const prev = get().sidebarCollapsed;
+        if (prev === next) return;
+        console.debug("[placement] setSidebarCollapsed", { userId: get().userId, prev, next });
+        set({ sidebarCollapsed: next, updatedAt: Date.now() });
+      },
 
       get sidebarExpanded() {
         return !get().sidebarCollapsed;
       },
-      setSidebarExpanded: (v) =>
-        set({ sidebarCollapsed: !v, updatedAt: Date.now() }),
+      setSidebarExpanded: (v) => {
+        const prev = get().sidebarCollapsed;
+        const next = !v;
+        if (prev === next) return;
+        console.debug("[placement] setSidebarExpanded", { userId: get().userId, prevCollapsed: prev, nextCollapsed: next });
+        set({ sidebarCollapsed: next, updatedAt: Date.now() });
+      },
 
       activeVideoTab: DEFAULTS.activeVideoTab,
-      setActiveVideoTab: (tab) =>
-        set({ activeVideoTab: tab, updatedAt: Date.now() }),
+      setActiveVideoTab: (tab) => {
+        const prev = get().activeVideoTab;
+        if (prev === tab) return;
+        console.debug("[placement] setActiveVideoTab", { userId: get().userId, prev, tab });
+        set({ activeVideoTab: tab, updatedAt: Date.now() });
+      },
 
       get activeTab() {
         return get().activeVideoTab;
       },
-      setActiveTab: (tab) =>
-        set({
-          activeVideoTab: (tab as VideoTab) || DEFAULTS.activeVideoTab,
-          updatedAt: Date.now(),
-        }),
+      setActiveTab: (tab) => {
+        const next = (tab as VideoTab) || DEFAULTS.activeVideoTab;
+        const prev = get().activeVideoTab;
+        if (prev === next) return;
+        console.debug("[placement] setActiveTab", { userId: get().userId, prev, next });
+        set({ activeVideoTab: next, updatedAt: Date.now() });
+      },
 
       setUserId: (id) => {
         currentUserIdForStorage = id || ANON_ID;
@@ -250,9 +303,18 @@ export const usePlacementStore = create<PlacementState>()(
 
         if (next) {
           // Apply persisted state for this user id
+          console.debug("[placement] setUserId -> load persisted", {
+            key: `placement-store-${id || ANON_ID}`,
+            userId: id,
+            next,
+          });
           set({ ...(next as any), userId: id, updatedAt: Date.now() });
         } else {
           // No saved state for this user, reset to defaults but keep id
+          console.debug(
+            "[placement] setUserId -> no persisted; reset to defaults",
+            { key: `placement-store-${id || ANON_ID}`, userId: id },
+          );
           set({
             ...DEFAULTS,
             userId: id,
@@ -262,7 +324,10 @@ export const usePlacementStore = create<PlacementState>()(
         }
       },
 
-      update: (patch) => set({ ...(patch as any), updatedAt: Date.now() }),
+      update: (patch) => {
+        console.debug("[placement] update patch", { userId: get().userId, patch });
+        set({ ...(patch as any), updatedAt: Date.now() });
+      },
 
       reset: () =>
         set({
@@ -276,6 +341,22 @@ export const usePlacementStore = create<PlacementState>()(
     {
       name: "placement-store", // logical name; actual storage key is user-scoped via wrapper
       storage: createJSONStorage(() => userScopedStorage as any),
+      onRehydrateStorage: () => {
+        console.debug("[placement] onRehydrateStorage: start", {
+          key: `placement-store-${currentUserIdForStorage || ANON_ID}`,
+          userId: currentUserIdForStorage,
+        });
+        return (state, error) => {
+          if (error) {
+            console.error("[placement] onRehydrateStorage: error", error);
+          } else {
+            console.debug("[placement] onRehydrateStorage: done", {
+              key: `placement-store-${(state as any)?.getState?.().userId || ANON_ID}`,
+              snapshot: (state as any)?.getState?.(),
+            });
+          }
+        };
+      },
       partialize: (s) => ({
         schemaVersion: s.schemaVersion,
         updatedAt: s.updatedAt,

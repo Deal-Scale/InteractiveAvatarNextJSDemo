@@ -29,6 +29,27 @@ export function useDockablePanel(
   const sizeH = usePlacementStore((s) => s.floating.height);
   const setWindowSize = usePlacementStore((s) => s.setWindowSize);
 
+  // Persist hydration guard to avoid overwriting rehydrated values with defaults
+  const [hydrated, setHydrated] = useState<boolean>(() => {
+    // Zustand persist API may exist; if not, assume hydrated to avoid blocking
+    try {
+      // @ts-expect-error - persist API is attached at runtime by middleware
+      return !!usePlacementStore.persist?.hasHydrated?.();
+    } catch {
+      return true;
+    }
+  });
+  useEffect(() => {
+    try {
+      // @ts-expect-error - persist API is attached at runtime by middleware
+      const api = usePlacementStore.persist;
+      if (api?.hasHydrated?.()) {
+        setHydrated(true);
+      }
+      api?.onFinishHydration?.(() => setHydrated(true));
+    } catch {}
+  }, []);
+
   // Local-only UI state
   const [expanded, setExpanded] = useState(false);
   const [resizing, setResizing] = useState<
@@ -77,6 +98,7 @@ export function useDockablePanel(
 
       x = Math.max(0, Math.min(x, parentRect.width - width));
       y = Math.max(0, Math.min(y, parentRect.height - height));
+      console.debug("[dockable] drag move -> setWindowPosition", { x, y });
       setWindowPosition({ x, y });
     },
     [dock, panelRef, setWindowPosition],
@@ -87,6 +109,7 @@ export function useDockablePanel(
   }, []);
 
   useEffect(() => {
+    console.debug("[dockable] mount listeners");
     window.addEventListener("pointermove", onGlobalPointerMove);
     window.addEventListener("pointerup", onGlobalPointerUp);
 
@@ -111,6 +134,7 @@ export function useDockablePanel(
 
         const nextFrac = clamped / 100;
         if (Math.abs((bottomHeightFrac || 0) - nextFrac) > 0.001) {
+          console.debug("[dockable] resize bottom -> setBottomHeightFrac", { nextFrac });
           setBottomHeightFrac(nextFrac);
         }
       } else if (resizing === "right") {
@@ -122,6 +146,7 @@ export function useDockablePanel(
 
         const nextFrac = clamped / 100;
         if (Math.abs(rightWidthFrac - nextFrac) > 0.001) {
+          console.debug("[dockable] resize right -> setRightWidthFrac", { nextFrac });
           setRightWidthFrac(nextFrac);
         }
       } else if (resizing === "floating") {
@@ -136,6 +161,7 @@ export function useDockablePanel(
         const nextH = Math.max(220, Math.min(maxH, state.startH + deltaY));
 
         if (Math.abs(sizeW - nextW) > 0.5 || Math.abs(sizeH - nextH) > 0.5) {
+          console.debug("[dockable] floating resize -> setWindowSize", { nextW, nextH });
           setWindowSize({ width: nextW, height: nextH });
         }
         if (expanded) setExpanded(false);
@@ -166,22 +192,26 @@ export function useDockablePanel(
   ]);
 
   // Ensure a visible size when switching docks so overlays render
+  // Guarded until persistence hydration is complete to prevent overwriting restored values
   useEffect(() => {
+    if (!hydrated) return;
     const rightPct = Math.round((rightWidthFrac || 0) * 100);
     const bottomPct = Math.round((bottomHeightFrac || 0) * 100);
 
     if (dock === "right" && rightPct <= 0) {
       const next = 24 / 100;
       if (Math.abs((rightWidthFrac || 0) - next) > 0.001) {
+        console.debug("[dockable] ensure visible -> right setRightWidthFrac", { next });
         setRightWidthFrac(next);
       }
     } else if (dock === "bottom" && bottomPct <= 0) {
       const next = 15 / 100;
       if (Math.abs((bottomHeightFrac || 0) - next) > 0.001) {
+        console.debug("[dockable] ensure visible -> bottom setBottomHeightFrac", { next });
         setBottomHeightFrac(next);
       }
     }
-  }, [dock, rightWidthFrac, bottomHeightFrac, setRightWidthFrac, setBottomHeightFrac]);
+  }, [hydrated, dock, rightWidthFrac, bottomHeightFrac, setRightWidthFrac, setBottomHeightFrac]);
 
   // Snap when switching to floating
   useEffect(() => {
@@ -196,9 +226,10 @@ export function useDockablePanel(
     const y = Math.max(0, parentRect.height - height - 24);
 
     if (Math.abs(posX - x) > 0.5 || Math.abs(posY - y) > 0.5) {
+      console.debug("[dockable] snap floating -> setWindowPosition", { x, y });
       setWindowPosition({ x, y });
     }
-  }, [dock, expanded, sizeW, sizeH, posX, posY, setWindowPosition]);
+  }, [dock, expanded, sizeW, sizeH, posX, posY, setWindowPosition, panelRef]);
 
   const toggleExpand = useCallback(() => {
     if (dock === "floating") {
