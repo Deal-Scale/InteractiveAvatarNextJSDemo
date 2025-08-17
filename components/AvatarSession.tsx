@@ -1,4 +1,6 @@
-import { useRef } from "react";
+"use client";
+
+import { useEffect, useRef, useState } from "react";
 
 import { ChatPanel } from "./AvatarSession/ChatPanel";
 import { useDockablePanel } from "./AvatarSession/hooks/useDockablePanel";
@@ -24,6 +26,8 @@ export function AvatarSession({
   mediaStream,
   sessionState,
 }: AvatarSessionProps) {
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
   const { messages } = useSessionStore();
 
   // Refs for dockable panel root and panel
@@ -121,6 +125,12 @@ export function AvatarSession({
   // Unified, stable render tree to avoid video remounts
   const isRight = dock === "right";
   const isFloating = dock === "floating";
+
+  // Render a stable placeholder on server and on the client's first render
+  // to avoid SSR/CSR mismatch while persisted stores hydrate.
+  if (!mounted) {
+    return <div ref={rootRef} className={cn("relative w-full h-full")} />;
+  }
 
   return (
     <div
