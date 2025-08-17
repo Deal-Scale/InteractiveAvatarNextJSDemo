@@ -7,5 +7,6 @@ export const mockOpenRouter = async (prompt: string): Promise<string> => {
   ];
 
   const tip = tips[Math.floor(Math.random() * tips.length)];
+
   return `${tip}\n\nYou said: "${prompt.slice(0, 160)}"`;
 };

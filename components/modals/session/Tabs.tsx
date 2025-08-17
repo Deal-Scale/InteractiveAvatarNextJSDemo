@@ -18,20 +18,20 @@ export function TabsHeader({ activeTab, setActiveTab }: TabsHeaderProps) {
   return (
     <div className="sticky top-0 z-10 bg-card">
       <div
-        role="tablist"
         aria-label="Session configuration sections"
         className="flex gap-1 border-b border-border px-4 md:px-6"
+        role="tablist"
       >
         {tabs.map((t) => (
           <button
             key={t.key}
-            role="tab"
             aria-selected={activeTab === t.key}
             className={`relative -mb-px px-3 md:px-4 py-3 text-sm font-medium outline-none transition-colors ${
               activeTab === t.key
                 ? "text-foreground"
                 : "text-muted-foreground hover:text-foreground"
             }`}
+            role="tab"
             type="button"
             onClick={() => setActiveTab(t.key)}
           >

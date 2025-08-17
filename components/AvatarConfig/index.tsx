@@ -1,18 +1,23 @@
 import type { AgentConfig } from "@/lib/schemas/agent";
 
 import React, { useEffect, useState } from "react";
-import { AvatarQuality, StartAvatarRequest, VoiceChatTransport } from "@heygen/streaming-avatar";
-
-import { STT_LANGUAGE_LIST } from "@/app/lib/constants";
-import { useAgentStore } from "@/lib/stores/agent";
+import {
+  AvatarQuality,
+  StartAvatarRequest,
+  VoiceChatTransport,
+} from "@heygen/streaming-avatar";
 
 import { Input } from "../Input";
 import { Select } from "../Select";
+
 import { Field } from "./Field";
 import { useAvatarOptions } from "./hooks/useAvatarOptions";
 import VoiceSettings from "./components/VoiceSettings";
 import STTSettings from "./components/STTSettings";
 import StartSessionButton from "./components/StartSessionButton";
+
+import { useAgentStore } from "@/lib/stores/agent";
+import { STT_LANGUAGE_LIST } from "@/app/lib/constants";
 
 interface AvatarConfigProps {
   onConfigChange: (config: StartAvatarRequest) => void;
@@ -35,11 +40,13 @@ export const AvatarConfig: React.FC<AvatarConfigProps> = ({
   ) => {
     // Update the sidebar session config
     const nextConfig = { ...config, [key]: value } as StartAvatarRequest;
+
     onConfigChange(nextConfig);
 
     // Also reflect relevant fields into the agent store
     try {
       const patch: Partial<AgentConfig> = {};
+
       if (key === "language") {
         patch.language = value as string;
       } else if (key === "avatarName") {
@@ -48,6 +55,7 @@ export const AvatarConfig: React.FC<AvatarConfigProps> = ({
         patch.knowledgeBaseId = value as string;
       } else if (key === "voice") {
         const v = value as StartAvatarRequest["voice"];
+
         patch.voice = {
           ...(currentAgent?.voice ?? {}),
           voiceId: v?.voiceId,
@@ -55,7 +63,9 @@ export const AvatarConfig: React.FC<AvatarConfigProps> = ({
           emotion: v?.emotion as any,
           elevenlabs_settings: {
             ...(currentAgent?.voice?.elevenlabs_settings ?? {}),
-            model_id: (v?.model as any) ?? currentAgent?.voice?.elevenlabs_settings?.model_id,
+            model_id:
+              (v?.model as any) ??
+              currentAgent?.voice?.elevenlabs_settings?.model_id,
           },
         } as any;
         // Also mirror the top-level voiceId if present in schema
@@ -91,6 +101,7 @@ export const AvatarConfig: React.FC<AvatarConfigProps> = ({
           (config.voice?.model as any),
       },
     } as StartAvatarRequest;
+
     onConfigChange(merged);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentAgent]);
@@ -141,7 +152,9 @@ export const AvatarConfig: React.FC<AvatarConfigProps> = ({
             customIdValid ? (
               <div className="text-green-400 text-xs mt-1">Avatar ID found</div>
             ) : (
-              <div className="text-red-400 text-xs mt-1">Avatar ID not found in available avatars</div>
+              <div className="text-red-400 text-xs mt-1">
+                Avatar ID not found in available avatars
+              </div>
             )
           ) : null}
         </Field>
@@ -187,6 +200,7 @@ export const AvatarConfig: React.FC<AvatarConfigProps> = ({
           const disabled =
             isConnecting ||
             (selectedAvatar?.isCustom && !!config.avatarName && !customIdValid);
+
           return (
             <StartSessionButton
               disabled={disabled}

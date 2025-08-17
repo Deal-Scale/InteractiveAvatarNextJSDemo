@@ -1,17 +1,24 @@
 "use client";
 
+import type { SidebarProps } from "@/components/Sidebar/types";
+
 import React, { useMemo, useRef } from "react";
 import { Plus as PlusIcon, Bookmark } from "lucide-react";
+import { useRouter } from "next/navigation";
+
 import { Button } from "@/components/ui/button";
 import { useSessionStore } from "@/lib/stores/session";
 import { useAgentStore } from "@/lib/stores/agent";
 import { useSettingsStore } from "@/lib/stores/settings";
-import { useRouter } from "next/navigation";
-import { Sidebar as UISidebar, SidebarContent, SidebarHeader, SidebarProvider, SidebarFooter } from "@/components/ui/sidebar";
+import {
+  Sidebar as UISidebar,
+  SidebarContent,
+  SidebarHeader,
+  SidebarProvider,
+  SidebarFooter,
+} from "@/components/ui/sidebar";
 import { ThemeToggle } from "@/components/ui/theme-toggle";
 import ThemeEmotionSelect from "@/components/ui/theme-emotion-select";
-
-import type { SidebarProps } from "@/components/Sidebar/types";
 import { formatCompactNumber } from "@/components/Sidebar/utils/format";
 import CollapsedEdgeTrigger from "@/components/Sidebar/CollapsedEdgeTrigger";
 import ApplicationsStarter from "@/components/Sidebar/ApplicationsStarter";
@@ -30,7 +37,8 @@ const Sidebar: React.FC<SidebarProps> = ({ onSelect, apps }) => {
   const router = useRouter();
   const { agentSettings } = useSessionStore();
   const { currentAgent, updateAgent } = useAgentStore();
-  const { globalSettings, setGlobalSettings, clearGlobalSettings } = useSettingsStore();
+  const { globalSettings, setGlobalSettings, clearGlobalSettings } =
+    useSettingsStore();
   const [starterScale, setStarterScale] = React.useState<number>(1);
   const [showGlobalForm, setShowGlobalForm] = React.useState<boolean>(true);
   const assetsRef = useRef<HTMLDivElement | null>(null);
@@ -52,22 +60,24 @@ const Sidebar: React.FC<SidebarProps> = ({ onSelect, apps }) => {
     [],
   );
 
-  const agents = useMemo(
-    () => {
-      const base = [
-        { id: "agent-1", name: "Sales Assistant" },
-        { id: "agent-2", name: "Support Bot" },
+  const agents = useMemo(() => {
+    const base = [
+      { id: "agent-1", name: "Sales Assistant" },
+      { id: "agent-2", name: "Support Bot" },
+    ];
+
+    if (agentSettings?.id) {
+      return [
+        {
+          id: agentSettings.id,
+          name: agentSettings.name || "Configured Agent",
+        },
+        ...base,
       ];
-      if (agentSettings?.id) {
-        return [
-          { id: agentSettings.id, name: agentSettings.name || "Configured Agent" },
-          ...base,
-        ];
-      }
-      return base;
-    },
-    [agentSettings],
-  );
+    }
+
+    return base;
+  }, [agentSettings]);
   const openBookmarkModal = bookmark.openBookmarkModal;
 
   const totalCount = conv.totalCount;
@@ -77,12 +87,15 @@ const Sidebar: React.FC<SidebarProps> = ({ onSelect, apps }) => {
       <UISidebar className="bg-background text-foreground">
         <SidebarHeader>
           <SidebarHeaderSection
-            onAssetsClick={() => {
-              collapse.setCollapsedAssets(() => false);
-              assetsRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
-            }}
             query={conv.query}
             setQuery={conv.setQuery}
+            onAssetsClick={() => {
+              collapse.setCollapsedAssets(() => false);
+              assetsRef.current?.scrollIntoView({
+                behavior: "smooth",
+                block: "start",
+              });
+            }}
           />
         </SidebarHeader>
 
@@ -90,7 +103,9 @@ const Sidebar: React.FC<SidebarProps> = ({ onSelect, apps }) => {
           {/* Theme controls under header (Zola chat/avatar area) */}
           <div className="px-2 pb-2">
             <div className="flex items-center gap-2 rounded-md border border-border bg-background px-2 py-2">
-              <span className="text-xs text-muted-foreground group-data-[state=collapsed]/sidebar:hidden">Theme</span>
+              <span className="text-xs text-muted-foreground group-data-[state=collapsed]/sidebar:hidden">
+                Theme
+              </span>
               <ThemeEmotionSelect className="group-data-[state=collapsed]/sidebar:hidden" />
               <div className="ml-auto">
                 <ThemeToggle />
@@ -99,41 +114,41 @@ const Sidebar: React.FC<SidebarProps> = ({ onSelect, apps }) => {
           </div>
           <div className="px-2">
             <Button
-              variant="outline"
               className="mb-3 flex w-full items-center gap-2 group-data-[state=collapsed]/sidebar:justify-center bg-background text-foreground border border-border hover:bg-muted"
+              variant="outline"
             >
               <PlusIcon className="size-4" />
-              <span className="group-data-[state=collapsed]/sidebar:hidden">New Chat</span>
+              <span className="group-data-[state=collapsed]/sidebar:hidden">
+                New Chat
+              </span>
             </Button>
             <Button
-              variant="outline"
               className="mb-3 flex w-full items-center gap-2 group-data-[state=collapsed]/sidebar:justify-center bg-background text-foreground border border-border hover:bg-muted"
+              variant="outline"
               onClick={() => router.push("/bookmarks")}
             >
               <Bookmark className="size-4" />
-              <span className="group-data-[state=collapsed]/sidebar:hidden">Bookmarks</span>
+              <span className="group-data-[state=collapsed]/sidebar:hidden">
+                Bookmarks
+              </span>
             </Button>
           </div>
 
-          
-
           {/* Applications Starter */}
           <ApplicationsStarter
-            collapsedStarter={collapse.collapsedStarter}
-            setCollapsedStarter={collapse.setCollapsedStarter}
-            starterScale={starterScale}
-            setStarterScale={(n) => setStarterScale(n)}
-            currentAgent={currentAgent}
-            updateAgent={updateAgent}
-            globalSettings={globalSettings}
-            setGlobalSettings={setGlobalSettings}
-            clearGlobalSettings={clearGlobalSettings}
-            showGlobalForm={showGlobalForm}
-            setShowGlobalForm={setShowGlobalForm}
             apps={apps}
+            clearGlobalSettings={clearGlobalSettings}
+            collapsedStarter={collapse.collapsedStarter}
+            currentAgent={currentAgent}
+            globalSettings={globalSettings}
+            setCollapsedStarter={collapse.setCollapsedStarter}
+            setGlobalSettings={setGlobalSettings}
+            setShowGlobalForm={setShowGlobalForm}
+            setStarterScale={(n) => setStarterScale(n)}
+            showGlobalForm={showGlobalForm}
+            starterScale={starterScale}
+            updateAgent={updateAgent}
           />
-
-          
 
           {conv.loading && (
             <div className="px-2">
@@ -148,8 +163,12 @@ const Sidebar: React.FC<SidebarProps> = ({ onSelect, apps }) => {
           {!conv.loading && (
             <div className="px-2 pb-2 group-data-[state=collapsed]/sidebar:hidden">
               <Button
-                variant="outline"
                 className="w-full justify-center border border-border hover:bg-muted"
+                disabled={
+                  !conv.filteredGroups ||
+                  conv.visibleConversationIds.length === 0
+                }
+                variant="outline"
                 onClick={() => {
                   if (conv.selectionMode) {
                     conv.clearSelection();
@@ -159,7 +178,6 @@ const Sidebar: React.FC<SidebarProps> = ({ onSelect, apps }) => {
                     conv.setSelectedIds(new Set(conv.visibleConversationIds));
                   }
                 }}
-                disabled={!conv.filteredGroups || conv.visibleConversationIds.length === 0}
               >
                 {conv.selectionMode ? "Deselect All" : "Select Visible"}
               </Button>
@@ -170,31 +188,41 @@ const Sidebar: React.FC<SidebarProps> = ({ onSelect, apps }) => {
           {!conv.loading && (
             <div className="px-2 pb-1 text-center text-xs group-data-[state=collapsed]/sidebar:hidden">
               <span className="inline-block px-1 bg-aurora bg-clip-text text-transparent">
-                {formatCompactNumber(totalCount)} conversations • {formatCompactNumber(conv.archivedList.length)} archived
+                {formatCompactNumber(totalCount)} conversations •{" "}
+                {formatCompactNumber(conv.archivedList.length)} archived
               </span>
             </div>
           )}
 
           {!conv.loading && conv.filteredGroups && (
             <ConversationsSection
-              groups={conv.filteredGroups}
-              collapsedGroups={collapse.collapsedGroups}
-              setCollapsedGroups={collapse.setCollapsedGroups}
+              archivedIds={conv.archivedIds}
               bookmarkedIds={bookmark.bookmarkedIds}
-              selectionMode={conv.selectionMode}
+              collapsedGroups={collapse.collapsedGroups}
+              groups={conv.filteredGroups}
+              openBookmarkModal={openBookmarkModal}
               selectedIds={conv.selectedIds}
+              selectionMode={conv.selectionMode}
+              setCollapsedGroups={collapse.setCollapsedGroups}
               toggleSelect={conv.toggleSelect}
               onSelect={onSelect}
-              openBookmarkModal={openBookmarkModal}
-              archivedIds={conv.archivedIds}
             />
           )}
 
           {/* Assets (moved after messages) */}
-          <AssetsSection assets={assets as any} collapsedAssets={collapse.collapsedAssets} setCollapsedAssets={collapse.setCollapsedAssets} assetsRef={assetsRef} />
+          <AssetsSection
+            assets={assets as any}
+            assetsRef={assetsRef}
+            collapsedAssets={collapse.collapsedAssets}
+            setCollapsedAssets={collapse.setCollapsedAssets}
+          />
 
           {/* Agents (moved after messages) */}
-          <AgentsSection agents={agents as any} collapsedAgents={collapse.collapsedAgents} setCollapsedAgents={collapse.setCollapsedAgents} />
+          <AgentsSection
+            agents={agents as any}
+            collapsedAgents={collapse.collapsedAgents}
+            setCollapsedAgents={collapse.setCollapsedAgents}
+          />
         </SidebarContent>
 
         <SidebarFooter className="px-2" />
@@ -202,17 +230,17 @@ const Sidebar: React.FC<SidebarProps> = ({ onSelect, apps }) => {
       <CollapsedEdgeTrigger />
       {/* Bookmark Modal */}
       <BookmarkModal
-        open={bookmark.bookmarkModalOpen}
-        onClose={bookmark.close}
-        bookmarkedIds={bookmark.bookmarkedIds}
-        bookmarkTargetId={bookmark.bookmarkTargetId}
         bookmarkFolders={bookmark.bookmarkFolders}
+        bookmarkTargetId={bookmark.bookmarkTargetId}
+        bookmarkedIds={bookmark.bookmarkedIds}
         draftFolderId={bookmark.draftFolderId}
-        setDraftFolderId={bookmark.setDraftFolderId}
         draftNewFolder={bookmark.draftNewFolder}
-        setDraftNewFolder={bookmark.setDraftNewFolder}
         draftTags={bookmark.draftTags}
+        open={bookmark.bookmarkModalOpen}
+        setDraftFolderId={bookmark.setDraftFolderId}
+        setDraftNewFolder={bookmark.setDraftNewFolder}
         setDraftTags={bookmark.setDraftTags}
+        onClose={bookmark.close}
         onRemove={bookmark.handleRemoveBookmark}
         onSave={bookmark.saveBookmark}
       />

@@ -4,6 +4,7 @@ import StreamingAvatar, {
   UserTalkingMessageEvent,
 } from "@heygen/streaming-avatar";
 import React, { useRef, useState } from "react";
+
 import { Message, MessageSender } from "@/lib/types";
 
 export enum StreamingAvatarSessionState {

@@ -6,13 +6,16 @@ export default function useSidebarCollapse() {
   const [collapsedStarter, setCollapsedStarter] = useState<boolean>(false);
   const [collapsedAssets, setCollapsedAssets] = useState<boolean>(false);
   const [collapsedAgents, setCollapsedAgents] = useState<boolean>(false);
-  const [collapsedGroups, setCollapsedGroups] = useState<Set<string>>(new Set());
+  const [collapsedGroups, setCollapsedGroups] = useState<Set<string>>(
+    new Set(),
+  );
 
   // Load persisted collapse state
   useEffect(() => {
     if (typeof window === "undefined") return;
     try {
       const raw = localStorage.getItem("sidebar.collapsed.v1");
+
       if (raw) {
         const data = JSON.parse(raw) as {
           starter?: boolean;
@@ -20,10 +23,13 @@ export default function useSidebarCollapse() {
           agents?: boolean;
           groups?: string[];
         };
-        if (typeof data.starter === "boolean") setCollapsedStarter(data.starter);
+
+        if (typeof data.starter === "boolean")
+          setCollapsedStarter(data.starter);
         if (typeof data.assets === "boolean") setCollapsedAssets(data.assets);
         if (typeof data.agents === "boolean") setCollapsedAgents(data.agents);
-        if (Array.isArray(data.groups)) setCollapsedGroups(new Set(data.groups));
+        if (Array.isArray(data.groups))
+          setCollapsedGroups(new Set(data.groups));
       }
     } catch {}
   }, []);

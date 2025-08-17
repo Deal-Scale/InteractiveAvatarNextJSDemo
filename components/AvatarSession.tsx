@@ -35,13 +35,9 @@ export function AvatarSession({
     expanded,
     floatingPos,
     floatingSize,
-    bottomSize,
-    rightSize,
     setDock,
     setBottomSize,
-    setRightSize,
     toggleExpand,
-    setResizing,
     startFloatingResize,
     handlePointerDown,
   } = useDockablePanel(rootRef, panelRef);

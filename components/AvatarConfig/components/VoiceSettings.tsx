@@ -4,7 +4,7 @@ import {
   VoiceEmotion,
   StartAvatarRequest,
 } from "@heygen/streaming-avatar";
- 
+
 import { Field } from "../Field";
 import { Input } from "../../Input";
 import { Select } from "../../Select";

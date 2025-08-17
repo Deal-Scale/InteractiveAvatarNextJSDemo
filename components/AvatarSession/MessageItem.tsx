@@ -128,17 +128,18 @@ export const MessageItem: React.FC<MessageItemProps> = ({
                 textStream={message.content}
               />
             )}
-            {Array.isArray(message.toolParts) && message.toolParts.length > 0 && (
-              <div className="w-full">
-                {message.toolParts.map((part, idx) => (
-                  <Tool
-                    key={part.toolCallId ?? `${message.id}-tool-${idx}`}
-                    defaultOpen={part.state !== "output-available"}
-                    toolPart={part}
-                  />
-                ))}
-              </div>
-            )}
+            {Array.isArray(message.toolParts) &&
+              message.toolParts.length > 0 && (
+                <div className="w-full">
+                  {message.toolParts.map((part, idx) => (
+                    <Tool
+                      key={part.toolCallId ?? `${message.id}-tool-${idx}`}
+                      defaultOpen={part.state !== "output-available"}
+                      toolPart={part}
+                    />
+                  ))}
+                </div>
+              )}
             {Array.isArray(message.sources) && message.sources.length > 0 && (
               <div className="mt-2 flex w-full flex-wrap gap-1">
                 {message.sources.map((s, idx) => (
@@ -158,7 +159,10 @@ export const MessageItem: React.FC<MessageItemProps> = ({
             )}
           </div>
         ) : (
-          <MessageContent markdown className="text-sm bg-primary text-primary-foreground">
+          <MessageContent
+            markdown
+            className="text-sm bg-primary text-primary-foreground"
+          >
             {message.content}
           </MessageContent>
         )}

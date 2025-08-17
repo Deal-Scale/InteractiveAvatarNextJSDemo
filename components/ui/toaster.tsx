@@ -1,7 +1,16 @@
-"use client"
+"use client";
 
-import React, { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
+import React, {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import { X } from "lucide-react";
+
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 
@@ -31,7 +40,9 @@ const ToastContext = createContext<ToastContextType | null>(null);
 
 export function useToast() {
   const ctx = useContext(ToastContext);
+
   if (!ctx) throw new Error("useToast must be used within ToastProvider");
+
   return ctx;
 }
 
@@ -43,48 +54,72 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
   const clearTimer = useCallback((id: string) => {
     const m = timers.current;
     const h = m.get(id);
+
     if (h) {
       window.clearTimeout(h);
       m.delete(id);
     }
   }, []);
 
-  const dismiss = useCallback((id: string) => {
-    clearTimer(id);
-    setItems((prev) => prev.filter((i) => i.id !== id));
-  }, [clearTimer]);
-
-  const publish = useCallback((t: Omit<ToastItem, "id">) => {
-    const id = `t_${Date.now()}_${idSeq.current++}`;
-    const duration = t.duration ?? 3000;
-    const persist = !!t.persist;
-    setItems((prev) => [...prev, { id, duration, persist, progress: t.progress ?? null, ...t }]);
-    if (duration > 0 && !persist) {
-      const h = window.setTimeout(() => dismiss(id), duration);
-      timers.current.set(id, h);
-    }
-    return id;
-  }, [dismiss]);
-
-  const update = useCallback((id: string, patch: ToastPatch) => {
-    setItems((prev) => prev.map((i) => (i.id === id ? { ...i, ...patch } : i)));
-    const duration = patch.duration ?? undefined;
-    const persist = patch.persist ?? undefined;
-    if (duration !== undefined || persist !== undefined) {
-      // reset timer according to latest flags
+  const dismiss = useCallback(
+    (id: string) => {
       clearTimer(id);
-      const itemsNow = items; // may be stale but sufficient to respect new duration/persist immediately
-      const target = itemsNow.find((x) => x.id === id);
-      const willPersist = persist ?? target?.persist ?? false;
-      const dur = duration ?? target?.duration ?? 3000;
-      if (dur > 0 && !willPersist) {
-        const h = window.setTimeout(() => dismiss(id), dur);
+      setItems((prev) => prev.filter((i) => i.id !== id));
+    },
+    [clearTimer],
+  );
+
+  const publish = useCallback(
+    (t: Omit<ToastItem, "id">) => {
+      const id = `t_${Date.now()}_${idSeq.current++}`;
+      const duration = t.duration ?? 3000;
+      const persist = !!t.persist;
+
+      setItems((prev) => [
+        ...prev,
+        { id, duration, persist, progress: t.progress ?? null, ...t },
+      ]);
+      if (duration > 0 && !persist) {
+        const h = window.setTimeout(() => dismiss(id), duration);
+
         timers.current.set(id, h);
       }
-    }
-  }, [clearTimer, dismiss, items]);
 
-  const value = useMemo(() => ({ publish, update, dismiss }), [publish, update, dismiss]);
+      return id;
+    },
+    [dismiss],
+  );
+
+  const update = useCallback(
+    (id: string, patch: ToastPatch) => {
+      setItems((prev) =>
+        prev.map((i) => (i.id === id ? { ...i, ...patch } : i)),
+      );
+      const duration = patch.duration ?? undefined;
+      const persist = patch.persist ?? undefined;
+
+      if (duration !== undefined || persist !== undefined) {
+        // reset timer according to latest flags
+        clearTimer(id);
+        const itemsNow = items; // may be stale but sufficient to respect new duration/persist immediately
+        const target = itemsNow.find((x) => x.id === id);
+        const willPersist = persist ?? target?.persist ?? false;
+        const dur = duration ?? target?.duration ?? 3000;
+
+        if (dur > 0 && !willPersist) {
+          const h = window.setTimeout(() => dismiss(id), dur);
+
+          timers.current.set(id, h);
+        }
+      }
+    },
+    [clearTimer, dismiss, items],
+  );
+
+  const value = useMemo(
+    () => ({ publish, update, dismiss }),
+    [publish, update, dismiss],
+  );
 
   return (
     <ToastContext.Provider value={value}>
@@ -95,31 +130,60 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
   );
 }
 
-function ToastCard({ t, onDismiss }: { t: ToastItem; onDismiss: (id: string) => void }) {
+function ToastCard({
+  t,
+  onDismiss,
+}: {
+  t: ToastItem;
+  onDismiss: (id: string) => void;
+}) {
   const [start, setStart] = useState(false);
   const duration = t.duration ?? 3000;
 
   useEffect(() => {
     // kick off progress animation on mount
     const raf = requestAnimationFrame(() => setStart(true));
+
     return () => cancelAnimationFrame(raf);
   }, []);
 
   const preset = useMemo(() => {
     const variant = t.variant ?? "default";
     const map = {
-      default: { base: "bg-card border-border/60 text-card-foreground", bar: "bg-foreground/30", emoji: "ℹ️" },
-      success: { base: "bg-accent/20 border-accent/40 text-foreground", bar: "bg-accent", emoji: "✅" },
-      error: { base: "bg-destructive/20 border-destructive/40 text-foreground", bar: "bg-destructive", emoji: "❌" },
-      warning: { base: "bg-secondary/20 border-secondary/40 text-foreground", bar: "bg-secondary", emoji: "⚠️" },
-      loading: { base: "bg-muted border-border/60 text-foreground", bar: "bg-foreground/30", emoji: "" },
+      default: {
+        base: "bg-card border-border/60 text-card-foreground",
+        bar: "bg-foreground/30",
+        emoji: "ℹ️",
+      },
+      success: {
+        base: "bg-accent/20 border-accent/40 text-foreground",
+        bar: "bg-accent",
+        emoji: "✅",
+      },
+      error: {
+        base: "bg-destructive/20 border-destructive/40 text-foreground",
+        bar: "bg-destructive",
+        emoji: "❌",
+      },
+      warning: {
+        base: "bg-secondary/20 border-secondary/40 text-foreground",
+        bar: "bg-secondary",
+        emoji: "⚠️",
+      },
+      loading: {
+        base: "bg-muted border-border/60 text-foreground",
+        bar: "bg-foreground/30",
+        emoji: "",
+      },
       custom: { base: "", bar: "", emoji: "✨" },
     } as const;
+
     return map[variant];
   }, [t.variant]);
 
   // Support custom color for custom variant
-  const customColor = t.variant === "custom" ? (t.color ?? "hsl(var(--accent))") : undefined;
+  const customColor =
+    t.variant === "custom" ? (t.color ?? "hsl(var(--accent))") : undefined;
 
   return (
     <div
@@ -127,7 +191,7 @@ function ToastCard({ t, onDismiss }: { t: ToastItem; onDismiss: (id: string) => 
         "pointer-events-auto rounded-lg border p-3 shadow-lg backdrop-blur",
         "text-sm",
         preset.base,
-        t.type === "foreground" && "ring-1 ring-foreground/5"
+        t.type === "foreground" && "ring-1 ring-foreground/5",
       )}
     >
       <div className="flex items-start gap-3">
@@ -135,13 +199,17 @@ function ToastCard({ t, onDismiss }: { t: ToastItem; onDismiss: (id: string) => 
           {t.variant === "loading" ? (
             <span className="inline-block h-4 w-4 animate-spin rounded-full border-2 border-foreground/40 border-t-foreground" />
           ) : (
-            <span aria-hidden className="select-none">{t.emoji ?? preset.emoji}</span>
+            <span aria-hidden className="select-none">
+              {t.emoji ?? preset.emoji}
+            </span>
           )}
         </div>
         <div className="min-w-0 flex-1">
           {t.title && <div className="font-medium leading-5">{t.title}</div>}
           {t.description && (
-            <div className={cn("mt-0.5 leading-5 text-muted-foreground")}>{t.description}</div>
+            <div className={cn("mt-0.5 leading-5 text-muted-foreground")}>
+              {t.description}
+            </div>
           )}
           {t.action && (
             <div className="mt-2">
@@ -159,13 +227,21 @@ function ToastCard({ t, onDismiss }: { t: ToastItem; onDismiss: (id: string) => 
           <X className="h-4 w-4" />
         </button>
       </div>
-      {(duration > 0 && !t.persist) || (typeof t.progress === "number") ? (
+      {(duration > 0 && !t.persist) || typeof t.progress === "number" ? (
         <div className="relative mt-3 h-1 w-full overflow-hidden rounded-full bg-foreground/10">
           <div
             className={cn("h-full", t.variant === "custom" ? "" : preset.bar)}
             style={{
-              width: typeof t.progress === "number" ? `${Math.max(0, Math.min(1, t.progress)) * 100}%` : start ? 0 : "100%",
-              transition: typeof t.progress === "number" ? "width 120ms linear" : `width ${duration}ms linear`,
+              width:
+                typeof t.progress === "number"
+                  ? `${Math.max(0, Math.min(1, t.progress)) * 100}%`
+                  : start
+                    ? 0
+                    : "100%",
+              transition:
+                typeof t.progress === "number"
+                  ? "width 120ms linear"
+                  : `width ${duration}ms linear`,
               backgroundColor: t.variant === "custom" ? customColor : undefined,
             }}
           />
@@ -175,7 +251,13 @@ function ToastCard({ t, onDismiss }: { t: ToastItem; onDismiss: (id: string) => 
   );
 }
 
-export function Toaster({ items, onDismiss }: { items: ToastItem[]; onDismiss: (id: string) => void }) {
+export function Toaster({
+  items,
+  onDismiss,
+}: {
+  items: ToastItem[];
+  onDismiss: (id: string) => void;
+}) {
   return (
     <div
       aria-label="Notifications"
@@ -203,20 +285,24 @@ declare global {
 // Attach listeners and global API inside provider lifecycle
 export function ToastBridge() {
   const ctx = useContext(ToastContext);
+
   useEffect(() => {
     if (!ctx) return;
     const { publish, update, dismiss } = ctx;
 
     function onPublish(e: Event) {
       const ce = e as CustomEvent<Omit<ToastItem, "id">>;
+
       publish(ce.detail);
     }
     function onUpdate(e: Event) {
       const ce = e as CustomEvent<{ id: string; patch: ToastPatch }>;
+
       update(ce.detail.id, ce.detail.patch);
     }
     function onDismiss(e: Event) {
       const ce = e as CustomEvent<string>;
+
       dismiss(ce.detail);
     }
 
@@ -227,9 +313,15 @@ export function ToastBridge() {
     window.mcpToast = { publish, update, dismiss };
 
     return () => {
-      window.removeEventListener("app:toast:publish", onPublish as EventListener);
+      window.removeEventListener(
+        "app:toast:publish",
+        onPublish as EventListener,
+      );
       window.removeEventListener("app:toast:update", onUpdate as EventListener);
-      window.removeEventListener("app:toast:dismiss", onDismiss as EventListener);
+      window.removeEventListener(
+        "app:toast:dismiss",
+        onDismiss as EventListener,
+      );
       if (window.mcpToast) delete window.mcpToast;
     };
   }, [ctx]);

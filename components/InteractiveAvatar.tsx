@@ -17,7 +17,10 @@ import { useStreamingAvatarSession } from "./logic/useStreamingAvatarSession";
 import { SessionConfigModal } from "./ui/SessionConfigModal";
 
 import { AVATARS } from "@/app/lib/constants";
-import { ApiServiceProvider, useApiService } from "@/components/logic/ApiServiceContext";
+import {
+  ApiServiceProvider,
+  useApiService,
+} from "@/components/logic/ApiServiceContext";
 import { HeyGenService } from "@/lib/services/heygen";
 import { useSessionStore } from "@/lib/stores/session";
 import { MessageSender } from "@/lib/types";
@@ -59,7 +62,9 @@ function InteractiveAvatarCore() {
         method: "POST",
       });
       const token = await response.text();
+
       console.log("Access Token:", token); // Log the token to verify
+
       return token;
     } catch (error) {
       console.error("Error fetching access token:", error);
@@ -107,10 +112,12 @@ function InteractiveAvatarCore() {
       // Stream incremental chat to the Zustand store
       avatar.on(StreamingEvents.USER_TALKING_MESSAGE, (event: any) => {
         const chunk = event?.detail?.message ?? "";
+
         if (chunk) appendMessageChunk(MessageSender.CLIENT, chunk);
       });
       avatar.on(StreamingEvents.AVATAR_TALKING_MESSAGE, (event: any) => {
         const chunk = event?.detail?.message ?? "";
+
         if (chunk) appendMessageChunk(MessageSender.AVATAR, chunk);
       });
       avatar.on(StreamingEvents.AVATAR_END_MESSAGE, (event: any) => {
@@ -144,8 +151,7 @@ function InteractiveAvatarCore() {
   }, [mediaStream, mediaStreamRef]);
 
   const isConnecting = useMemo(
-    () =>
-      sessionState === StreamingAvatarSessionState.CONNECTING,
+    () => sessionState === StreamingAvatarSessionState.CONNECTING,
     [sessionState],
   );
 

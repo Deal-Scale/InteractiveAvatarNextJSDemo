@@ -3,7 +3,9 @@
 import * as React from "react";
 import { ThemeProvider as NextThemesProvider } from "next-themes";
 
-export type ThemeProviderProps = React.ComponentProps<typeof NextThemesProvider>;
+export type ThemeProviderProps = React.ComponentProps<
+  typeof NextThemesProvider
+>;
 
 export function ThemeProvider({
   children,
@@ -17,8 +19,8 @@ export function ThemeProvider({
     <NextThemesProvider
       attribute={attribute}
       defaultTheme={defaultTheme}
-      enableSystem={enableSystem}
       disableTransitionOnChange={disableTransitionOnChange}
+      enableSystem={enableSystem}
       {...props}
     >
       {children}

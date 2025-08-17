@@ -13,7 +13,11 @@ interface PublishAgentModalProps {
   onSubmit: (values: z.infer<typeof PublicAgentSchema>) => void;
 }
 
-export function PublishAgentModal({ open, onOpenChange, onSubmit }: PublishAgentModalProps) {
+export function PublishAgentModal({
+  open,
+  onOpenChange,
+  onSubmit,
+}: PublishAgentModalProps) {
   const form = useZodForm(PublicAgentSchema, {
     defaultValues: {
       title: "",
@@ -38,12 +42,13 @@ export function PublishAgentModal({ open, onOpenChange, onSubmit }: PublishAgent
 
         <AutoForm
           className="space-y-3"
-          form={form as any}
-          schema={PublicAgentSchema as any}
           fields={{
             title: { label: "Title" },
             description: { label: "Description", widget: "textarea", rows: 4 },
-            avatarImage: { label: "Avatar Image URL", placeholder: "https://..." },
+            avatarImage: {
+              label: "Avatar Image URL",
+              placeholder: "https://...",
+            },
             monetize: { label: "Monetize" },
             ...(monetize
               ? {
@@ -61,6 +66,8 @@ export function PublishAgentModal({ open, onOpenChange, onSubmit }: PublishAgent
                 }
               : {}),
           }}
+          form={form as any}
+          schema={PublicAgentSchema as any}
           submitLabel="Publish"
           onSubmit={(values) => {
             const v = values as any;
@@ -71,6 +78,7 @@ export function PublishAgentModal({ open, onOpenChange, onSubmit }: PublishAgent
               // if not monetized, force base rate
               rateMultiplier: v.monetize ? Number(v.rateMultiplier ?? 1) : 1,
             };
+
             onSubmit(payload);
           }}
         />

@@ -12,7 +12,6 @@ export interface MCPMessageTimestampResult {
 }
 
 const MSG_GET_TS_EVENT = "app:messages:getTimestamp";
-const MSG_GOT_TS_EVENT = "app:messages:gotTimestamp";
 
 function hasWindow(): boolean {
   return typeof window !== "undefined";
@@ -27,16 +26,22 @@ export async function getMessageTimestamp(
   options: MCPMessageTimestampOptions = {},
 ): Promise<MCPMessageTimestampResult> {
   const base = options.baseUrl ?? process.env.NEXT_PUBLIC_API_BASE_URL ?? "";
+
   if (!base) {
     throw new Error("Missing NEXT_PUBLIC_API_BASE_URL or baseUrl override");
   }
   const url = `${base.replace(/\/$/, "")}/messages/${encodeURIComponent(messageId)}/timestamp`;
   const res = await fetch(url, { method: "GET", signal: options.signal });
+
   if (!res.ok) {
     throw new Error(`Failed to fetch timestamp (${res.status})`);
   }
   const data = (await res.json()) as { timestamp: string };
-  const result: MCPMessageTimestampResult = { messageId, timestamp: data.timestamp };
+  const result: MCPMessageTimestampResult = {
+    messageId,
+    timestamp: data.timestamp,
+  };
+
   return result;
 }
 
@@ -45,14 +50,19 @@ export async function getMessageTimestamp(
  */
 export function requestMessageTimestamp(messageId: string): void {
   if (!hasWindow()) return;
-  window.dispatchEvent(new CustomEvent(MSG_GET_TS_EVENT, { detail: { messageId } }));
+  window.dispatchEvent(
+    new CustomEvent(MSG_GET_TS_EVENT, { detail: { messageId } }),
+  );
 }
 
 // Optional global
 declare global {
   interface Window {
     mcpMessages?: {
-      getTimestamp: (messageId: string, options?: MCPMessageTimestampOptions) => Promise<MCPMessageTimestampResult>;
+      getTimestamp: (
+        messageId: string,
+        options?: MCPMessageTimestampOptions,
+      ) => Promise<MCPMessageTimestampResult>;
       requestTimestamp: (messageId: string) => void;
     };
   }

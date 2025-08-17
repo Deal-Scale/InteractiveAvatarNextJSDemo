@@ -23,7 +23,9 @@ export function Select<T>(props: SelectProps<T>) {
       onOpenChange={setIsOpen}
     >
       <SelectPrimitive.Trigger className="w-full text-foreground text-sm bg-muted py-2 px-6 rounded-lg cursor-pointer flex items-center justify-between h-fit disabled:opacity-50 min-h-[36px]">
-        <div className={`${props.value ? "text-foreground" : "text-muted-foreground"}`}>
+        <div
+          className={`${props.value ? "text-foreground" : "text-muted-foreground"}`}
+        >
           {props.value ? props.value : props.placeholder}
         </div>
         <ChevronDownIcon className="w-4 h-4" />
@@ -43,7 +45,9 @@ export function Select<T>(props: SelectProps<T>) {
                 <div
                   key={props.renderOption(option)?.toString()}
                   className={`py-2 px-4 cursor-pointer hover:bg-muted outline-none text-sm ${
-                    isSelected ? "bg-accent text-accent-foreground" : "text-muted-foreground"
+                    isSelected
+                      ? "bg-accent text-accent-foreground"
+                      : "text-muted-foreground"
                   }`}
                   onClick={() => {
                     props.onSelect(option);

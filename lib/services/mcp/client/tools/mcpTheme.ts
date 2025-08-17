@@ -22,9 +22,7 @@ function hasWindow(): boolean {
 
 export function setThemeMode(mode: ThemeMode) {
   if (!hasWindow()) return;
-  window.dispatchEvent(
-    new CustomEvent(THEME_SET_EVENT, { detail: { mode } }),
-  );
+  window.dispatchEvent(new CustomEvent(THEME_SET_EVENT, { detail: { mode } }));
 }
 
 export function setThemeEmotion(emotion: ThemeEmotion) {
@@ -36,9 +34,7 @@ export function setThemeEmotion(emotion: ThemeEmotion) {
 
 export function setTheme(patch: ThemePatch) {
   if (!hasWindow()) return;
-  window.dispatchEvent(
-    new CustomEvent(THEME_SET_EVENT, { detail: patch }),
-  );
+  window.dispatchEvent(new CustomEvent(THEME_SET_EVENT, { detail: patch }));
 }
 
 // Optional global for direct control

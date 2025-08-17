@@ -21,7 +21,12 @@ export type AutoFieldProps = {
   fields?: FieldsConfig<any>;
 };
 
-export const AutoField: React.FC<AutoFieldProps> = ({ name, def, form, fields = {} }) => {
+export const AutoField: React.FC<AutoFieldProps> = ({
+  name,
+  def,
+  form,
+  fields = {},
+}) => {
   const { register, formState, setValue, getValues } = form;
 
   const cfg = (fields as any)[name] || {};
@@ -35,17 +40,24 @@ export const AutoField: React.FC<AutoFieldProps> = ({ name, def, form, fields = 
   ) => {
     if (multiple) {
       const current = (getValues() as any)[name] ?? [];
+
       return (
         <div className="flex flex-col gap-1">
           <label className="text-sm text-muted-foreground">{label}</label>
           <select
             multiple
+            className="rounded-md border border-border bg-background px-3 py-2 text-foreground shadow-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary"
             value={current as string[]}
             onChange={(e) => {
-              const selected = Array.from(e.target.selectedOptions).map((o) => o.value);
-              setValue(name as any, selected as any, { shouldValidate: true, shouldDirty: true });
+              const selected = Array.from(e.target.selectedOptions).map(
+                (o) => o.value,
+              );
+
+              setValue(name as any, selected as any, {
+                shouldValidate: true,
+                shouldDirty: true,
+              });
             }}
-            className="rounded-md border border-border bg-background px-3 py-2 text-foreground shadow-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary"
           >
             {opts.map((o) => (
               <option key={o.value} value={o.value}>
@@ -53,7 +65,11 @@ export const AutoField: React.FC<AutoFieldProps> = ({ name, def, form, fields = 
               </option>
             ))}
           </select>
-          {error && <span className="text-xs text-red-500 dark:text-red-400">{error}</span>}
+          {error && (
+            <span className="text-xs text-red-500 dark:text-red-400">
+              {error}
+            </span>
+          )}
         </div>
       );
     }
@@ -75,15 +91,19 @@ export const AutoField: React.FC<AutoFieldProps> = ({ name, def, form, fields = 
             </option>
           ))}
         </select>
-        {error && <span className="text-xs text-red-500 dark:text-red-400">{error}</span>}
+        {error && (
+          <span className="text-xs text-red-500 dark:text-red-400">
+            {error}
+          </span>
+        )}
       </div>
     );
   };
 
   const base = unwrapType(def);
+
   if (process.env.NODE_ENV !== "production") {
     try {
-      // eslint-disable-next-line no-console
       console.debug("AutoField detect", {
         name,
         typeName: (base as any)?._def?.typeName,
@@ -95,6 +115,7 @@ export const AutoField: React.FC<AutoFieldProps> = ({ name, def, form, fields = 
   if ((base as any)?._def?.typeName === "ZodEnum") {
     const values = enumStringValuesFromZodEnum((base as any).options);
     const opts = optionsFromStrings(values);
+
     return renderSelect(opts, Boolean((cfg as any).multiple));
   }
 
@@ -102,66 +123,109 @@ export const AutoField: React.FC<AutoFieldProps> = ({ name, def, form, fields = 
   if ((base as any)._def?.typeName === "ZodUnion") {
     const options: z.ZodTypeAny[] = (base as any)._def?.options ?? [];
     const stringVals: string[] = [];
+
     for (const opt of options) {
       if ((opt as any)?._def?.typeName === "ZodEnum") {
         const raw = (opt as any).options;
-        const vals: unknown[] = Array.isArray(raw) ? raw : Object.values(raw ?? {});
+        const vals: unknown[] = Array.isArray(raw)
+          ? raw
+          : Object.values(raw ?? {});
+
         for (const v of vals) if (typeof v === "string") stringVals.push(v);
       } else if ((opt as any)._def?.typeName === "ZodNativeEnum") {
-        const enumObj = (opt as any)._def.values as Record<string, string | number>;
-        for (const v of Object.values(enumObj)) if (typeof v === "string") stringVals.push(v);
+        const enumObj = (opt as any)._def.values as Record<
+          string,
+          string | number
+        >;
+
+        for (const v of Object.values(enumObj))
+          if (typeof v === "string") stringVals.push(v);
       } else if ((opt as any)._def?.typeName === "ZodLiteral") {
         const litVal = (opt as any)._def?.value;
+
         if (typeof litVal === "string") stringVals.push(litVal);
       }
     }
     if (stringVals.length) {
-      const opts = Array.from(new Set(stringVals)).map((v) => ({ value: v, label: v }));
+      const opts = Array.from(new Set(stringVals)).map((v) => ({
+        value: v,
+        label: v,
+      }));
+
       return renderSelect(opts, Boolean((cfg as any).multiple));
     }
   }
 
   // Native enum
   if ((base as any)._def?.typeName === "ZodNativeEnum") {
-    const enumObj = (base as any)._def.values as Record<string, string | number>;
-    const values = Object.values(enumObj).filter((v): v is string => typeof v === "string");
+    const enumObj = (base as any)._def.values as Record<
+      string,
+      string | number
+    >;
+    const values = Object.values(enumObj).filter(
+      (v): v is string => typeof v === "string",
+    );
     const opts = optionsFromStrings(values);
+
     return renderSelect(opts, Boolean((cfg as any).multiple));
   }
 
   // Array -> multi select or textarea
   if ((base as any)._def?.typeName === "ZodArray") {
     const el = (base as any)._def.type as z.ZodTypeAny;
+
     if ((el as any)?._def?.typeName === "ZodEnum") {
       const values = enumStringValuesFromZodEnum((el as any).options);
       const opts = optionsFromStrings(values);
+
       return renderSelect(opts, true);
     }
     if ((el as any)._def?.typeName === "ZodNativeEnum") {
-      const enumObj = (el as any)._def.values as Record<string, string | number>;
-      const values = Object.values(enumObj).filter((v): v is string => typeof v === "string");
+      const enumObj = (el as any)._def.values as Record<
+        string,
+        string | number
+      >;
+      const values = Object.values(enumObj).filter(
+        (v): v is string => typeof v === "string",
+      );
       const opts = optionsFromStrings(values);
+
       return renderSelect(opts, true);
     }
-    if ((el as any)._def?.typeName === "ZodString" && (cfg as any).options?.length) {
+    if (
+      (el as any)._def?.typeName === "ZodString" &&
+      (cfg as any).options?.length
+    ) {
       return renderSelect((cfg as any).options!, true);
     }
     if ((el as any)._def?.typeName === "ZodString") {
       const current = (getValues() as any)[name] as string[] | undefined;
+
       return (
         <div className="flex flex-col gap-1">
           <label className="text-sm text-muted-foreground">{label}</label>
           <textarea
             className="min-h-24 max-h-[60vh] w-full resize-y rounded-md border border-border bg-background px-3 py-2 text-foreground shadow-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary"
-            rows={cfg.rows ?? 5}
             placeholder={cfg.placeholder ?? "Enter values, one per line"}
+            rows={cfg.rows ?? 5}
             value={(current ?? []).join("\n")}
             onChange={(e) => {
-              const arr = e.target.value.split("\n").map((s) => s.trim()).filter(Boolean);
-              setValue(name as any, arr as any, { shouldValidate: true, shouldDirty: true });
+              const arr = e.target.value
+                .split("\n")
+                .map((s) => s.trim())
+                .filter(Boolean);
+
+              setValue(name as any, arr as any, {
+                shouldValidate: true,
+                shouldDirty: true,
+              });
             }}
           />
-          {error && <span className="text-xs text-red-500 dark:text-red-400">{error}</span>}
+          {error && (
+            <span className="text-xs text-red-500 dark:text-red-400">
+              {error}
+            </span>
+          )}
         </div>
       );
     }
@@ -171,8 +235,11 @@ export const AutoField: React.FC<AutoFieldProps> = ({ name, def, form, fields = 
   if ((base as any)._def?.typeName === "ZodBoolean") {
     if ((cfg as any).widget === "select") {
       const current = (getValues() as any)[name] as boolean | undefined;
-      const opts = booleanSelectOptions((cfg as any).options as Array<{ value: string; label: string }>);
+      const opts = booleanSelectOptions(
+        (cfg as any).options as Array<{ value: string; label: string }>,
+      );
       const value = typeof current === "boolean" ? String(current) : "";
+
       return (
         <div className="flex flex-col gap-1">
           <label className="text-sm text-muted-foreground">{label}</label>
@@ -181,11 +248,16 @@ export const AutoField: React.FC<AutoFieldProps> = ({ name, def, form, fields = 
             value={value}
             onChange={(e) => {
               const v = e.target.value;
-              const boolVal = v === "true" ? true : v === "false" ? false : undefined;
-              setValue(name as any, boolVal as any, { shouldValidate: true, shouldDirty: true });
+              const boolVal =
+                v === "true" ? true : v === "false" ? false : undefined;
+
+              setValue(name as any, boolVal as any, {
+                shouldValidate: true,
+                shouldDirty: true,
+              });
             }}
           >
-            <option value="" disabled>
+            <option disabled value="">
               Select {label}
             </option>
             {opts.map((o) => (
@@ -194,7 +266,11 @@ export const AutoField: React.FC<AutoFieldProps> = ({ name, def, form, fields = 
               </option>
             ))}
           </select>
-          {error && <span className="text-xs text-red-500 dark:text-red-400">{error}</span>}
+          {error && (
+            <span className="text-xs text-red-500 dark:text-red-400">
+              {error}
+            </span>
+          )}
         </div>
       );
     }
@@ -202,7 +278,11 @@ export const AutoField: React.FC<AutoFieldProps> = ({ name, def, form, fields = 
     return (
       <label className="flex items-center justify-between gap-3">
         <span className="text-sm text-muted-foreground">{label}</span>
-        <input className="h-4 w-4 accent-primary" type="checkbox" {...register(name as any)} />
+        <input
+          className="h-4 w-4 accent-primary"
+          type="checkbox"
+          {...register(name as any)}
+        />
       </label>
     );
   }
@@ -215,13 +295,17 @@ export const AutoField: React.FC<AutoFieldProps> = ({ name, def, form, fields = 
           <label className="text-sm text-muted-foreground">{label}</label>
           <input
             className="w-full accent-primary"
-            type="range"
-            min={(cfg as any).min}
             max={(cfg as any).max}
+            min={(cfg as any).min}
             step={(cfg as any).step}
+            type="range"
             {...register(name as any, { valueAsNumber: true })}
           />
-          {error && <span className="text-xs text-red-500 dark:text-red-400">{error}</span>}
+          {error && (
+            <span className="text-xs text-red-500 dark:text-red-400">
+              {error}
+            </span>
+          )}
         </div>
       );
     }
@@ -234,7 +318,11 @@ export const AutoField: React.FC<AutoFieldProps> = ({ name, def, form, fields = 
           type="number"
           {...register(name as any, { valueAsNumber: true })}
         />
-        {error && <span className="text-xs text-red-500 dark:text-red-400">{error}</span>}
+        {error && (
+          <span className="text-xs text-red-500 dark:text-red-400">
+            {error}
+          </span>
+        )}
       </div>
     );
   }
@@ -256,13 +344,18 @@ export const AutoField: React.FC<AutoFieldProps> = ({ name, def, form, fields = 
         <div className="flex flex-col gap-1">
           <label className="text-sm text-muted-foreground">{label}</label>
           <SensitiveInput name={name} register={register} />
-          {error && <span className="text-xs text-red-500 dark:text-red-400">{error}</span>}
+          {error && (
+            <span className="text-xs text-red-500 dark:text-red-400">
+              {error}
+            </span>
+          )}
         </div>
       );
     }
 
     if ((cfg as any).widget === "select" || (cfg as any).options?.length) {
       const opts = (cfg as any).options ?? [];
+
       return renderSelect(opts, Boolean((cfg as any).multiple));
     }
 
@@ -282,7 +375,11 @@ export const AutoField: React.FC<AutoFieldProps> = ({ name, def, form, fields = 
               />
             </div>
           </details>
-          {error && <span className="text-xs text-red-500 dark:text-red-400">{error}</span>}
+          {error && (
+            <span className="text-xs text-red-500 dark:text-red-400">
+              {error}
+            </span>
+          )}
         </div>
       );
     }
@@ -292,13 +389,17 @@ export const AutoField: React.FC<AutoFieldProps> = ({ name, def, form, fields = 
         <label className="text-sm text-muted-foreground">{label}</label>
         <input
           className="rounded-md border border-border bg-background px-3 py-2 text-foreground shadow-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary"
-          placeholder={(cfg as any).placeholder}
           pattern={regexCheck?.regex ? regexCheck.regex.source : undefined}
+          placeholder={(cfg as any).placeholder}
           title={regexCheck?.regex ? regexCheck.regex.toString() : undefined}
           type={isEmail ? "email" : "text"}
           {...register(name as any)}
         />
-        {error && <span className="text-xs text-red-500 dark:text-red-400">{error}</span>}
+        {error && (
+          <span className="text-xs text-red-500 dark:text-red-400">
+            {error}
+          </span>
+        )}
       </div>
     );
   }
@@ -310,11 +411,15 @@ export const AutoField: React.FC<AutoFieldProps> = ({ name, def, form, fields = 
         <label className="text-sm text-muted-foreground">{label}</label>
         <input
           multiple
-          type="file"
           className="rounded-md border border-border bg-background px-3 py-2 text-foreground file:mr-4 file:rounded file:border-0 file:bg-muted file:px-2 file:py-1 file:text-foreground focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary"
+          type="file"
           {...register(name as any)}
         />
-        {error && <span className="text-xs text-red-500 dark:text-red-400">{error}</span>}
+        {error && (
+          <span className="text-xs text-red-500 dark:text-red-400">
+            {error}
+          </span>
+        )}
       </div>
     );
   }
@@ -328,7 +433,9 @@ export const AutoField: React.FC<AutoFieldProps> = ({ name, def, form, fields = 
         type="text"
         {...register(name as any)}
       />
-      {error && <span className="text-xs text-red-500 dark:text-red-400">{error}</span>}
+      {error && (
+        <span className="text-xs text-red-500 dark:text-red-400">{error}</span>
+      )}
     </div>
   );
 };

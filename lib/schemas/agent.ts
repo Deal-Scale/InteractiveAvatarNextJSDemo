@@ -1,5 +1,10 @@
 import { z } from "zod";
-import { STTProvider, VoiceChatTransport, VoiceEmotion, AvatarQuality } from "@heygen/streaming-avatar";
+import {
+  STTProvider,
+  VoiceChatTransport,
+  VoiceEmotion,
+  AvatarQuality,
+} from "@heygen/streaming-avatar";
 
 export const AgentConfigSchema = z.object({
   id: z.string().min(1), // agent ID
@@ -29,7 +34,7 @@ export const AgentConfigSchema = z.object({
   video: z
     .object({
       resolution: z.enum(["720p", "1080p"]).optional(),
-      
+
       background: z.enum(["transparent", "blur", "none"]).optional(),
       fps: z.number().int().positive().optional(),
     })

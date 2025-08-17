@@ -1,8 +1,12 @@
 "use client";
 
-import type { Conversation, ConversationGroup } from "@/components/Sidebar/types";
+import type {
+  Conversation,
+  ConversationGroup,
+} from "@/components/Sidebar/types";
 
 import { useEffect, useMemo, useState } from "react";
+
 import {
   loadFromCache,
   saveToCache,
@@ -10,7 +14,9 @@ import {
 } from "@/components/Sidebar/utils/cache";
 
 export default function useConversations() {
-  const [groups, setGroups] = useState<ConversationGroup[] | null>(() => loadFromCache());
+  const [groups, setGroups] = useState<ConversationGroup[] | null>(() =>
+    loadFromCache(),
+  );
   const [loading, setLoading] = useState<boolean>(!groups);
   const [query, setQuery] = useState("");
   const [selectionMode, setSelectionMode] = useState<boolean>(false);
@@ -19,7 +25,9 @@ export default function useConversations() {
     if (typeof window === "undefined") return new Set();
     try {
       const raw = localStorage.getItem("sidebar.archived.v1");
+
       if (!raw) return new Set();
+
       return new Set<string>(JSON.parse(raw));
     } catch {
       return new Set();
@@ -38,9 +46,10 @@ export default function useConversations() {
   }, [archivedIds]);
 
   // Initial lazy load with cache
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+
   useEffect(() => {
     let mounted = true;
+
     if (!groups) {
       fetchConversations().then((data) => {
         if (!mounted) return;
@@ -49,16 +58,19 @@ export default function useConversations() {
         setLoading(false);
       });
     }
+
     return () => {
       mounted = false;
     };
-  }, []);
+  }, [groups]);
 
   // Derived values
   const filteredGroups = useMemo(() => {
     if (!groups) return null;
     const q = query.trim().toLowerCase();
+
     if (!q) return groups;
+
     return groups
       .map((g) => ({
         ...g,
@@ -75,12 +87,14 @@ export default function useConversations() {
   const archivedList = useMemo(() => {
     if (!groups) return [] as Conversation[];
     const all = groups.flatMap((g) => g.conversations);
+
     return all.filter((c) => archivedIds.has(c.id));
   }, [groups, archivedIds]);
 
   const visibleConversationIds = useMemo(() => {
     const base = (filteredGroups ?? groups) || [];
     const all = base.flatMap((g) => g.conversations);
+
     return all.filter((c) => !archivedIds.has(c.id)).map((c) => c.id);
   }, [filteredGroups, groups, archivedIds]);
 
@@ -93,8 +107,10 @@ export default function useConversations() {
   const toggleSelect = (id: string) => {
     setSelectedIds((prev) => {
       const next = new Set(prev);
+
       if (next.has(id)) next.delete(id);
       else next.add(id);
+
       return next;
     });
   };
@@ -111,6 +127,7 @@ export default function useConversations() {
       ...g,
       conversations: g.conversations.filter((c) => !selectedIds.has(c.id)),
     }));
+
     setGroups(nextGroups);
     saveToCache(nextGroups);
     clearSelection();

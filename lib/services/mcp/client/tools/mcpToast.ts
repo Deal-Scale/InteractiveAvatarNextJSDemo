@@ -4,7 +4,13 @@
 
 import type { ToastItem } from "@/components/ui/toaster";
 
-export type MCPToastVariant = "default" | "success" | "error" | "warning" | "loading" | "custom";
+export type MCPToastVariant =
+  | "default"
+  | "success"
+  | "error"
+  | "warning"
+  | "loading"
+  | "custom";
 
 export interface MCPToastOptions {
   title?: string;
@@ -56,6 +62,7 @@ export function publishToast(opts: MCPToastOptions): string | undefined {
   // Event-based call. The React side creates the id; we can't synchronously get it here.
   // For async update flows, prefer the global API. For fire-and-forget, this is fine.
   window.dispatchEvent(new CustomEvent(PUBLISH_EVENT, { detail: opts }));
+
   return undefined;
 }
 
@@ -65,13 +72,16 @@ export function updateToast(id: string, patch: MCPToastPatch): void {
   if (window.mcpToast && typeof window.mcpToast.update === "function") {
     try {
       window.mcpToast.update(id, patch as any);
+
       return;
     } catch {
       // fall through to event-based
     }
   }
 
-  window.dispatchEvent(new CustomEvent(UPDATE_EVENT, { detail: { id, patch } }));
+  window.dispatchEvent(
+    new CustomEvent(UPDATE_EVENT, { detail: { id, patch } }),
+  );
 }
 
 export function dismissToast(id: string): void {
@@ -80,6 +90,7 @@ export function dismissToast(id: string): void {
   if (window.mcpToast && typeof window.mcpToast.dismiss === "function") {
     try {
       window.mcpToast.dismiss(id);
+
       return;
     } catch {
       // fall through to event-based

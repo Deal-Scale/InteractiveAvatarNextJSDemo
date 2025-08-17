@@ -1,8 +1,10 @@
 import React, { useCallback, useEffect, useState } from "react";
-
 import { TaskType, TaskMode } from "@heygen/streaming-avatar";
 import { usePrevious } from "ahooks";
 import { SendIcon } from "lucide-react";
+
+import { useConversationState } from "../logic/useConversationState";
+import { useTextChat } from "../logic/useTextChat";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -18,9 +20,6 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 
-import { useConversationState } from "../logic/useConversationState";
-import { useTextChat } from "../logic/useTextChat";
-
 export const PromptBar: React.FC = () => {
   const { sendMessage, sendMessageSync, repeatMessage, repeatMessageSync } =
     useTextChat();
@@ -34,9 +33,7 @@ export const PromptBar: React.FC = () => {
       return;
     }
     if (taskType === TaskType.TALK) {
-      taskMode === TaskMode.SYNC
-        ? sendMessageSync(input)
-        : sendMessage(input);
+      taskMode === TaskMode.SYNC ? sendMessageSync(input) : sendMessage(input);
     } else {
       taskMode === TaskMode.SYNC
         ? repeatMessageSync(input)
@@ -67,8 +64,8 @@ export const PromptBar: React.FC = () => {
     <PromptInput
       className="w-full"
       value={input}
-      onValueChange={setInput}
       onSubmit={handleSend}
+      onValueChange={setInput}
     >
       <div className="flex items-end gap-2">
         <PromptInputTextarea
@@ -108,7 +105,7 @@ export const PromptBar: React.FC = () => {
               ))}
             </SelectContent>
           </Select>
-          <Button onClick={handleSend} size="icon" type="submit">
+          <Button size="icon" type="submit" onClick={handleSend}>
             <SendIcon />
           </Button>
         </PromptInputActions>

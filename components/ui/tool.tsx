@@ -1,143 +1,133 @@
-"use client"
+"use client";
 
-import { Button } from "@/components/ui/button"
-import {
-  Collapsible,
-  CollapsibleContent,
-  CollapsibleTrigger,
-} from "@/components/ui/collapsible"
-import { cn } from "@/lib/utils"
 import {
   CheckCircle,
   ChevronDown,
   Loader2,
   Settings,
   XCircle,
-} from "lucide-react"
-import { useState } from "react"
+} from "lucide-react";
+import { useState } from "react";
+
+import { Button } from "@/components/ui/button";
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@/components/ui/collapsible";
+import { cn } from "@/lib/utils";
 
 export type ToolPart = {
-  type: string
+  type: string;
   state:
     | "input-streaming"
     | "input-available"
     | "output-available"
-    | "output-error"
-  input?: Record<string, unknown>
-  output?: Record<string, unknown>
-  toolCallId?: string
-  errorText?: string
-}
+    | "output-error";
+  input?: Record<string, unknown>;
+  output?: Record<string, unknown>;
+  toolCallId?: string;
+  errorText?: string;
+};
 
 export type ToolProps = {
-  toolPart: ToolPart
-  defaultOpen?: boolean
-  className?: string
-}
+  toolPart: ToolPart;
+  defaultOpen?: boolean;
+  className?: string;
+};
 
 const Tool = ({ toolPart, defaultOpen = false, className }: ToolProps) => {
-  const [isOpen, setIsOpen] = useState(defaultOpen)
+  const [isOpen, setIsOpen] = useState(defaultOpen);
 
-  const { state, input, output, toolCallId } = toolPart
+  const { state, input, output, toolCallId } = toolPart;
 
   const getStateIcon = () => {
     switch (state) {
       case "input-streaming":
-        return <Loader2 className="h-4 w-4 animate-spin text-primary" />
+        return <Loader2 className="h-4 w-4 animate-spin text-primary" />;
       case "input-available":
-        return <Settings className="h-4 w-4 text-secondary-foreground" />
+        return <Settings className="h-4 w-4 text-secondary-foreground" />;
       case "output-available":
-        return <CheckCircle className="h-4 w-4 text-accent" />
+        return <CheckCircle className="h-4 w-4 text-accent" />;
       case "output-error":
-        return <XCircle className="h-4 w-4 text-destructive" />
+        return <XCircle className="h-4 w-4 text-destructive" />;
       default:
-        return <Settings className="text-muted-foreground h-4 w-4" />
+        return <Settings className="text-muted-foreground h-4 w-4" />;
     }
-  }
+  };
 
   const getStateBadge = () => {
-    const baseClasses = "px-2 py-1 rounded-full text-xs font-medium"
+    const baseClasses = "px-2 py-1 rounded-full text-xs font-medium";
+
     switch (state) {
       case "input-streaming":
         return (
-          <span
-            className={cn(
-              baseClasses,
-              "bg-primary/15 text-primary"
-            )}
-          >
+          <span className={cn(baseClasses, "bg-primary/15 text-primary")}>
             Processing
           </span>
-        )
+        );
       case "input-available":
         return (
           <span
             className={cn(
               baseClasses,
-              "bg-secondary/20 text-secondary-foreground"
+              "bg-secondary/20 text-secondary-foreground",
             )}
           >
             Ready
           </span>
-        )
+        );
       case "output-available":
         return (
           <span
-            className={cn(
-              baseClasses,
-              "bg-accent/20 text-accent-foreground"
-            )}
+            className={cn(baseClasses, "bg-accent/20 text-accent-foreground")}
           >
             Completed
           </span>
-        )
+        );
       case "output-error":
         return (
           <span
             className={cn(
               baseClasses,
-              "bg-destructive/20 text-destructive-foreground"
+              "bg-destructive/20 text-destructive-foreground",
             )}
           >
             Error
           </span>
-        )
+        );
       default:
         return (
-          <span
-            className={cn(
-              baseClasses,
-              "bg-muted text-muted-foreground"
-            )}
-          >
+          <span className={cn(baseClasses, "bg-muted text-muted-foreground")}>
             Pending
           </span>
-        )
+        );
     }
-  }
+  };
 
   const formatValue = (value: unknown): string => {
-    if (value === null) return "null"
-    if (value === undefined) return "undefined"
-    if (typeof value === "string") return value
+    if (value === null) return "null";
+    if (value === undefined) return "undefined";
+    if (typeof value === "string") return value;
     if (typeof value === "object") {
-      return JSON.stringify(value, null, 2)
+      return JSON.stringify(value, null, 2);
     }
-    return String(value)
-  }
+
+    return String(value);
+  };
 
   return (
     <div
       className={cn(
         "border-border mt-3 overflow-hidden rounded-lg border",
-        className
+        className,
       )}
     >
       <Collapsible open={isOpen} onOpenChange={setIsOpen}>
         <CollapsibleTrigger asChild>
           <Button
-            variant="ghost"
             className="bg-background h-auto w-full justify-between rounded-b-none px-3 py-2 font-normal"
+            variant="ghost"
           >
             <div className="flex items-center gap-2">
               {getStateIcon()}
@@ -152,7 +142,7 @@ const Tool = ({ toolPart, defaultOpen = false, className }: ToolProps) => {
         <CollapsibleContent
           className={cn(
             "border-border border-t",
-            "data-[state=closed]:animate-collapsible-up data-[state=open]:animate-collapsible-down overflow-hidden"
+            "data-[state=closed]:animate-collapsible-up data-[state=open]:animate-collapsible-down overflow-hidden",
           )}
         >
           <div className="bg-background space-y-3 p-3">
@@ -187,7 +177,9 @@ const Tool = ({ toolPart, defaultOpen = false, className }: ToolProps) => {
 
             {state === "output-error" && toolPart.errorText && (
               <div>
-                <h4 className="mb-2 text-sm font-medium text-destructive">Error</h4>
+                <h4 className="mb-2 text-sm font-medium text-destructive">
+                  Error
+                </h4>
                 <div className="rounded border border-destructive/30 p-2 text-sm bg-destructive/10">
                   {toolPart.errorText}
                 </div>
@@ -209,7 +201,7 @@ const Tool = ({ toolPart, defaultOpen = false, className }: ToolProps) => {
         </CollapsibleContent>
       </Collapsible>
     </div>
-  )
-}
+  );
+};
 
-export { Tool }
+export { Tool };

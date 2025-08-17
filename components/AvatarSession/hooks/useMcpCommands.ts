@@ -6,32 +6,43 @@ export function useMcpCommands(addAvatarMessage: (content: string) => void) {
   const handleMcpCommand = useMemoizedFn(async (raw: string) => {
     const parts = raw.trim().split(/\s+/).slice(1); // drop '/mcp'
     const sub = (parts[0] || "").toLowerCase();
+
     try {
       switch (sub) {
         case "tools": {
           const res = await fetch("/api/mcp/tools");
           const data = await res.json();
-          const list = (data?.tools || []).map((t: any) => `• ${t.name}`).join("\n");
+          const list = (data?.tools || [])
+            .map((t: any) => `• ${t.name}`)
+            .join("\n");
+
           addAvatarMessage(list || "No tools available.");
           break;
         }
         case "prompts": {
           const res = await fetch("/api/mcp/prompts");
           const data = await res.json();
-          const list = (data?.prompts || []).map((p: any) => `• ${p.name}`).join("\n");
+          const list = (data?.prompts || [])
+            .map((p: any) => `• ${p.name}`)
+            .join("\n");
+
           addAvatarMessage(list || "No prompts available.");
           break;
         }
         case "resources": {
           const res = await fetch("/api/mcp/resources");
           const data = await res.json();
-          const list = (data?.resources || []).map((r: any) => `• ${r.uri}`).join("\n");
+          const list = (data?.resources || [])
+            .map((r: any) => `• ${r.uri}`)
+            .join("\n");
+
           addAvatarMessage(list || "No resources available.");
           break;
         }
         case "tool": {
           const name = parts[1];
           const args = parseJsonArgs(parts.slice(2).join(" "));
+
           if (!name) {
             addAvatarMessage("Usage: /mcp tool <name> {jsonArgs}");
             break;
@@ -42,11 +53,13 @@ export function useMcpCommands(addAvatarMessage: (content: string) => void) {
             body: JSON.stringify({ args: args ?? {} }),
           });
           const data = await res.json();
+
           addAvatarMessage(formatAsCodeBlock(data));
           break;
         }
         case "resource": {
           const uri = parts[1];
+
           if (!uri) {
             addAvatarMessage("Usage: /mcp resource <uri>");
             break;
@@ -57,12 +70,14 @@ export function useMcpCommands(addAvatarMessage: (content: string) => void) {
             body: JSON.stringify({ uri }),
           });
           const data = await res.json();
+
           addAvatarMessage(formatAsCodeBlock(data));
           break;
         }
         case "prompt": {
           const name = parts[1];
           const args = parseJsonArgs(parts.slice(2).join(" "));
+
           if (!name) {
             addAvatarMessage("Usage: /mcp prompt <name> {jsonArgs}");
             break;
@@ -73,11 +88,13 @@ export function useMcpCommands(addAvatarMessage: (content: string) => void) {
             body: JSON.stringify({ name, args: args ?? {} }),
           });
           const data = await res.json();
+
           addAvatarMessage(formatAsCodeBlock(data));
           break;
         }
         case "complete": {
           const payload = parseJsonArgs(parts.slice(1).join(" "));
+
           if (!payload) {
             addAvatarMessage(
               'Usage: /mcp complete {"ref":{...},"argument":{...},"context":{...}}',
@@ -90,6 +107,7 @@ export function useMcpCommands(addAvatarMessage: (content: string) => void) {
             body: JSON.stringify(payload),
           });
           const data = await res.json();
+
           addAvatarMessage(formatAsCodeBlock(data));
           break;
         }

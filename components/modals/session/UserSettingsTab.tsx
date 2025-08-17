@@ -1,7 +1,9 @@
 import type { Option } from "@/data/options";
-import React from "react";
-import { AutoForm } from "@/components/forms/AutoForm";
 import type { UseFormReturn } from "react-hook-form";
+
+import React from "react";
+
+import { AutoForm } from "@/components/forms/AutoForm";
 
 interface UserSettingsTabProps {
   form: UseFormReturn<any>;
@@ -10,7 +12,12 @@ interface UserSettingsTabProps {
   onSubmit: (values: any) => void;
 }
 
-export function UserSettingsTab({ form, schema, languagesOptions, onSubmit }: UserSettingsTabProps) {
+export function UserSettingsTab({
+  form,
+  schema,
+  languagesOptions,
+  onSubmit,
+}: UserSettingsTabProps) {
   return (
     <div className="space-y-4 rounded-xl border border-border bg-card p-4 md:p-6 shadow-sm">
       <p className="text-sm text-muted-foreground">
@@ -18,10 +25,12 @@ export function UserSettingsTab({ form, schema, languagesOptions, onSubmit }: Us
       </p>
       <AutoForm
         className="space-y-3"
-        form={form as any}
-        schema={schema}
         fields={{
-          language: { label: "Language", widget: "select", options: languagesOptions },
+          language: {
+            label: "Language",
+            widget: "select",
+            options: languagesOptions,
+          },
           quality: {
             label: "Quality",
             widget: "select",
@@ -32,6 +41,8 @@ export function UserSettingsTab({ form, schema, languagesOptions, onSubmit }: Us
             ],
           },
         }}
+        form={form as any}
+        schema={schema}
         submitLabel="Save Preferences"
         onSubmit={onSubmit}
       />

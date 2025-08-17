@@ -30,8 +30,7 @@ export function AutoForm<TSchema extends z.ZodObject<any, any>>({
     typeof (schema as any)._def?.shape === "function"
       ? ((schema as any)._def.shape() as Record<string, z.ZodTypeAny>)
       : ((schema as any).shape as Record<string, z.ZodTypeAny>);
-  
-  
+
   const keys = Object.keys(shape);
 
   return (
@@ -41,9 +40,9 @@ export function AutoForm<TSchema extends z.ZodObject<any, any>>({
     >
       {keys.map((key) => {
         const def = shape[key];
+
         if (process.env.NODE_ENV !== "production") {
           try {
-            // eslint-disable-next-line no-console
             console.debug("AutoForm field", key, (def as any)?._def?.typeName);
           } catch {}
         }
@@ -53,20 +52,24 @@ export function AutoForm<TSchema extends z.ZodObject<any, any>>({
             typeof (def as any)._def?.shape === "function"
               ? ((def as any)._def.shape() as Record<string, z.ZodTypeAny>)
               : ((def as any).shape as Record<string, z.ZodTypeAny>);
+
           return (
             <fieldset key={key} className="rounded-md border border-border p-2">
-              <legend className="px-1 text-xs uppercase tracking-wide text-muted-foreground">{key}</legend>
+              <legend className="px-1 text-xs uppercase tracking-wide text-muted-foreground">
+                {key}
+              </legend>
               <div className="space-y-2">
                 {Object.keys(innerShape).map((childKey) => {
                   const name = `${key}.${childKey}`;
                   const childDef = innerShape[childKey];
+
                   return (
                     <AutoField
                       key={name}
-                      name={name}
                       def={childDef}
-                      form={form}
                       fields={fields as any}
+                      form={form}
+                      name={name}
                     />
                   );
                 })}
@@ -78,10 +81,10 @@ export function AutoForm<TSchema extends z.ZodObject<any, any>>({
         return (
           <AutoField
             key={key}
-            name={key}
             def={def}
-            form={form}
             fields={fields as any}
+            form={form}
+            name={key}
           />
         );
       })}

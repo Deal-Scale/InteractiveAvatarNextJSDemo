@@ -1,7 +1,7 @@
+import type { AgentConfig } from "@/lib/schemas/agent";
+
 import { create } from "zustand";
 import { persist, createJSONStorage } from "zustand/middleware";
-
-import type { AgentConfig } from "@/lib/schemas/agent";
 
 export interface AgentStoreState {
   // Current working agent configuration (may be edited before starting)
@@ -24,7 +24,7 @@ export interface AgentStoreState {
 
 export const useAgentStore = create<AgentStoreState>()(
   persist(
-    (set, get) => ({
+    (set, _get) => ({
       currentAgent: null,
       lastStartedConfig: null,
       isDirty: false,
@@ -36,15 +36,20 @@ export const useAgentStore = create<AgentStoreState>()(
           const next = state.currentAgent
             ? { ...state.currentAgent, ...patch }
             : (patch as AgentConfig | null);
+
           return { currentAgent: next, isDirty: true };
         }),
 
       resetAgent: () =>
-        set((state) => ({ currentAgent: state.lastStartedConfig, isDirty: false })),
+        set((state) => ({
+          currentAgent: state.lastStartedConfig,
+          isDirty: false,
+        })),
 
       markClean: () => set({ isDirty: false }),
 
-      setLastStarted: (config) => set({ lastStartedConfig: config, isDirty: false }),
+      setLastStarted: (config) =>
+        set({ lastStartedConfig: config, isDirty: false }),
     }),
     {
       name: "agent-store",

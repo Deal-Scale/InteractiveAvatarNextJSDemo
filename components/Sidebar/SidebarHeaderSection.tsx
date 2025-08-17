@@ -2,6 +2,7 @@
 
 import React from "react";
 import { Search } from "lucide-react";
+
 import { Input } from "@/components/ui/input";
 import HeaderActionsStack from "@/components/Sidebar/HeaderActionsStack";
 
@@ -11,7 +12,11 @@ type Props = {
   setQuery: (v: string) => void;
 };
 
-const SidebarHeaderSection: React.FC<Props> = ({ onAssetsClick, query, setQuery }) => {
+const SidebarHeaderSection: React.FC<Props> = ({
+  onAssetsClick,
+  query,
+  setQuery,
+}) => {
   return (
     <div className="flex flex-col gap-2 px-2 py-2">
       <div className="flex flex-row items-center justify-between gap-2">
@@ -28,10 +33,10 @@ const SidebarHeaderSection: React.FC<Props> = ({ onAssetsClick, query, setQuery 
         <div className="relative">
           <Search className="pointer-events-none absolute left-2 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
           <Input
+            className="h-9 pl-8 text-sm bg-background text-foreground placeholder:text-muted-foreground border border-border focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
+            placeholder="Search conversations..."
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            placeholder="Search conversations..."
-            className="h-9 pl-8 text-sm bg-background text-foreground placeholder:text-muted-foreground border border-border focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
           />
         </div>
       </div>

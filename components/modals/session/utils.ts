@@ -11,7 +11,8 @@ export function mapAgentAndSettingsToConfig(
     avatarName: latestAgent?.avatarId ?? base.avatarName,
     knowledgeId: latestAgent?.knowledgeBaseId ?? base.knowledgeId,
     quality: (latestAgent as any)?.quality ?? base.quality,
-    voiceChatTransport: latestAgent?.voiceChatTransport ?? base.voiceChatTransport,
+    voiceChatTransport:
+      latestAgent?.voiceChatTransport ?? base.voiceChatTransport,
     sttSettings: {
       ...base.sttSettings,
       provider: latestAgent?.stt?.provider ?? base.sttSettings?.provider,
@@ -86,6 +87,7 @@ export function initFormsFromStorage(options: {
       globalForm.reset(globalSettings);
     } else {
       const savedGlobal = localStorage.getItem("globalSettings");
+
       if (savedGlobal) globalForm.reset(JSON.parse(savedGlobal));
     }
 
@@ -93,6 +95,7 @@ export function initFormsFromStorage(options: {
       userForm.reset(userSettings);
     } else {
       const savedUser = localStorage.getItem("userSettings");
+
       if (savedUser) userForm.reset(JSON.parse(savedUser));
     }
 
@@ -102,6 +105,7 @@ export function initFormsFromStorage(options: {
       agentForm.reset(agentSettings as any);
     } else {
       const savedAgent = localStorage.getItem("agentSettings");
+
       if (savedAgent) agentForm.reset(JSON.parse(savedAgent));
     }
   } catch (e) {

@@ -14,6 +14,7 @@ function computeEmotionClass(
   if (!emotion || emotion === "none") return null;
   const isDark = resolvedTheme === "dark";
   const suffix = isDark ? "dark" : "light";
+
   return `${emotion}-${suffix}`;
 }
 
@@ -39,6 +40,7 @@ export default function ThemeBridge() {
         "neutral",
         "none",
       ];
+
       EMOTIONS.forEach((e) => {
         if (e === "none") return;
         root.classList.remove(`${e}-light`);
@@ -65,12 +67,11 @@ export default function ThemeBridge() {
       const ce = e as CustomEvent<
         Partial<{ mode: ThemeMode; emotion: ThemeEmotion }>
       >;
+
       if (ce.detail) setStore(ce.detail);
     }
-    window.addEventListener(
-      THEME_SET_EVENT,
-      onThemeEvent as EventListener,
-    );
+    window.addEventListener(THEME_SET_EVENT, onThemeEvent as EventListener);
+
     return () => {
       window.removeEventListener(
         THEME_SET_EVENT,
