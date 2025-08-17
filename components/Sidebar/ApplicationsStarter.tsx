@@ -53,7 +53,7 @@ export default function ApplicationsStarter(props: {
     <SidebarGroup>
       <button
         type="button"
-        className="flex w-full items-center justify-between px-2 py-1 text-left rounded-md hover:bg-zinc-100 dark:hover:bg-zinc-700/60"
+        className="flex w-full items-center justify-between px-2 py-1 text-left rounded-md hover:bg-muted"
         onClick={() => setCollapsedStarter((v) => !v)}
       >
         <SidebarGroupLabel>Applications Starter</SidebarGroupLabel>
@@ -62,7 +62,7 @@ export default function ApplicationsStarter(props: {
       {!collapsedStarter && (
         <>
           <div className="px-2 py-1 group-data-[state=collapsed]/sidebar:hidden">
-            <div className="mb-2 flex items-center justify-between text-xs text-zinc-400">
+            <div className="mb-2 flex items-center justify-between text-xs text-muted-foreground">
               <span>Card size</span>
               <span>{starterScale.toFixed(1)}x</span>
             </div>
@@ -71,7 +71,7 @@ export default function ApplicationsStarter(props: {
 
           {/* Inline Agent Controls */}
           <div className="px-2 py-2 space-y-2 text-xs group-data-[state=collapsed]/sidebar:hidden">
-            <div className="font-medium text-zinc-500">Agent quick settings</div>
+            <div className="font-medium text-muted-foreground">Agent quick settings</div>
             <div className="grid grid-cols-1 gap-2">
               {/* Language */}
               <label className="grid gap-1">
@@ -154,10 +154,10 @@ export default function ApplicationsStarter(props: {
           <div className="px-2 py-2 space-y-2 text-xs group-data-[state=collapsed]/sidebar:hidden">
             <button
               type="button"
-              className="flex w-full items-center justify-between rounded-md px-2 py-1 text-left hover:bg-zinc-100 dark:hover:bg-zinc-700/60"
+              className="flex w-full items-center justify-between rounded-md px-2 py-1 text-left hover:bg-muted"
               onClick={() => setShowGlobalForm((v) => !v)}
             >
-              <span className="font-medium text-zinc-500">Global settings</span>
+              <span className="font-medium text-muted-foreground">Global settings</span>
               <ChevronRight className={`size-3 transition-transform ${showGlobalForm ? "rotate-90" : "rotate-0"}`} />
             </button>
             {showGlobalForm && (

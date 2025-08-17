@@ -11,7 +11,7 @@ export default function HeaderActionsStack({ onAssetsClick }: { onAssetsClick?: 
     <div className="flex flex-col items-center gap-1">
       <Button
         variant="ghost"
-        className="size-8 text-zinc-900 dark:text-zinc-100 hover:bg-zinc-100 dark:hover:bg-zinc-700/60"
+        className="size-8 text-foreground hover:bg-muted"
         aria-label="Assets"
         onClick={onAssetsClick}
       >
@@ -19,13 +19,13 @@ export default function HeaderActionsStack({ onAssetsClick }: { onAssetsClick?: 
       </Button>
       <Button
         variant="ghost"
-        className="size-8 text-zinc-900 dark:text-zinc-100 hover:bg-zinc-100 dark:hover:bg-zinc-700/60"
+        className="size-8 text-foreground hover:bg-muted"
         aria-label="Avatar settings"
         onClick={openConfigModal}
       >
         <Settings className="size-4" />
       </Button>
-      <SidebarTrigger className="size-8 inline-flex items-center justify-center rounded-md hover:bg-zinc-100 dark:hover:bg-zinc-700/60">
+      <SidebarTrigger className="size-8 inline-flex items-center justify-center rounded-md hover:bg-muted">
         <PanelLeft className="size-4" />
       </SidebarTrigger>
     </div>

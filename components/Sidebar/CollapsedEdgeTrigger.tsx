@@ -13,7 +13,7 @@ export default function CollapsedEdgeTrigger() {
     <div className="fixed left-3 bottom-3 z-50 flex flex-col items-start gap-2">
       <Button
         aria-label="Open sidebar"
-        className="size-9 inline-flex items-center justify-center rounded-full bg-zinc-800/90 text-white shadow hover:bg-zinc-700"
+        className="size-9 inline-flex items-center justify-center rounded-full bg-primary text-primary-foreground shadow hover:bg-primary/90"
         onClick={() => setOpen(true)}
         variant="ghost"
       >
@@ -21,7 +21,7 @@ export default function CollapsedEdgeTrigger() {
       </Button>
       <Button
         aria-label="Avatar settings"
-        className="size-9 inline-flex items-center justify-center rounded-full bg-zinc-800/90 text-white shadow hover:bg-zinc-700"
+        className="size-9 inline-flex items-center justify-center rounded-full bg-primary text-primary-foreground shadow hover:bg-primary/90"
         onClick={openConfigModal}
         variant="ghost"
       >

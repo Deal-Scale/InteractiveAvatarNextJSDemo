@@ -13,13 +13,16 @@ export const AuroraText = memo(
   ({
     children,
     className = "",
-    colors = ["#FF0080", "#7928CA", "#0070F3", "#38bdf8"],
+    // Default to theme-driven aurora stops; can be overridden via props
+    colors = [
+      "hsl(var(--aurora-1))",
+      "hsl(var(--aurora-2))",
+      "hsl(var(--aurora-3))",
+    ],
     speed = 1,
   }: AuroraTextProps) => {
     const gradientStyle = {
-      backgroundImage: `linear-gradient(135deg, ${colors.join(", ")}, ${
-        colors[0]
-      })`,
+      backgroundImage: `linear-gradient(135deg, ${colors.join(", ")}, ${colors[0]})`,
       WebkitBackgroundClip: "text",
       WebkitTextFillColor: "transparent",
       animationDuration: `${10 / speed}s`,
