@@ -7,8 +7,9 @@ import {
   Check,
   XCircle,
 } from "lucide-react";
-import React from "react";
+import React, { useState } from "react";
 import type { ComposerAsset } from "@/lib/stores/composer";
+import { useComposerStore } from "@/lib/stores/composer";
 
 import { PromptSuggestions } from "./PromptSuggestions";
 
@@ -20,6 +21,7 @@ import {
   PromptInputTextarea,
 } from "@/components/ui/prompt-input";
 import { Loader } from "@/components/ui/loader";
+import { cn } from "@/lib/utils";
 import {
   FileUpload,
   FileUploadContent,
@@ -67,18 +69,95 @@ export const ChatInput: React.FC<ChatInputProps> = ({
   onFilesAdded,
   inputRef,
 }) => {
-  return (
-    <PromptInput
-      className="w-full mt-4"
-      disabled={false}
-      maxHeight={320}
-      value={chatInput}
-      textareaRef={inputRef}
-      onSubmit={() =>
-        isEditing ? confirmEdit() : sendWithAttachments(chatInput)
+  const addAssetAttachment = useComposerStore((s) => s.addAssetAttachment);
+  // Visual affordance for sidebar asset drag-over
+  const [assetDragCounter, setAssetDragCounter] = useState(0);
+  const isAssetDragging = assetDragCounter > 0;
+
+  const handleDrop = (e: React.DragEvent) => {
+    console.debug("[ChatInput] drop", {
+      types: Array.from(e.dataTransfer.types || []),
+    });
+    try {
+      const data = e.dataTransfer.getData("application/x-asset");
+      if (data) {
+        console.debug("[ChatInput] asset payload detected on drop");
+        const asset = JSON.parse(data) as ComposerAsset;
+        if (asset && asset.id && asset.name) {
+          addAssetAttachment({
+            id: asset.id,
+            name: asset.name,
+            url: asset.url,
+            thumbnailUrl: asset.thumbnailUrl,
+            mimeType: asset.mimeType,
+          });
+          console.debug("[ChatInput] asset added to composer", asset);
+          // Always swallow the drop so FileUpload doesn't keep its overlay active
+          e.preventDefault();
+          e.stopPropagation();
+          setAssetDragCounter(0);
+          return;
+        }
       }
-      onValueChange={onChatInputChange}
+    } catch {}
+    // If it's not our payload, let it bubble (FileUpload will handle file drops)
+  };
+
+  const allowDrop = (e: React.DragEvent) => {
+    // If dragging an asset payload, allow drop
+    if (e.dataTransfer.types.includes("application/x-asset")) {
+      console.debug("[ChatInput] dragover asset payload", {
+        types: Array.from(e.dataTransfer.types || []),
+      });
+      e.preventDefault();
+      // Stop FileUpload from entering drag state (prevents persistent overlay)
+      e.stopPropagation();
+      try {
+        e.dataTransfer.dropEffect = "copy";
+      } catch {}
+    }
+  };
+  const onDragEnter = (e: React.DragEvent) => {
+    if (e.dataTransfer.types.includes("application/x-asset")) {
+      console.debug("[ChatInput] dragenter asset payload");
+      e.preventDefault();
+      e.stopPropagation();
+      setAssetDragCounter((c) => c + 1);
+    }
+  };
+  const onDragLeave = (e: React.DragEvent) => {
+    if (e.dataTransfer.types.includes("application/x-asset")) {
+      console.debug("[ChatInput] dragleave asset payload");
+      e.preventDefault();
+      e.stopPropagation();
+      setAssetDragCounter((c) => Math.max(0, c - 1));
+    }
+  };
+  return (
+    <div
+      className="relative"
+      onDragEnter={onDragEnter}
+      onDragOver={allowDrop}
+      onDragLeave={onDragLeave}
+      onDrop={handleDrop}
     >
+      {isAssetDragging && (
+        <div className="pointer-events-none absolute inset-0 z-10 rounded-lg border-2 border-dashed border-primary/70 bg-primary/5" />
+      )}
+      <PromptInput
+        className={cn(
+          "w-full mt-4",
+          isAssetDragging && "ring-2 ring-primary/50 rounded-lg"
+        )}
+        disabled={false}
+        maxHeight={320}
+        value={chatInput}
+        textareaRef={inputRef}
+        onSubmit={() =>
+          isEditing ? confirmEdit() : sendWithAttachments(chatInput)
+        }
+        onValueChange={onChatInputChange}
+      >
       <div className="flex items-end gap-2">
         <PromptInputTextarea
           aria-label="Chat input"
@@ -117,7 +196,7 @@ export const ChatInput: React.FC<ChatInputProps> = ({
               <PromptInputAction tooltip="Attach files">
                 <FileUpload
                   multiple
-                  accept="*"
+                  accept=".png,.jpg,.jpeg,.webp,.gif,.pdf,.txt,.md"
                   disabled={isVoiceChatActive}
                   onFilesAdded={onFilesAdded}
                 >
@@ -227,6 +306,7 @@ export const ChatInput: React.FC<ChatInputProps> = ({
           onChatInputChange={onChatInputChange}
         />
       </div>
-    </PromptInput>
+      </PromptInput>
+    </div>
   );
 };

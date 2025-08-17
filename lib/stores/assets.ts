@@ -42,6 +42,34 @@ export const useAssetsStore = create<AssetsState>()(
         const files = Array.from(input as File[]);
         if (!files.length) return [];
 
+        const MAX_FILES = 5;
+        const MAX_SIZE_BYTES = 10 * 1024 * 1024; // 10MB
+        const ALLOWED_MIME = new Set([
+          "image/png",
+          "image/jpeg",
+          "image/jpg",
+          "image/webp",
+          "image/gif",
+          "application/pdf",
+          "text/plain",
+          "text/markdown",
+        ]);
+
+        if (files.length > MAX_FILES) {
+          throw new Error(`Too many files. Max ${MAX_FILES} per upload.`);
+        }
+
+        for (const f of files) {
+          if (typeof f.size === "number" && f.size > MAX_SIZE_BYTES) {
+            throw new Error(`File '${f.name}' exceeds 10MB limit.`);
+          }
+          if (!ALLOWED_MIME.has(f.type)) {
+            throw new Error(
+              `File '${f.name}' has unsupported type '${f.type || "unknown"}'.`,
+            );
+          }
+        }
+
         const temp: UploadProgress[] = files.map((f, i) => ({
           id: `temp-${Date.now()}-${i}`,
           name: f.name,
@@ -97,3 +125,4 @@ export const useAssetsStore = create<AssetsState>()(
     },
   ),
 );
+

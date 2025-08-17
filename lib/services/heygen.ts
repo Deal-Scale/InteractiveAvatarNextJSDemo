@@ -1,6 +1,7 @@
 import StreamingAvatar, { TaskMode, TaskType } from "@heygen/streaming-avatar";
 
 import { ApiService, TextChatService, VoiceChatService } from "./api";
+import type { MessageAsset } from "@/lib/types";
 
 export class HeyGenService implements ApiService {
   textChat: TextChatService;
@@ -8,14 +9,14 @@ export class HeyGenService implements ApiService {
 
   constructor(avatar: StreamingAvatar) {
     this.textChat = {
-      sendMessage: (message: string) => {
+      sendMessage: (message: string, _assets?: MessageAsset[]) => {
         avatar.speak({
           text: message,
           taskType: TaskType.TALK,
           taskMode: TaskMode.ASYNC,
         });
       },
-      sendMessageSync: async (message: string) => {
+      sendMessageSync: async (message: string, _assets?: MessageAsset[]) => {
         return await avatar.speak({
           text: message,
           taskType: TaskType.TALK,

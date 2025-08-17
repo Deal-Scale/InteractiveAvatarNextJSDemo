@@ -20,10 +20,25 @@ export const useComposerStore = create<ComposerState>((set) => ({
   addAssetAttachment: (a) =>
     set((s) => {
       // de-duplicate by id
-      if (s.assetAttachments.some((x) => x.id === a.id)) return s;
-      return { assetAttachments: [...s.assetAttachments, a] };
+      if (s.assetAttachments.some((x) => x.id === a.id)) {
+        console.debug("[composer] duplicate asset ignored", a);
+        return s;
+      }
+      const next = [...s.assetAttachments, a];
+      console.debug("[composer] add", { count: next.length, added: a });
+      return { assetAttachments: next };
     }),
   removeAssetAttachment: (id) =>
-    set((s) => ({ assetAttachments: s.assetAttachments.filter((x) => x.id !== id) })),
-  clearAssetAttachments: () => set({ assetAttachments: [] }),
+    set((s) => {
+      const next = s.assetAttachments.filter((x) => x.id !== id);
+      console.debug("[composer] remove", { id, count: next.length });
+      return { assetAttachments: next };
+    }),
+  clearAssetAttachments: () =>
+    set((s) => {
+      if (s.assetAttachments.length) {
+        console.debug("[composer] clear", { removed: s.assetAttachments.length });
+      }
+      return { assetAttachments: [] };
+    }),
 }));
