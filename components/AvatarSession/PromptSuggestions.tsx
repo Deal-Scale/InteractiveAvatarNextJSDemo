@@ -32,26 +32,31 @@ export const PromptSuggestions: React.FC<PromptSuggestionsProps> = ({
         </div>
       ) : (
         <div className="px-2 pt-2">
-          <div className="flex max-h-40 flex-col gap-1 overflow-auto rounded-xl border border-border bg-popover p-1 text-popover-foreground shadow-sm">
-            {promptSuggestions
+          {(() => {
+            const filtered = promptSuggestions
               .filter((s) =>
                 s.toLowerCase().includes(chatInput.trim().toLowerCase()),
               )
-              .slice(0, 6)
-              .map((s, i) => (
-                <PromptSuggestion
-                  key={i}
-                  className="rounded-lg"
-                  disabled={isVoiceChatActive}
-                  highlight={chatInput.trim()}
-                  size="sm"
-                  variant="ghost"
-                  onClick={() => onChatInputChange(s)}
-                >
-                  {s}
-                </PromptSuggestion>
-              ))}
-          </div>
+              .slice(0, 6);
+            if (filtered.length === 0) return null;
+            return (
+              <div className="flex max-h-40 flex-col gap-1 overflow-auto rounded-xl border border-border bg-popover p-1 text-popover-foreground shadow-sm">
+                {filtered.map((s, i) => (
+                  <PromptSuggestion
+                    key={i}
+                    className="rounded-lg"
+                    disabled={isVoiceChatActive}
+                    highlight={chatInput.trim()}
+                    size="sm"
+                    variant="ghost"
+                    onClick={() => onChatInputChange(s)}
+                  >
+                    {s}
+                  </PromptSuggestion>
+                ))}
+              </div>
+            );
+          })()}
         </div>
       )}
     </>

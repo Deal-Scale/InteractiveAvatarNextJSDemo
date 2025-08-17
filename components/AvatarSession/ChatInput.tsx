@@ -298,14 +298,16 @@ export const ChatInput: React.FC<ChatInputProps> = ({
           ))}
         </div>
       )}
-      <div className="mt-4">
-        <PromptSuggestions
-          chatInput={chatInput}
-          isVoiceChatActive={isVoiceChatActive}
-          promptSuggestions={promptSuggestions}
-          onChatInputChange={onChatInputChange}
-        />
-      </div>
+      {promptSuggestions && promptSuggestions.length > 0 ? (
+        <div className="mt-4">
+          <PromptSuggestions
+            chatInput={chatInput}
+            isVoiceChatActive={isVoiceChatActive}
+            promptSuggestions={promptSuggestions}
+            onChatInputChange={onChatInputChange}
+          />
+        </div>
+      ) : null}
       </PromptInput>
     </div>
   );
