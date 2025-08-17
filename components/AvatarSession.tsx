@@ -146,63 +146,9 @@ export function AvatarSession({
         {avatarVideoPanel}
       </div>
 
-      {/* Right dock as overlay (does not affect video size) */}
-      {!isFloating && isRight && rightSize > 0 && (
-        <div
-          className="pointer-events-auto z-30 absolute top-0 bottom-0 right-0"
-          style={{ width: `${rightSize}%`, minWidth: 280, maxWidth: "95vw" }}
-        >
-          {/* Left-edge resize handle inside overlay (thicker for easier grab) */}
-          <div
-            aria-orientation="vertical"
-            className="w-3 h-full cursor-col-resize bg-muted-foreground/30 hover:bg-muted-foreground/60 transition-colors absolute left-0 top-0"
-            role="separator"
-            onPointerDown={() => setResizing("right")}
-          />
-          <div className="overflow-hidden h-full pl-[4px]">
-            <ChatPanel dock={dock} expanded={expanded} {...chatPanelProps} />
-          </div>
-        </div>
-      )}
-
-      {/* Bottom dock as overlay (does not affect video size) */}
-      {!isFloating && !isRight && bottomSize > 0 && (
-        <div
-          className="pointer-events-auto z-30 absolute left-0 right-0"
-          style={{ bottom: 0, height: `${bottomSize}%`, minHeight: 80 }}
-        >
-          {/* Top-edge resize handle inside overlay */}
-          <div
-            aria-orientation="horizontal"
-            className="h-1 cursor-row-resize bg-muted-foreground/40 hover:bg-muted-foreground/60 transition-colors"
-            role="separator"
-            onPointerDown={() => setResizing("bottom")}
-          />
-          <div className="overflow-hidden h-[calc(100%-4px)]">
-            <ChatPanel
-              canChat={canChat}
-              chatInput={chatInput}
-              dock={dock}
-              expanded={expanded}
-              isChatSolidBg={isChatSolidBg}
-              isSending={isSending}
-              isVoiceActive={isVoiceChatActive || mockVoiceActive}
-              messages={messages}
-              sessionState={sessionState}
-              onArrowDown={handleArrowDown}
-              onArrowUp={handleArrowUp}
-              onChatInputChange={setChatInput}
-              onCopy={handleCopy}
-              onDock={setDock}
-              onHeaderPointerDown={handlePointerDown}
-              onSendMessage={sendMessageVoid}
-              onStartMockChat={startMockChat}
-              onStartVoiceChat={startVoiceChatVoid}
-              onStopVoiceChat={stopVoiceChatVoid}
-              onToggleExpand={toggleExpand}
-            />
-          </div>
-        </div>
+      {/* Let RightTab/BottomTab render their own fixed drawers via ChatPanel */}
+      {!isFloating && (
+        <ChatPanel dock={dock} expanded={expanded} {...chatPanelProps} />
       )}
 
       {/* Floating chat overlay */}
@@ -232,23 +178,7 @@ export function AvatarSession({
         </div>
       )}
 
-      {/* Reopen tabs when docked chat is collapsed to 0% */}
-      {!isFloating && !isRight && bottomSize === 0 && (
-        <button
-          className="absolute bottom-0 left-1/2 -translate-x-1/2 mb-1 rounded-full bg-background border border-border px-3 py-1 text-xs text-foreground shadow hover:bg-muted"
-          onClick={() => setBottomSize(15)}
-        >
-          Open chat
-        </button>
-      )}
-      {!isFloating && isRight && rightSize === 0 && (
-        <button
-          className="absolute right-0 top-1/2 -translate-y-1/2 mr-1 rounded-full bg-background border border-border px-3 py-1 text-xs text-foreground shadow hover:bg-muted"
-          onClick={() => setRightSize(24)}
-        >
-          Open chat
-        </button>
-      )}
+      {/* Reopen tabs handled inside BottomTab/RightTab components */}
     </div>
   );
 }
