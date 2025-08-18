@@ -74,8 +74,10 @@ function JSXPreview({ jsx, isStreaming = false, components, ...props }: JSXPrevi
   // Normalize HTML-ish attributes to JSX-compatible ones and complete tags during streaming
   const processedJsx = React.useMemo(() => {
     const base = isStreaming ? completeJsxTag(jsx) : jsx;
+    // Remove JSX block comments which react-jsx-parser may not handle reliably in strings
+    const withoutComments = base.replace(/\{\/\*[\s\S]*?\*\/\}/g, "");
     // Replace attribute names only when used as attributes (followed by =) to avoid replacing text content
-    return base
+    return withoutComments
       .replace(/\bclass=/g, "className=")
       .replace(/\bfor=/g, "htmlFor=");
   }, [jsx, isStreaming]);
