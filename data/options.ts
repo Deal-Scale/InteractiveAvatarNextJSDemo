@@ -3,6 +3,7 @@ import {
   VoiceChatTransport,
   VoiceEmotion,
 } from "@heygen/streaming-avatar";
+import { useQuery } from "@tanstack/react-query";
 
 export type Option = { value: string; label: string };
 
@@ -68,6 +69,43 @@ export const loadAvatarOptions = async (): Promise<Option[]> => {
     return [];
   }
 };
+
+// Preferred React Query hooks for options (non-breaking additions)
+export function useAvatarOptionsQuery() {
+  return useQuery({
+    queryKey: ["avatars", "options"],
+    queryFn: loadAvatarOptions,
+    staleTime: 5 * 60_000,
+    initialData: [],
+  });
+}
+
+export function useVoiceOptionsQuery() {
+  return useQuery({
+    queryKey: ["voices", "options"],
+    queryFn: loadVoiceOptions,
+    staleTime: 5 * 60_000,
+    initialData: [],
+  });
+}
+
+export function useMcpServerOptionsQuery() {
+  return useQuery({
+    queryKey: ["mcp", "servers", "options"],
+    queryFn: loadMcpServerOptions,
+    staleTime: 5 * 60_000,
+    initialData: [],
+  });
+}
+
+export function useKnowledgeBaseOptionsQuery() {
+  return useQuery({
+    queryKey: ["knowledge-bases", "options"],
+    queryFn: loadKnowledgeBaseOptions,
+    staleTime: 5 * 60_000,
+    initialData: [],
+  });
+}
 
 export const loadVoiceOptions = async (): Promise<Option[]> => {
   try {

@@ -1,5 +1,5 @@
 import { Brain, Database, LayoutDashboard } from "lucide-react";
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useMemo, useState } from "react";
 
 import { StreamingAvatarSessionState } from "../logic/context";
 
@@ -33,6 +33,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import { useAvatarOptions } from "@/components/AvatarConfig/hooks/useAvatarOptions";
 
 export function AvatarVideoPanel({
   mediaStream,
@@ -52,38 +53,8 @@ export function AvatarVideoPanel({
   const { viewTab } = useSessionStore();
   const [selectedAvatar, setSelectedAvatar] = useState<string>("");
   const [customAvatarId, setCustomAvatarId] = useState<string>("");
-  const [avatarOptions, setAvatarOptions] = useState<
-    Array<{ avatar_id: string; name: string }>
-  >([]);
+  const { avatarOptions } = useAvatarOptions();
   const [knowledgeBaseId, setKnowledgeBaseId] = useState<string>("");
-
-  useEffect(() => {
-    let cancelled = false;
-    const fetchAvatars = async () => {
-      try {
-        const res = await fetch("/api/avatars", { cache: "no-store" });
-
-        if (!res.ok) throw new Error(`HTTP ${res.status}`);
-        const json = await res.json();
-        const list = Array.isArray(json?.data) ? json.data : [];
-        const mapped = list.map((a: any) => ({
-          avatar_id: a.avatar_id,
-          name:
-            a.pose_name || a.normal_preview || a.default_voice || a.avatar_id,
-        }));
-
-        if (!cancelled && mapped.length) setAvatarOptions(mapped);
-      } catch {
-        // leave empty -> dropdown will have only Custom option
-      }
-    };
-
-    fetchAvatars();
-
-    return () => {
-      cancelled = true;
-    };
-  }, []);
 
   const customIdValid = useMemo(() => {
     if (selectedAvatar !== "CUSTOM") return true;
