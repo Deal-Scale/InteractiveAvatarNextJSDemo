@@ -56,7 +56,7 @@ export default function BookmarkModal(props: {
         if (!v) onClose();
       }}
     >
-      <DialogContent className="w-[92vw] max-w-md">
+      <DialogContent className="w-[96vw] md:w-[560px] max-w-[96vw] p-4 md:p-6 bg-card text-foreground flex flex-col max-h-[90vh]">
         <DialogHeader>
           <DialogTitle className="text-sm font-medium">
             {bookmarkedIds.has(bookmarkTargetId || "")
@@ -67,8 +67,7 @@ export default function BookmarkModal(props: {
             Manage bookmark folder and tags
           </DialogDescription>
         </DialogHeader>
-
-        <div className="space-y-3">
+        <div className="flex-1 overflow-y-auto space-y-3">
           <div>
             <label className="mb-1 block text-xs text-muted-foreground">
               Folder
