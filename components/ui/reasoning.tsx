@@ -99,7 +99,11 @@ function ReasoningTrigger({
 
   return (
     <button
-      className={cn("flex cursor-pointer items-center gap-2", className)}
+      className={cn(
+        // Token-based styling to adapt to themes
+        "flex cursor-pointer items-center gap-2 rounded-md border border-transparent bg-transparent px-1 py-0.5 text-sm hover:bg-accent hover:text-accent-foreground",
+        className,
+      )}
       onClick={() => onOpenChange(!isOpen)}
       {...props}
     >
@@ -153,7 +157,9 @@ function ReasoningContent({
   }, [isOpen]);
 
   const content = markdown ? (
-    <Markdown>{children as string}</Markdown>
+    <Markdown className="prose prose-sm dark:prose-invert text-muted-foreground">
+      {children as string}
+    </Markdown>
   ) : (
     children
   );
@@ -162,7 +168,8 @@ function ReasoningContent({
     <div
       ref={contentRef}
       className={cn(
-        "overflow-hidden transition-[max-height] duration-150 ease-out",
+        // Container uses tokens so it adapts to theme
+        "overflow-hidden transition-[max-height] duration-150 ease-out rounded-md border border-border bg-card",
         className,
       )}
       style={{
@@ -172,10 +179,7 @@ function ReasoningContent({
     >
       <div
         ref={innerRef}
-        className={cn(
-          "text-muted-foreground prose prose-sm dark:prose-invert",
-          contentClassName,
-        )}
+        className={cn("p-2 text-muted-foreground", contentClassName)}
       >
         {content}
       </div>

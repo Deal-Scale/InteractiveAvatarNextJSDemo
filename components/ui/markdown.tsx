@@ -22,6 +22,18 @@ function extractLanguage(className?: string): string {
   return match ? match[1] : "plaintext";
 }
 
+function parseFenceMeta(meta?: string): Record<string, string> {
+  const out: Record<string, string> = {};
+  if (!meta) return out;
+  // matches key="value" pairs
+  const regex = /(\w+)="([^"]*)"/g;
+  let m: RegExpExecArray | null;
+  while ((m = regex.exec(meta)) !== null) {
+    out[m[1]] = m[2];
+  }
+  return out;
+}
+
 const INITIAL_COMPONENTS: Partial<Components> = {
   code: function CodeComponent({ className, children, ...props }) {
     const isInline =
@@ -32,7 +44,8 @@ const INITIAL_COMPONENTS: Partial<Components> = {
       return (
         <span
           className={cn(
-            "bg-primary-foreground rounded-sm px-1 font-mono text-sm",
+            // Token-based colors for theme adaptability
+            "rounded-sm border border-border bg-muted px-1 font-mono text-[13px] text-foreground",
             className,
           )}
           {...props}
@@ -44,6 +57,9 @@ const INITIAL_COMPONENTS: Partial<Components> = {
 
     const language = extractLanguage(className);
     const codeStr = String(children ?? "");
+    const meta = (props as any)?.node?.meta as string | undefined;
+    const metaMap = parseFenceMeta(meta);
+    const themeOverride = metaMap.theme;
     const [copied, setCopied] = React.useState(false);
 
     const handleCopy = React.useCallback(async () => {
@@ -91,7 +107,7 @@ const INITIAL_COMPONENTS: Partial<Components> = {
             Share
           </button>
         </div>
-        <CodeBlockCode code={codeStr} language={language} />
+        <CodeBlockCode code={codeStr} language={language} theme={themeOverride} />
       </CodeBlock>
     );
   },

@@ -63,7 +63,9 @@ export function SourceTrigger({
     <HoverCardTrigger asChild>
       <a
         className={cn(
-          "bg-muted text-muted-foreground hover:bg-muted-foreground/30 hover:text-primary inline-flex h-5 max-w-32 items-center gap-1 overflow-hidden rounded-full py-0 text-xs leading-none no-underline transition-colors duration-150",
+          "inline-flex h-5 max-w-32 items-center gap-1 overflow-hidden rounded-full py-0 text-xs leading-none no-underline transition-colors duration-150",
+          // Token-based chip styling with accent hover
+          "bg-muted text-muted-foreground hover:bg-accent hover:text-accent-foreground",
           showFavicon ? "pr-2 pl-1" : "px-1",
           className,
         )}
@@ -102,7 +104,7 @@ export function SourceContent({
   const { href, domain } = useSourceContext();
 
   return (
-    <HoverCardContent className={cn("w-80 p-0 shadow-xs", className)}>
+    <HoverCardContent className={cn("w-80 p-0 shadow-xs border border-border bg-card", className)}>
       <a
         className="flex flex-col gap-2 p-3"
         href={href}
