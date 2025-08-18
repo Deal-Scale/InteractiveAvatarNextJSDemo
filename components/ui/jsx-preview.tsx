@@ -75,11 +75,19 @@ function JSXPreview({ jsx, isStreaming = false, components, ...props }: JSXPrevi
   const processedJsx = React.useMemo(() => {
     const base = isStreaming ? completeJsxTag(jsx) : jsx;
     // Remove JSX block comments which react-jsx-parser may not handle reliably in strings
-    const withoutComments = base.replace(/\{\/\*[\s\S]*?\*\/\}/g, "");
+    const withoutComments = base
+      // Remove JSX block comments
+      .replace(/\{\/\*[\s\S]*?\*\/\}/g, "")
+      // Remove HTML comments
+      .replace(/<!--([\s\S]*?)-->/g, "");
     // Replace attribute names only when used as attributes (followed by =) to avoid replacing text content
-    return withoutComments
+    let out = withoutComments
       .replace(/\bclass=/g, "className=")
       .replace(/\bfor=/g, "htmlFor=");
+    // Expand boolean shorthand for known attributes that may confuse the parser
+    // e.g., <SourceTrigger showFavicon /> -> <SourceTrigger showFavicon={true} />
+    out = out.replace(/\bshowFavicon(\s*)(\/?>)/g, (_m, ws: string, tail: string) => `showFavicon={true}${ws}${tail}`);
+    return out;
   }, [jsx, isStreaming]);
 
   // Cast JsxParser to any to work around the type incompatibility

@@ -58,7 +58,10 @@ export function Mermaid({ chart, children, className, config, idPrefix = "mermai
       .replaceAll("&gt;", ">")
       .replaceAll("&quot;", '"')
       .replaceAll("&#39;", "'")
-      .replaceAll("&nbsp;", " ");
+      .replaceAll("&nbsp;", " ")
+      // Numeric character references (decimal and hex)
+      .replace(/&#(\d+);/g, (_, d: string) => String.fromCharCode(Number(d)))
+      .replace(/&#x([0-9a-fA-F]+);/g, (_, h: string) => String.fromCharCode(parseInt(h, 16)));
 
   const code = React.useMemo(() => {
     const raw = String(chart ?? childrenText ?? "");

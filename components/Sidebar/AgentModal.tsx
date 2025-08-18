@@ -15,57 +15,74 @@ import {
 } from "@/components/ui/dialog";
 
 export default function AgentModal(props: {
-  agent: Agent | null;
+  mode: "view" | "edit" | "create";
+  agent?: Agent | null;
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onSave?: (agent: Agent) => void;
+  onSave?: (agent: Agent) => void; // used for edit and create
+  onStartPreview?: (agent: Agent) => void; // optional action in view mode
+  onRequestEdit?: () => void; // request parent to switch to edit mode
 }) {
-  const { agent, open, onOpenChange, onSave } = props;
-
-  const [tab, setTab] = useState<"details" | "edit">("details");
+  const { mode, agent, open, onOpenChange, onSave, onStartPreview, onRequestEdit } = props;
 
   const [draft, setDraft] = useState<Agent | null>(null);
-  const isOwnedByUser = !!agent?.isOwnedByUser;
 
-  const working = useMemo(() => draft ?? agent, [draft, agent]);
+  // initial blank for create mode
+  const initialCreate: Agent = useMemo(
+    () => ({ id: `new-${Date.now()}`, name: "", avatarUrl: "", role: "", description: "", tags: [] }),
+    [],
+  );
+
+  const effectiveMode = mode;
+  const working = useMemo<Agent | null>(() => {
+    if (effectiveMode === "create") return draft ?? initialCreate;
+    return (draft as Agent | null) ?? (agent ?? null);
+  }, [effectiveMode, draft, agent, initialCreate]);
 
   React.useEffect(() => {
-    // Reset UI when opening on a different agent
-    setTab("details");
+    // Reset when opening or target agent changes
     setDraft(null);
-  }, [agent?.id, open]);
+  }, [agent?.id, open, mode]);
 
   if (!working) return null;
+
+  const isView = effectiveMode === "view";
+  const isEdit = effectiveMode === "edit";
+  const isCreate = effectiveMode === "create";
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-2xl">
         <DialogHeader>
-          <DialogTitle>{working.name}</DialogTitle>
+          <DialogTitle>
+            <span className="mr-2 font-semibold">{working.name || (isCreate ? "New Agent" : "Agent")}</span>
+            <span className="text-xs text-muted-foreground capitalize">{effectiveMode}</span>
+          </DialogTitle>
         </DialogHeader>
 
-        {/* Simple tabs header */}
-        <div className="mb-3 flex items-center gap-2 border-b pb-2 text-sm">
-          <button
-            className={`rounded px-2 py-1 ${tab === "details" ? "bg-muted" : "hover:bg-muted"}`}
-            onClick={() => setTab("details")}
-            type="button"
-          >
-            Details
-          </button>
-          {isOwnedByUser && (
-            <button
-              className={`rounded px-2 py-1 ${tab === "edit" ? "bg-muted" : "hover:bg-muted"}`}
-              onClick={() => setTab("edit")}
-              type="button"
-            >
-              Edit
-            </button>
-          )}
-        </div>
-
-        {tab === "details" ? (
-          <AgentPreview agent={working as Agent} />
+        {isView ? (
+          <div className="space-y-4">
+            <AgentPreview agent={working as Agent} />
+            <div className="flex justify-end gap-2">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => onRequestEdit?.()}
+              >
+                Edit
+              </Button>
+              <Button type="button" variant="ghost" onClick={() => onOpenChange(false)}>
+                Close
+              </Button>
+              <Button
+                type="button"
+                variant="default"
+                onClick={() => onStartPreview?.(working as Agent)}
+              >
+                Start / Preview
+              </Button>
+            </div>
+          </div>
         ) : (
           <form
             className="space-y-3"
@@ -132,7 +149,7 @@ export default function AgentModal(props: {
                 Cancel
               </Button>
               <Button type="submit" variant="default">
-                Save
+                {isCreate ? "Create" : "Save"}
               </Button>
             </div>
           </form>
