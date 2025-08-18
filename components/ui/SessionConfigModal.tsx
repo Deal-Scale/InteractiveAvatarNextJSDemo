@@ -204,14 +204,14 @@ export function SessionConfigModal({
 
   return (
     <Dialog open={isConfigModalOpen} onOpenChange={closeConfigModal}>
-      <DialogContent className="w-[96vw] md:w-[92vw] max-w-[1280px] p-0 overflow-hidden bg-card text-foreground">
+      <DialogContent className="w-[96vw] md:w-[92vw] max-w-[1280px] p-0 bg-card text-foreground flex flex-col max-h-[90vh]">
         <SessionConfigHeader />
 
         {/* Tabs Header */}
         <TabsHeader activeTab={activeTab} setActiveTab={setActiveTab} />
 
         {/* Tabs Content */}
-        <div className="max-h-[70vh] overflow-y-auto p-4 md:p-6">
+        <div className="flex-1 overflow-y-auto p-4 md:p-6">
           {activeTab === "session" && (
             <SessionTab
               config={config}

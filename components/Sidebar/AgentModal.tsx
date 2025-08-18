@@ -3,6 +3,9 @@
 import type { Agent } from "./AgentCard";
 
 import React, { useMemo, useState } from "react";
+import { z } from "zod";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
 
 import AgentPreview from "./AgentPreview";
 
@@ -13,6 +16,8 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { AutoForm } from "@/components/forms/AutoForm";
+import { AgentConfigSchema } from "@/lib/schemas/agent";
 
 export default function AgentModal(props: {
   mode: "view" | "edit" | "create";
@@ -50,9 +55,48 @@ export default function AgentModal(props: {
   const isEdit = effectiveMode === "edit";
   const isCreate = effectiveMode === "create";
 
+  // Combined schema: full AgentConfig + sidebar-only fields
+  const AgentFormSchema = useMemo(() => {
+    const base = AgentConfigSchema as unknown as z.ZodObject<any>;
+    return base.extend({
+      role: z.string().optional(),
+      avatarUrl: z.string().url().optional().or(z.literal("")).optional(),
+      description: z.string().optional(),
+      tags: z.array(z.string()).optional(),
+    });
+  }, []);
+
+  // Single form instance used for both edit and create
+  const form = useForm<z.infer<typeof AgentFormSchema>>({
+    resolver: zodResolver(AgentFormSchema),
+    mode: "onChange",
+    defaultValues: {
+      id: (working as any)?.id || `new-${Date.now()}`,
+      name: working?.name || "",
+      avatarId: (undefined as any),
+      role: working?.role || "",
+      avatarUrl: working?.avatarUrl || "",
+      description: working?.description || "",
+      tags: working?.tags || [],
+    },
+  });
+
+  React.useEffect(() => {
+    // Sync form defaults when switching target or mode
+    form.reset({
+      id: (working as any)?.id || `new-${Date.now()}`,
+      name: working?.name || "",
+      avatarId: (undefined as any),
+      role: working?.role || "",
+      avatarUrl: working?.avatarUrl || "",
+      description: working?.description || "",
+      tags: working?.tags || [],
+    });
+  }, [working?.id, effectiveMode, open]);
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl">
+      <DialogContent className="w-[96vw] md:w-[640px] max-w-[96vw] p-4 md:p-6 bg-card text-foreground flex flex-col max-h-[90vh]">
         <DialogHeader>
           <DialogTitle>
             <span className="mr-2 font-semibold">{working.name || (isCreate ? "New Agent" : "Agent")}</span>
@@ -60,100 +104,74 @@ export default function AgentModal(props: {
           </DialogTitle>
         </DialogHeader>
 
-        {isView ? (
-          <div className="space-y-4">
-            <AgentPreview agent={working as Agent} />
-            <div className="flex justify-end gap-2">
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => onRequestEdit?.()}
-              >
-                Edit
-              </Button>
-              <Button type="button" variant="ghost" onClick={() => onOpenChange(false)}>
-                Close
-              </Button>
-              <Button
-                type="button"
-                variant="default"
-                onClick={() => onStartPreview?.(working as Agent)}
-              >
-                Start / Preview
-              </Button>
+        <div className="flex-1 overflow-y-auto">
+          {isView ? (
+            <div className="space-y-4">
+              <AgentPreview agent={working as Agent} />
+              <div className="flex justify-end gap-2">
+                {(agent?.isOwnedByUser ?? false) && (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => onRequestEdit?.()}
+                  >
+                    Edit
+                  </Button>
+                )}
+                <Button type="button" variant="ghost" onClick={() => onOpenChange(false)}>
+                  Close
+                </Button>
+                <Button
+                  type="button"
+                  variant="default"
+                  onClick={() => onStartPreview?.(working as Agent)}
+                >
+                  Start / Preview
+                </Button>
+              </div>
             </div>
-          </div>
-        ) : (
-          <form
-            className="space-y-3"
-            onSubmit={(e) => {
-              e.preventDefault();
-              if (!working) return;
-              onSave?.(working);
-              onOpenChange(false);
-            }}
-          >
-            <div className="grid grid-cols-2 gap-3">
-              <label className="text-xs">
-                <div className="mb-1 text-muted-foreground">Name</div>
-                <input
-                  className="w-full rounded-md border bg-background px-2 py-1 text-sm outline-none focus:border-primary"
-                  value={working.name}
-                  onChange={(e) => setDraft({ ...(working as Agent), name: e.target.value })}
-                />
-              </label>
-              <label className="text-xs">
-                <div className="mb-1 text-muted-foreground">Role</div>
-                <input
-                  className="w-full rounded-md border bg-background px-2 py-1 text-sm outline-none focus:border-primary"
-                  value={working.role || ""}
-                  onChange={(e) => setDraft({ ...(working as Agent), role: e.target.value })}
-                />
-              </label>
-              <label className="col-span-2 text-xs">
-                <div className="mb-1 text-muted-foreground">Avatar URL</div>
-                <input
-                  className="w-full rounded-md border bg-background px-2 py-1 text-sm outline-none focus:border-primary"
-                  value={working.avatarUrl || ""}
-                  onChange={(e) => setDraft({ ...(working as Agent), avatarUrl: e.target.value })}
-                />
-              </label>
-              <label className="col-span-2 text-xs">
-                <div className="mb-1 text-muted-foreground">Description</div>
-                <textarea
-                  className="min-h-[80px] w-full rounded-md border bg-background px-2 py-1 text-sm outline-none focus:border-primary"
-                  value={working.description || ""}
-                  onChange={(e) => setDraft({ ...(working as Agent), description: e.target.value })}
-                />
-              </label>
-              <label className="col-span-2 text-xs">
-                <div className="mb-1 text-muted-foreground">Tags (comma separated)</div>
-                <input
-                  className="w-full rounded-md border bg-background px-2 py-1 text-sm outline-none focus:border-primary"
-                  value={(working.tags || []).join(", ")}
-                  onChange={(e) =>
-                    setDraft({
-                      ...(working as Agent),
-                      tags: e.target.value
+          ) : (
+            <AutoForm
+              className="space-y-3"
+              schema={AgentFormSchema}
+              form={form as any}
+              fields={{
+                name: { label: "Name" },
+                role: { label: "Role" },
+                avatarUrl: { label: "Avatar URL" },
+                description: { label: "Description", widget: "textarea" },
+                tags: { label: "Tags" },
+              }}
+              submitLabel={isCreate ? "Create" : "Save"}
+              onSubmit={(values: z.infer<typeof AgentFormSchema>) => {
+                const name = String(values.name ?? "");
+                const role = values.role != null ? String(values.role) : "";
+                const avatarUrl = values.avatarUrl != null ? String(values.avatarUrl) : "";
+                const description = values.description != null ? String(values.description) : "";
+                const tags: string[] = Array.isArray(values.tags)
+                  ? (values.tags as string[])
+                  : typeof (values as any).tags === "string"
+                    ? ((values as any).tags as string)
                         .split(",")
-                        .map((s) => s.trim())
-                        .filter(Boolean),
-                    })
-                  }
-                />
-              </label>
-            </div>
+                        .map((s: string) => s.trim())
+                        .filter(Boolean)
+                    : [];
 
-            <div className="flex justify-end gap-2">
-              <Button type="button" variant="ghost" onClick={() => onOpenChange(false)}>
-                Cancel
-              </Button>
-              <Button type="submit" variant="default">
-                {isCreate ? "Create" : "Save"}
-              </Button>
-            </div>
-          </form>
-        )}
+                const next: Agent = {
+                  id: (values as any)?.id || working?.id || `new-${Date.now()}`,
+                  name,
+                  role,
+                  avatarUrl,
+                  description,
+                  tags,
+                  isOwnedByUser: isCreate ? true : working?.isOwnedByUser,
+                };
+                onSave?.(next);
+                onOpenChange(false);
+              }}
+            />
+          )}
+        </div>
       </DialogContent>
     </Dialog>
   );

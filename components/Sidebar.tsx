@@ -80,8 +80,8 @@ const Sidebar: React.FC<SidebarProps> = ({ onSelect, apps }) => {
 
   const agents = useMemo(() => {
     const base = [
-      { id: "agent-1", name: "Sales Assistant" },
-      { id: "agent-2", name: "Support Bot" },
+      { id: "agent-1", name: "Sales Assistant", isOwnedByUser: true },
+      { id: "agent-2", name: "Support Bot", isOwnedByUser: false },
     ];
 
     if (agentSettings?.id) {
@@ -89,6 +89,7 @@ const Sidebar: React.FC<SidebarProps> = ({ onSelect, apps }) => {
         {
           id: agentSettings.id,
           name: agentSettings.name || "Configured Agent",
+          isOwnedByUser: true,
         },
         ...base,
       ];
@@ -234,6 +235,10 @@ const Sidebar: React.FC<SidebarProps> = ({ onSelect, apps }) => {
             agents={agents as any}
             collapsedAgents={collapse.collapsedAgents}
             setCollapsedAgents={collapse.setCollapsedAgents}
+            onEdit={(a) => {
+              // Map sidebar Agent fields to AgentConfig partial
+              updateAgent({ name: a.name });
+            }}
           />
 
           {/* Bookmarks (File Tree) */}
