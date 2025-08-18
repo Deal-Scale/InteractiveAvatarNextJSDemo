@@ -65,7 +65,7 @@ export const MessageItem: React.FC<MessageItemProps> = ({
   segmentDelay,
   characterChunkSize,
   reasoning,
-  reasoningMarkdown = true,
+  reasoningMarkdown = false,
   reasoningOpen,
   isStreaming,
 }) => {
@@ -154,7 +154,7 @@ export const MessageItem: React.FC<MessageItemProps> = ({
             {hasJsx ? (
               <div className="w-full">
                 {message.content && (
-                  <MessageContent markdown className="mb-2 bg-muted">
+                  <MessageContent markdown showHeader={false} className="mb-2 bg-muted">
                     {message.content}
                   </MessageContent>
                 )}
@@ -175,7 +175,7 @@ export const MessageItem: React.FC<MessageItemProps> = ({
               </div>
             ) : (
               // Render markdown for avatar messages (tables, code fences, etc.)
-              <MessageContent markdown className="bg-muted">
+              <MessageContent markdown showHeader={false} className="bg-muted">
                 {message.content}
               </MessageContent>
             )}
@@ -212,7 +212,6 @@ export const MessageItem: React.FC<MessageItemProps> = ({
           </div>
         ) : (
           <MessageContent
-            markdown
             className="text-sm bg-primary text-primary-foreground"
           >
             {message.content}

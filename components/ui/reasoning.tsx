@@ -157,7 +157,7 @@ function ReasoningContent({
   }, [isOpen]);
 
   const content = markdown ? (
-    <Markdown className="prose prose-sm dark:prose-invert text-muted-foreground">
+    <Markdown showHeader headerLabel="Reasoning" className="prose prose-sm dark:prose-invert text-muted-foreground">
       {children as string}
     </Markdown>
   ) : (
