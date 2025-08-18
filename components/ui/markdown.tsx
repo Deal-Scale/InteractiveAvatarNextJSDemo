@@ -13,6 +13,7 @@ export type MarkdownProps = {
   id?: string;
   className?: string;
   components?: Partial<Components>;
+  showHeader?: boolean;
 };
 
 function extractLanguage(className?: string): string {
@@ -121,14 +122,42 @@ function MarkdownComponent({
   id,
   className,
   components = INITIAL_COMPONENTS,
+  showHeader = true,
 }: MarkdownProps) {
   const generatedId = useId();
   const blockId = id ?? generatedId;
+  const [copied, setCopied] = React.useState(false);
+  const handleCopy = React.useCallback(async () => {
+    try {
+      await navigator.clipboard.writeText(children);
+      setCopied(true);
+      window.setTimeout(() => setCopied(false), 1200);
+    } catch (e) {
+      // noop
+    }
+  }, [children]);
   return (
     <div className={className} id={blockId}>
-      <ReactMarkdown components={components} remarkPlugins={[remarkGfm, remarkBreaks]}>
-        {children}
-      </ReactMarkdown>
+      {showHeader && (
+        <div className="flex items-center justify-between rounded-t border border-border bg-muted/40 px-2 py-1 text-xs">
+          <div className="text-muted-foreground">Markdown</div>
+          <div>
+            <button
+              type="button"
+              aria-label="Copy markdown"
+              onClick={handleCopy}
+              className="rounded-md border border-border bg-background px-2 py-0.5 text-xs hover:bg-accent"
+            >
+              {copied ? "Copied" : "Copy"}
+            </button>
+          </div>
+        </div>
+      )}
+      <div className={showHeader ? "rounded-b border border-border" : ""}>
+        <ReactMarkdown components={components} remarkPlugins={[remarkGfm, remarkBreaks]}>
+          {children}
+        </ReactMarkdown>
+      </div>
     </div>
   );
 }
