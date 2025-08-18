@@ -67,7 +67,13 @@ const MessageContent = ({
   );
 
   return markdown ? (
-    <Markdown data-invoker="MessageContent" showHeader={(props as any)?.showHeader ?? false} className={classNames} {...props}>
+    // Respect caller's showHeader preference (default false if not provided)
+    <Markdown
+      data-invoker="MessageContent"
+      className={classNames}
+      {...props}
+      showHeader={(props as any)?.showHeader ?? false}
+    >
       {children as string}
     </Markdown>
   ) : (

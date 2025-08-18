@@ -4,12 +4,9 @@ import { useKeyPress } from "ahooks";
 import React, { useEffect, useMemo, useRef, useState } from "react";
 
 import { ChatInput } from "./ChatInput";
-import { MessageItem } from "./MessageItem";
 import { BranchDialog } from "./BranchDialog";
 import { CompareDialog } from "./CompareDialog";
-import { formatAttachmentSummary } from "./utils";
 import { useComposerStore } from "@/lib/stores/composer";
-import { useAgentStore } from "@/lib/stores/agent";
 
 import { useStreamingAvatarContext } from "@/components/logic/context";
 import { useTextChat } from "@/components/logic/useTextChat";
@@ -18,19 +15,19 @@ import {
   ChatContainerRoot,
   ChatContainerScrollAnchor,
 } from "@/components/ui/chat-container";
-import { Loader } from "@/components/ui/loader";
-import { Message, MessageAvatar } from "@/components/ui/message";
 import { ScrollButton } from "@/components/ui/scroll-button";
 import { useToast } from "@/components/ui/toaster";
 import { Message as MessageType, MessageSender, MessageAsset } from "@/lib/types";
 import { StickToBottom } from "use-stick-to-bottom";
-import { exampleReasoning } from "./chat/_mock_data/example-reasoning";
-import { exampleTools } from "./chat/_mock_data/example-tools";
-import { exampleMultiCode } from "./chat/_mock_data/example-multi-code";
-import { exampleMarkdownCode } from "./chat/_mock_data/example-markdown-code";
-import { exampleSource } from "./chat/_mock_data/example-source";
-import { exampleJsxPreview } from "./chat/_mock_data/example-jsx-preview";
-import { exampleMermaid } from "./chat/_mock_data/example-mermaid";
+import { MessageList } from "./chat/MessageList";
+import { useInputAutoHeight } from "./chat/hooks/useInputAutoHeight";
+import { useScrollAnchored } from "./chat/hooks/useScrollAnchored";
+import { useBranching } from "./chat/hooks/useBranching";
+import { useComparison } from "./chat/hooks/useComparison";
+import { useAttachments } from "./chat/hooks/useAttachments";
+import { useVotes } from "./chat/hooks/useVotes";
+import { useEditing } from "./chat/hooks/useEditing";
+import { buildAugmentedMessages, buildBaseMessagesIfEmpty, dedupeAdjacent } from "./chat/utils";
 
 interface ChatProps {
   chatInput: string;
@@ -67,16 +64,15 @@ export const Chat: React.FC<ChatProps> = ({
 
   const { publish } = useToast();
   const { isAvatarTalking, isVoiceChatLoading } = useStreamingAvatarContext();
-  const { sendMessage: apiSendMessage, repeatMessage: apiRepeatMessage } = useTextChat();
+  const { repeatMessage: apiRepeatMessage } = useTextChat();
 
-  const [attachments, setAttachments] = useState<File[]>([]);
   const composerAttachments = useComposerStore((s) => s.assetAttachments);
   const clearComposerAttachments = useComposerStore((s) => s.clearAssetAttachments);
   const removeComposerAttachment = useComposerStore((s) => s.removeAssetAttachment);
-  const currentAgent = useAgentStore((s) => s.currentAgent);
   const inputRef = useRef<HTMLTextAreaElement | null>(null);
   const scrollRef = useRef<HTMLDivElement | null>(null);
-  const [isAtBottom, setIsAtBottom] = useState<boolean>(true);
+  const branching = useBranching();
+  const { voteState, setVote } = useVotes();
   const promptSuggestions = useMemo(
     () => [
       "What can you do?",
@@ -87,373 +83,53 @@ export const Chat: React.FC<ChatProps> = ({
     [],
   );
 
-  // Provide a demo JSX message if there are no messages yet
-  const baseMessages = useMemo(() => {
-    if (messages && messages.length > 0) return messages;
-    const demo: MessageType = {
-      id: "demo-jsx-1",
-      sender: MessageSender.AVATAR,
-      content: "Here is a PromptKit-like stat rendered via JSX.",
-      jsx: '<div class="flex items-center gap-2"><StatBadge label="Tokens" value="1,234" hint="used" /><StatBadge label="Latency" value="142ms" /></div>',
-      sources: [
-        {
-          href: "#",
-          title: "PromptKit Example",
-          description: "Demo component rendered in chat via JSX.",
-        },
-      ],
-    };
-    return [demo];
-  }, [messages]);
+  // Base messages and demos
+  const baseMessages = useMemo(() => buildBaseMessagesIfEmpty(messages), [messages]);
 
-  // Adjacent de-duplication by id + content to avoid rendering repeated messages
-  const dedupedMessages = useMemo(() => {
-    const out: MessageType[] = [];
-    let prevKey: string | null = null;
-    for (const m of baseMessages) {
-      const key = `${m.id}|${m.content}`;
-      if (key !== prevKey) {
-        out.push(m);
-      }
-      prevKey = key;
-    }
-    if (out.length !== baseMessages.length) {
-      console.debug("[Chat] deduped messages", {
-        before: baseMessages.length,
-        after: out.length,
-      });
-    }
-    return out;
-  }, [baseMessages]);
+  // Adjacent de-duplication by id + content
+  const dedupedMessages = useMemo(() => dedupeAdjacent(baseMessages), [baseMessages]);
 
-  // Always append the reasoning demo as the next message; optionally append other demos via env flag
-  const augmentedMessages = useMemo(() => {
-    const showExtras = process.env.NEXT_PUBLIC_SHOW_EXTRA_DEMOS === "true";
-    // Build a single raw markdown blob then split into lines to avoid string escape issues
-    const contentMd = String.raw`# \`CodeBlock\` Component
-
-A powerful, composable code display component with syntax highlighting, theming, copy-to-clipboard, headers, tabs, and Markdown support.
-
----
-
-## \u{1F680} Features
-
-- Syntax highlighting via [Shiki](https://github.com/shikijs/shiki) (or Prism)
-- Multiple language support (\`js\`, \`tsx\`, \`python\`, \`css\`, etc.)
-- Copy-to-clipboard button
-- Headers and metadata
-- Tabs for multi-file/code previews
-- Custom themes (GitHub Light/Dark, Nord, Dracula, etc.)
-- Tailwind \`not-prose\` compatibility
-- Used by the \`Markdown\` component for code blocks
-
----
-
-## \u{1F468}\u{200D}\u{1F4BB} Usage Examples
-
-### Basic
-
-~~~tsx
-import { CodeBlock } from "@/components/prompt-kit/code-block";
-
-<CodeBlock
-  code={
-\`function greet(name) {
-  return \`Hello, \${name}!\`;
-}
-// Call the function
-greet("World");\`
-  }
-  language="javascript"
-/>
-~~~
-
----
-
-### With Header
-
-~~~tsx
-import { CodeBlockGroup } from "@/components/prompt-kit/code-block-group";
-
-<CodeBlockGroup header="Counter Example">
-  <CodeBlock
-    filename="Counter.tsx"
-    code={
-\`import { useState } from 'react';
-
-function Counter() {
-  const [count, setCount] = useState(0);
-  return (
-    <div>
-      <p>You clicked {count} times</p>
-      <button onClick={() => setCount(count + 1)}>Click me</button>
-    </div>
+  // Always append demo content
+  const augmentedMessages = useMemo(
+    () => buildAugmentedMessages(dedupedMessages),
+    [dedupedMessages],
   );
-}\`
-    }
-    language="tsx"
-  />
-</CodeBlockGroup>
-~~~
 
----
+  // Comparison depends on dedupedMessages, so initialize after it
+  const comparison = useComparison(dedupedMessages);
 
-### Tabs
+  // Scroll container ref + anchored state (depends on content changes)
+  const { isAtBottom, handleScroll } = useScrollAnchored(scrollRef, {
+    inputOnly,
+    depsForContentChange: [augmentedMessages],
+  });
 
-~~~tsx
-<CodeBlock
-  tabs={[
-    { name: "App.js", code: "console.log('Hello')", language: "js" },
-    { name: "styles.css", code: ".button { color: blue; }", language: "css" },
-  ]}
-/>
-~~~
+  // Allow enabling Markdown header in chat bubbles via env flag for debugging/UX preference
+  const showMarkdownHeaderInBubbles =
+    process.env.NEXT_PUBLIC_MARKDOWN_HEADER_IN_BUBBLES === "true";
 
----
-
-### Languages
-
-#### Python
-
-~~~python
-def fibonacci(n):
-    a, b = 0, 1
-    for _ in range(n):
-        yield a
-        a, b = b, a + b
-
-for number in fibonacci(10):
-    print(number)
-~~~
-
-#### CSS
-
-~~~css
-.button {
-  background-color: #4CAF50;
-  border: none;
-  color: white;
-  padding: 15px 32px;
-  text-align: center;
-  font-size: 16px;
-  border-radius: 8px;
-  transition: all 0.3s ease;
-}
-.button:hover {
-  background-color: #45a049;
-  box-shadow: 0 4px 8px rgba(0,0,0,0.2);
-}
-~~~
-
----
-
-### Themes
-
-~~~js {theme="github-dark"}
-function calculateTotal(items) {
-  return items
-    .filter(item => item.price > 0)
-    .reduce((total, item) => total + item.price * item.quantity, 0);
-}
-~~~
-
-~~~js {theme="nord"}
-function calculateTotal(items) {
-  return items
-    .filter(item => item.price > 0)
-    .reduce((total, item) => total + item.price * item.quantity, 0);
-}
-~~~
-
----
-
-### Markdown Integration
-
-~~~md
-~~~tsx
-// This block is rendered by the Markdown component!
-function MyComponent() {
-  return <div>Hello from Markdown!</div>;
-}
-~~~
-~~~
-
----
-
-## 🛠️ Installation
-
-~~~bash
-npx shadcn add "https://prompt-kit.com/c/code-block.json"
-npm install shiki
-~~~`;
-
-    const contentLines = contentMd.split('\n');
-    // Build prose-only (no fenced code) and code-only (only fenced code) variants
-    const prose: string[] = [];
-    const codeOnly: string[] = [];
-    let inFence = false;
-    let buffer: string[] = [];
-    const flushBufferTo = (arr: string[]) => {
-      if (buffer.length) {
-        arr.push(...buffer);
-        buffer = [];
-      }
-    };
-    for (const line of contentLines) {
-      if (line.startsWith('```') || line.startsWith('~~~')) {
-        // toggle fence
-        buffer.push(line);
-        if (!inFence) {
-          inFence = true;
-        } else {
-          inFence = false;
-        }
-        // when closing a fence, dump buffer into codeOnly
-        if (!inFence) {
-          flushBufferTo(codeOnly);
-        }
-        continue;
-      }
-      if (inFence) {
-        buffer.push(line);
-      } else {
-        // prose path
-        prose.push(line);
-      }
-    }
-    // safety in case of unclosed fence
-    if (buffer.length) flushBufferTo(codeOnly);
-
-    const contentMdProse = prose.join('\n');
-    const contentCodeOnly = codeOnly.join('\n');
-
-    const mockMarkdownOnly: MessageType = {
-      id: "demo-markdown-only",
-      sender: MessageSender.AVATAR,
-      content: contentMdProse,
-    };
-    const mockCodeOnly: MessageType = {
-      id: "demo-code-only",
-      sender: MessageSender.AVATAR,
-      content: contentCodeOnly,
-    };
-    const mockJsxOnly: MessageType = {
-      id: "demo-jsx-only",
-      sender: MessageSender.AVATAR,
-      content: 'Live stats rendered via JSX:',
-      jsx: '<div class="flex items-center gap-2"><StatBadge label="Accuracy" value="98%" /><StatBadge label="Score" value="A" hint="model" /></div>',
-    };
-    // Insert reasoning demo as the immediate next bubble, then tool usage example
-    const result: MessageType[] = [
-      ...dedupedMessages,
-      exampleReasoning.message,
-      exampleTools.message,
-      exampleMultiCode.message,
-      exampleMarkdownCode.message,
-      exampleSource.message,
-      exampleJsxPreview.message,
-      exampleMermaid.message,
-    ];
-    if (showExtras) {
-      result.push(mockMarkdownOnly, mockCodeOnly, mockJsxOnly);
-    }
-    return result;
-  }, [dedupedMessages]);
-
-  const onFilesAdded = (files: File[]) => {
-    if (files.length) {
-      console.debug("[Chat] onFilesAdded", { count: files.length, names: files.map((f) => f.name) });
-      setAttachments((prev) => [...prev, ...files]);
-    }
-  };
-
-  const removeAttachment = (idx: number) =>
-    setAttachments((prev) => prev.filter((_, i) => i !== idx));
-
-  const sendWithAttachments = (text: string) => {
-    console.debug("[Chat] sendWithAttachments invoked", {
-      textLength: (text ?? "").length,
-      hasFiles: attachments.length > 0,
-      fileCount: attachments.length,
-      composerCount: composerAttachments.length,
-    });
-    const trimmed = (text ?? "").trim();
-
-    if (!trimmed && attachments.length === 0 && composerAttachments.length === 0) {
-      return;
-    }
-
-    const parts: string[] = [];
-    if (attachments.length) {
-      parts.push(formatAttachmentSummary(attachments));
-    }
-    const suffix = parts.length ? `\n\n[Attachments: ${parts.join(", ")}]` : "";
-
-    // Build structured assets from composer attachments
-    const assets: MessageAsset[] | undefined = composerAttachments.length
-      ? composerAttachments.map((a) => ({
-          id: a.id,
-          name: a.name,
-          url: a.url,
-          thumbnailUrl: a.thumbnailUrl,
-          mimeType: a.mimeType,
-        }))
-      : undefined;
-
-    console.debug("[Chat] built outgoing payload", {
-      text: `${trimmed}${suffix}`,
-      assets,
-    });
-
-    onSendMessage(`${trimmed}${suffix}`, assets);
-    console.debug("[Chat] onSendMessage called; clearing attachments");
-    setAttachments([]);
-    clearComposerAttachments();
-    onChatInputChange("");
-  };
+  const { attachments, onFilesAdded, removeAttachment, sendWithAttachments } = useAttachments({
+    composerAttachments,
+    clearComposerAttachments,
+    onSendMessage,
+    onChatInputChange,
+  });
 
   const [lastCopiedId, setLastCopiedId] = useState<string | null>(null);
-  const [voteState, setVoteState] = useState<
-    Record<string, "up" | "down" | null>
-  >({});
 
-  const [isEditing, setIsEditing] = useState(false);
-  const [inputBackup, setInputBackup] = useState<string>("");
+  const { isEditing, handleEditToInput, cancelEdit, confirmEdit } = useEditing({
+    chatInput,
+    onChatInputChange,
+    sendWithAttachments,
+    inputRef,
+  });
 
-  // Branch dialog state
-  const [branchOpen, setBranchOpen] = useState(false);
-  const [branchMsgId, setBranchMsgId] = useState<string | null>(null);
-  const [branchMsgContent, setBranchMsgContent] = useState<string>("");
-  const [branchAction, setBranchAction] = useState<string>("Act on this response");
-
-  // Compare dialog state
-  const [compareOpen, setCompareOpen] = useState(false);
-  const [compareForId, setCompareForId] = useState<string | null>(null);
-  const [compareOriginal, setCompareOriginal] = useState<string>("");
-  const [compareAlternative, setCompareAlternative] = useState<string | undefined>(undefined);
-  const [isGeneratingAlt, setIsGeneratingAlt] = useState(false);
-  const [avatarMsgCountAtStart, setAvatarMsgCountAtStart] = useState<number>(0);
+  // Compare dialog state handled by hook
 
   // Track ChatInput height to prevent message overlap
   const inputWrapRef = useRef<HTMLDivElement | null>(null);
-  const [inputHeight, setInputHeight] = useState<number>(0);
+  const inputHeight = useInputAutoHeight(inputWrapRef);
 
-  useEffect(() => {
-    const el = inputWrapRef.current;
-    if (!el || typeof ResizeObserver === "undefined") return;
-    const ro = new ResizeObserver((entries) => {
-      for (const entry of entries) {
-        const h = entry.contentRect.height;
-        setInputHeight(Math.ceil(h));
-      }
-    });
-    ro.observe(el);
-    // Initialize immediately
-    setInputHeight(Math.ceil(el.getBoundingClientRect().height));
-    return () => ro.disconnect();
-  }, []);
-
-  // Keep scroll anchored to bottom if we're currently at bottom and input height changes
   useEffect(() => {
     if (!scrollRef.current) return;
     if (isAtBottom) {
@@ -463,41 +139,6 @@ npm install shiki
       } catch {}
     }
   }, [inputHeight, isAtBottom]);
-
-  // Helper to recompute bottom state and optionally force pin to bottom
-  const recomputeIsAtBottom = () => {
-    const el = scrollRef.current;
-    if (!el) return;
-    const threshold = 6; // px tolerance
-    const atBottom = el.scrollHeight - el.scrollTop - el.clientHeight <= threshold;
-    setIsAtBottom(atBottom);
-  };
-
-  const handleScroll: React.UIEventHandler<HTMLDivElement> = () => {
-    recomputeIsAtBottom();
-  };
-
-  // After content changes (new messages), scroll to bottom if user was at bottom
-  useEffect(() => {
-    if (!scrollRef.current) return;
-    if (isAtBottom) {
-      const el = scrollRef.current;
-      el.scrollTo({ top: el.scrollHeight, behavior: "auto" });
-    }
-  }, [augmentedMessages.length, isAtBottom]);
-
-  // When switching from inputOnly to full chat (expanding), force scroll to bottom
-  useEffect(() => {
-    if (inputOnly) return;
-    const el = scrollRef.current;
-    if (!el) return;
-    requestAnimationFrame(() => {
-      try {
-        el.scrollTo({ top: el.scrollHeight, behavior: "auto" });
-        setIsAtBottom(true);
-      } catch {}
-    });
-  }, [inputOnly]);
 
   const handleCopy = async (id: string, content: string) => {
     try {
@@ -519,80 +160,7 @@ npm install shiki
     }
   };
 
-  const setVote = (id: string, dir: "up" | "down") => {
-    setVoteState((prev) => {
-      const current = prev[id] ?? null;
-      const next = current === dir ? null : dir;
-
-      console.debug("[Chat] vote", { direction: next, id });
-
-      return { ...prev, [id]: next };
-    });
-  };
-
-  const handleEditToInput = (content: string) => {
-    if (!isEditing) {
-      setInputBackup(chatInput);
-    }
-
-    setIsEditing(true);
-    onChatInputChange(content);
-
-    // Defer focus and caret placement until after the DOM updates with new value
-    requestAnimationFrame(() => {
-      const el = inputRef.current;
-      if (el) {
-        el.focus();
-        const len = el.value.length;
-        el.setSelectionRange(len, len);
-      }
-    });
-  };
-
-  const cancelEdit = () => {
-    setIsEditing(false);
-    onChatInputChange(inputBackup);
-  };
-
-  const confirmEdit = () => {
-    const text = chatInput ?? "";
-    console.debug("[Chat] confirmEdit", { textLength: text.length });
-    sendWithAttachments(text);
-    setIsEditing(false);
-    onChatInputChange("");
-    publish({ description: "Edited message sent.", title: "Edited" });
-  };
-
-  // Branch the selected AI message via modal
-  const handleBranch = (content: string, id: string) => {
-    if (!currentAgent) {
-      publish({
-        title: "No agent selected",
-        description: "Pick an agent before branching.",
-        duration: 3500,
-      });
-      return;
-    }
-    setBranchMsgId(id);
-    setBranchMsgContent(content);
-    setBranchAction("Act on this response");
-    setBranchOpen(true);
-  };
-
-  const confirmBranch = () => {
-    if (!branchMsgId || !currentAgent) return;
-    const action = (branchAction ?? "").trim();
-    if (!action) {
-      publish({ title: "Branch cancelled", description: "No action provided." });
-      return;
-    }
-    const header = `@agent:${currentAgent.name ?? currentAgent.id ?? "agent"}`;
-    const text = `${header}\nAction: ${action}\n\nContext (from AI):\n> ${branchMsgContent.replaceAll("\n", "\n> ")}`;
-    console.debug("[Chat] branch -> agent", { agent: currentAgent.name, id: branchMsgId, actionLength: action.length });
-    apiSendMessage(text);
-    publish({ title: "Branched to agent", description: currentAgent.name ?? "Agent" });
-    setBranchOpen(false);
-  };
+  // voting and editing handled by hooks
 
   // Retry: re-send the previous user message before this AI message
   const handleRetry = (id: string) => {
@@ -610,37 +178,14 @@ npm install shiki
     }
   };
 
-  // Compare: open modal and trigger generating an alternative
-  const handleCompare = (content: string, id: string) => {
-    setCompareOpen(true);
-    setCompareForId(id);
-    setCompareOriginal(content);
-    setCompareAlternative(undefined);
-    setIsGeneratingAlt(true);
-    // Track current avatar message count; when a new one arrives, capture as alternative
-    const currentAvatarCount = dedupedMessages.filter((m) => m.sender === MessageSender.AVATAR).length;
-    setAvatarMsgCountAtStart(currentAvatarCount);
-    const prompt = `Provide an alternative to the following assistant message. Do not include commentary, only the alternative.\n\n---\n${content}`;
-    apiSendMessage(prompt);
-  };
-
-  // Watch for a new avatar message after starting comparison to populate alternative
-  useEffect(() => {
-    if (!compareOpen || !isGeneratingAlt) return;
-    const avatarMsgs = dedupedMessages.filter((m) => m.sender === MessageSender.AVATAR);
-    if (avatarMsgs.length > avatarMsgCountAtStart) {
-      const latest = avatarMsgs[avatarMsgs.length - 1];
-      setCompareAlternative(latest.content);
-      setIsGeneratingAlt(false);
-    }
-  }, [dedupedMessages, compareOpen, isGeneratingAlt, avatarMsgCountAtStart]);
+  const handleCompare = (content: string, id: string) => comparison.handleCompare(content, id);
 
   const handleChooseComparison = (choice: "A" | "B") => {
-    const chosen = choice === "A" ? compareOriginal : (compareAlternative ?? "");
+    const chosen = comparison.handleChooseComparison(choice);
     if (!chosen) return;
     onSendMessage(`Chosen option ${choice}:\n\n${chosen}`);
     publish({ title: "Choice sent", description: `Picked ${choice}` });
-    setCompareOpen(false);
+    comparison.setCompareOpen(false);
   };
 
   return (
@@ -655,58 +200,19 @@ npm install shiki
             style={{ paddingBottom: isAtBottom ? 16 : Math.max(16, inputHeight + 8) }}
           >
             <ChatContainerContent>
-              {(() => {
-                try {
-                  const ids = augmentedMessages.map((m) => m.id);
-                  console.debug("[Chat] augmentedMessages", ids, {
-                    hasReasoning: ids.includes(exampleReasoning.message.id),
-                  });
-                } catch {}
-                return null;
-              })()}
-              {augmentedMessages.map((message) => (
-                <MessageItem
-                  key={message.id}
-                  handleCopy={handleCopy}
-                  handleEditToInput={handleEditToInput}
-                  onBranch={handleBranch}
-                  onRetry={(mid) => handleRetry(mid)}
-                  onCompare={(content, mid) => handleCompare(content, mid)}
-                  isStreaming={
-                    isAvatarTalking && message.sender === MessageSender.AVATAR
-                  }
-                  lastCopiedId={lastCopiedId}
-                  message={message}
-                  reasoning={
-                    message.id === exampleReasoning.message.id
-                      ? exampleReasoning.reasoning
-                      : undefined
-                  }
-                  reasoningMarkdown={
-                    message.id === exampleReasoning.message.id
-                      ? exampleReasoning.reasoningMarkdown
-                      : undefined
-                  }
-                  reasoningOpen={message.id === exampleReasoning.message.id}
-                  setVote={setVote}
-                  streamMode="typewriter"
-                  streamSpeed={28}
-                  voteState={voteState}
-                />
-              ))}
-              {isAvatarTalking && (
-                <Message className="flex gap-2 items-start">
-                  <MessageAvatar alt="Avatar" fallback="A" src="/heygen-logo.png" />
-                  <div className="flex flex-col items-start gap-1">
-                    <p className="text-xs text-muted-foreground">Avatar</p>
-                    <div className="prose break-words whitespace-normal rounded-lg bg-secondary p-2 text-sm text-foreground">
-                      <div className="py-1">
-                        <Loader variant="typing" />
-                      </div>
-                    </div>
-                  </div>
-                </Message>
-              )}
+              <MessageList
+                messages={augmentedMessages}
+                isAvatarTalking={isAvatarTalking}
+                lastCopiedId={lastCopiedId}
+                voteState={voteState}
+                setVote={setVote}
+                handleCopy={handleCopy}
+                handleEditToInput={handleEditToInput}
+                onBranch={branching.handleBranch}
+                onRetry={handleRetry}
+                onCompare={handleCompare}
+                showMarkdownHeaderInBubbles={showMarkdownHeaderInBubbles}
+              />
             </ChatContainerContent>
             <ChatContainerScrollAnchor />
             <div className="absolute bottom-4 right-4">
@@ -722,22 +228,22 @@ npm install shiki
       >
         {/* Branch Dialog */}
         <BranchDialog
-          open={branchOpen}
-          onOpenChange={setBranchOpen}
-          messageContent={branchMsgContent}
-          agentName={currentAgent?.name}
-          actionText={branchAction}
-          onActionTextChange={setBranchAction}
-          onConfirm={confirmBranch}
+          open={branching.state.branchOpen}
+          onOpenChange={branching.setBranchOpen}
+          messageContent={branching.state.branchMsgContent}
+          agentName={branching.agentName}
+          actionText={branching.state.branchAction}
+          onActionTextChange={branching.setBranchAction}
+          onConfirm={branching.confirmBranch}
         />
 
         {/* Compare Dialog */}
         <CompareDialog
-          open={compareOpen}
-          onOpenChange={setCompareOpen}
-          original={compareOriginal}
-          alternative={compareAlternative}
-          isGenerating={isGeneratingAlt}
+          open={comparison.state.compareOpen}
+          onOpenChange={comparison.setCompareOpen}
+          original={comparison.state.compareOriginal}
+          alternative={comparison.state.compareAlternative}
+          isGenerating={comparison.state.isGeneratingAlt}
           onChoose={handleChooseComparison}
         />
         <ChatInput
