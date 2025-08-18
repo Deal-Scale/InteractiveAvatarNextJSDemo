@@ -23,6 +23,8 @@ import { JSXPreview } from "@/components/ui/jsx-preview";
 import { Tool } from "@/components/ui/tool";
 import { Source, SourceContent, SourceTrigger } from "@/components/ui/source";
 import { StatBadge } from "@/components/PromptKit/StatBadge";
+import { DataCard, MetricGrid, Metric } from "@/components/ui/jsx-demo";
+import { Mermaid } from "@/components/ui/mermaid";
 
 interface MessageItemProps {
   message: MessageType;
@@ -43,6 +45,7 @@ interface MessageItemProps {
   // Optional reasoning panel for avatar messages
   reasoning?: string;
   reasoningMarkdown?: boolean;
+  reasoningOpen?: boolean;
   isStreaming?: boolean;
 }
 
@@ -63,6 +66,7 @@ export const MessageItem: React.FC<MessageItemProps> = ({
   characterChunkSize,
   reasoning,
   reasoningMarkdown = true,
+  reasoningOpen,
   isStreaming,
 }) => {
   const hasJsx = Boolean(message.jsx && message.jsx.trim().length > 0);
@@ -134,7 +138,7 @@ export const MessageItem: React.FC<MessageItemProps> = ({
           <div className="break-words whitespace-normal rounded-lg bg-muted p-2 text-sm text-foreground">
             {reasoning && (
               <div className="mb-2">
-                <Reasoning isStreaming={isStreaming}>
+                <Reasoning isStreaming={isStreaming} open={reasoningOpen}>
                   <ReasoningTrigger className="text-xs text-muted-foreground">
                     Reasoning
                   </ReasoningTrigger>
@@ -157,7 +161,16 @@ export const MessageItem: React.FC<MessageItemProps> = ({
                 <JSXPreview
                   isStreaming={Boolean(isStreaming && !jsxStream.isComplete)}
                   jsx={jsxStream.displayedText}
-                  components={{ StatBadge: StatBadge as unknown as React.ComponentType<any> }}
+                  components={{
+                    StatBadge: StatBadge as unknown as React.ComponentType<any>,
+                    Source: Source as unknown as React.ComponentType<any>,
+                    SourceTrigger: SourceTrigger as unknown as React.ComponentType<any>,
+                    SourceContent: SourceContent as unknown as React.ComponentType<any>,
+                    DataCard: DataCard as unknown as React.ComponentType<any>,
+                    MetricGrid: MetricGrid as unknown as React.ComponentType<any>,
+                    Metric: Metric as unknown as React.ComponentType<any>,
+                    Mermaid: Mermaid as unknown as React.ComponentType<any>,
+                  }}
                 />
               </div>
             ) : (

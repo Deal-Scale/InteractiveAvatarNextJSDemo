@@ -54,13 +54,13 @@ function completeJsxTag(code: string) {
     currentPosition += endIndex;
   }
 
-  return (
-    result +
-    stack
-      .reverse()
-      .map((tag) => `</${tag}>`)
-      .join("")
-  );
+  // Append any trailing text that appears after the last parsed tag
+  if (currentPosition < code.length) {
+    result += code.slice(currentPosition);
+  }
+
+  // Auto-close any still-open tags to keep DOM valid during streaming
+  return result + stack.reverse().map((tag) => `</${tag}>`).join("");
 }
 
 export type JSXPreviewProps = {

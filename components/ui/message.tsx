@@ -60,7 +60,7 @@ const MessageContent = ({
 }: MessageContentProps) => {
   const classNames = cn(
     // Allow content to wrap fully without being clipped by parent flex containers
-    "rounded-lg p-2 text-foreground bg-secondary prose break-words whitespace-normal min-w-0 max-w-full overflow-visible leading-relaxed",
+    "rounded-lg p-2 text-foreground bg-secondary prose dark:prose-invert break-words whitespace-normal min-w-0 max-w-full overflow-visible leading-relaxed",
     // Normalize prose spacing so last line isn't visually clipped
     "prose-p:my-2 first:prose-p:mt-0 last:prose-p:mb-0",
     className,

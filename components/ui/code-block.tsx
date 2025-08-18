@@ -1,7 +1,8 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { codeToHtml } from "shiki";
+import { useTheme } from "next-themes";
 
 import { cn } from "@/lib/utils";
 
@@ -35,11 +36,22 @@ export type CodeBlockCodeProps = {
 function CodeBlockCode({
   code,
   language = "tsx",
-  theme = "github-light",
+  theme,
   className,
   ...props
 }: CodeBlockCodeProps) {
   const [highlightedHtml, setHighlightedHtml] = useState<string | null>(null);
+  const { resolvedTheme } = useTheme();
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => setMounted(true), []);
+
+  // Decide effective theme: explicit prop wins; else derive from current app theme.
+  const effectiveTheme = useMemo(() => {
+    if (theme && typeof theme === "string" && theme.trim()) return theme;
+    const isDark = (resolvedTheme ?? "").toLowerCase().includes("dark");
+    return isDark ? "github-dark" : "github-light";
+  }, [theme, resolvedTheme]);
 
   useEffect(() => {
     async function highlight() {
@@ -49,12 +61,12 @@ function CodeBlockCode({
         return;
       }
 
-      const html = await codeToHtml(code, { lang: language, theme });
+      const html = await codeToHtml(code, { lang: language, theme: effectiveTheme });
 
       setHighlightedHtml(html);
     }
     highlight();
-  }, [code, language, theme]);
+  }, [code, language, effectiveTheme]);
 
   const classNames = cn(
     [

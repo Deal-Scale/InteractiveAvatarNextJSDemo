@@ -24,6 +24,13 @@ import { ScrollButton } from "@/components/ui/scroll-button";
 import { useToast } from "@/components/ui/toaster";
 import { Message as MessageType, MessageSender, MessageAsset } from "@/lib/types";
 import { StickToBottom } from "use-stick-to-bottom";
+import { exampleReasoning } from "./chat/_mock_data/example-reasoning";
+import { exampleTools } from "./chat/_mock_data/example-tools";
+import { exampleMultiCode } from "./chat/_mock_data/example-multi-code";
+import { exampleMarkdownCode } from "./chat/_mock_data/example-markdown-code";
+import { exampleSource } from "./chat/_mock_data/example-source";
+import { exampleJsxPreview } from "./chat/_mock_data/example-jsx-preview";
+import { exampleMermaid } from "./chat/_mock_data/example-mermaid";
 
 interface ChatProps {
   chatInput: string;
@@ -117,217 +124,168 @@ export const Chat: React.FC<ChatProps> = ({
     return out;
   }, [baseMessages]);
 
-  // Always append a mock JSX message at the end of the thread (demo)
+  // Always append the reasoning demo as the next message; optionally append other demos via env flag
   const augmentedMessages = useMemo(() => {
-    const contentLines = [
-      `
-# \`CodeBlock\` Component
+    const showExtras = process.env.NEXT_PUBLIC_SHOW_EXTRA_DEMOS === "true";
+    // Build a single raw markdown blob then split into lines to avoid string escape issues
+    const contentMd = String.raw`# \`CodeBlock\` Component
 
-A component for displaying code snippets with syntax highlighting and customizable styling.
-
----
-
-## ✨ Features
-
-- Syntax highlighting for multiple languages (powered by [Shiki](https://shiki.matsu.io/))
-- Support for headers, actions, tabs, and file names
-- Easily switch themes (e.g. \`github-dark\`, \`nord\`, \`dracula\`)
-- Integrates with Markdown, with prose-safe styles
+A powerful, composable code display component with syntax highlighting, theming, copy-to-clipboard, headers, tabs, and Markdown support.
 
 ---
 
-## 🚀 Examples
+## \u{1F680} Features
 
-### Basic Code Block
+- Syntax highlighting via [Shiki](https://github.com/shikijs/shiki) (or Prism)
+- Multiple language support (\`js\`, \`tsx\`, \`python\`, \`css\`, etc.)
+- Copy-to-clipboard button
+- Headers and metadata
+- Tabs for multi-file/code previews
+- Custom themes (GitHub Light/Dark, Nord, Dracula, etc.)
+- Tailwind \`not-prose\` compatibility
+- Used by the \`Markdown\` component for code blocks
 
-\`\`\`javascript
-function greet(name) {
+---
+
+## \u{1F468}\u{200D}\u{1F4BB} Usage Examples
+
+### Basic
+
+~~~tsx
+import { CodeBlock } from "@/components/prompt-kit/code-block";
+
+<CodeBlock
+  code={
+\`function greet(name) {
   return \`Hello, \${name}!\`;
 }
-
 // Call the function
-greet("World");
-\`\`\`
+greet("World");\`
+  }
+  language="javascript"
+/>
+~~~
 
 ---
 
-### Code Block with Header
+### With Header
 
-You can use \`CodeBlockGroup\` to add a header with metadata and actions to your code blocks.
+~~~tsx
+import { CodeBlockGroup } from "@/components/prompt-kit/code-block-group";
 
-\`\`\`tsx file=Counter.tsx
-import { useState } from 'react';
+<CodeBlockGroup header="Counter Example">
+  <CodeBlock
+    filename="Counter.tsx"
+    code={
+\`import { useState } from 'react';
 
 function Counter() {
   const [count, setCount] = useState(0);
   return (
     <div>
       <p>You clicked {count} times</p>
-      <button onClick={() => setCount(count + 1)}>
-        Click me
-      </button>
+      <button onClick={() => setCount(count + 1)}>Click me</button>
     </div>
   );
-}
-\`\`\`
+}\`
+    }
+    language="tsx"
+  />
+</CodeBlockGroup>
+~~~
 
 ---
 
-### Tabs (Multiple Files)
+### Tabs
 
-\`\`\`tabs
---- app/page.tsx
-import { Button } from "@/components/ui/button";
-export default function Page() {
-  return <Button>Click</Button>
-}
---- app/layout.tsx
-export default function Layout({ children }) {
-  return <html><body>{children}</body></html>
-}
-\`\`\`
+~~~tsx
+<CodeBlock
+  tabs={[
+    { name: "App.js", code: "console.log('Hello')", language: "js" },
+    { name: "styles.css", code: ".button { color: blue; }", language: "css" },
+  ]}
+/>
+~~~
 
 ---
 
-### Different Languages
+### Languages
 
-You can highlight code in various languages by changing the \`language\` prop.
+#### Python
 
-#### Python Example
-
-\`\`\`python
+~~~python
 def fibonacci(n):
     a, b = 0, 1
     for _ in range(n):
         yield a
         a, b = b, a + b
 
-# Generate the first 10 Fibonacci numbers
 for number in fibonacci(10):
     print(number)
-\`\`\`
+~~~
 
-#### CSS Example
+#### CSS
 
-\`\`\`css
+~~~css
 .button {
   background-color: #4CAF50;
   border: none;
   color: white;
   padding: 15px 32px;
   text-align: center;
-  text-decoration: none;
-  display: inline-block;
   font-size: 16px;
-  margin: 4px 2px;
-  cursor: pointer;
   border-radius: 8px;
   transition: all 0.3s ease;
 }
-
 .button:hover {
   background-color: #45a049;
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+  box-shadow: 0 4px 8px rgba(0,0,0,0.2);
 }
-\`\`\`
+~~~
 
 ---
 
-### Different Themes
+### Themes
 
-Shiki supports many popular themes. Here are some examples:
-
-#### GitHub Dark Theme
-
-\`\`\`javascript theme=github-dark
+~~~js {theme="github-dark"}
 function calculateTotal(items) {
   return items
     .filter(item => item.price > 0)
-    .reduce((total, item) => {
-      return total + item.price * item.quantity;
-    }, 0);
+    .reduce((total, item) => total + item.price * item.quantity, 0);
 }
-\`\`\`
+~~~
 
-#### Nord Theme
-
-\`\`\`javascript theme=nord
+~~~js {theme="nord"}
 function calculateTotal(items) {
   return items
     .filter(item => item.price > 0)
-    .reduce((total, item) => {
-      return total + item.price * item.quantity;
-    }, 0);
+    .reduce((total, item) => total + item.price * item.quantity, 0);
 }
-\`\`\`
+~~~
 
 ---
 
-## 📦 Installation
+### Markdown Integration
 
-\`\`\`bash
-npx shadcn add "https://prompt-kit.com/c/code-block.json"
-\`\`\`
-
----
-
-## 🧩 Component API
-
-### \`<CodeBlock>\`
-
-| Prop      | Type                              | Default | Description                |
-| --------- | --------------------------------- | ------- | -------------------------- |
-| children  | \`React.ReactNode\`               |         | Child components to render |
-| className | \`string\`                        |         | Additional CSS classes     |
-| ...props  | \`React.HTMLProps<HTMLDivElement>\` |         | All other div props        |
-
-### \`<CodeBlockCode>\`
-
-| Prop      | Type                              | Default        | Description                          |
-| --------- | --------------------------------- | -------------- | ------------------------------------ |
-| code      | \`string\`                        |                | The code to display and highlight    |
-| language  | \`string\`                        | \`"tsx"\`      | The language for syntax highlighting |
-| theme     | \`string\`                        | \`"github-light"\` | The theme for syntax highlighting |
-| className | \`string\`                        |                | Additional CSS classes               |
-| ...props  | \`React.HTMLProps<HTMLDivElement>\` |                | All other div props                  |
-
-### \`<CodeBlockGroup>\`
-
-| Prop      | Type                                     | Default | Description                |
-| --------- | ---------------------------------------- | ------- | -------------------------- |
-| children  | \`React.ReactNode\`                      |         | Child components to render |
-| className | \`string\`                               |         | Additional CSS classes     |
-| ...props  | \`React.HTMLAttributes<HTMLDivElement>\` |         | All other div props        |
-
----
-
-## 📝 Usage with Markdown
-
-The \`CodeBlock\` component is used internally by the \`Markdown\` component to render code blocks in markdown content. When used within the \`Markdown\` component, code blocks are automatically wrapped with the \`not-prose\` class to prevent conflicts with prose styling.
-
-\`\`\`tsx
-import { Markdown } from "@/components/prompt-kit/markdown"
-
+~~~md
+~~~tsx
+// This block is rendered by the Markdown component!
 function MyComponent() {
-  const markdownContent = \`
-# Example
-
-\`\`\`javascript
-function greet(name) {
-  return \`Hello, \${name}!\`;
+  return <div>Hello from Markdown!</div>;
 }
-\`\`\`
-\`
-
-  return <Markdown className="prose">{markdownContent}</Markdown>
-}
-\`\`\`
+~~~
+~~~
 
 ---
-      `.trim(),
-    ];
-    return [{ ...baseMessages[0], content: contentLines.join("\n") }];
-  }, [baseMessages]);
+
+## 🛠️ Installation
+
+~~~bash
+npx shadcn add "https://prompt-kit.com/c/code-block.json"
+npm install shiki
+~~~`;
+
+    const contentLines = contentMd.split('\n');
     // Build prose-only (no fenced code) and code-only (only fenced code) variants
     const prose: string[] = [];
     const codeOnly: string[] = [];
@@ -340,7 +298,7 @@ function greet(name) {
       }
     };
     for (const line of contentLines) {
-      if (line.startsWith('```')) {
+      if (line.startsWith('```') || line.startsWith('~~~')) {
         // toggle fence
         buffer.push(line);
         if (!inFence) {
@@ -364,13 +322,13 @@ function greet(name) {
     // safety in case of unclosed fence
     if (buffer.length) flushBufferTo(codeOnly);
 
-    const contentMd = prose.join('\n');
+    const contentMdProse = prose.join('\n');
     const contentCodeOnly = codeOnly.join('\n');
 
     const mockMarkdownOnly: MessageType = {
       id: "demo-markdown-only",
       sender: MessageSender.AVATAR,
-      content: contentMd,
+      content: contentMdProse,
     };
     const mockCodeOnly: MessageType = {
       id: "demo-code-only",
@@ -383,7 +341,21 @@ function greet(name) {
       content: 'Live stats rendered via JSX:',
       jsx: '<div class="flex items-center gap-2"><StatBadge label="Accuracy" value="98%" /><StatBadge label="Score" value="A" hint="model" /></div>',
     };
-    return [...dedupedMessages, mockMarkdownOnly, mockCodeOnly, mockJsxOnly];
+    // Insert reasoning demo as the immediate next bubble, then tool usage example
+    const result: MessageType[] = [
+      ...dedupedMessages,
+      exampleReasoning.message,
+      exampleTools.message,
+      exampleMultiCode.message,
+      exampleMarkdownCode.message,
+      exampleSource.message,
+      exampleJsxPreview.message,
+      exampleMermaid.message,
+    ];
+    if (showExtras) {
+      result.push(mockMarkdownOnly, mockCodeOnly, mockJsxOnly);
+    }
+    return result;
   }, [dedupedMessages]);
 
   const onFilesAdded = (files: File[]) => {
@@ -633,6 +605,15 @@ function greet(name) {
             style={{ paddingBottom: Math.max(16, inputHeight + 8) }}
           >
             <ChatContainerContent>
+              {(() => {
+                try {
+                  const ids = augmentedMessages.map((m) => m.id);
+                  console.debug("[Chat] augmentedMessages", ids, {
+                    hasReasoning: ids.includes(exampleReasoning.message.id),
+                  });
+                } catch {}
+                return null;
+              })()}
               {augmentedMessages.map((message) => (
                 <MessageItem
                   key={message.id}
@@ -646,6 +627,17 @@ function greet(name) {
                   }
                   lastCopiedId={lastCopiedId}
                   message={message}
+                  reasoning={
+                    message.id === exampleReasoning.message.id
+                      ? exampleReasoning.reasoning
+                      : undefined
+                  }
+                  reasoningMarkdown={
+                    message.id === exampleReasoning.message.id
+                      ? exampleReasoning.reasoningMarkdown
+                      : undefined
+                  }
+                  reasoningOpen={message.id === exampleReasoning.message.id}
                   setVote={setVote}
                   streamMode="typewriter"
                   streamSpeed={28}

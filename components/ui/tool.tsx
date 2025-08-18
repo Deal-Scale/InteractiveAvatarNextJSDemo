@@ -151,7 +151,7 @@ const Tool = ({ toolPart, defaultOpen = false, className }: ToolProps) => {
                 <h4 className="text-muted-foreground mb-2 text-sm font-medium">
                   Input
                 </h4>
-                <div className="bg-background rounded border p-2 font-mono text-sm">
+                <div className="bg-card rounded border border-border p-2 font-mono text-sm">
                   {Object.entries(input).map(([key, value]) => (
                     <div key={key} className="mb-1">
                       <span className="text-muted-foreground">{key}:</span>{" "}
@@ -167,7 +167,7 @@ const Tool = ({ toolPart, defaultOpen = false, className }: ToolProps) => {
                 <h4 className="text-muted-foreground mb-2 text-sm font-medium">
                   Output
                 </h4>
-                <div className="bg-background max-h-60 overflow-auto rounded border p-2 font-mono text-sm">
+                <div className="bg-card max-h-60 overflow-auto rounded border border-border p-2 font-mono text-sm">
                   <pre className="whitespace-pre-wrap">
                     {formatValue(output)}
                   </pre>
