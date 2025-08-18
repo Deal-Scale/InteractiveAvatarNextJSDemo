@@ -1,39 +1,32 @@
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 
 import { AVATARS } from "@/app/lib/constants";
 
 export type AvatarOption = { avatar_id: string; name: string };
 
 export function useAvatarOptions(selectedId?: string) {
-  const [avatarOptions, setAvatarOptions] = useState<AvatarOption[]>(AVATARS);
+  const [avatarOptionsState, setAvatarOptions] = useState<AvatarOption[]>(AVATARS);
 
-  useEffect(() => {
-    let cancelled = false;
-    const fetchAvatars = async () => {
-      try {
-        const res = await fetch("/api/avatars", { cache: "no-store" });
+  // Source of truth via React Query with cached results
+  const { data: avatarsFromApi } = useQuery({
+    queryKey: ["avatars", "list"],
+    queryFn: async () => {
+      const res = await fetch("/api/avatars", { cache: "no-store" });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const json = await res.json();
+      const list = Array.isArray(json?.data) ? json.data : [];
+      return list.map((a: any) => ({
+        avatar_id: a.avatar_id,
+        name: a.pose_name || a.normal_preview || a.default_voice || a.avatar_id,
+      })) as AvatarOption[];
+    },
+    // Provide defaults and avoid flashes
+    initialData: AVATARS,
+    staleTime: 5 * 60_000,
+  });
 
-        if (!res.ok) throw new Error(`HTTP ${res.status}`);
-        const json = await res.json();
-        const list = Array.isArray(json?.data) ? json.data : [];
-        const mapped: AvatarOption[] = list.map((a: any) => ({
-          avatar_id: a.avatar_id,
-          name:
-            a.pose_name || a.normal_preview || a.default_voice || a.avatar_id,
-        }));
-
-        if (!cancelled && mapped.length) setAvatarOptions(mapped);
-      } catch {
-        // keep defaults
-      }
-    };
-
-    fetchAvatars();
-
-    return () => {
-      cancelled = true;
-    };
-  }, []);
+  const avatarOptions = avatarsFromApi?.length ? avatarsFromApi : avatarOptionsState;
 
   const selectedAvatar = useMemo(() => {
     const avatar = avatarOptions.find((a) => a.avatar_id === selectedId);

@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
+import { useMutation } from "@tanstack/react-query";
 import { useMemoizedFn, useUnmount } from "ahooks";
 import {
   AvatarQuality,
@@ -56,25 +57,20 @@ function InteractiveAvatarCore() {
 
   const mediaStreamRef = useRef<HTMLVideoElement>(null!);
 
-  async function fetchAccessToken() {
-    try {
-      const response = await fetch("/api/get-access-token", {
-        method: "POST",
-      });
+  const accessTokenMutation = useMutation({
+    mutationKey: ["auth", "access-token"],
+    mutationFn: async () => {
+      const response = await fetch("/api/get-access-token", { method: "POST" });
+      if (!response.ok) throw new Error(`HTTP ${response.status}`);
       const token = await response.text();
-
-      console.log("Access Token:", token); // Log the token to verify
-
-      return token;
-    } catch (error) {
-      console.error("Error fetching access token:", error);
-      throw error;
-    }
-  }
+      console.debug("[auth] access token acquired");
+      return token as string;
+    },
+  });
 
   const startSessionV2 = useMemoizedFn(async (config: StartAvatarRequest) => {
     try {
-      const newToken = await fetchAccessToken();
+      const newToken = await accessTokenMutation.mutateAsync();
       const avatar = initAvatar(newToken);
 
       const heygenService = new HeyGenService(avatar);
