@@ -76,7 +76,14 @@ export function AvatarVideoPanel({
   return (
     <div className="group relative w-full h-full bg-background overflow-hidden">
       {viewTab === "video" && (
-        <div className="absolute inset-0 z-0 pointer-events-none">
+        <div
+          className={
+            "absolute inset-0 z-0 pointer-events-none transition-opacity duration-700 ease-out " +
+            (sessionState === StreamingAvatarSessionState.CONNECTED
+              ? "opacity-0"
+              : "opacity-100")
+          }
+        >
           <RetroGrid
             angle={65}
             cellSize={60}
