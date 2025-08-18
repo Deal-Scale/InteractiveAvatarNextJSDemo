@@ -75,6 +75,8 @@ export const Chat: React.FC<ChatProps> = ({
   const removeComposerAttachment = useComposerStore((s) => s.removeAssetAttachment);
   const currentAgent = useAgentStore((s) => s.currentAgent);
   const inputRef = useRef<HTMLTextAreaElement | null>(null);
+  const scrollRef = useRef<HTMLDivElement | null>(null);
+  const [isAtBottom, setIsAtBottom] = useState<boolean>(true);
   const promptSuggestions = useMemo(
     () => [
       "What can you do?",
@@ -451,6 +453,52 @@ npm install shiki
     return () => ro.disconnect();
   }, []);
 
+  // Keep scroll anchored to bottom if we're currently at bottom and input height changes
+  useEffect(() => {
+    if (!scrollRef.current) return;
+    if (isAtBottom) {
+      try {
+        const el = scrollRef.current;
+        el.scrollTo({ top: el.scrollHeight, behavior: "auto" });
+      } catch {}
+    }
+  }, [inputHeight, isAtBottom]);
+
+  // Helper to recompute bottom state and optionally force pin to bottom
+  const recomputeIsAtBottom = () => {
+    const el = scrollRef.current;
+    if (!el) return;
+    const threshold = 6; // px tolerance
+    const atBottom = el.scrollHeight - el.scrollTop - el.clientHeight <= threshold;
+    setIsAtBottom(atBottom);
+  };
+
+  const handleScroll: React.UIEventHandler<HTMLDivElement> = () => {
+    recomputeIsAtBottom();
+  };
+
+  // After content changes (new messages), scroll to bottom if user was at bottom
+  useEffect(() => {
+    if (!scrollRef.current) return;
+    if (isAtBottom) {
+      const el = scrollRef.current;
+      el.scrollTo({ top: el.scrollHeight, behavior: "auto" });
+    }
+  }, [augmentedMessages.length, isAtBottom]);
+
+  // When switching from inputOnly to full chat (expanding), force scroll to bottom
+  useEffect(() => {
+    if (inputOnly) return;
+    const el = scrollRef.current;
+    if (!el) return;
+    requestAnimationFrame(() => {
+      try {
+        el.scrollTo({ top: el.scrollHeight, behavior: "auto" });
+        setIsAtBottom(true);
+      } catch {}
+    });
+  }, [inputOnly]);
+
   const handleCopy = async (id: string, content: string) => {
     try {
       await navigator.clipboard.writeText(content);
@@ -601,8 +649,10 @@ npm install shiki
         <StickToBottom className="flex-1 min-h-0 text-foreground">
           {/* Dynamically pad bottom by input height to avoid overlap */}
           <ChatContainerRoot
+            ref={scrollRef}
+            onScroll={handleScroll}
             className="flex-1 min-h-0 text-foreground"
-            style={{ paddingBottom: Math.max(16, inputHeight + 8) }}
+            style={{ paddingBottom: isAtBottom ? 16 : Math.max(16, inputHeight + 8) }}
           >
             <ChatContainerContent>
               {(() => {

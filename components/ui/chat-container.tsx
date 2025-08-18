@@ -19,21 +19,24 @@ export type ChatContainerScrollAnchorProps = {
   ref?: React.RefObject<HTMLDivElement>;
 } & React.HTMLAttributes<HTMLDivElement>;
 
-function ChatContainerRoot({ children, className, ...props }: ChatContainerRootProps) {
-  return (
-    <div
-      className={cn(
-        // Make root act as the scroll container and fill available space
-        "relative flex w-full min-h-0 flex-col overflow-y-auto overflow-x-auto",
-        className,
-      )}
-      role="log"
-      {...props}
-    >
-      {children}
-    </div>
-  );
-}
+const ChatContainerRoot = React.forwardRef<HTMLDivElement, ChatContainerRootProps>(
+  function ChatContainerRoot({ children, className, ...props }, ref) {
+    return (
+      <div
+        ref={ref}
+        className={cn(
+          // Make root act as the scroll container and fill available space
+          "relative flex w-full min-h-0 flex-col overflow-y-auto overflow-x-auto",
+          className,
+        )}
+        role="log"
+        {...props}
+      >
+        {children}
+      </div>
+    );
+  },
+);
 
 function ChatContainerContent({ children, className, ...props }: ChatContainerContentProps) {
   return (
@@ -60,3 +63,4 @@ function ChatContainerScrollAnchor({ // eslint-disable-line
 }
 
 export { ChatContainerRoot, ChatContainerContent, ChatContainerScrollAnchor };
+

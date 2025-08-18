@@ -71,10 +71,14 @@ export type JSXPreviewProps = {
 } & Omit<JsxParserProps, "components" | "jsx">;
 
 function JSXPreview({ jsx, isStreaming = false, components, ...props }: JSXPreviewProps) {
-  const processedJsx = React.useMemo(
-    () => (isStreaming ? completeJsxTag(jsx) : jsx),
-    [jsx, isStreaming],
-  );
+  // Normalize HTML-ish attributes to JSX-compatible ones and complete tags during streaming
+  const processedJsx = React.useMemo(() => {
+    const base = isStreaming ? completeJsxTag(jsx) : jsx;
+    // Replace attribute names only when used as attributes (followed by =) to avoid replacing text content
+    return base
+      .replace(/\bclass=/g, "className=")
+      .replace(/\bfor=/g, "htmlFor=");
+  }, [jsx, isStreaming]);
 
   // Cast JsxParser to any to work around the type incompatibility
   const Parser = JsxParser as unknown as React.ComponentType<JsxParserProps>;
@@ -83,6 +87,10 @@ function JSXPreview({ jsx, isStreaming = false, components, ...props }: JSXPrevi
     ...(props as unknown as Partial<JsxParserProps>),
     components: components as any,
     jsx: processedJsx,
+    // Be permissive: our JSX comes from models/mock data and may include unknown tags/attrs
+    allowUnknownElements: true,
+    autoCloseVoidElements: true,
+    renderInWrapper: false,
     showWarnings: true,
     onError: (err: unknown) => (
       <pre className="text-xs text-red-500 whitespace-pre-wrap">
