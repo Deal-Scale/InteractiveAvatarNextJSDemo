@@ -28,15 +28,18 @@ const PRESETS = {
     dockMode: "bottom" as const,
     bottomHeightFrac: 0.7,
   },
+  // For video, prefer a right dock to give vertical space to the canvas
   focusVideo: {
     sidebarCollapsed: true,
-    dockMode: "bottom" as const,
-    bottomHeightFrac: 0.35,
+    dockMode: "right" as const,
+    rightWidthFrac: 0.38,
+    activeVideoTab: "video" as const,
   },
+  // Minimal uses a small floating window
   minimal: {
     sidebarCollapsed: true,
-    dockMode: "bottom" as const,
-    bottomHeightFrac: 0.3,
+    dockMode: "floating" as const,
+    floating: { width: 420, height: 280, x: 24, y: 24, visible: true } as const,
   },
 };
 
@@ -46,15 +49,31 @@ export default function PlacementModal({ open, onOpenChange }: PlacementModalPro
     setDockMode,
     bottomHeightFrac,
     setBottomHeightFrac,
+    rightWidthFrac,
+    setRightWidthFrac,
     sidebarCollapsed,
     setSidebarCollapsed,
+    setActiveVideoTab,
+    floating,
+    setFloating,
   } = usePlacementStore();
 
   const applyPreset = (key: keyof typeof PRESETS) => {
     const p = PRESETS[key];
     setSidebarCollapsed(p.sidebarCollapsed);
     setDockMode(p.dockMode);
-    setBottomHeightFrac(p.bottomHeightFrac);
+    if ("bottomHeightFrac" in p && typeof p.bottomHeightFrac === "number") {
+      setBottomHeightFrac(p.bottomHeightFrac);
+    }
+    if ("rightWidthFrac" in p && typeof p.rightWidthFrac === "number") {
+      setRightWidthFrac(p.rightWidthFrac);
+    }
+    if ("activeVideoTab" in p && p.activeVideoTab) {
+      setActiveVideoTab(p.activeVideoTab as any);
+    }
+    if ("floating" in p && p.floating) {
+      setFloating({ ...p.floating });
+    }
   };
 
   return (
@@ -105,6 +124,7 @@ export default function PlacementModal({ open, onOpenChange }: PlacementModalPro
               <Button
                 variant={dockMode === "floating" ? "default" : "outline"}
                 size="sm"
+                className="hidden sm:inline-flex"
                 onClick={() => setDockMode("floating")}
               >
                 Floating
@@ -112,20 +132,42 @@ export default function PlacementModal({ open, onOpenChange }: PlacementModalPro
             </div>
           </div>
 
-          <div className="space-y-2">
-            <div className="flex items-center justify-between">
-              <span className="text-sm text-foreground">Bottom height</span>
-              <span className="text-xs text-muted-foreground">{Math.round(bottomHeightFrac * 100)}%</span>
+          {dockMode === "bottom" && (
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <span className="text-sm text-foreground">Bottom height</span>
+                <span className="text-xs text-muted-foreground">{Math.round(bottomHeightFrac * 100)}%</span>
+              </div>
+              <Slider
+                id="bottom-height"
+                value={[Math.round(bottomHeightFrac * 100)]}
+                min={20}
+                max={80}
+                step={1}
+                onValueChange={(v) => setBottomHeightFrac((v?.[0] ?? 35) / 100)}
+              />
             </div>
-            <Slider
-              id="bottom-height"
-              value={[Math.round(bottomHeightFrac * 100)]}
-              min={20}
-              max={80}
-              step={1}
-              onValueChange={(v) => setBottomHeightFrac((v?.[0] ?? 35) / 100)}
-            />
-          </div>
+          )}
+
+          {dockMode === "right" && (
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <span className="text-sm text-foreground">Left distance</span>
+                <span className="text-xs text-muted-foreground">{Math.round((1 - rightWidthFrac) * 100)}%</span>
+              </div>
+              <Slider
+                id="left-distance"
+                value={[Math.round((1 - rightWidthFrac) * 100)]}
+                min={0}
+                max={80}
+                step={1}
+                onValueChange={(v) => {
+                  const left = (v?.[0] ?? 68) / 100;
+                  setRightWidthFrac(1 - left);
+                }}
+              />
+            </div>
+          )}
         </div>
       </DialogContent>
     </Dialog>

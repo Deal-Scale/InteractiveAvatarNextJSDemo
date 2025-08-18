@@ -193,6 +193,8 @@ export function ChatPanel({
     <div
       className={cn(
         isChatSolidBg ? "bg-card" : "bg-popover/95",
+        // Hide floating chat on mobile; show from sm+
+        "hidden sm:flex",
         "text-foreground rounded-lg shadow-lg border border-border overflow-hidden flex flex-col h-full w-full",
       )}
     >
