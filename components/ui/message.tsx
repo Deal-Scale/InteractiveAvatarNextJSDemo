@@ -67,7 +67,7 @@ const MessageContent = ({
   );
 
   return markdown ? (
-    <Markdown className={classNames} {...props}>
+    <Markdown data-invoker="MessageContent" showHeader={(props as any)?.showHeader ?? false} className={classNames} {...props}>
       {children as string}
     </Markdown>
   ) : (

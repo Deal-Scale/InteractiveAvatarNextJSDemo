@@ -8,7 +8,7 @@ import { CodeBlock, CodeBlockCode } from "./code-block";
 
 import { cn } from "@/lib/utils";
 
-export type MarkdownProps = {
+export type MarkdownProps = React.HTMLAttributes<HTMLDivElement> & {
   children: string;
   id?: string;
   className?: string;
@@ -125,6 +125,7 @@ function MarkdownComponent({
   components = INITIAL_COMPONENTS,
   showHeader = true,
   headerLabel = "Markdown",
+  ...rest
 }: MarkdownProps) {
   const generatedId = useId();
   const blockId = id ?? generatedId;
@@ -138,8 +139,23 @@ function MarkdownComponent({
       // noop
     }
   }, [children]);
+  React.useEffect(() => {
+    if (typeof window === "undefined") return;
+    const preview = typeof children === "string" ? children.slice(0, 80) : "[non-string]";
+    const invoker = (rest as any)?.["data-invoker"] ?? "(unknown)";
+    // Only log in dev to avoid noise
+    if (process.env.NODE_ENV !== "production") {
+      // eslint-disable-next-line no-console
+      console.debug("[Markdown] render", { id: blockId, invoker, showHeader, headerLabel, preview });
+      if (!showHeader) {
+        // eslint-disable-next-line no-console
+        console.debug("[Markdown] header hidden: showHeader is false. If this should be visible, pass showHeader or render Markdown directly.");
+      }
+    }
+  }, [blockId, children, headerLabel, showHeader, rest]);
+
   return (
-    <div className={className} id={blockId}>
+    <div className={className} id={blockId} {...rest}>
       {showHeader && (
         <div className="flex items-center justify-between rounded-t border border-border bg-muted/40 px-2 py-1 text-xs">
           <div className="text-muted-foreground">{headerLabel}</div>

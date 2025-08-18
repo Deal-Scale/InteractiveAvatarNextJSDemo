@@ -47,6 +47,9 @@ interface MessageItemProps {
   reasoningMarkdown?: boolean;
   reasoningOpen?: boolean;
   isStreaming?: boolean;
+  // Control showing the Markdown header on avatar messages (for copy UX)
+  avatarMarkdownShowHeader?: boolean;
+  avatarMarkdownHeaderLabel?: string; // defaults to "Markdown" if showHeader is true and label is not provided
 }
 
 export const MessageItem: React.FC<MessageItemProps> = ({
@@ -68,6 +71,8 @@ export const MessageItem: React.FC<MessageItemProps> = ({
   reasoningMarkdown = false,
   reasoningOpen,
   isStreaming,
+  avatarMarkdownShowHeader = false,
+  avatarMarkdownHeaderLabel,
 }) => {
   const hasJsx = Boolean(message.jsx && message.jsx.trim().length > 0);
 
@@ -154,7 +159,12 @@ export const MessageItem: React.FC<MessageItemProps> = ({
             {hasJsx ? (
               <div className="w-full">
                 {message.content && (
-                  <MessageContent markdown showHeader={false} className="mb-2 bg-muted">
+                  <MessageContent
+                    markdown
+                    showHeader={avatarMarkdownShowHeader}
+                    headerLabel={avatarMarkdownHeaderLabel}
+                    className="mb-2 bg-muted"
+                  >
                     {message.content}
                   </MessageContent>
                 )}
@@ -175,7 +185,12 @@ export const MessageItem: React.FC<MessageItemProps> = ({
               </div>
             ) : (
               // Render markdown for avatar messages (tables, code fences, etc.)
-              <MessageContent markdown showHeader={false} className="bg-muted">
+              <MessageContent
+                markdown
+                showHeader={avatarMarkdownShowHeader}
+                headerLabel={avatarMarkdownHeaderLabel}
+                className="bg-muted"
+              >
                 {message.content}
               </MessageContent>
             )}
