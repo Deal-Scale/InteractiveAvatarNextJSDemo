@@ -1,20 +1,11 @@
 "use client";
 
 import React, { useEffect } from "react";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { QueryClientProvider } from "@tanstack/react-query";
 import { ReactQueryDevtools } from "@tanstack/react-query-devtools";
+import { queryClient } from "@/lib/query/client";
 
-// Shared QueryClient with sensible defaults for caching and performance
-const queryClient = new QueryClient({
-  defaultOptions: {
-    queries: {
-      staleTime: 60 * 1000, // 1 minute
-      gcTime: 5 * 60 * 1000, // 5 minutes
-      retry: 1,
-      refetchOnWindowFocus: false,
-    },
-  },
-});
+// QueryClient is provided by lib/query/client with real-time friendly defaults
 
 export default function AppProviders({ children }: { children: React.ReactNode }) {
   useEffect(() => {

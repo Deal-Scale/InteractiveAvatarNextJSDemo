@@ -1,4 +1,13 @@
 import { useMemoizedFn } from "ahooks";
+import {
+  fetchMcpTools,
+  fetchMcpPrompts,
+  fetchMcpResources,
+  postMcpTool,
+  postMcpResource,
+  postMcpPrompt,
+  postMcpComplete,
+} from "@/lib/services/mcp/query";
 
 import { formatAsCodeBlock, parseJsonArgs } from "../utils/format";
 
@@ -10,8 +19,7 @@ export function useMcpCommands(addAvatarMessage: (content: string) => void) {
     try {
       switch (sub) {
         case "tools": {
-          const res = await fetch("/api/mcp/tools");
-          const data = await res.json();
+          const data = await fetchMcpTools();
           const list = (data?.tools || [])
             .map((t: any) => `• ${t.name}`)
             .join("\n");
@@ -20,8 +28,7 @@ export function useMcpCommands(addAvatarMessage: (content: string) => void) {
           break;
         }
         case "prompts": {
-          const res = await fetch("/api/mcp/prompts");
-          const data = await res.json();
+          const data = await fetchMcpPrompts();
           const list = (data?.prompts || [])
             .map((p: any) => `• ${p.name}`)
             .join("\n");
@@ -30,8 +37,7 @@ export function useMcpCommands(addAvatarMessage: (content: string) => void) {
           break;
         }
         case "resources": {
-          const res = await fetch("/api/mcp/resources");
-          const data = await res.json();
+          const data = await fetchMcpResources();
           const list = (data?.resources || [])
             .map((r: any) => `• ${r.uri}`)
             .join("\n");
@@ -47,12 +53,7 @@ export function useMcpCommands(addAvatarMessage: (content: string) => void) {
             addAvatarMessage("Usage: /mcp tool <name> {jsonArgs}");
             break;
           }
-          const res = await fetch(`/api/mcp/tool/${encodeURIComponent(name)}`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ args: args ?? {} }),
-          });
-          const data = await res.json();
+          const data = await postMcpTool(name, args ?? {});
 
           addAvatarMessage(formatAsCodeBlock(data));
           break;
@@ -64,12 +65,7 @@ export function useMcpCommands(addAvatarMessage: (content: string) => void) {
             addAvatarMessage("Usage: /mcp resource <uri>");
             break;
           }
-          const res = await fetch(`/api/mcp/resource`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ uri }),
-          });
-          const data = await res.json();
+          const data = await postMcpResource(uri);
 
           addAvatarMessage(formatAsCodeBlock(data));
           break;
@@ -82,12 +78,7 @@ export function useMcpCommands(addAvatarMessage: (content: string) => void) {
             addAvatarMessage("Usage: /mcp prompt <name> {jsonArgs}");
             break;
           }
-          const res = await fetch(`/api/mcp/prompt`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ name, args: args ?? {} }),
-          });
-          const data = await res.json();
+          const data = await postMcpPrompt(name, args ?? {});
 
           addAvatarMessage(formatAsCodeBlock(data));
           break;
@@ -101,12 +92,7 @@ export function useMcpCommands(addAvatarMessage: (content: string) => void) {
             );
             break;
           }
-          const res = await fetch(`/api/mcp/complete`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(payload),
-          });
-          const data = await res.json();
+          const data = await postMcpComplete(payload);
 
           addAvatarMessage(formatAsCodeBlock(data));
           break;
