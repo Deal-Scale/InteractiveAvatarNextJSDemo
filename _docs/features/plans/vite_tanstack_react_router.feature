@@ -26,12 +26,12 @@ Feature: Optimal Project Setup and Routing for FastAPI + React (Vite) + TanStack
     And navigation should be handled by TanStack Router with code-splitting and data preloading
     And the frontend should communicate with the FastAPI backend via the generated client
 
-  Scenario: Configure TanStack Router for optimal routing and data loading
-    Given a set of nested routes and dynamic segments defined for the app
-    When I implement route definitions leveraging TanStack Router's route loader and actions
-    Then data fetching should be colocated with routes for optimal performance and hydration
-    And route-based code splitting should reduce initial bundle size
-    And navigation should not cause full page reloads
+  Scenario: Configure TanStack Query for optimal data fetching
+    Given the frontend uses TanStack Query for all API data interactions
+    When I define query hooks colocated with components and configure caching strategies
+    Then data fetching should be efficient and avoid unnecessary network requests
+    And background refetching should keep UI data fresh without blocking rendering
+    And query invalidation should ensure data consistency after mutations
 
   Scenario: Enable Observability and Monitoring
     Given Prometheus and Grafana Cloud are configured via Docker Compose
