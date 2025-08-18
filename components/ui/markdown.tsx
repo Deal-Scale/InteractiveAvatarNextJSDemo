@@ -14,6 +14,7 @@ export type MarkdownProps = {
   className?: string;
   components?: Partial<Components>;
   showHeader?: boolean;
+  headerLabel?: string;
 };
 
 function extractLanguage(className?: string): string {
@@ -123,6 +124,7 @@ function MarkdownComponent({
   className,
   components = INITIAL_COMPONENTS,
   showHeader = true,
+  headerLabel = "Markdown",
 }: MarkdownProps) {
   const generatedId = useId();
   const blockId = id ?? generatedId;
@@ -140,7 +142,7 @@ function MarkdownComponent({
     <div className={className} id={blockId}>
       {showHeader && (
         <div className="flex items-center justify-between rounded-t border border-border bg-muted/40 px-2 py-1 text-xs">
-          <div className="text-muted-foreground">Markdown</div>
+          <div className="text-muted-foreground">{headerLabel}</div>
           <div>
             <button
               type="button"
