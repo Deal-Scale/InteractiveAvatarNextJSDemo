@@ -18,6 +18,7 @@ import {
 } from "@/components/ui/dialog";
 import { AutoForm } from "@/components/forms/AutoForm";
 import { AgentConfigSchema } from "@/lib/schemas/agent";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 
 export default function AgentModal(props: {
   mode: "view" | "edit" | "create";
@@ -55,7 +56,7 @@ export default function AgentModal(props: {
   const isEdit = effectiveMode === "edit";
   const isCreate = effectiveMode === "create";
 
-  // Combined schema: full AgentConfig + sidebar-only fields
+  // Combined schema: full AgentConfig + sidebar-only fields + create-only monetization fields
   const AgentFormSchema = useMemo(() => {
     const base = AgentConfigSchema as unknown as z.ZodObject<any>;
     return base.extend({
@@ -63,6 +64,10 @@ export default function AgentModal(props: {
       avatarUrl: z.string().url().optional().or(z.literal("")).optional(),
       description: z.string().optional(),
       tags: z.array(z.string()).optional(),
+      // create-mode extras
+      monetize: z.boolean().optional().default(false),
+      // keep as string to align with select options below
+      rateMultiplier: z.enum(["1", "2", "3", "4", "5"]).optional(),
     });
   }, []);
 
@@ -78,6 +83,8 @@ export default function AgentModal(props: {
       avatarUrl: working?.avatarUrl || "",
       description: working?.description || "",
       tags: working?.tags || [],
+      monetize: false,
+      rateMultiplier: "1",
     },
   });
 
@@ -91,6 +98,8 @@ export default function AgentModal(props: {
       avatarUrl: working?.avatarUrl || "",
       description: working?.description || "",
       tags: working?.tags || [],
+      monetize: false,
+      rateMultiplier: "1",
     });
   }, [working?.id, effectiveMode, open]);
 
@@ -99,8 +108,11 @@ export default function AgentModal(props: {
       <DialogContent className="w-[96vw] md:w-[640px] max-w-[96vw] p-4 md:p-6 bg-card text-foreground flex flex-col max-h-[90vh]">
         <DialogHeader>
           <DialogTitle>
-            <span className="mr-2 font-semibold">{working.name || (isCreate ? "New Agent" : "Agent")}</span>
-            <span className="text-xs text-muted-foreground capitalize">{effectiveMode}</span>
+            {isCreate && <span className="font-semibold">Create Agent</span>}
+            {isEdit && (
+              <span className="font-semibold">{`Edit Agent: ${working.name || "Untitled"}`}</span>
+            )}
+            {isView && <span className="font-semibold">{working.name || "Agent"}</span>}
           </DialogTitle>
         </DialogHeader>
 
@@ -131,45 +143,82 @@ export default function AgentModal(props: {
               </div>
             </div>
           ) : (
-            <AutoForm
-              className="space-y-3"
-              schema={AgentFormSchema}
-              form={form as any}
-              fields={{
-                name: { label: "Name" },
-                role: { label: "Role" },
-                avatarUrl: { label: "Avatar URL" },
-                description: { label: "Description", widget: "textarea" },
-                tags: { label: "Tags" },
-              }}
-              submitLabel={isCreate ? "Create" : "Save"}
-              onSubmit={(values: z.infer<typeof AgentFormSchema>) => {
-                const name = String(values.name ?? "");
-                const role = values.role != null ? String(values.role) : "";
-                const avatarUrl = values.avatarUrl != null ? String(values.avatarUrl) : "";
-                const description = values.description != null ? String(values.description) : "";
-                const tags: string[] = Array.isArray(values.tags)
-                  ? (values.tags as string[])
-                  : typeof (values as any).tags === "string"
-                    ? ((values as any).tags as string)
-                        .split(",")
-                        .map((s: string) => s.trim())
-                        .filter(Boolean)
-                    : [];
-
-                const next: Agent = {
-                  id: (values as any)?.id || working?.id || `new-${Date.now()}`,
-                  name,
-                  role,
-                  avatarUrl,
-                  description,
-                  tags,
-                  isOwnedByUser: isCreate ? true : working?.isOwnedByUser,
+            <>
+              {isCreate && (
+                <div className="mb-2 flex items-center gap-2 text-sm text-muted-foreground">
+                  <span className="font-medium">Monetization</span>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <span className="inline-flex h-5 w-5 items-center justify-center rounded-full bg-muted text-xs cursor-help" aria-label="Monetization info">?</span>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p className="max-w-xs text-xs">To monetize your agent, multiply by the current base agent rate.</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </div>
+              )}
+              {(() => {
+                const monetize = form.watch("monetize");
+                const fields: any = {
+                  name: { label: "Name" },
+                  role: { label: "Role" },
+                  avatarUrl: { label: "Avatar URL" },
+                  description: { label: "Description", widget: "textarea" },
+                  tags: { label: "Tags" },
                 };
-                onSave?.(next);
-                onOpenChange(false);
-              }}
-            />
+                if (isCreate) {
+                  fields.monetize = { label: "Monetize" };
+                  if (monetize) {
+                    fields.rateMultiplier = {
+                      label: "Multiplier",
+                      widget: "select",
+                      options: [
+                        { label: "1x", value: "1" },
+                        { label: "2x", value: "2" },
+                        { label: "3x", value: "3" },
+                        { label: "4x", value: "4" },
+                        { label: "5x", value: "5" },
+                      ],
+                    };
+                  }
+                }
+                return (
+                  <AutoForm
+                    className="space-y-3"
+                    schema={AgentFormSchema}
+                    form={form as any}
+                    fields={fields}
+                    submitLabel={isCreate ? "Create" : "Save"}
+                    onSubmit={(values: z.infer<typeof AgentFormSchema>) => {
+                      const name = String(values.name ?? "");
+                      const role = values.role != null ? String(values.role) : "";
+                      const avatarUrl = values.avatarUrl != null ? String(values.avatarUrl) : "";
+                      const description = values.description != null ? String(values.description) : "";
+                      const tags: string[] = Array.isArray(values.tags)
+                        ? (values.tags as string[])
+                        : typeof (values as any).tags === "string"
+                          ? ((values as any).tags as string)
+                              .split(",")
+                              .map((s: string) => s.trim())
+                              .filter(Boolean)
+                          : [];
+
+                      const next: Agent = {
+                        id: (values as any)?.id || working?.id || `new-${Date.now()}`,
+                        name,
+                        role,
+                        avatarUrl,
+                        description,
+                        tags,
+                        isOwnedByUser: isCreate ? true : working?.isOwnedByUser,
+                      };
+                      onSave?.(next);
+                      onOpenChange(false);
+                    }}
+                  />
+                );
+              })()}
+            </>
           )}
         </div>
       </DialogContent>
