@@ -1,12 +1,13 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { PanelLeft, Settings, Image as ImageIcon, LayoutGrid } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import { useSessionStore } from "@/lib/stores/session";
 import PlacementModal from "@/components/Sidebar/PlacementModal";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 export default function HeaderActionsStack({
   onAssetsClick,
@@ -16,16 +17,36 @@ export default function HeaderActionsStack({
   const { openConfigModal } = useSessionStore();
   const [placementOpen, setPlacementOpen] = useState(false);
 
+  // Alt+P global shortcut to open Placement
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if (e.altKey && (e.key === "p" || e.key === "P")) {
+        e.preventDefault();
+        setPlacementOpen(true);
+      }
+    };
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  }, []);
+
   return (
     <div className="flex flex-col items-center gap-1">
-      <Button
-        aria-label="Placement"
-        className="size-8 text-foreground hover:bg-muted"
-        variant="ghost"
-        onClick={() => setPlacementOpen(true)}
-      >
-        <LayoutGrid className="size-4" />
-      </Button>
+      <TooltipProvider>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button
+              aria-label="Placement"
+              title="Placement (Alt+P)"
+              className="size-8 text-foreground hover:bg-muted"
+              variant="ghost"
+              onClick={() => setPlacementOpen(true)}
+            >
+              <LayoutGrid className="size-4" />
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent side="left">Placement (Alt+P)</TooltipContent>
+        </Tooltip>
+      </TooltipProvider>
       <Button
         aria-label="Assets"
         className="size-8 text-foreground hover:bg-muted"
