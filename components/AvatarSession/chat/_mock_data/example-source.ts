@@ -10,49 +10,10 @@ Displays website sources used by AI-generated content, showing URL details, titl
 
 ---
 
-## Examples
 
-Below are Basic and Custom examples rendered with token-based theming.
-
-### Basic Source
-
-ibelick.com · google.com · figma.com · github.com · wikipedia.org
-
-### Custom Source
-
-12 · figma.com · G · Wikipedia
 
 ---
 
-## Installation
-
-Run:
-
-~~~bash
-npx shadcn add "https://prompt-kit.com/c/source.json"
-~~~
-
----
-
-## Component API
-
-### Source
-- href: string — The URL of the source
-- children: React.ReactNode — The content to display
-
-### SourceTrigger
-- label?: string — The label to display
-- showFavicon?: boolean = false — Whether to show the favicon
-- className?: string — Additional CSS classes
-
-### SourceContent
-- title: string — The title to display
-- description: string — The description to display
-- className?: string — Additional CSS classes
-
----
-
-ToolBlocks
 `,
     jsx: String.raw`<div class="flex flex-col gap-4">
   {/* Basic usage (auto label from domain, no favicon) */}

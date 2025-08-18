@@ -4,43 +4,27 @@ export const exampleMermaid: { message: Message } = {
   message: {
     id: "demo-mermaid-1",
     sender: MessageSender.AVATAR,
-    content: String.raw`# Mermaid (diagrams)
+    content: String.raw`# Mermaid diagrams
 
-Render diagrams from markdown-like text inside JSX using the <Mermaid> component.
-
----
-
-## Examples
-
-- Flowchart
-- Sequence diagram
-- Git graph
-
----
-
-Installation:
-
-~~~bash
-pnpm add mermaid
-~~~
+Rendered via <Mermaid> inside JSXPreview.
 `,
-    jsx: String.raw`<div className="flex flex-col gap-6">
+    jsx: String.raw`<div class="flex flex-col gap-6">
   {/* Flowchart */}
   <div>
-    <div className="mb-2 text-sm font-medium text-muted-foreground">Flowchart</div>
-    <Mermaid>{\`
+    <div class="mb-2 text-sm font-medium text-muted-foreground">Flowchart</div>
+    <Mermaid>
       flowchart LR
       A[Hard] -->|Text| B(Round)
       B --> C{Decision}
       C -->|One| D[Result 1]
       C -->|Two| E[Result 2]
-    \`}</Mermaid>
+    </Mermaid>
   </div>
 
   {/* Sequence diagram */}
   <div>
-    <div className="mb-2 text-sm font-medium text-muted-foreground">Sequence</div>
-    <Mermaid>{\`
+    <div class="mb-2 text-sm font-medium text-muted-foreground">Sequence</div>
+    <Mermaid>
       sequenceDiagram
       Alice->>John: Hello John, how are you?
       loop HealthCheck
@@ -50,13 +34,13 @@ pnpm add mermaid
       John-->>Alice: Great!
       John->>Bob: How about you?
       Bob-->>John: Jolly good!
-    \`}</Mermaid>
+    </Mermaid>
   </div>
 
   {/* Git graph */}
   <div>
-    <div className="mb-2 text-sm font-medium text-muted-foreground">Git graph</div>
-    <Mermaid>{\`
+    <div class="mb-2 text-sm font-medium text-muted-foreground">Git graph</div>
+    <Mermaid>
       gitGraph
         commit
         commit
@@ -68,7 +52,7 @@ pnpm add mermaid
         merge develop
         commit
         commit
-    \`}</Mermaid>
+    </Mermaid>
   </div>
 </div>`,
   },

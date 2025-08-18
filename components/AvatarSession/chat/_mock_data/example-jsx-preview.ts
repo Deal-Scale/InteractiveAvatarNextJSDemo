@@ -4,29 +4,9 @@ export const exampleJsxPreview: { message: Message } = {
   message: {
     id: "demo-jsx-preview-1",
     sender: MessageSender.AVATAR,
-    content: String.raw`# JSX Preview (experimental)
+    content: String.raw`# JSX Preview
 
-A component for rendering JSX strings as React components, with support for streaming content and automatic tag completion.
-
----
-
-## Examples
-
-### Basic JSX Preview
-The JSXPreview component can render JSX strings directly into React components.
-
-Video creation now in jul.chat
-
-Create beautiful videos using just a prompt.
-
-Powered by gpt-4o video generation.
-
-[Learn more](https://prompt-kit.com)
-
-### Streaming JSX Preview
-The \`isStreaming\` prop enables real-time rendering of JSX as it's being streamed, with automatic tag completion.
-
-Video creation now in jul.chat
+Render JSX strings as React components. Streaming supported with auto tag completion.
 `,
     jsx: String.raw`<div class="flex flex-col gap-4">
   {/* Basic JSX using DataCard and MetricGrid */}
