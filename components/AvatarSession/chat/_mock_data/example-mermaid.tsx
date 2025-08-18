@@ -14,7 +14,7 @@ Rendered via <Mermaid> inside JSXPreview.
     <Mermaid>
       flowchart LR
       A[Hard] --&gt;|Text| B(Round)
-      B --&gt; C{Decision}
+      B --&gt; C&#123;Decision&#125;
       C --&gt;|One| D[Result 1]
       C --&gt;|Two| E[Result 2]
     </Mermaid>

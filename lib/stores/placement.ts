@@ -220,37 +220,43 @@ export const usePlacementStore = create<PlacementState>()(
 
       // Aliases
       get isWindowed() {
-        return get().dockMode === "floating";
+        const s = get() as Partial<PlacementState>;
+        const dock = (s && (s as any).dockMode) ?? DEFAULTS.dockMode;
+        return dock === "floating";
       },
       setIsWindowed: (v) => {
-        const prev = get().dockMode;
+        const prev = (get() as any)?.dockMode ?? DEFAULTS.dockMode;
         const next = v ? "floating" : DEFAULTS.dockMode;
         if (prev === next) return;
         console.debug("[placement] setIsWindowed", { userId: get().userId, prev, next });
         set({ dockMode: next, updatedAt: Date.now() });
       },
       get windowPosition() {
-        return { x: get().floating.x, y: get().floating.y };
+        const f = (get() as any)?.floating ?? DEFAULTS.floating;
+        return { x: f.x, y: f.y };
       },
       setWindowPosition: (pos) => {
-        const prev = { x: get().floating.x, y: get().floating.y };
+        const f = (get() as any)?.floating ?? DEFAULTS.floating;
+        const prev = { x: f.x, y: f.y };
         if (Math.abs(prev.x - pos.x) < 0.5 && Math.abs(prev.y - pos.y) < 0.5) return;
         console.debug("[placement] setWindowPosition", { userId: get().userId, prev, pos });
         set({
-          floating: { ...get().floating, x: pos.x, y: pos.y },
+          floating: { ...(get() as any)?.floating ?? DEFAULTS.floating, x: pos.x, y: pos.y },
           updatedAt: Date.now(),
         });
       },
       get windowSize() {
-        return { width: get().floating.width, height: get().floating.height };
+        const f = (get() as any)?.floating ?? DEFAULTS.floating;
+        return { width: f.width, height: f.height };
       },
       setWindowSize: (size) => {
-        const prev = { width: get().floating.width, height: get().floating.height };
+        const f = (get() as any)?.floating ?? DEFAULTS.floating;
+        const prev = { width: f.width, height: f.height };
         if (Math.abs(prev.width - size.width) < 0.5 && Math.abs(prev.height - size.height) < 0.5) return;
         console.debug("[placement] setWindowSize", { userId: get().userId, prev, size });
         set({
           floating: {
-            ...get().floating,
+            ...(get() as any)?.floating ?? DEFAULTS.floating,
             width: size.width,
             height: size.height,
           },
@@ -268,10 +274,11 @@ export const usePlacementStore = create<PlacementState>()(
       },
 
       get sidebarExpanded() {
-        return !get().sidebarCollapsed;
+        const collapsed = (get() as any)?.sidebarCollapsed ?? DEFAULTS.sidebarCollapsed;
+        return !collapsed;
       },
       setSidebarExpanded: (v) => {
-        const prev = get().sidebarCollapsed;
+        const prev = (get() as any)?.sidebarCollapsed ?? DEFAULTS.sidebarCollapsed;
         const next = !v;
         if (prev === next) return;
         console.debug("[placement] setSidebarExpanded", { userId: get().userId, prevCollapsed: prev, nextCollapsed: next });
@@ -287,7 +294,7 @@ export const usePlacementStore = create<PlacementState>()(
       },
 
       get activeTab() {
-        return get().activeVideoTab;
+        return (get() as any)?.activeVideoTab ?? DEFAULTS.activeVideoTab;
       },
       setActiveTab: (tab) => {
         const next = (tab as VideoTab) || DEFAULTS.activeVideoTab;
@@ -340,23 +347,25 @@ export const usePlacementStore = create<PlacementState>()(
     }),
     {
       name: "placement-store", // logical name; actual storage key is user-scoped via wrapper
-      storage: createJSONStorage(() => userScopedStorage as any),
-      onRehydrateStorage: () => {
-        console.debug("[placement] onRehydrateStorage: start", {
-          key: `placement-store-${currentUserIdForStorage || ANON_ID}`,
-          userId: currentUserIdForStorage,
-        });
-        return (state, error) => {
-          if (error) {
-            console.error("[placement] onRehydrateStorage: error", error);
-          } else {
-            console.debug("[placement] onRehydrateStorage: done", {
-              key: `placement-store-${(state as any)?.getState?.().userId || ANON_ID}`,
-              snapshot: (state as any)?.getState?.(),
+      storage: typeof window === "undefined" ? undefined : createJSONStorage(() => userScopedStorage as any),
+      onRehydrateStorage: typeof window === "undefined"
+        ? undefined
+        : () => {
+            console.debug("[placement] onRehydrateStorage: start", {
+              key: `placement-store-${currentUserIdForStorage || ANON_ID}`,
+              userId: currentUserIdForStorage,
             });
-          }
-        };
-      },
+            return (state, error) => {
+              if (error) {
+                console.error("[placement] onRehydrateStorage: error", error);
+              } else {
+                console.debug("[placement] onRehydrateStorage: done", {
+                  key: `placement-store-${(state as any)?.getState?.().userId || ANON_ID}`,
+                  snapshot: (state as any)?.getState?.(),
+                });
+              }
+            };
+          },
       partialize: (s) => ({
         schemaVersion: s.schemaVersion,
         updatedAt: s.updatedAt,

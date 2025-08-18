@@ -184,7 +184,7 @@ export const MessageItem: React.FC<MessageItemProps> = ({
                 <div className="w-full">
                   {message.toolParts.map((part, idx) => (
                     <Tool
-                      key={part.toolCallId ?? `${message.id}-tool-${idx}`}
+                      key={`${part.toolCallId ?? `${message.id}-tool`}-${idx}`}
                       defaultOpen={part.state !== "output-available"}
                       toolPart={part}
                     />
