@@ -26,6 +26,29 @@ import { StatBadge } from "@/components/PromptKit/StatBadge";
 import { DataCard, MetricGrid, Metric } from "@/components/ui/jsx-demo";
 import { Mermaid } from "@/components/ui/mermaid";
 
+// Strict Markdown detection: only treat as markdown when strong cues exist
+function isStrictMarkdown(text: string | undefined | null): boolean {
+  if (!text) return false;
+  const str = String(text);
+  if (str.trim().length < 4) return false;
+  if (/```|~~~/.test(str)) return true; // fenced code blocks
+  const hasTableRow = /^\s*\|.+\|\s*$/m.test(str);
+  const hasTableSep = /^\s*\|?\s*:?-{3,}:?\s*(\|\s*:?-{3,}:?\s*)+\|?\s*$/m.test(str);
+  if (hasTableRow && hasTableSep) return true; // proper table
+  return false;
+}
+
+// For debugging: which strong signal matched
+function markdownStrongReason(text: string | undefined | null): "fence" | "table" | null {
+  if (!text) return null;
+  const str = String(text);
+  if (/```|~~~/.test(str)) return "fence";
+  const hasTableRow = /^\s*\|.+\|\s*$/m.test(str);
+  const hasTableSep = /^\s*\|?\s*:?-{3,}:?\s*(\|\s*:?-{3,}:?\s*)+\|?\s*$/m.test(str);
+  if (hasTableRow && hasTableSep) return "table";
+  return null;
+}
+
 interface MessageItemProps {
   message: MessageType;
   lastCopiedId: string | null;
@@ -85,6 +108,26 @@ export const MessageItem: React.FC<MessageItemProps> = ({
     segmentDelay,
     characterChunkSize,
   });
+
+  // Show header ONLY when content is strict markdown (env flag no longer forces it on)
+  const showMdHeader = Boolean(isStrictMarkdown(message.content));
+
+  // Dev-only logging to inspect detection behavior
+  if (process.env.NODE_ENV !== "production") {
+    try {
+      const preview = (message.content || "").slice(0, 80);
+      // eslint-disable-next-line no-console
+      console.debug("[MessageItem] markdown-detect", {
+        id: message.id,
+        sender: message.sender,
+        isStrictMarkdown: isStrictMarkdown(message.content),
+        reason: markdownStrongReason(message.content),
+        showMdHeader,
+        hasJsx,
+        preview,
+      });
+    } catch {}
+  }
 
   const renderAssets = (assets?: MessageAsset[]) => {
     if (!assets || assets.length === 0) return null;
@@ -160,8 +203,8 @@ export const MessageItem: React.FC<MessageItemProps> = ({
               <div className="w-full">
                 {message.content && (
                   <MessageContent
-                    markdown
-                    showHeader={avatarMarkdownShowHeader}
+                    markdown={isStrictMarkdown(message.content)}
+                    showHeader={showMdHeader}
                     headerLabel={avatarMarkdownHeaderLabel}
                     className="mb-2 bg-muted"
                   >
@@ -186,8 +229,8 @@ export const MessageItem: React.FC<MessageItemProps> = ({
             ) : (
               // Render markdown for avatar messages (tables, code fences, etc.)
               <MessageContent
-                markdown
-                showHeader={avatarMarkdownShowHeader}
+                markdown={isStrictMarkdown(message.content)}
+                showHeader={showMdHeader}
                 headerLabel={avatarMarkdownHeaderLabel}
                 className="bg-muted"
               >
