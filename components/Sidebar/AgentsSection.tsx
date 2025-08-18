@@ -46,6 +46,7 @@ export default function AgentsSection(props: {
   const [query, setQuery] = useState("");
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [open, setOpen] = useState(false);
+  const [mode, setMode] = useState<"view" | "edit" | "create">("view");
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -82,7 +83,18 @@ export default function AgentsSection(props: {
       {!collapsedAgents && (
         <div className="px-2 pb-2">
           <div className="mb-2 flex items-center gap-2">
-            <Button onClick={() => onAdd?.()} size="sm" variant="outline">
+            <Button
+              onClick={() => {
+                // Optional external hook
+                onAdd?.();
+                // Open create modal locally
+                setSelectedId(null);
+                setMode("create");
+                setOpen(true);
+              }}
+              size="sm"
+              variant="outline"
+            >
               <Plus className="mr-1 size-3" />
               Add New
             </Button>
@@ -110,6 +122,7 @@ export default function AgentsSection(props: {
                   onFavorite={onFavorite}
                   onOpen={(a) => {
                     setSelectedId(a.id);
+                    setMode("view");
                     setOpen(true);
                   }}
                 />
@@ -118,9 +131,11 @@ export default function AgentsSection(props: {
           )}
 
           <AgentModal
+            mode={mode}
             agent={selected}
             open={open}
             onOpenChange={(o) => setOpen(o)}
+            onRequestEdit={() => setMode("edit")}
             onSave={(updated) => {
               onEdit?.(updated);
             }}
