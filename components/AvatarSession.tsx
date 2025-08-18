@@ -11,7 +11,9 @@ import { AvatarVideoPanel } from "./AvatarSession/AvatarVideoPanel";
 import { StreamingAvatarSessionState } from "./logic/context";
 
 import { useSessionStore } from "@/lib/stores/session";
+import { usePlacementStore } from "@/lib/stores/placement";
 import { cn } from "@/lib/utils";
+import { safeWindow } from "@/lib/utils";
 
 //
 
@@ -126,6 +128,14 @@ export function AvatarSession({
   const isRight = dock === "right";
   const isFloating = dock === "floating";
 
+  // Right dock: compute current drawer width in px to reserve space so content isn't covered
+  const rightWidthFrac = usePlacementStore((s) => s.rightWidthFrac);
+  const isRightOpen = isRight && rightWidthFrac > 0.01;
+  const rightWidthPx = (() => {
+    const w = safeWindow();
+    return !w ? 0 : Math.round((rightWidthFrac || 0) * w.innerWidth);
+  })();
+
   // Render a stable placeholder on server and on the client's first render
   // to avoid SSR/CSR mismatch while persisted stores hydrate.
   if (!mounted) {
@@ -139,6 +149,7 @@ export function AvatarSession({
         "group relative w-full h-full",
         !isFloating && (isRight ? "flex flex-row" : "flex flex-col"),
       )}
+      style={!isFloating && isRightOpen ? { paddingRight: rightWidthPx } : undefined}
     >
       {/* Video panel stays mounted */}
       <div
