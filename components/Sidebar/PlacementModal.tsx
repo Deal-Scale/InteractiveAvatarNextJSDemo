@@ -58,6 +58,60 @@ export default function PlacementModal({ open, onOpenChange }: PlacementModalPro
     setFloating,
   } = usePlacementStore();
 
+  // Platform-aware shortcut labeling
+  const isMac = typeof window !== "undefined" && /Mac|iPhone|iPad|iPod/i.test(navigator.platform);
+  const altKey = isMac ? "⌥" : "Alt";
+  const label = (suffix: string) => (isMac ? `${altKey}${suffix}` : `${altKey}+${suffix}`);
+  const L = {
+    presets: {
+      default: label("1"),
+      focusChat: label("2"),
+      focusVideo: label("3"),
+      minimal: label("4"),
+    },
+    dock: {
+      bottom: label("B"),
+      right: label("R"),
+      floating: label("F"),
+    },
+  } as const;
+
+  // Alt-based shortcuts active while modal is open
+  React.useEffect(() => {
+    if (!open) return;
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (!e.altKey) return;
+      const key = e.key.toLowerCase();
+      // Presets
+      if (key === "1") {
+        e.preventDefault();
+        applyPreset("default");
+      } else if (key === "2") {
+        e.preventDefault();
+        applyPreset("focusChat");
+      } else if (key === "3") {
+        e.preventDefault();
+        applyPreset("focusVideo");
+      } else if (key === "4") {
+        e.preventDefault();
+        applyPreset("minimal");
+      }
+      // Dock modes
+      else if (key === "b") {
+        e.preventDefault();
+        setDockMode("bottom");
+      } else if (key === "r") {
+        e.preventDefault();
+        setDockMode("right");
+      } else if (key === "f") {
+        e.preventDefault();
+        setDockMode("floating");
+      }
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [open]);
+
   const applyPreset = (key: keyof typeof PRESETS) => {
     const p = PRESETS[key];
     setSidebarCollapsed(p.sidebarCollapsed);
@@ -86,10 +140,22 @@ export default function PlacementModal({ open, onOpenChange }: PlacementModalPro
 
         <div className="grid gap-4">
           <div className="grid grid-cols-2 gap-2">
-            <Button variant="secondary" onClick={() => applyPreset("default")}>Default</Button>
-            <Button variant="secondary" onClick={() => applyPreset("focusChat")}>Focus Chat</Button>
-            <Button variant="secondary" onClick={() => applyPreset("focusVideo")}>Focus Video</Button>
-            <Button variant="secondary" onClick={() => applyPreset("minimal")}>Minimal</Button>
+            <div className="flex flex-col items-center gap-1">
+              <Button variant="secondary" onClick={() => applyPreset("default")}>Default</Button>
+              <div className="text-[10px] leading-none text-muted-foreground">{L.presets.default}</div>
+            </div>
+            <div className="flex flex-col items-center gap-1">
+              <Button variant="secondary" onClick={() => applyPreset("focusChat")}>Focus Chat</Button>
+              <div className="text-[10px] leading-none text-muted-foreground">{L.presets.focusChat}</div>
+            </div>
+            <div className="flex flex-col items-center gap-1">
+              <Button variant="secondary" onClick={() => applyPreset("focusVideo")}>Focus Video</Button>
+              <div className="text-[10px] leading-none text-muted-foreground">{L.presets.focusVideo}</div>
+            </div>
+            <div className="flex flex-col items-center gap-1">
+              <Button variant="secondary" onClick={() => applyPreset("minimal")}>Minimal</Button>
+              <div className="text-[10px] leading-none text-muted-foreground">{L.presets.minimal}</div>
+            </div>
           </div>
 
           <div className="flex items-center justify-between">
@@ -107,28 +173,37 @@ export default function PlacementModal({ open, onOpenChange }: PlacementModalPro
           <div className="space-y-2">
             <div className="text-sm text-foreground">Dock mode</div>
             <div className="flex gap-2">
-              <Button
-                variant={dockMode === "bottom" ? "default" : "outline"}
-                size="sm"
-                onClick={() => setDockMode("bottom")}
-              >
-                Bottom
-              </Button>
-              <Button
-                variant={dockMode === "right" ? "default" : "outline"}
-                size="sm"
-                onClick={() => setDockMode("right")}
-              >
-                Right
-              </Button>
-              <Button
-                variant={dockMode === "floating" ? "default" : "outline"}
-                size="sm"
-                className="hidden sm:inline-flex"
-                onClick={() => setDockMode("floating")}
-              >
-                Floating
-              </Button>
+              <div className="flex flex-col items-center gap-1">
+                <Button
+                  variant={dockMode === "bottom" ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => setDockMode("bottom")}
+                >
+                  Bottom
+                </Button>
+                <div className="text-[10px] leading-none text-muted-foreground">{L.dock.bottom}</div>
+              </div>
+              <div className="flex flex-col items-center gap-1">
+                <Button
+                  variant={dockMode === "right" ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => setDockMode("right")}
+                >
+                  Right
+                </Button>
+                <div className="text-[10px] leading-none text-muted-foreground">{L.dock.right}</div>
+              </div>
+              <div className="flex flex-col items-center gap-1 sm:flex">
+                <Button
+                  variant={dockMode === "floating" ? "default" : "outline"}
+                  size="sm"
+                  className="hidden sm:inline-flex"
+                  onClick={() => setDockMode("floating")}
+                >
+                  Floating
+                </Button>
+                <div className="hidden sm:block text-[10px] leading-none text-muted-foreground">{L.dock.floating}</div>
+              </div>
             </div>
           </div>
 

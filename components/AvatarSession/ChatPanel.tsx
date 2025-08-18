@@ -83,6 +83,7 @@ export function ChatPanel({
               size="icon"
               title="Float"
               variant="ghost"
+              className="hidden sm:inline-flex"
               onClick={() => onDock("floating")}
             >
               <MoveIcon className="h-4 w-4" />
@@ -145,6 +146,7 @@ export function ChatPanel({
               size="icon"
               title="Float"
               variant="ghost"
+              className="hidden sm:inline-flex"
               onClick={() => onDock("floating")}
             >
               <MoveIcon className="h-4 w-4" />
