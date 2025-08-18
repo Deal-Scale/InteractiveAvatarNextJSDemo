@@ -66,18 +66,28 @@ const MessageContent = ({
     className,
   );
 
+  // Filter out Markdown-only props so we don't pass them to a raw <div>
+  const {
+    showHeader: _showHeader, // markdown-only
+    remarkPlugins: _remarkPlugins,
+    rehypePlugins: _rehypePlugins,
+    components: _mdxComponents,
+    // any other potential markdown-only props can be added here
+    ...divProps
+  } = props as any;
+
   return markdown ? (
     // Respect caller's showHeader preference (default false if not provided)
     <Markdown
       data-invoker="MessageContent"
       className={classNames}
       {...props}
-      showHeader={(props as any)?.showHeader ?? false}
+      showHeader={_showHeader ?? false}
     >
       {children as string}
     </Markdown>
   ) : (
-    <div className={classNames} {...props}>
+    <div className={classNames} {...divProps}>
       {children}
     </div>
   );

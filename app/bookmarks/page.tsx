@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useEffect, useMemo, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import Link from "next/link";
 import { Bookmark } from "lucide-react";
 
@@ -27,26 +28,53 @@ type ConversationGroup = {
 
 export default function BookmarksPage() {
   const { folders, meta, bookmarkedIds } = useBookmarkStore();
-  const [convoIndex, setConvoIndex] = useState<Record<string, Conversation>>(
-    {},
-  );
+  const [convoIndex, setConvoIndex] = useState<Record<string, Conversation>>({});
+
+  // Primary source: fetch from API (mocked by MSW in dev)
+  const { data: bookmarksData } = useQuery({
+    queryKey: ["bookmarks", "list"],
+    queryFn: async () => {
+      const res = await fetch("/api/mock/bookmarks");
+      if (!res.ok) throw new Error("Failed to load bookmarks");
+      return (await res.json()) as Array<{
+        id: string;
+        title: string;
+        lastMessage?: string;
+        timestamp?: number;
+        tags?: string[];
+      }>;
+    },
+    staleTime: 60_000,
+  });
 
   useEffect(() => {
+    if (bookmarksData && bookmarksData.length) {
+      const idx: Record<string, Conversation> = {};
+      bookmarksData.forEach((b) => {
+        idx[b.id] = {
+          id: b.id,
+          title: b.title,
+          lastMessage: b.lastMessage ?? "",
+          timestamp: b.timestamp ?? Date.now(),
+        };
+      });
+      setConvoIndex(idx);
+      return;
+    }
+    // Fallback: localStorage cache if API not available
     try {
       const cc = localStorage.getItem("conversations.cache.v1");
-
       if (cc) {
         const { data } = JSON.parse(cc) as {
           at: number;
           data: ConversationGroup[];
         };
         const idx: Record<string, Conversation> = {};
-
         data.forEach((g) => g.conversations.forEach((c) => (idx[c.id] = c)));
         setConvoIndex(idx);
       }
     } catch {}
-  }, []);
+  }, [bookmarksData]);
 
   const items = useMemo(() => Array.from(bookmarkedIds), [bookmarkedIds]);
 

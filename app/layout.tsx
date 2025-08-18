@@ -8,6 +8,7 @@ import AudioDebugShim from "@/components/AudioDebugShim";
 import { ToastProvider } from "@/components/ui/toaster";
 import { ThemeProvider } from "@/components/ui/theme-provider";
 import ThemeBridge from "@/components/ThemeBridge";
+import AppProviders from "./providers";
 
 const fontSans = FontSans({
   subsets: ["latin"],
@@ -120,7 +121,9 @@ export default function RootLayout({
               <ThemeBridge />
               <AudioDebugShim />
 
-              {children}
+              <AppProviders>
+                {children}
+              </AppProviders>
             </main>
           </ToastProvider>
         </ThemeProvider>
