@@ -157,7 +157,7 @@ function MarkdownComponent({
   return (
     <div className={className} id={blockId} {...rest}>
       {showHeader && (
-        <div className="flex items-center justify-between rounded-t border border-border bg-muted/40 px-2 py-1 text-xs">
+        <div className="not-prose flex items-center justify-between rounded-t border border-border bg-muted/40 px-2 py-1 text-xs">
           <div className="text-muted-foreground">{headerLabel}</div>
           <div>
             <button
