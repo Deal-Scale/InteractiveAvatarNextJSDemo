@@ -83,6 +83,12 @@ function JSXPreview({ jsx, isStreaming = false, components, ...props }: JSXPrevi
     ...(props as unknown as Partial<JsxParserProps>),
     components: components as any,
     jsx: processedJsx,
+    showWarnings: true,
+    onError: (err: unknown) => (
+      <pre className="text-xs text-red-500 whitespace-pre-wrap">
+        {`JSX parse error: ${String(err)}`}
+      </pre>
+    ),
   };
 
   return <Parser {...(forwarded as JsxParserProps)} />;
