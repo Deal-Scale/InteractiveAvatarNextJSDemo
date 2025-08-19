@@ -8,7 +8,11 @@ import {
 	XCircle,
 } from "lucide-react";
 import type React from "react";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { SlashCommandPalette } from "@/components/AvatarSession/chat/SlashCommandPalette";
+import { defaultCommands } from "@/data/commands";
+import type { Command } from "@/types/commands";
+import { getTextareaAnchorRect } from "@/lib/utils/caret";
 import type { ComposerAsset } from "@/lib/stores/composer";
 import { useComposerStore } from "@/lib/stores/composer";
 
@@ -74,6 +78,118 @@ export const ChatInput: React.FC<ChatInputProps> = ({
 	// Visual affordance for sidebar asset drag-over
 	const [assetDragCounter, setAssetDragCounter] = useState(0);
 	const isAssetDragging = assetDragCounter > 0;
+
+	// Prefer provided ref from parent; fall back to a local one
+	const localTextareaRef = useRef<HTMLTextAreaElement | null>(null);
+	const textareaRef = inputRef ?? localTextareaRef;
+
+	// Notion-like '/' trigger state (palette UI to be implemented separately)
+	const [slashOpen, setSlashOpen] = useState(false);
+	const [slashStart, setSlashStart] = useState<number | null>(null); // index of '/'
+	const [slashQuery, setSlashQuery] = useState("");
+	const [highlightedIndex, setHighlightedIndex] = useState(0);
+	const [menuStack, setMenuStack] = useState<Command[][]>([]);
+	const [highlightedSubIndex, setHighlightedSubIndex] = useState(0);
+
+	// Helper: is whitespace or start
+	const isBoundary = (ch: string | undefined) => !ch || /\s/.test(ch);
+
+	// Update slash state based on current value and caret
+	const updateSlashState = (value: string) => {
+		const t = textareaRef?.current;
+		if (!t) return;
+		const caret = t.selectionStart ?? value.length;
+
+		// If palette is open, maintain or close depending on caret and token
+		if (slashOpen) {
+			if (slashStart == null) {
+				setSlashOpen(false);
+				setSlashQuery("");
+				return;
+			}
+			// Close if caret moved before slash, or '/' was deleted
+			if (caret <= slashStart || value[slashStart] !== "/") {
+				setSlashOpen(false);
+				setSlashStart(null);
+				setSlashQuery("");
+				return;
+			}
+			// Token runs from slashStart to before next whitespace
+			const afterSlash = value.slice(slashStart + 1, caret);
+			// Close on whitespace/newline just after slash (user didn't use it)
+			if (afterSlash.length === 0 && isBoundary(value[caret])) {
+				setSlashOpen(false);
+				setSlashStart(null);
+				setSlashQuery("");
+				return;
+			}
+			// If whitespace typed inside the token, close
+			if (/\s/.test(afterSlash)) {
+				setSlashOpen(false);
+				setSlashStart(null);
+				setSlashQuery("");
+				return;
+			}
+			// Otherwise keep it open and update query
+			setSlashQuery(afterSlash);
+			setHighlightedIndex(0);
+			return;
+		}
+
+		// If not open, detect an immediately-typed '/'
+		const prev = value[caret - 2]; // char before '/'
+		const last = value[caret - 1]; // potentially '/'
+		if (last === "/" && isBoundary(prev)) {
+			// Open only when '/' was just typed at start of a token
+			setSlashOpen(true);
+			setSlashStart(caret - 1);
+			setSlashQuery("");
+			setMenuStack([]);
+			setHighlightedIndex(0);
+			setHighlightedSubIndex(0);
+		}
+	};
+
+	// Wrap parent onValueChange to also maintain slash trigger state
+	const handleValueChange = (next: string) => {
+		onChatInputChange(next);
+		// Defer until caret updates
+		requestAnimationFrame(() => updateSlashState(next));
+	};
+
+	// Close on blur
+	useEffect(() => {
+		const t = textareaRef?.current;
+		if (!t) return;
+		const onBlur = () => {
+			if (slashOpen) {
+				setSlashOpen(false);
+				setSlashStart(null);
+				setSlashQuery("");
+			}
+		};
+		t.addEventListener("blur", onBlur);
+		return () => t.removeEventListener("blur", onBlur);
+	}, [textareaRef, slashOpen]);
+
+	// Debug: keep console trace minimal
+	useEffect(() => {
+		if (slashOpen) {
+			console.debug("[/] trigger", { start: slashStart, query: slashQuery });
+		}
+	}, [slashOpen, slashStart, slashQuery]);
+
+	// Helper: replace the '/<query>' token with provided text (or remove if empty)
+	const replaceSlashToken = (text?: string) => {
+		const t = textareaRef.current;
+		if (!t) return;
+		if (slashStart == null) return;
+		const tokenStart = slashStart;
+		const tokenEnd = slashStart + 1 + slashQuery.length;
+		const insert = text ?? "";
+		t.setRangeText(insert, tokenStart, tokenEnd, "end");
+		t.dispatchEvent(new Event("input", { bubbles: true }));
+	};
 
 	const handleDrop = (e: React.DragEvent) => {
 		console.debug("[ChatInput] drop", {
@@ -154,18 +270,258 @@ export const ChatInput: React.FC<ChatInputProps> = ({
 				disabled={false}
 				maxHeight={320}
 				value={chatInput}
-				textareaRef={inputRef}
+				textareaRef={textareaRef}
 				onSubmit={() =>
 					isEditing ? confirmEdit() : sendWithAttachments(chatInput)
 				}
-				onValueChange={onChatInputChange}
+				onValueChange={handleValueChange}
 			>
 				<div className="flex items-end gap-2">
 					<PromptInputTextarea
 						aria-label="Chat input"
 						className="flex-grow"
 						placeholder="Type a message..."
+						onKeyDown={(e) => {
+							// Escape cancels the slash palette immediately
+							if (e.key === "Escape" && slashOpen) {
+								e.stopPropagation();
+								setSlashOpen(false);
+								setSlashStart(null);
+								setSlashQuery("");
+								setMenuStack([]);
+								setHighlightedIndex(0);
+								return;
+							}
+							// Close when user types whitespace/tab while palette is open (treat as cancel)
+							if (slashOpen && (e.key === " " || e.key === "Tab")) {
+								setSlashOpen(false);
+								setSlashStart(null);
+								setSlashQuery("");
+								setMenuStack([]);
+								setHighlightedIndex(0);
+								return;
+							}
+
+							// Handle navigation when palette is open
+							if (slashOpen) {
+								e.preventDefault();
+								const rootFiltered = defaultCommands.filter((cmd) => {
+									const q = slashQuery.toLowerCase();
+									if (!q) return true;
+									const pool = [cmd.label, ...(cmd.keywords || [])].map((s) =>
+										s.toLowerCase(),
+									);
+									return pool.some((s) => s.includes(q));
+								});
+								const submenuItems: Command[] | undefined =
+									menuStack.length > 0
+										? menuStack[menuStack.length - 1]
+										: undefined;
+								const usingSubmenu = !!submenuItems && submenuItems.length > 0;
+								const currentItems: Command[] = usingSubmenu
+									? submenuItems!
+									: rootFiltered;
+
+								switch (e.key) {
+									case "ArrowDown": {
+										if (usingSubmenu) {
+											setHighlightedSubIndex((i) =>
+												currentItems.length === 0
+													? 0
+													: (i + 1) % currentItems.length,
+											);
+										} else {
+											setHighlightedIndex((i) =>
+												currentItems.length === 0
+													? 0
+													: (i + 1) % currentItems.length,
+											);
+										}
+										return;
+									}
+									case "ArrowUp": {
+										if (usingSubmenu) {
+											setHighlightedSubIndex((i) =>
+												currentItems.length === 0
+													? 0
+													: (i - 1 + currentItems.length) % currentItems.length,
+											);
+										} else {
+											setHighlightedIndex((i) =>
+												currentItems.length === 0
+													? 0
+													: (i - 1 + currentItems.length) % currentItems.length,
+											);
+										}
+										return;
+									}
+									case "ArrowRight": {
+										if (usingSubmenu) return; // no deeper nesting
+										const item = currentItems[highlightedIndex];
+										if (item?.children) {
+											setMenuStack((st) => [...st, item.children!]);
+											setHighlightedSubIndex(0);
+										}
+										return;
+									}
+									case "ArrowLeft": {
+										if (menuStack.length > 0) {
+											setMenuStack((st) => st.slice(0, -1));
+											setHighlightedSubIndex(0);
+										}
+										return;
+									}
+									case "Enter": {
+										const activeIndex = usingSubmenu
+											? highlightedSubIndex
+											: highlightedIndex;
+										const item = currentItems[activeIndex];
+										if (!item) return;
+										if (item.children) {
+											setMenuStack((st) => [...st, item.children!]);
+											setHighlightedSubIndex(0);
+											return;
+										}
+										// Execute leaf command
+										const execInsert = item.insertText;
+										let didReplace = false;
+										if (item.mcpPrompt) {
+											const prompt =
+												typeof item.mcpPrompt === "function"
+													? item.mcpPrompt()
+													: item.mcpPrompt;
+											const text = `/mcp ${prompt}`;
+											replaceSlashToken(text);
+											didReplace = true;
+										} else if (execInsert) {
+											const text =
+												typeof execInsert === "function"
+													? execInsert()
+													: execInsert;
+											replaceSlashToken(text);
+											didReplace = true;
+										}
+										if (item.action) {
+											item.action();
+										} else {
+											if (item.id === "start-voice") onStartVoiceChat();
+											if (item.id === "stop-voice") onStopVoiceChat();
+										}
+										// For action-only, remove the token (no text inserted)
+										if (!didReplace) {
+											replaceSlashToken("");
+										}
+										setSlashOpen(false);
+										setSlashStart(null);
+										setSlashQuery("");
+										setMenuStack([]);
+										setHighlightedIndex(0);
+										setHighlightedSubIndex(0);
+										return;
+									}
+									default:
+										return;
+								}
+							}
+						}}
 					/>
+
+					{/* Slash command palette (anchored near caret) */}
+					{slashOpen && textareaRef.current
+						? (() => {
+								const anchorRect = getTextareaAnchorRect(textareaRef.current!);
+								const rootFiltered = defaultCommands.filter((cmd) => {
+									const q = slashQuery.toLowerCase();
+									if (!q) return true;
+									const pool = [cmd.label, ...(cmd.keywords || [])].map((s) =>
+										s.toLowerCase(),
+									);
+									return pool.some((s) => s.includes(q));
+								});
+								const submenuItems: Command[] | undefined =
+									menuStack.length > 0
+										? menuStack[menuStack.length - 1]
+										: undefined;
+								return (
+									<SlashCommandPalette
+										anchorRect={anchorRect}
+										items={rootFiltered}
+										submenuItems={submenuItems}
+										highlightedIndex={Math.min(
+											highlightedIndex,
+											Math.max(0, rootFiltered.length - 1),
+										)}
+										highlightedSubIndex={
+											submenuItems
+												? Math.min(
+														highlightedSubIndex,
+														Math.max(0, submenuItems.length - 1),
+													)
+												: 0
+										}
+										onHighlight={setHighlightedIndex}
+										onHighlightSub={setHighlightedSubIndex}
+										onSelect={(cmd) => {
+											if (cmd.children) {
+												setMenuStack((st) => [...st, cmd.children!]);
+												setHighlightedSubIndex(0);
+												return;
+											}
+											let didReplace = false;
+											if (cmd.mcpPrompt) {
+												const prompt =
+													typeof cmd.mcpPrompt === "function"
+														? cmd.mcpPrompt()
+														: cmd.mcpPrompt;
+												const text = `/mcp ${prompt}`;
+												replaceSlashToken(text);
+												didReplace = true;
+											} else if (cmd.insertText) {
+												const text =
+													typeof cmd.insertText === "function"
+														? cmd.insertText()
+														: cmd.insertText;
+												replaceSlashToken(text);
+												didReplace = true;
+											}
+											if (cmd.action) {
+												cmd.action();
+											} else {
+												if (cmd.id === "start-voice") onStartVoiceChat();
+												if (cmd.id === "stop-voice") onStopVoiceChat();
+											}
+											if (!didReplace) {
+												replaceSlashToken("");
+											}
+											setSlashOpen(false);
+											setSlashStart(null);
+											setSlashQuery("");
+											setMenuStack([]);
+											setHighlightedIndex(0);
+											setHighlightedSubIndex(0);
+										}}
+										onOpenSubmenu={(cmd) => {
+											if (cmd.children && cmd.children.length > 0) {
+												setMenuStack((st) =>
+													st.length > 0 && st[st.length - 1] === cmd.children
+														? st
+														: [...st, cmd.children!],
+												);
+												setHighlightedSubIndex(0);
+											}
+										}}
+										onClose={() => {
+											setSlashOpen(false);
+											setSlashStart(null);
+											setSlashQuery("");
+											setMenuStack([]);
+											setHighlightedIndex(0);
+											setHighlightedSubIndex(0);
+										}}
+									/>
+								);
+							})()
+						: null}
 					<PromptInputActions className="shrink-0">
 						{!isEditing ? (
 							<>

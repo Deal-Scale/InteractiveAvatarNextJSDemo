@@ -1,6 +1,7 @@
 "use client";
 
 import type React from "react";
+import { useEffect, useRef, useState } from "react";
 import { MessageItem } from "../MessageItem";
 import { exampleReasoning } from "./_mock_data/example-reasoning";
 import { type Message as MessageType, MessageSender } from "@/lib/types";
@@ -37,36 +38,37 @@ export const MessageList: React.FC<MessageListProps> = ({
 	return (
 		<>
 			{messages.map((message) => (
-				<MessageItem
-					key={message.id}
-					handleCopy={handleCopy}
-					handleEditToInput={handleEditToInput}
-					onBranch={onBranch}
-					onRetry={(mid) => onRetry(mid)}
-					onCompare={(content, mid) => onCompare(content, mid)}
-					isStreaming={
-						isAvatarTalking && message.sender === MessageSender.AVATAR
-					}
-					lastCopiedId={lastCopiedId}
-					message={message}
-					avatarMarkdownShowHeader={showMarkdownHeaderInBubbles}
-					reasoning={
-						message.id === exampleReasoning.message.id
-							? exampleReasoning.reasoning
-							: undefined
-					}
-					reasoningMarkdown={
-						message.id === exampleReasoning.message.id
-							? exampleReasoning.reasoningMarkdown
-							: undefined
-					}
-					reasoningOpen={message.id === exampleReasoning.message.id}
-					setVote={setVote}
-					// Voting handled via parent via MessageItem prop setVote; we forward externally
-					streamMode="typewriter"
-					streamSpeed={28}
-					voteState={voteState}
-				/>
+				<LazyMessageItem key={message.id} observeRootMargin="200px">
+					<MessageItem
+						handleCopy={handleCopy}
+						handleEditToInput={handleEditToInput}
+						onBranch={onBranch}
+						onRetry={(mid) => onRetry(mid)}
+						onCompare={(content, mid) => onCompare(content, mid)}
+						isStreaming={
+							isAvatarTalking && message.sender === MessageSender.AVATAR
+						}
+						lastCopiedId={lastCopiedId}
+						message={message}
+						avatarMarkdownShowHeader={showMarkdownHeaderInBubbles}
+						reasoning={
+							message.id === exampleReasoning.message.id
+								? exampleReasoning.reasoning
+								: undefined
+						}
+						reasoningMarkdown={
+							message.id === exampleReasoning.message.id
+								? exampleReasoning.reasoningMarkdown
+								: undefined
+						}
+						reasoningOpen={message.id === exampleReasoning.message.id}
+						setVote={setVote}
+						// Voting handled via parent via MessageItem prop setVote; we forward externally
+						streamMode="typewriter"
+						streamSpeed={28}
+						voteState={voteState}
+					/>
+				</LazyMessageItem>
 			))}
 			{isAvatarTalking && (
 				<Message className="flex gap-2 items-start">
