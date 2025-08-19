@@ -15,6 +15,11 @@ import {
 } from "../logic/context";
 
 import { useSessionStore } from "@/lib/stores/session";
+import {
+	useInterruptTaskMutation,
+	useStopSessionMutation,
+	useKeepAliveMutation,
+} from "@/lib/services/streaming/query";
 
 interface AvatarControlsProps {
 	stopSession: () => void;
@@ -24,9 +29,18 @@ export const AvatarControls: React.FC<AvatarControlsProps> = ({
 	stopSession,
 }) => {
 	const { interrupt } = useInterrupt();
-	const { viewTab, setViewTab, controlsMinimized, setControlsMinimized } =
-		useSessionStore();
+	const {
+		viewTab,
+		setViewTab,
+		controlsMinimized,
+		setControlsMinimized,
+		currentSessionId,
+	} = useSessionStore();
 	const { sessionState } = useStreamingAvatarContext();
+
+	const interruptApi = useInterruptTaskMutation();
+	const stopApi = useStopSessionMutation();
+	const keepAliveApi = useKeepAliveMutation();
 
 	// Time-based UI opacity ramp when streaming (connected)
 	const [uiOpacity, setUiOpacity] = React.useState(0.3);
@@ -59,6 +73,21 @@ export const AvatarControls: React.FC<AvatarControlsProps> = ({
 
 	return (
 		<div className="absolute inset-0 pointer-events-none z-20">
+			{/* Keep-Alive button top-left when connected */}
+			{sessionState === StreamingAvatarSessionState.CONNECTED && (
+				<div className="absolute top-3 left-3 pointer-events-auto">
+					<Button
+						className="opacity-60 hover:opacity-100 transition-opacity"
+						onClick={() => {
+							if (currentSessionId) {
+								void keepAliveApi.mutateAsync({ session_id: currentSessionId });
+							}
+						}}
+					>
+						Keep Alive
+					</Button>
+				</div>
+			)}
 			{/* Restore hanging icon when minimized */}
 			{controlsMinimized && (
 				<button
@@ -92,13 +121,29 @@ export const AvatarControls: React.FC<AvatarControlsProps> = ({
 						>
 							<Button
 								className="!bg-secondary !text-foreground"
-								onClick={interrupt}
+								onClick={() => {
+									// Fire SDK interrupt immediately for UX
+									interrupt();
+									// Also notify server if we have a session id
+									if (currentSessionId) {
+										void interruptApi.mutateAsync({
+											session_id: currentSessionId,
+										});
+									}
+								}}
 							>
 								Interrupt
 							</Button>
 							<Button
 								className="!bg-destructive !text-destructive-foreground"
-								onClick={stopSession}
+								onClick={() => {
+									// Stop server session first if present
+									if (currentSessionId) {
+										void stopApi.mutateAsync({ session_id: currentSessionId });
+									}
+									// Then stop SDK session
+									stopSession();
+								}}
 							>
 								Stop
 							</Button>

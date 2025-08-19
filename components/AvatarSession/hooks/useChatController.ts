@@ -12,13 +12,21 @@ import { useVoiceChat } from "@/components/logic/useVoiceChat";
 import { useMessageHistory } from "@/components/logic/useMessageHistory";
 import { useSessionStore } from "@/lib/stores/session";
 import { MessageSender, type MessageAsset } from "@/lib/types";
+import { useSendTaskMutation } from "@/lib/services/streaming/query";
 
 export function useChatController(sessionState: StreamingAvatarSessionState) {
 	const { apiService } = useApiService();
-	const { messages, addMessage, isChatSolidBg, setChatSolidBg } =
-		useSessionStore();
+	const {
+		messages,
+		addMessage,
+		isChatSolidBg,
+		setChatSolidBg,
+		currentSessionId,
+	} = useSessionStore();
 	const { navigateHistory, resetHistory } = useMessageHistory(messages);
 	const { startVoiceChat, stopVoiceChat, isVoiceChatActive } = useVoiceChat();
+
+	const sendTaskMutation = useSendTaskMutation();
 
 	const [chatInput, setChatInput] = useState("");
 	const [isSending, setIsSending] = useState(false);
@@ -63,8 +71,16 @@ export function useChatController(sessionState: StreamingAvatarSessionState) {
 
 			// Choose message handling path
 			try {
-				// Prefer real API when available. Fallback to mock if no service.
-				if (apiService) {
+				// Prefer server API if we have a session id; otherwise use SDK service; fallback to mock
+				if (currentSessionId) {
+					// Map to chat task by default
+					await sendTaskMutation.mutateAsync({
+						session_id: currentSessionId,
+						text,
+						task_mode: "sync",
+						task_type: "chat",
+					});
+				} else if (apiService) {
 					if (text.trim().toLowerCase().startsWith("/mcp")) {
 						await handleMcpCommand(text);
 					} else {

@@ -1,4 +1,4 @@
-import { useMutation, useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { queryKeys } from "@/lib/query/keys";
 
 // --- Types from Heygen responses (simplified) ---
@@ -93,9 +93,14 @@ export function useSessionsHistoryQuery(params?: {
 
 // --- Mutations ---
 export function useNewSessionMutation() {
+	const qc = useQueryClient();
 	return useMutation({
 		mutationFn: (body: any) =>
 			postJson<NewSessionResponse>("/api/streaming/new", body),
+		onSuccess: async () => {
+			// Refresh active sessions immediately
+			await qc.invalidateQueries({ queryKey: queryKeys.sessions.active });
+		},
 	});
 }
 
@@ -111,9 +116,17 @@ export function useSendTaskMutation() {
 }
 
 export function useStopSessionMutation() {
+	const qc = useQueryClient();
 	return useMutation({
 		mutationFn: (body: { session_id: string }) =>
 			postJson("/api/streaming/stop", body),
+		onSuccess: async () => {
+			// Refresh both active and history lists
+			await Promise.all([
+				qc.invalidateQueries({ queryKey: queryKeys.sessions.active }),
+				qc.invalidateQueries({ queryKey: queryKeys.sessions.history() }),
+			]);
+		},
 	});
 }
 
