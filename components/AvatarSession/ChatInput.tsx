@@ -91,6 +91,169 @@ export const ChatInput: React.FC<ChatInputProps> = ({
 	const [menuStack, setMenuStack] = useState<Command[][]>([]);
 	const [highlightedSubIndex, setHighlightedSubIndex] = useState(0);
 
+	// Open the slash command palette programmatically for accessibility
+	const openSlashPalette = () => {
+		const t = textareaRef.current;
+		if (!t) return;
+		const caret = t.selectionStart ?? t.value.length;
+		// If there isn't already a '/' at caret, insert it to create the trigger token
+		if (t.value[caret] !== "/" && t.value[caret - 1] !== "/") {
+			try {
+				t.setRangeText("/", caret, caret, "end");
+				t.dispatchEvent(new Event("input", { bubbles: true }));
+			} catch {}
+		}
+		// Find the index of the '/' we just ensured
+		const newCaret = t.selectionStart ?? caret;
+		const slashPos = t.value.lastIndexOf("/", newCaret);
+		setSlashOpen(true);
+		setSlashStart(slashPos >= 0 ? slashPos : newCaret);
+		setSlashQuery("");
+		setMenuStack([]);
+		setHighlightedIndex(0);
+		setHighlightedSubIndex(0);
+		// Keep focus in the textarea for SR users
+		requestAnimationFrame(() => t.focus());
+	};
+
+	// Show the left "/" button only when the input is truly empty (0 chars)
+	const isInputEmpty = (chatInput ?? "").length === 0;
+
+	// Left-only: Open commands (slash) button
+	const LeftActions = (
+		<PromptInputActions
+			className="shrink-0"
+			role="toolbar"
+			aria-label="Left prompt action"
+		>
+			<PromptInputAction tooltip="Open commands (Alt+/)">
+				<Button
+					aria-label="Open commands"
+					aria-keyshortcuts="Alt+/"
+					size="icon"
+					variant="secondary"
+					type="button"
+					className="focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background h-8 w-8 p-0"
+					onClick={openSlashPalette}
+				>
+					/
+				</Button>
+			</PromptInputAction>
+		</PromptInputActions>
+	);
+
+	// Right: mic, attach, send OR confirm/cancel
+	const RightActions = (
+		<PromptInputActions
+			className="shrink-0"
+			role="toolbar"
+			aria-label="Prompt quick actions"
+		>
+			{!isEditing ? (
+				<>
+					<PromptInputAction
+						tooltip={isVoiceChatActive ? "Stop voice chat" : "Start voice chat"}
+					>
+						<div className="flex items-center">
+							<Button
+								aria-label={
+									isVoiceChatActive ? "Stop voice chat" : "Start voice chat"
+								}
+								aria-keyshortcuts="Alt+M"
+								size="icon"
+								variant={isVoiceChatActive ? "destructive" : "default"}
+								className="focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+								onClick={isVoiceChatActive ? onStopVoiceChat : onStartVoiceChat}
+							>
+								{isVoiceChatActive ? (
+									<MicOffIcon className="h-4 w-4" />
+								) : (
+									<MicIcon className="h-4 w-4" />
+								)}
+							</Button>
+							{isVoiceChatLoading && (
+								<div className="ml-2">
+									<Loader size="sm" variant="dots" />
+								</div>
+							)}
+						</div>
+					</PromptInputAction>
+					<PromptInputAction tooltip="Attach files">
+						<FileUpload
+							multiple
+							accept=".png,.jpg,.jpeg,.webp,.gif,.pdf,.txt,.md"
+							disabled={isVoiceChatActive}
+							onFilesAdded={onFilesAdded}
+						>
+							<FileUploadTrigger asChild>
+								<Button
+									aria-label="Attach files"
+									aria-keyshortcuts="Alt+U"
+									disabled={isVoiceChatActive}
+									size="icon"
+									type="button"
+									className="focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+								>
+									<Paperclip className="h-4 w-4" />
+								</Button>
+							</FileUploadTrigger>
+							<FileUploadContent className="border-border/60 bg-background/80 text-foreground/90">
+								<div className="rounded-lg border px-6 py-4 text-center">
+									<p className="text-sm">Drop files to attach</p>
+								</div>
+							</FileUploadContent>
+						</FileUpload>
+					</PromptInputAction>
+					<PromptInputAction tooltip="Send message">
+						<Button
+							aria-label="Send message"
+							aria-keyshortcuts="Enter"
+							disabled={isVoiceChatActive || isSending}
+							size="icon"
+							type="button"
+							className="focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+							onClick={() => sendWithAttachments(chatInput)}
+						>
+							{isSending ? (
+								<Loader size="sm" variant="circular" />
+							) : (
+								<SendIcon />
+							)}
+						</Button>
+					</PromptInputAction>
+				</>
+			) : (
+				<>
+					<PromptInputAction tooltip="Confirm edit and send">
+						<Button
+							aria-label="Confirm edit and send"
+							aria-keyshortcuts="Enter"
+							size="icon"
+							type="button"
+							className="focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+							onClick={confirmEdit}
+						>
+							<Check className="h-4 w-4" />
+						</Button>
+					</PromptInputAction>
+					<PromptInputAction tooltip="Cancel editing">
+						<Button
+							aria-label="Cancel editing"
+							aria-keyshortcuts="Escape"
+							size="icon"
+							type="button"
+							variant="secondary"
+							className="focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+							onClick={cancelEdit}
+						>
+							<XCircle className="h-4 w-4" />
+						</Button>
+					</PromptInputAction>
+				</>
+			)}
+		</PromptInputActions>
+	);
+
 	// Helper: is whitespace or start
 	const isBoundary = (ch: string | undefined) => !ch || /\s/.test(ch);
 
@@ -277,6 +440,7 @@ export const ChatInput: React.FC<ChatInputProps> = ({
 				onValueChange={handleValueChange}
 			>
 				<div className="flex items-end gap-2">
+					{isInputEmpty ? LeftActions : null}
 					<PromptInputTextarea
 						aria-label="Chat input"
 						className="flex-grow"
@@ -299,6 +463,13 @@ export const ChatInput: React.FC<ChatInputProps> = ({
 								setSlashQuery("");
 								setMenuStack([]);
 								setHighlightedIndex(0);
+								return;
+							}
+
+							// Shortcut to open slash palette without typing '/': Alt+/
+							if (e.altKey && e.key === "/") {
+								e.preventDefault();
+								openSlashPalette();
 								return;
 							}
 
@@ -527,101 +698,7 @@ export const ChatInput: React.FC<ChatInputProps> = ({
 								);
 							})()
 						: null}
-					<PromptInputActions className="shrink-0">
-						{!isEditing ? (
-							<>
-								<PromptInputAction
-									tooltip={
-										isVoiceChatActive ? "Stop voice chat" : "Start voice chat"
-									}
-								>
-									<div className="flex items-center">
-										<Button
-											size="icon"
-											variant={isVoiceChatActive ? "destructive" : "default"}
-											onClick={
-												isVoiceChatActive ? onStopVoiceChat : onStartVoiceChat
-											}
-										>
-											{isVoiceChatActive ? (
-												<MicOffIcon className="h-4 w-4" />
-											) : (
-												<MicIcon className="h-4 w-4" />
-											)}
-										</Button>
-										{isVoiceChatLoading && (
-											<div className="ml-2">
-												<Loader size="sm" variant="dots" />
-											</div>
-										)}
-									</div>
-								</PromptInputAction>
-								<PromptInputAction tooltip="Attach files">
-									<FileUpload
-										multiple
-										accept=".png,.jpg,.jpeg,.webp,.gif,.pdf,.txt,.md"
-										disabled={isVoiceChatActive}
-										onFilesAdded={onFilesAdded}
-									>
-										<FileUploadTrigger asChild>
-											<Button
-												aria-label="Attach files"
-												disabled={isVoiceChatActive}
-												size="icon"
-												type="button"
-											>
-												<Paperclip className="h-4 w-4" />
-											</Button>
-										</FileUploadTrigger>
-										<FileUploadContent className="border-border/60 bg-background/80 text-foreground/90">
-											<div className="rounded-lg border px-6 py-4 text-center">
-												<p className="text-sm">Drop files to attach</p>
-											</div>
-										</FileUploadContent>
-									</FileUpload>
-								</PromptInputAction>
-								<PromptInputAction tooltip="Send message">
-									<Button
-										aria-label="Send message"
-										disabled={isVoiceChatActive || isSending}
-										size="icon"
-										type="button"
-										onClick={() => sendWithAttachments(chatInput)}
-									>
-										{isSending ? (
-											<Loader size="sm" variant="circular" />
-										) : (
-											<SendIcon />
-										)}
-									</Button>
-								</PromptInputAction>
-							</>
-						) : (
-							<>
-								<PromptInputAction tooltip="Confirm edit and send">
-									<Button
-										aria-label="Confirm edit and send"
-										size="icon"
-										type="button"
-										onClick={confirmEdit}
-									>
-										<Check className="h-4 w-4" />
-									</Button>
-								</PromptInputAction>
-								<PromptInputAction tooltip="Cancel editing">
-									<Button
-										aria-label="Cancel editing"
-										size="icon"
-										type="button"
-										variant="secondary"
-										onClick={cancelEdit}
-									>
-										<XCircle className="h-4 w-4" />
-									</Button>
-								</PromptInputAction>
-							</>
-						)}
-					</PromptInputActions>
+					{RightActions}
 				</div>
 				{/* FileUpload handles file selection and drag/drop */}
 				{(attachments.length > 0 || composerAttachments.length > 0) && (

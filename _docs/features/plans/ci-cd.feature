@@ -16,7 +16,7 @@ Feature: Suggested CI/CD tools for Raretae front-end based on package.json
       | Biome          | All-in-one formatter and linter            |
       | Jest           | Unit and integration testing               |
       | Husky          | Git hooks for enforcing checks pre-commit  |
-      | npm audit      | Dependency vulnerability scanning          |
+      | snyk      | Dependency vulnerability scanning          |
       | Codecov        | Code coverage reporting in CI              |
       | GitHub Secret Scanning | Detect accidental secret commits   |
 
@@ -32,7 +32,7 @@ Feature: Suggested CI/CD tools for Raretae front-end based on package.json
       | Lint and format code        | Biome        |
       | Run tests                   | Jest or Vitest |
       | Check code coverage         | Codecov      |
-      | Scan dependencies           | npm audit    |
+      | Scan dependencies           | snyk    |
       | Check for secrets           | GitHub Secret Scanning |
 
     And Husky can be used locally to enforce linting and tests before commit
