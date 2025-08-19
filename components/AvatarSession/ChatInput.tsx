@@ -501,14 +501,19 @@ export const ChatInput: React.FC<ChatInputProps> = ({
 											setHighlightedSubIndex(0);
 										}}
 										onOpenSubmenu={(cmd) => {
-											if (cmd.children && cmd.children.length > 0) {
-												setMenuStack((st) =>
-													st.length > 0 && st[st.length - 1] === cmd.children
-														? st
-														: [...st, cmd.children!],
-												);
+											// If undefined or no children, collapse submenu
+											if (!cmd || !cmd.children || cmd.children.length === 0) {
+												setMenuStack([]);
 												setHighlightedSubIndex(0);
+												return;
 											}
+											// Open/update submenu
+											setMenuStack((st) =>
+												st.length > 0 && st[st.length - 1] === cmd.children
+													? st
+													: [...st, cmd.children!],
+											);
+											setHighlightedSubIndex(0);
 										}}
 										onClose={() => {
 											setSlashOpen(false);

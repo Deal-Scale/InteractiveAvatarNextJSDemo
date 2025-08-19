@@ -14,7 +14,7 @@ export type SlashCommandPaletteProps = {
 	onHighlightSub?: (index: number) => void; // submenu
 	onSelect: (cmd: Command) => void;
 	onClose: () => void;
-	onOpenSubmenu?: (cmd: Command) => void;
+	onOpenSubmenu?: (cmd?: Command) => void; // pass undefined to close submenu
 	onBack?: () => void;
 };
 
@@ -48,7 +48,13 @@ export const SlashCommandPalette: React.FC<SlashCommandPaletteProps> = ({
 			}}
 		>
 			{/* Root column */}
-			<div className="w-64 max-h-72 overflow-auto p-1">
+			<div
+				className="w-64 max-h-72 overflow-auto p-1"
+				onMouseLeave={() => {
+					// When pointer leaves the root list, collapse submenu
+					onOpenSubmenu?.(undefined);
+				}}
+			>
 				{items.length === 0 ? (
 					<div className="px-2 py-1.5 text-sm text-muted-foreground">
 						No commands
@@ -67,7 +73,12 @@ export const SlashCommandPalette: React.FC<SlashCommandPaletteProps> = ({
 							)}
 							onMouseEnter={() => {
 								onHighlight(idx);
-								if (item.children && onOpenSubmenu) onOpenSubmenu(item);
+								// Open submenu if present; otherwise close any existing submenu
+								if (item.children && item.children.length > 0) {
+									onOpenSubmenu?.(item);
+								} else {
+									onOpenSubmenu?.(undefined);
+								}
 							}}
 							onMouseDown={(e) => {
 								// prevent textarea blur
