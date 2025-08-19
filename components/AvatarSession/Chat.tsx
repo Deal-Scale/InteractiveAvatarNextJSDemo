@@ -210,14 +210,14 @@ export const Chat: React.FC<ChatProps> = ({
 	};
 
 	return (
-		<div className="flex flex-col w-full h-full p-4">
+		<div className="flex flex-col w-full flex-1 min-h-0 p-4">
 			{!inputOnly && (
-				<StickToBottom className="flex-1 min-h-0 text-foreground">
+				<StickToBottom className="flex-1 min-h-0 h-full overflow-hidden text-foreground">
 					{/* Dynamically pad bottom by input height to avoid overlap */}
 					<ChatContainerRoot
 						ref={scrollRef}
 						onScroll={handleScroll}
-						className="flex-1 min-h-0 text-foreground"
+						className="flex-1 min-h-0 h-full text-foreground"
 						style={{
 							paddingBottom: isAtBottom ? 16 : Math.max(16, inputHeight + 8),
 						}}

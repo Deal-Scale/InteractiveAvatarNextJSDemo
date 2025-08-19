@@ -92,7 +92,12 @@ export function ChatPanel({
 				}
 				label="Chat"
 			>
-				<div className={cn("flex h-full w-full flex-col", "min-h-0")}>
+				<div
+					className={cn(
+						"flex h-full w-full flex-1 flex-col",
+						"min-h-0 min-w-0",
+					)}
+				>
 					{canChat ? (
 						<Chat
 							chatInput={chatInput}
