@@ -32,6 +32,8 @@ import useBookmarkModal from "@/components/Sidebar/hooks/useBookmarkModal";
 import SidebarHeaderSection from "@/components/Sidebar/SidebarHeaderSection";
 import MessagesSection from "@/components/Sidebar/MessagesSection";
 import { useComposerStore } from "@/lib/stores/composer";
+import ActiveSessionsSection from "@/components/Sidebar/ActiveSessionsSection";
+import SessionsHistorySection from "@/components/Sidebar/SessionsHistorySection";
 
 // types, utils, and subcomponents are imported from components/Sidebar/*
 
@@ -40,6 +42,7 @@ const SKELETON_IDS = ["s1", "s2", "s3", "s4", "s5", "s6"] as const;
 const Sidebar: React.FC<SidebarProps> = ({ onSelect, apps }) => {
 	const router = useRouter();
 	const { agentSettings } = useSessionStore();
+	const openConfigModal = useSessionStore((s) => s.openConfigModal);
 	const { currentAgent, updateAgent } = useAgentStore();
 	const { globalSettings, setGlobalSettings, clearGlobalSettings } =
 		useSettingsStore();
@@ -101,6 +104,12 @@ const Sidebar: React.FC<SidebarProps> = ({ onSelect, apps }) => {
 	const addAssetAttachment = useComposerStore((s) => s.addAssetAttachment);
 
 	const totalCount = conv.totalCount;
+
+	// Local collapse state for streaming sections
+	const [collapsedActiveSessions, setCollapsedActiveSessions] =
+		React.useState<boolean>(false);
+	const [collapsedSessionsHistory, setCollapsedSessionsHistory] =
+		React.useState<boolean>(true);
 
 	// Build a map of conversations by ID for fast lookup in bookmarks tree
 	const conversationsById = useMemo(() => {
@@ -172,6 +181,10 @@ const Sidebar: React.FC<SidebarProps> = ({ onSelect, apps }) => {
 						<Button
 							className="mb-3 flex w-full items-center gap-2 group-data-[state=collapsed]/sidebar:justify-center bg-background text-foreground border border-border hover:bg-muted"
 							variant="outline"
+							onClick={() => {
+								// Open the AvatarConfig modal to start a new streaming session
+								openConfigModal();
+							}}
 						>
 							<PlusIcon className="size-4" />
 							<span className="group-data-[state=collapsed]/sidebar:hidden">
@@ -279,6 +292,16 @@ const Sidebar: React.FC<SidebarProps> = ({ onSelect, apps }) => {
 							// Trigger OAuth flow for API sync (replace with your real auth)
 							console.debug("KB OAuth: begin auth flow");
 						}}
+					/>
+
+					{/* Streaming sections */}
+					<ActiveSessionsSection
+						collapsed={collapsedActiveSessions}
+						setCollapsed={setCollapsedActiveSessions}
+					/>
+					<SessionsHistorySection
+						collapsed={collapsedSessionsHistory}
+						setCollapsed={setCollapsedSessionsHistory}
 					/>
 
 					{/* Messages Section (threads grouped under their own dropdown) */}

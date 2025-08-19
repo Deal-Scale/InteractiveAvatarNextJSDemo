@@ -39,6 +39,10 @@ interface SessionState {
 	creditsPerMinute: number; // estimated burn rate while connected
 	setCreditsPerMinute: (val: number) => void;
 
+	// Active streaming session id (from /api/streaming/new)
+	currentSessionId: string | null;
+	setCurrentSessionId: (id: string | null) => void;
+
 	// Video panel tab/view selection
 	viewTab: "video" | "brain" | "data" | "actions";
 	setViewTab: (tab: "video" | "brain" | "data" | "actions") => void;
@@ -109,6 +113,10 @@ export const useSessionStore = create<SessionState>()(
 			creditsPerMinute: 120,
 			setCreditsPerMinute: (val) => set({ creditsPerMinute: Math.max(0, val) }),
 
+			// Active session id
+			currentSessionId: null,
+			setCurrentSessionId: (id) => set({ currentSessionId: id }),
+
 			// View tab
 			viewTab: "video",
 			setViewTab: (tab) => set({ viewTab: tab }),
@@ -135,6 +143,7 @@ export const useSessionStore = create<SessionState>()(
 				userSettings: state.userSettings,
 				globalSettings: state.globalSettings,
 				agentSettings: state.agentSettings,
+				currentSessionId: state.currentSessionId,
 			}),
 		},
 	),

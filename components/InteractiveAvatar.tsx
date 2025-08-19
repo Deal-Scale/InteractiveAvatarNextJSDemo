@@ -25,6 +25,7 @@ import {
 import { HeyGenService } from "@/lib/services/heygen";
 import { useSessionStore } from "@/lib/stores/session";
 import { MessageSender } from "@/lib/types";
+import { useNewSessionMutation } from "@/lib/services/streaming/query";
 
 const DEFAULT_CONFIG: StartAvatarRequest = {
 	quality: AvatarQuality.Low,
@@ -53,25 +54,24 @@ function InteractiveAvatarCore() {
 
 	const { setApiService } = useApiService();
 
-	const { appendMessageChunk } = useSessionStore();
+	const { appendMessageChunk, setCurrentSessionId } = useSessionStore();
 
 	const mediaStreamRef = useRef<HTMLVideoElement>(null!);
 
-	const accessTokenMutation = useMutation({
-		mutationKey: ["auth", "access-token"],
-		mutationFn: async () => {
-			const response = await fetch("/api/get-access-token", { method: "POST" });
-			if (!response.ok) throw new Error(`HTTP ${response.status}`);
-			const token = await response.text();
-			console.debug("[auth] access token acquired");
-			return token as string;
-		},
-	});
+	const newSessionMutation = useNewSessionMutation();
 
 	const startSessionV2 = useMemoizedFn(async (config: StartAvatarRequest) => {
 		try {
-			const newToken = await accessTokenMutation.mutateAsync();
-			const avatar = initAvatar(newToken);
+			// Create a server-tracked session to obtain access_token and session_id
+			const resp = await newSessionMutation.mutateAsync({
+				avatar_id: config.avatarName,
+			} as any);
+			const token = resp?.data?.access_token as string;
+			const sessionId = resp?.data?.session_id as string;
+
+			if (sessionId) setCurrentSessionId(sessionId);
+
+			const avatar = initAvatar(token);
 
 			const heygenService = new HeyGenService(avatar);
 
@@ -130,6 +130,7 @@ function InteractiveAvatarCore() {
 	const stopSessionV2 = useMemoizedFn(() => {
 		stopSession().then(() => {
 			setApiService(null);
+			setCurrentSessionId(null);
 		});
 	});
 
