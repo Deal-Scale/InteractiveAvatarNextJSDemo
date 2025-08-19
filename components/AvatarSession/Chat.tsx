@@ -34,6 +34,7 @@ import {
 	buildBaseMessagesIfEmpty,
 	dedupeAdjacent,
 } from "./chat/utils";
+import { cn } from "@/lib/utils";
 
 interface ChatProps {
 	chatInput: string;
@@ -211,39 +212,42 @@ export const Chat: React.FC<ChatProps> = ({
 
 	return (
 		<div className="flex flex-col w-full flex-1 min-h-0 p-4">
-			{!inputOnly && (
-				<StickToBottom className="flex-1 min-h-0 h-full overflow-hidden text-foreground">
-					{/* Dynamically pad bottom by input height to avoid overlap */}
-					<ChatContainerRoot
-						ref={scrollRef}
-						onScroll={handleScroll}
-						className="flex-1 min-h-0 h-full text-foreground"
-						style={{
-							paddingBottom: isAtBottom ? 16 : Math.max(16, inputHeight + 8),
-						}}
-					>
-						<ChatContainerContent>
-							<MessageList
-								messages={augmentedMessages}
-								isAvatarTalking={isAvatarTalking}
-								lastCopiedId={lastCopiedId}
-								voteState={voteState}
-								setVote={setVote}
-								handleCopy={handleCopy}
-								handleEditToInput={handleEditToInput}
-								onBranch={branching.handleBranch}
-								onRetry={handleRetry}
-								onCompare={handleCompare}
-								showMarkdownHeaderInBubbles={showMarkdownHeaderInBubbles}
-							/>
-						</ChatContainerContent>
-						<ChatContainerScrollAnchor />
-						<div className="absolute bottom-4 right-4">
-							<ScrollButton className="shadow-sm" />
-						</div>
-					</ChatContainerRoot>
-				</StickToBottom>
-			)}
+			<StickToBottom
+				className={cn(
+					"flex-1 min-h-0 h-full overflow-hidden text-foreground",
+					inputOnly && "hidden",
+				)}
+			>
+				{/* Dynamically pad bottom by input height to avoid overlap */}
+				<ChatContainerRoot
+					ref={scrollRef}
+					onScroll={handleScroll}
+					className="flex-1 min-h-0 h-full text-foreground"
+					style={{
+						paddingBottom: isAtBottom ? 16 : Math.max(16, inputHeight + 8),
+					}}
+				>
+					<ChatContainerContent>
+						<MessageList
+							messages={augmentedMessages}
+							isAvatarTalking={isAvatarTalking}
+							lastCopiedId={lastCopiedId}
+							voteState={voteState}
+							setVote={setVote}
+							handleCopy={handleCopy}
+							handleEditToInput={handleEditToInput}
+							onBranch={branching.handleBranch}
+							onRetry={handleRetry}
+							onCompare={handleCompare}
+							showMarkdownHeaderInBubbles={showMarkdownHeaderInBubbles}
+						/>
+					</ChatContainerContent>
+					<ChatContainerScrollAnchor />
+					<div className="absolute bottom-4 right-4">
+						<ScrollButton className="shadow-sm" />
+					</div>
+				</ChatContainerRoot>
+			</StickToBottom>
 			{/* Ensure input section never shrinks and visually docks under messages */}
 			<div
 				ref={inputWrapRef}

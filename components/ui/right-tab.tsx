@@ -129,7 +129,7 @@ export function RightTab({
 						{actions}
 					</div>
 				</div>
-				<div className="min-w-0 min-h-0 flex-1 h-full overflow-hidden flex flex-col">
+				<div className="min-w-0 min-h-0 flex-1 overflow-hidden flex flex-col">
 					{children}
 				</div>
 			</section>
