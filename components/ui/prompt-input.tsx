@@ -101,9 +101,23 @@ function PromptInput({
 					tabIndex={0}
 					onClick={() => textareaRef.current?.focus()}
 					onKeyDown={(e) => {
-						if (e.key === "Enter" || e.key === " ") {
+						if (e.key === "Enter") {
 							e.preventDefault();
 							textareaRef.current?.focus();
+							return;
+						}
+						if (e.key === " ") {
+							// Space pressed while wrapper has focus: focus textarea and insert a space
+							e.preventDefault();
+							const t = textareaRef.current;
+							if (t) {
+								t.focus();
+								const start = t.selectionStart ?? t.value.length;
+								const end = t.selectionEnd ?? t.value.length;
+								t.setRangeText(" ", start, end, "end");
+								// Notify React controlled input
+								t.dispatchEvent(new Event("input", { bubbles: true }));
+							}
 						}
 					}}
 				>

@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useMemoizedFn } from "ahooks";
 import { nanoid } from "nanoid";
 
@@ -36,6 +36,13 @@ export function useChatController(sessionState: StreamingAvatarSessionState) {
 	const [mockVoiceActive, setMockVoiceActive] = useState(false);
 	const canChat = isConnected || mockChatEnabled;
 
+	// If a real session becomes connected, ensure mock chat is turned off
+	useEffect(() => {
+		if (isConnected && mockChatEnabled) {
+			setMockChatEnabled(false);
+		}
+	}, [isConnected, mockChatEnabled]);
+
 	const addAvatarMessage = (content: string) =>
 		addMessage({ id: nanoid(), content, sender: MessageSender.AVATAR });
 
@@ -56,16 +63,16 @@ export function useChatController(sessionState: StreamingAvatarSessionState) {
 
 			// Choose message handling path
 			try {
-				if (mockChatEnabled) {
-					const reply = await mockOpenRouter(text);
-
-					addAvatarMessage(reply);
-				} else if (apiService) {
+				// Prefer real API when available. Fallback to mock if no service.
+				if (apiService) {
 					if (text.trim().toLowerCase().startsWith("/mcp")) {
 						await handleMcpCommand(text);
 					} else {
 						await apiService.textChat.sendMessageSync(text, assets);
 					}
+				} else if (mockChatEnabled) {
+					const reply = await mockOpenRouter(text);
+					addAvatarMessage(reply);
 				}
 			} finally {
 				resetHistory();
