@@ -22,6 +22,47 @@ interface MessageListProps {
 	showMarkdownHeaderInBubbles?: boolean;
 }
 
+// Lazy rendering wrapper for MessageItem using IntersectionObserver
+interface LazyProps {
+	children: React.ReactNode;
+	observeRootMargin?: string; // e.g., '200px'
+}
+
+function LazyMessageItem({ children, observeRootMargin = "0px" }: LazyProps) {
+	const ref = useRef<HTMLDivElement | null>(null);
+	const [visible, setVisible] = useState(false);
+
+	useEffect(() => {
+		const node = ref.current;
+		if (!node) return;
+
+		if (typeof IntersectionObserver === "undefined") {
+			setVisible(true);
+			return;
+		}
+
+		const obs = new IntersectionObserver(
+			(entries) => {
+				const entry = entries[0];
+				if (entry.isIntersecting) {
+					setVisible(true);
+					obs.disconnect();
+				}
+			},
+			{ root: null, rootMargin: observeRootMargin, threshold: 0.01 },
+		);
+
+		obs.observe(node);
+		return () => obs.disconnect();
+	}, [observeRootMargin]);
+
+	return (
+		<div ref={ref} className="w-full">
+			{visible ? children : <div aria-hidden className="h-8" />}
+		</div>
+	);
+}
+
 export const MessageList: React.FC<MessageListProps> = ({
 	messages,
 	isAvatarTalking,
@@ -34,7 +75,7 @@ export const MessageList: React.FC<MessageListProps> = ({
 	onRetry,
 	onCompare,
 	showMarkdownHeaderInBubbles,
-}) => {
+}: MessageListProps) => {
 	return (
 		<>
 			{messages.map((message) => (
@@ -63,7 +104,6 @@ export const MessageList: React.FC<MessageListProps> = ({
 						}
 						reasoningOpen={message.id === exampleReasoning.message.id}
 						setVote={setVote}
-						// Voting handled via parent via MessageItem prop setVote; we forward externally
 						streamMode="typewriter"
 						streamSpeed={28}
 						voteState={voteState}
