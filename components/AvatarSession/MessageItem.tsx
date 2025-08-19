@@ -200,9 +200,36 @@ export const MessageItem: React.FC<MessageItemProps> = ({
 					message.sender === MessageSender.AVATAR ? "items-start" : "items-end"
 				}`}
 			>
-				<p className="text-xs text-muted-foreground">
-					{message.sender === MessageSender.AVATAR ? "Avatar" : "You"}
-				</p>
+				{(() => {
+					const isTalking = Boolean(isStreaming);
+					const isToolsRunning = Array.isArray(message.toolParts)
+						? message.toolParts.some((p) => p?.state !== "output-available")
+						: false;
+					const showPill =
+						message.sender === MessageSender.AVATAR &&
+						(isTalking || isToolsRunning);
+
+					return (
+						<div className="flex items-center gap-2">
+							<p className="text-xs text-muted-foreground">
+								{message.sender === MessageSender.AVATAR ? "Avatar" : "You"}
+							</p>
+							{showPill && (
+								<span
+									className={
+										"inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-medium " +
+										(isTalking
+											? "bg-primary/10 text-primary"
+											: "bg-secondary/70 text-foreground")
+									}
+									aria-live="polite"
+								>
+									{isTalking ? "Talking…" : "Tools running"}
+								</span>
+							)}
+						</div>
+					);
+				})()}
 				{message.sender === MessageSender.AVATAR ? (
 					<div className="break-words whitespace-normal rounded-lg bg-muted p-2 text-sm text-foreground">
 						{reasoning && (
