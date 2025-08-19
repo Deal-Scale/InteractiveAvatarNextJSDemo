@@ -5,7 +5,7 @@ const HEYGEN_BASE =
 
 const HEYGEN_API_KEY = process.env.HEYGEN_API_KEY;
 
-export async function GET() {
+export async function POST(req: Request) {
 	if (!HEYGEN_API_KEY) {
 		return NextResponse.json(
 			{ error: "Missing HEYGEN_API_KEY" },
@@ -14,21 +14,22 @@ export async function GET() {
 	}
 
 	try {
-		const res = await fetch(`${HEYGEN_BASE}/v2/voices`, {
-			method: "GET",
+		const body = await req.json();
+
+		const res = await fetch(`${HEYGEN_BASE}/v1/streaming.new`, {
+			method: "POST",
 			headers: {
 				"Content-Type": "application/json",
 				Authorization: `Bearer ${HEYGEN_API_KEY}`,
 			},
-			// don't cache so we always see latest
-			cache: "no-store",
+			body: JSON.stringify(body ?? {}),
 		});
 
 		const data = await res.json();
 
 		if (!res.ok) {
 			return NextResponse.json(
-				{ error: data?.message || "Failed to fetch voices" },
+				{ error: data?.message || "Failed to start session" },
 				{ status: res.status },
 			);
 		}
