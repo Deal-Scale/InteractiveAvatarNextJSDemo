@@ -34,7 +34,7 @@ Feature: Suggested CI/CD tools for Raretae front-end based on package.json
       | Build Next.js app           | next build     |
       | Run tests                   | Vitest         |
       | Check code coverage         | Codecov        |
-      | Scan dependencies           | pnpm audit     |
+      | Scan dependencies           | Snyk           |
       | Check for secrets           | GitHub Secret Scanning |
 
     And Husky can be used locally to enforce formatting/linting and optionally tests before commit

@@ -5,6 +5,11 @@ export const queryKeys = {
 	voices: {
 		list: ["voices", "list"] as const,
 	},
+	sessions: {
+		active: ["sessions", "active"] as const,
+		history: (params?: string) =>
+			["sessions", "history", params ?? "default"] as const,
+	},
 	bookmarks: {
 		list: ["bookmarks", "list"] as const,
 		detail: (id: string) => ["bookmarks", "detail", id] as const,
