@@ -1,5 +1,5 @@
 {
-	"name": "next-app-template",
+	"name": "mind-stream",
 	"version": "0.0.1",
 	"private": true,
 	"scripts": {
@@ -7,6 +7,8 @@
 		"build": "next build",
 		"start": "next start",
 		"lint": "biome lint .",
+		"lint:github": "pnpm biome lint --reporter=github . > biome.out && grep '::error ' biome.out",
+
 		"format": "biome format --write .",
 		"check": "biome check .",
 		"test": "vitest run",
