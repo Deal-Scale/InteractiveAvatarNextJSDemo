@@ -14,152 +14,161 @@ import { useSessionStore } from "@/lib/stores/session";
 import { MessageSender, type MessageAsset } from "@/lib/types";
 
 export function useChatController(sessionState: StreamingAvatarSessionState) {
-  const { apiService } = useApiService();
-  const { messages, addMessage, isChatSolidBg, setChatSolidBg } =
-    useSessionStore();
-  const { navigateHistory, resetHistory } = useMessageHistory(messages);
-  const { startVoiceChat, stopVoiceChat, isVoiceChatActive } = useVoiceChat();
+	const { apiService } = useApiService();
+	const { messages, addMessage, isChatSolidBg, setChatSolidBg } =
+		useSessionStore();
+	const { navigateHistory, resetHistory } = useMessageHistory(messages);
+	const { startVoiceChat, stopVoiceChat, isVoiceChatActive } = useVoiceChat();
 
-  const [chatInput, setChatInput] = useState("");
-  const [isSending, setIsSending] = useState(false);
-  const [userVideoStream, setUserVideoStream] = useState<MediaStream | null>(
-    null,
-  );
+	const [chatInput, setChatInput] = useState("");
+	const [isSending, setIsSending] = useState(false);
+	const [userVideoStream, setUserVideoStream] = useState<MediaStream | null>(
+		null,
+	);
 
-  const isConnected = useMemo(
-    () => sessionState === StreamingAvatarSessionState.CONNECTED,
-    [sessionState],
-  );
+	const isConnected = useMemo(
+		() => sessionState === StreamingAvatarSessionState.CONNECTED,
+		[sessionState],
+	);
 
-  // Mock chat
-  const [mockChatEnabled, setMockChatEnabled] = useState(false);
-  const [mockVoiceActive, setMockVoiceActive] = useState(false);
-  const canChat = isConnected || mockChatEnabled;
+	// Mock chat
+	const [mockChatEnabled, setMockChatEnabled] = useState(false);
+	const [mockVoiceActive, setMockVoiceActive] = useState(false);
+	const canChat = isConnected || mockChatEnabled;
 
-  const addAvatarMessage = (content: string) =>
-    addMessage({ id: nanoid(), content, sender: MessageSender.AVATAR });
+	const addAvatarMessage = (content: string) =>
+		addMessage({ id: nanoid(), content, sender: MessageSender.AVATAR });
 
-  const handleMcpCommand = useMcpCommands(addAvatarMessage);
+	const handleMcpCommand = useMcpCommands(addAvatarMessage);
 
-  const handleSendMessage = useMemoizedFn(async (text: string, assets?: MessageAsset[]) => {
-    if (!text.trim()) return;
+	const handleSendMessage = useMemoizedFn(
+		async (text: string, assets?: MessageAsset[]) => {
+			if (!text.trim()) return;
 
-    // Begin send sequence
-    setIsSending(true);
-    addMessage({ id: nanoid(), content: text, sender: MessageSender.CLIENT, assets });
+			// Begin send sequence
+			setIsSending(true);
+			addMessage({
+				id: nanoid(),
+				content: text,
+				sender: MessageSender.CLIENT,
+				assets,
+			});
 
-    // Choose message handling path
-    try {
-      if (mockChatEnabled) {
-        const reply = await mockOpenRouter(text);
+			// Choose message handling path
+			try {
+				if (mockChatEnabled) {
+					const reply = await mockOpenRouter(text);
 
-        addAvatarMessage(reply);
-      } else if (apiService) {
-        if (text.trim().toLowerCase().startsWith("/mcp")) {
-          await handleMcpCommand(text);
-        } else {
-          await apiService.textChat.sendMessageSync(text, assets);
-        }
-      }
-    } finally {
-      resetHistory();
-      setChatInput("");
-      setIsSending(false);
-    }
-  });
+					addAvatarMessage(reply);
+				} else if (apiService) {
+					if (text.trim().toLowerCase().startsWith("/mcp")) {
+						await handleMcpCommand(text);
+					} else {
+						await apiService.textChat.sendMessageSync(text, assets);
+					}
+				}
+			} finally {
+				resetHistory();
+				setChatInput("");
+				setIsSending(false);
+			}
+		},
+	);
 
-  const sendMessageVoid = useMemoizedFn((t: string, a?: MessageAsset[]) => {
-    void handleSendMessage(t, a);
-  });
+	const sendMessageVoid = useMemoizedFn((t: string, a?: MessageAsset[]) => {
+		void handleSendMessage(t, a);
+	});
 
-  const startVoiceChatVoid = useMemoizedFn(async () => {
-    try {
-      if (mockChatEnabled) {
-        setMockVoiceActive(true);
-        addAvatarMessage("(mock) Voice chat started via VAPI.");
+	const startVoiceChatVoid = useMemoizedFn(async () => {
+		try {
+			if (mockChatEnabled) {
+				setMockVoiceActive(true);
+				addAvatarMessage("(mock) Voice chat started via VAPI.");
 
-        return;
-      }
+				return;
+			}
 
-      // Capture only local webcam video for PIP. Do NOT include audio here.
-      const videoOnly = await navigator.mediaDevices.getUserMedia({
-        video: true,
-        audio: false,
-      });
+			// Capture only local webcam video for PIP. Do NOT include audio here.
+			const videoOnly = await navigator.mediaDevices.getUserMedia({
+				video: true,
+				audio: false,
+			});
 
-      setUserVideoStream(videoOnly);
+			setUserVideoStream(videoOnly);
 
-      // Start voice chat without injecting our own MediaStream.
-      await startVoiceChat({});
-    } catch (error) {
-      // Surface in devtools; consider toast in UI
-      console.error("Failed to start voice chat:", error);
-    }
-  });
+			// Start voice chat without injecting our own MediaStream.
+			await startVoiceChat({});
+		} catch (error) {
+			// Surface in devtools; consider toast in UI
+			console.error("Failed to start voice chat:", error);
+		}
+	});
 
-  const stopVoiceChatVoid = useMemoizedFn(() => {
-    if (mockChatEnabled) {
-      setMockVoiceActive(false);
-      addAvatarMessage("(mock) Voice chat stopped.");
+	const stopVoiceChatVoid = useMemoizedFn(() => {
+		if (mockChatEnabled) {
+			setMockVoiceActive(false);
+			addAvatarMessage("(mock) Voice chat stopped.");
 
-      return;
-    }
-    stopVoiceChat();
+			return;
+		}
+		stopVoiceChat();
 
-    if (userVideoStream) {
-      userVideoStream.getTracks().forEach((t) => t.stop());
-      setUserVideoStream(null);
-    }
-  });
+		if (userVideoStream) {
+			userVideoStream.getTracks().forEach((t) => {
+				t.stop();
+			});
+			setUserVideoStream(null);
+		}
+	});
 
-  const handleCopy = useMemoizedFn(async (text: string) => {
-    try {
-      await navigator.clipboard.writeText(text);
-    } catch (e) {
-      console.error("Copy failed", e);
-    }
-  });
+	const handleCopy = useMemoizedFn(async (text: string) => {
+		try {
+			await navigator.clipboard.writeText(text);
+		} catch (e) {
+			console.error("Copy failed", e);
+		}
+	});
 
-  const handleArrowUp = useMemoizedFn(() => {
-    const prev = navigateHistory("up");
+	const handleArrowUp = useMemoizedFn(() => {
+		const prev = navigateHistory("up");
 
-    if (prev) setChatInput(prev);
-  });
+		if (prev) setChatInput(prev);
+	});
 
-  const handleArrowDown = useMemoizedFn(() => {
-    const next = navigateHistory("down");
+	const handleArrowDown = useMemoizedFn(() => {
+		const next = navigateHistory("down");
 
-    if (next) setChatInput(next);
-  });
+		if (next) setChatInput(next);
+	});
 
-  const enableMockChatUi = useMemoizedFn(() => {
-    setMockChatEnabled(true);
-    setChatSolidBg(true);
-  });
+	const enableMockChatUi = useMemoizedFn(() => {
+		setMockChatEnabled(true);
+		setChatSolidBg(true);
+	});
 
-  return {
-    // state
-    chatInput,
-    setChatInput,
-    isSending,
-    userVideoStream,
-    mockChatEnabled,
-    setMockChatEnabled,
-    mockVoiceActive,
-    setMockVoiceActive,
-    canChat,
-    isChatSolidBg,
-    setChatSolidBg,
-    isVoiceChatActive,
+	return {
+		// state
+		chatInput,
+		setChatInput,
+		isSending,
+		userVideoStream,
+		mockChatEnabled,
+		setMockChatEnabled,
+		mockVoiceActive,
+		setMockVoiceActive,
+		canChat,
+		isChatSolidBg,
+		setChatSolidBg,
+		isVoiceChatActive,
 
-    // actions
-    sendMessageVoid,
-    startVoiceChatVoid,
-    stopVoiceChatVoid,
-    handleCopy,
-    handleArrowUp,
-    handleArrowDown,
-    addAvatarMessage,
-    enableMockChatUi,
-  };
+		// actions
+		sendMessageVoid,
+		startVoiceChatVoid,
+		stopVoiceChatVoid,
+		handleCopy,
+		handleArrowUp,
+		handleArrowDown,
+		addAvatarMessage,
+		enableMockChatUi,
+	};
 }

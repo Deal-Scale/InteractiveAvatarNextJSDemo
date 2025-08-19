@@ -1,94 +1,94 @@
 import { z } from "zod";
 
 export type Widget =
-  | "input"
-  | "number"
-  | "textarea"
-  | "select"
-  | "switch"
-  | "slider"
-  | "password";
+	| "input"
+	| "number"
+	| "textarea"
+	| "select"
+	| "switch"
+	| "slider"
+	| "password";
 
 export type FieldConfig = {
-  label?: string;
-  widget?: Widget;
-  options?: Array<{ value: string; label: string }>;
-  min?: number;
-  max?: number;
-  step?: number;
-  multiple?: boolean;
-  rows?: number;
-  placeholder?: string;
+	label?: string;
+	widget?: Widget;
+	options?: Array<{ value: string; label: string }>;
+	min?: number;
+	max?: number;
+	step?: number;
+	multiple?: boolean;
+	rows?: number;
+	placeholder?: string;
 };
 
 export type FieldsConfig<T> = Partial<Record<keyof T & string, FieldConfig>>;
 
 // Unwrap wrappers like Optional/Nullable/Default/Effects to detect the base type
 export function unwrapType(t: z.ZodTypeAny): z.ZodTypeAny {
-  let cur: any = t;
-  const trace: string[] = [];
+	let cur: any = t;
+	const trace: string[] = [];
 
-  while (
-    cur?._def?.typeName === "ZodOptional" ||
-    cur?._def?.typeName === "ZodNullable" ||
-    cur?._def?.typeName === "ZodDefault" ||
-    cur?._def?.typeName === "ZodEffects"
-  ) {
-    trace.push(cur?._def?.typeName);
-    if (cur?._def?.innerType) {
-      cur = cur._def.innerType;
-    } else if (cur?._def?.schema) {
-      cur = cur._def.schema;
-    } else {
-      break;
-    }
-  }
-  if (process.env.NODE_ENV !== "production") {
-    try {
-      console.debug("unwrapType trace", {
-        wrappers: trace,
-        base: cur?._def?.typeName,
-      });
-    } catch {}
-  }
+	while (
+		cur?._def?.typeName === "ZodOptional" ||
+		cur?._def?.typeName === "ZodNullable" ||
+		cur?._def?.typeName === "ZodDefault" ||
+		cur?._def?.typeName === "ZodEffects"
+	) {
+		trace.push(cur?._def?.typeName);
+		if (cur?._def?.innerType) {
+			cur = cur._def.innerType;
+		} else if (cur?._def?.schema) {
+			cur = cur._def.schema;
+		} else {
+			break;
+		}
+	}
+	if (process.env.NODE_ENV !== "production") {
+		try {
+			console.debug("unwrapType trace", {
+				wrappers: trace,
+				base: cur?._def?.typeName,
+			});
+		} catch {}
+	}
 
-  return cur as z.ZodTypeAny;
+	return cur as z.ZodTypeAny;
 }
 
 export function enumStringValuesFromZodEnum(enumLike: any): string[] {
-  const raw = (enumLike as any).options ?? enumLike;
-  const values: unknown[] = Array.isArray(raw) ? raw : Object.values(raw ?? {});
+	const raw = (enumLike as any).options ?? enumLike;
+	const values: unknown[] = Array.isArray(raw) ? raw : Object.values(raw ?? {});
 
-  return values.filter((v): v is string => typeof v === "string");
+	return values.filter((v): v is string => typeof v === "string");
 }
 
 export function optionsFromStrings(values: string[]) {
-  return values.map((v) => ({ value: v, label: v }));
+	return values.map((v) => ({ value: v, label: v }));
 }
 
 export function booleanSelectOptions(
-  custom?: Array<{ value: string; label: string }>,
+	custom?: Array<{ value: string; label: string }>,
 ) {
-  return (
-    custom ?? [
-      { value: "true", label: "True" },
-      { value: "false", label: "False" },
-    ]
-  );
+	return (
+		custom ?? [
+			{ value: "true", label: "True" },
+			{ value: "false", label: "False" },
+		]
+	);
 }
 
 export function isSensitiveString(def: any, cfg?: FieldConfig) {
-  const desc = def?.description?.toLowerCase?.() ?? "";
+	const desc = def?.description?.toLowerCase?.() ?? "";
 
-  return (
-    desc.includes("sensitive") ||
-    desc.includes("password") ||
-    cfg?.widget === "password"
-  );
+	return (
+		desc.includes("sensitive") ||
+		desc.includes("password") ||
+		cfg?.widget === "password"
+	);
 }
 
 export function isMultilineString(def: any, cfg?: FieldConfig) {
-  const desc = def?.description?.toLowerCase?.() ?? "";
+	const desc = def?.description?.toLowerCase?.() ?? "";
 
-  return desc.includes("multiline") || cfg?.widget === "textarea";
+	return desc.includes("multiline") || cfg?.widget === "textarea";
 }

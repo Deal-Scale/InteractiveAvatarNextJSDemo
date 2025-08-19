@@ -1,14 +1,14 @@
-import { Message, MessageSender } from "@/lib/types";
+import { type Message, MessageSender } from "@/lib/types";
 
 export const exampleMermaid: { message: Message } = {
-  message: {
-    id: "demo-mermaid-1",
-    sender: MessageSender.AVATAR,
-    content: String.raw`# Mermaid diagrams
+	message: {
+		id: "demo-mermaid-1",
+		sender: MessageSender.AVATAR,
+		content: `# Mermaid diagrams
 
 Rendered via <Mermaid> inside JSXPreview.
 `,
-    jsx: String.raw`<div class="flex flex-col gap-6">
+		jsx: `<div class="flex flex-col gap-6">
   <div>
     <div class="mb-2 text-sm font-medium text-muted-foreground">Flowchart</div>
     <Mermaid>
@@ -52,5 +52,5 @@ Rendered via <Mermaid> inside JSXPreview.
     </Mermaid>
   </div>
 </div>`,
-  },
+	},
 };

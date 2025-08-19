@@ -8,83 +8,87 @@ import { useZodForm } from "@/components/forms/useZodForm";
 import { PublicAgentSchema } from "@/lib/schemas/public";
 
 interface PublishAgentModalProps {
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
-  onSubmit: (values: z.infer<typeof PublicAgentSchema>) => void;
+	open: boolean;
+	onOpenChange: (open: boolean) => void;
+	onSubmit: (values: z.infer<typeof PublicAgentSchema>) => void;
 }
 
 export function PublishAgentModal({
-  open,
-  onOpenChange,
-  onSubmit,
+	open,
+	onOpenChange,
+	onSubmit,
 }: PublishAgentModalProps) {
-  const form = useZodForm(PublicAgentSchema, {
-    defaultValues: {
-      title: "",
-      description: "",
-      avatarImage: "",
-      monetize: false,
-      rateMultiplier: 1,
-    } as Partial<z.infer<typeof PublicAgentSchema>>,
-    mode: "onChange",
-  });
-  const monetize = (form as any)?.watch?.("monetize") ?? false;
+	const form = useZodForm(PublicAgentSchema, {
+		defaultValues: {
+			title: "",
+			description: "",
+			avatarImage: "",
+			monetize: false,
+			rateMultiplier: 1,
+		} as Partial<z.infer<typeof PublicAgentSchema>>,
+		mode: "onChange",
+	});
+	const monetize = (form as any)?.watch?.("monetize") ?? false;
 
-  return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="w-[96vw] md:w-[640px] max-w-[96vw] p-4 md:p-6 bg-card text-foreground flex flex-col max-h-[90vh]">
-        <div className="mb-3">
-          <h2 className="text-lg font-semibold">Publish Agent</h2>
-          <p className="text-sm text-muted-foreground">
-            Provide public-facing details for your agent.
-          </p>
-        </div>
+	return (
+		<Dialog open={open} onOpenChange={onOpenChange}>
+			<DialogContent className="w-[96vw] md:w-[640px] max-w-[96vw] p-4 md:p-6 bg-card text-foreground flex flex-col max-h-[90vh]">
+				<div className="mb-3">
+					<h2 className="text-lg font-semibold">Publish Agent</h2>
+					<p className="text-sm text-muted-foreground">
+						Provide public-facing details for your agent.
+					</p>
+				</div>
 
-        <div className="flex-1 overflow-y-auto">
-          <AutoForm
-            className="space-y-3"
-            fields={{
-              title: { label: "Title" },
-              description: { label: "Description", widget: "textarea", rows: 4 },
-              avatarImage: {
-                label: "Avatar Image URL",
-                placeholder: "https://...",
-              },
-              monetize: { label: "Monetize" },
-              ...(monetize
-                ? {
-                    rateMultiplier: {
-                      label: "Rate Multiplier",
-                      widget: "select",
-                      options: [
-                        { label: "1x", value: "1" },
-                        { label: "2x", value: "2" },
-                        { label: "3x", value: "3" },
-                        { label: "4x", value: "4" },
-                        { label: "5x", value: "5" },
-                      ],
-                    },
-                  }
-                : {}),
-            }}
-            form={form as any}
-            schema={PublicAgentSchema as any}
-            submitLabel="Publish"
-            onSubmit={(values) => {
-              const v = values as any;
-              const payload = {
-                ...v,
-                // infer public on publish
-                isPublic: true,
-                // if not monetized, force base rate
-                rateMultiplier: v.monetize ? Number(v.rateMultiplier ?? 1) : 1,
-              };
+				<div className="flex-1 overflow-y-auto">
+					<AutoForm
+						className="space-y-3"
+						fields={{
+							title: { label: "Title" },
+							description: {
+								label: "Description",
+								widget: "textarea",
+								rows: 4,
+							},
+							avatarImage: {
+								label: "Avatar Image URL",
+								placeholder: "https://...",
+							},
+							monetize: { label: "Monetize" },
+							...(monetize
+								? {
+										rateMultiplier: {
+											label: "Rate Multiplier",
+											widget: "select",
+											options: [
+												{ label: "1x", value: "1" },
+												{ label: "2x", value: "2" },
+												{ label: "3x", value: "3" },
+												{ label: "4x", value: "4" },
+												{ label: "5x", value: "5" },
+											],
+										},
+									}
+								: {}),
+						}}
+						form={form as any}
+						schema={PublicAgentSchema as any}
+						submitLabel="Publish"
+						onSubmit={(values) => {
+							const v = values as any;
+							const payload = {
+								...v,
+								// infer public on publish
+								isPublic: true,
+								// if not monetized, force base rate
+								rateMultiplier: v.monetize ? Number(v.rateMultiplier ?? 1) : 1,
+							};
 
-              onSubmit(payload);
-            }}
-          />
-        </div>
-      </DialogContent>
-    </Dialog>
-  );
+							onSubmit(payload);
+						}}
+					/>
+				</div>
+			</DialogContent>
+		</Dialog>
+	);
 }

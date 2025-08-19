@@ -1,12 +1,12 @@
-import { Message, MessageSender } from "@/lib/types";
+import { type Message, MessageSender } from "@/lib/types";
 
 export const exampleMarkdownCode: {
-  message: Message;
+	message: Message;
 } = {
-  message: {
-    id: "demo-md-code-1",
-    sender: MessageSender.AVATAR,
-    content: String.raw`# Advanced Markdown + PromptKit Demo
+	message: {
+		id: "demo-md-code-1",
+		sender: MessageSender.AVATAR,
+		content: String.raw`# Advanced Markdown + PromptKit Demo
 
 Showcases rich markdown features compatible with the PromptKit renderer: callouts, task lists, tables, images, and multi-language code blocks with metadata.
 
@@ -102,6 +102,6 @@ print(list(fibonacci(5)))
    }
  }
 ~~~
-`
-  },
+`,
+	},
 };

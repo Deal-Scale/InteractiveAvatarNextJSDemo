@@ -1,14 +1,14 @@
-import { Message, MessageSender } from "@/lib/types";
+import { type Message, MessageSender } from "@/lib/types";
 
 export const exampleJsxPreview: { message: Message } = {
-  message: {
-    id: "demo-jsx-preview-1",
-    sender: MessageSender.AVATAR,
-    content: String.raw`# JSX Preview
+	message: {
+		id: "demo-jsx-preview-1",
+		sender: MessageSender.AVATAR,
+		content: `# JSX Preview
 
 Render JSX strings as React components. Streaming supported with auto tag completion.
 `,
-    jsx: String.raw`<div class="flex flex-col gap-4">
+		jsx: `<div class="flex flex-col gap-4">
   <div class="grid grid-cols-1 gap-3 md:grid-cols-2">
     <DataCard title="Users" value="12,480" hint="past 24h" />
     <DataCard title="Conversion" value="3.9%" hint="rolling 7d" />
@@ -25,5 +25,5 @@ Render JSX strings as React components. Streaming supported with auto tag comple
     <StatBadge label="Freshness" value="98%" />
   </div>
 </div>`,
-  },
+	},
 };

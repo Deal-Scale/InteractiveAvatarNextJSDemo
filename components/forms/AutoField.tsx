@@ -4,438 +4,438 @@ import { z } from "zod";
 import { UseFormReturn } from "react-hook-form";
 
 import {
-  unwrapType,
-  enumStringValuesFromZodEnum,
-  optionsFromStrings,
-  booleanSelectOptions,
-  isSensitiveString,
-  isMultilineString,
-  type FieldsConfig,
+	unwrapType,
+	enumStringValuesFromZodEnum,
+	optionsFromStrings,
+	booleanSelectOptions,
+	isSensitiveString,
+	isMultilineString,
+	type FieldsConfig,
 } from "./utils";
 import { SensitiveInput } from "./fields";
 
 export type AutoFieldProps = {
-  name: string;
-  def: z.ZodTypeAny;
-  form: UseFormReturn<any>;
-  fields?: FieldsConfig<any>;
+	name: string;
+	def: z.ZodTypeAny;
+	form: UseFormReturn<any>;
+	fields?: FieldsConfig<any>;
 };
 
 export const AutoField: React.FC<AutoFieldProps> = ({
-  name,
-  def,
-  form,
-  fields = {},
+	name,
+	def,
+	form,
+	fields = {},
 }) => {
-  const { register, formState, setValue, getValues } = form;
+	const { register, formState, setValue, getValues } = form;
 
-  const cfg = (fields as any)[name] || {};
-  const label = cfg.label ?? name;
-  const error = (formState.errors as any)[name]?.message as string | undefined;
+	const cfg = (fields as any)[name] || {};
+	const label = cfg.label ?? name;
+	const error = (formState.errors as any)[name]?.message as string | undefined;
 
-  // Helper to render a select (single or multi)
-  const renderSelect = (
-    opts: Array<{ value: string; label: string }>,
-    multiple = false,
-  ) => {
-    if (multiple) {
-      const current = (getValues() as any)[name] ?? [];
+	// Helper to render a select (single or multi)
+	const renderSelect = (
+		opts: Array<{ value: string; label: string }>,
+		multiple = false,
+	) => {
+		if (multiple) {
+			const current = (getValues() as any)[name] ?? [];
 
-      return (
-        <div className="flex flex-col gap-1">
-          <label className="text-sm text-muted-foreground">{label}</label>
-          <select
-            multiple
-            className="rounded-md border border-border bg-background px-3 py-2 text-foreground shadow-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary"
-            value={current as string[]}
-            onChange={(e) => {
-              const selected = Array.from(e.target.selectedOptions).map(
-                (o) => o.value,
-              );
+			return (
+				<div className="flex flex-col gap-1">
+					<span className="text-sm text-muted-foreground">{label}</span>
+					<select
+						multiple
+						className="rounded-md border border-border bg-background px-3 py-2 text-foreground shadow-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary"
+						value={current as string[]}
+						onChange={(e) => {
+							const selected = Array.from(e.target.selectedOptions).map(
+								(o) => o.value,
+							);
 
-              setValue(name as any, selected as any, {
-                shouldValidate: true,
-                shouldDirty: true,
-              });
-            }}
-          >
-            {opts.map((o) => (
-              <option key={o.value} value={o.value}>
-                {o.label}
-              </option>
-            ))}
-          </select>
-          {error && (
-            <span className="text-xs text-red-500 dark:text-red-400">
-              {error}
-            </span>
-          )}
-        </div>
-      );
-    }
+							setValue(name as any, selected as any, {
+								shouldValidate: true,
+								shouldDirty: true,
+							});
+						}}
+					>
+						{opts.map((o) => (
+							<option key={o.value} value={o.value}>
+								{o.label}
+							</option>
+						))}
+					</select>
+					{error && (
+						<span className="text-xs text-red-500 dark:text-red-400">
+							{error}
+						</span>
+					)}
+				</div>
+			);
+		}
 
-    return (
-      <div className="flex flex-col gap-1">
-        <label className="text-sm text-muted-foreground">{label}</label>
-        <select
-          className="rounded-md border border-border bg-background px-3 py-2 text-foreground shadow-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary"
-          defaultValue=""
-          {...register(name as any)}
-        >
-          <option disabled value="">
-            Select {label}
-          </option>
-          {opts.map((o) => (
-            <option key={o.value} value={o.value}>
-              {o.label}
-            </option>
-          ))}
-        </select>
-        {error && (
-          <span className="text-xs text-red-500 dark:text-red-400">
-            {error}
-          </span>
-        )}
-      </div>
-    );
-  };
+		return (
+			<div className="flex flex-col gap-1">
+				<span className="text-sm text-muted-foreground">{label}</span>
+				<select
+					className="rounded-md border border-border bg-background px-3 py-2 text-foreground shadow-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary"
+					defaultValue=""
+					{...register(name as any)}
+				>
+					<option disabled value="">
+						Select {label}
+					</option>
+					{opts.map((o) => (
+						<option key={o.value} value={o.value}>
+							{o.label}
+						</option>
+					))}
+				</select>
+				{error && (
+					<span className="text-xs text-red-500 dark:text-red-400">
+						{error}
+					</span>
+				)}
+			</div>
+		);
+	};
 
-  const base = unwrapType(def);
+	const base = unwrapType(def);
 
-  if (process.env.NODE_ENV !== "production") {
-    try {
-      console.debug("AutoField detect", {
-        name,
-        typeName: (base as any)?._def?.typeName,
-      });
-    } catch {}
-  }
+	if (process.env.NODE_ENV !== "production") {
+		try {
+			console.debug("AutoField detect", {
+				name,
+				typeName: (base as any)?._def?.typeName,
+			});
+		} catch {}
+	}
 
-  // Enum
-  if ((base as any)?._def?.typeName === "ZodEnum") {
-    const values = enumStringValuesFromZodEnum((base as any).options);
-    const opts = optionsFromStrings(values);
+	// Enum
+	if ((base as any)?._def?.typeName === "ZodEnum") {
+		const values = enumStringValuesFromZodEnum((base as any).options);
+		const opts = optionsFromStrings(values);
 
-    return renderSelect(opts, Boolean((cfg as any).multiple));
-  }
+		return renderSelect(opts, Boolean((cfg as any).multiple));
+	}
 
-  // Union of enums/strings/literals -> select
-  if ((base as any)._def?.typeName === "ZodUnion") {
-    const options: z.ZodTypeAny[] = (base as any)._def?.options ?? [];
-    const stringVals: string[] = [];
+	// Union of enums/strings/literals -> select
+	if ((base as any)._def?.typeName === "ZodUnion") {
+		const options: z.ZodTypeAny[] = (base as any)._def?.options ?? [];
+		const stringVals: string[] = [];
 
-    for (const opt of options) {
-      if ((opt as any)?._def?.typeName === "ZodEnum") {
-        const raw = (opt as any).options;
-        const vals: unknown[] = Array.isArray(raw)
-          ? raw
-          : Object.values(raw ?? {});
+		for (const opt of options) {
+			if ((opt as any)?._def?.typeName === "ZodEnum") {
+				const raw = (opt as any).options;
+				const vals: unknown[] = Array.isArray(raw)
+					? raw
+					: Object.values(raw ?? {});
 
-        for (const v of vals) if (typeof v === "string") stringVals.push(v);
-      } else if ((opt as any)._def?.typeName === "ZodNativeEnum") {
-        const enumObj = (opt as any)._def.values as Record<
-          string,
-          string | number
-        >;
+				for (const v of vals) if (typeof v === "string") stringVals.push(v);
+			} else if ((opt as any)._def?.typeName === "ZodNativeEnum") {
+				const enumObj = (opt as any)._def.values as Record<
+					string,
+					string | number
+				>;
 
-        for (const v of Object.values(enumObj))
-          if (typeof v === "string") stringVals.push(v);
-      } else if ((opt as any)._def?.typeName === "ZodLiteral") {
-        const litVal = (opt as any)._def?.value;
+				for (const v of Object.values(enumObj))
+					if (typeof v === "string") stringVals.push(v);
+			} else if ((opt as any)._def?.typeName === "ZodLiteral") {
+				const litVal = (opt as any)._def?.value;
 
-        if (typeof litVal === "string") stringVals.push(litVal);
-      }
-    }
-    if (stringVals.length) {
-      const opts = Array.from(new Set(stringVals)).map((v) => ({
-        value: v,
-        label: v,
-      }));
+				if (typeof litVal === "string") stringVals.push(litVal);
+			}
+		}
+		if (stringVals.length) {
+			const opts = Array.from(new Set(stringVals)).map((v) => ({
+				value: v,
+				label: v,
+			}));
 
-      return renderSelect(opts, Boolean((cfg as any).multiple));
-    }
-  }
+			return renderSelect(opts, Boolean((cfg as any).multiple));
+		}
+	}
 
-  // Native enum
-  if ((base as any)._def?.typeName === "ZodNativeEnum") {
-    const enumObj = (base as any)._def.values as Record<
-      string,
-      string | number
-    >;
-    const values = Object.values(enumObj).filter(
-      (v): v is string => typeof v === "string",
-    );
-    const opts = optionsFromStrings(values);
+	// Native enum
+	if ((base as any)._def?.typeName === "ZodNativeEnum") {
+		const enumObj = (base as any)._def.values as Record<
+			string,
+			string | number
+		>;
+		const values = Object.values(enumObj).filter(
+			(v): v is string => typeof v === "string",
+		);
+		const opts = optionsFromStrings(values);
 
-    return renderSelect(opts, Boolean((cfg as any).multiple));
-  }
+		return renderSelect(opts, Boolean((cfg as any).multiple));
+	}
 
-  // Array -> multi select or textarea
-  if ((base as any)._def?.typeName === "ZodArray") {
-    const el = (base as any)._def.type as z.ZodTypeAny;
+	// Array -> multi select or textarea
+	if ((base as any)._def?.typeName === "ZodArray") {
+		const el = (base as any)._def.type as z.ZodTypeAny;
 
-    if ((el as any)?._def?.typeName === "ZodEnum") {
-      const values = enumStringValuesFromZodEnum((el as any).options);
-      const opts = optionsFromStrings(values);
+		if ((el as any)?._def?.typeName === "ZodEnum") {
+			const values = enumStringValuesFromZodEnum((el as any).options);
+			const opts = optionsFromStrings(values);
 
-      return renderSelect(opts, true);
-    }
-    if ((el as any)._def?.typeName === "ZodNativeEnum") {
-      const enumObj = (el as any)._def.values as Record<
-        string,
-        string | number
-      >;
-      const values = Object.values(enumObj).filter(
-        (v): v is string => typeof v === "string",
-      );
-      const opts = optionsFromStrings(values);
+			return renderSelect(opts, true);
+		}
+		if ((el as any)._def?.typeName === "ZodNativeEnum") {
+			const enumObj = (el as any)._def.values as Record<
+				string,
+				string | number
+			>;
+			const values = Object.values(enumObj).filter(
+				(v): v is string => typeof v === "string",
+			);
+			const opts = optionsFromStrings(values);
 
-      return renderSelect(opts, true);
-    }
-    if (
-      (el as any)._def?.typeName === "ZodString" &&
-      (cfg as any).options?.length
-    ) {
-      return renderSelect((cfg as any).options!, true);
-    }
-    if ((el as any)._def?.typeName === "ZodString") {
-      const current = (getValues() as any)[name] as string[] | undefined;
+			return renderSelect(opts, true);
+		}
+		if (
+			(el as any)._def?.typeName === "ZodString" &&
+			(cfg as any).options?.length
+		) {
+			return renderSelect((cfg as any).options!, true);
+		}
+		if ((el as any)._def?.typeName === "ZodString") {
+			const current = (getValues() as any)[name] as string[] | undefined;
 
-      return (
-        <div className="flex flex-col gap-1">
-          <label className="text-sm text-muted-foreground">{label}</label>
-          <textarea
-            className="min-h-24 max-h-[60vh] w-full resize-y rounded-md border border-border bg-background px-3 py-2 text-foreground shadow-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary"
-            placeholder={cfg.placeholder ?? "Enter values, one per line"}
-            rows={cfg.rows ?? 5}
-            value={(current ?? []).join("\n")}
-            onChange={(e) => {
-              const arr = e.target.value
-                .split("\n")
-                .map((s) => s.trim())
-                .filter(Boolean);
+			return (
+				<div className="flex flex-col gap-1">
+					<span className="text-sm text-muted-foreground">{label}</span>
+					<textarea
+						className="min-h-24 max-h-[60vh] w-full resize-y rounded-md border border-border bg-background px-3 py-2 text-foreground shadow-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary"
+						placeholder={cfg.placeholder ?? "Enter values, one per line"}
+						rows={cfg.rows ?? 5}
+						value={(current ?? []).join("\n")}
+						onChange={(e) => {
+							const arr = e.target.value
+								.split("\n")
+								.map((s) => s.trim())
+								.filter(Boolean);
 
-              setValue(name as any, arr as any, {
-                shouldValidate: true,
-                shouldDirty: true,
-              });
-            }}
-          />
-          {error && (
-            <span className="text-xs text-red-500 dark:text-red-400">
-              {error}
-            </span>
-          )}
-        </div>
-      );
-    }
-  }
+							setValue(name as any, arr as any, {
+								shouldValidate: true,
+								shouldDirty: true,
+							});
+						}}
+					/>
+					{error && (
+						<span className="text-xs text-red-500 dark:text-red-400">
+							{error}
+						</span>
+					)}
+				</div>
+			);
+		}
+	}
 
-  // Boolean
-  if ((base as any)._def?.typeName === "ZodBoolean") {
-    if ((cfg as any).widget === "select") {
-      const current = (getValues() as any)[name] as boolean | undefined;
-      const opts = booleanSelectOptions(
-        (cfg as any).options as Array<{ value: string; label: string }>,
-      );
-      const value = typeof current === "boolean" ? String(current) : "";
+	// Boolean
+	if ((base as any)._def?.typeName === "ZodBoolean") {
+		if ((cfg as any).widget === "select") {
+			const current = (getValues() as any)[name] as boolean | undefined;
+			const opts = booleanSelectOptions(
+				(cfg as any).options as Array<{ value: string; label: string }>,
+			);
+			const value = typeof current === "boolean" ? String(current) : "";
 
-      return (
-        <div className="flex flex-col gap-1">
-          <label className="text-sm text-muted-foreground">{label}</label>
-          <select
-            className="rounded-md border border-border bg-background px-3 py-2 text-foreground shadow-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary"
-            value={value}
-            onChange={(e) => {
-              const v = e.target.value;
-              const boolVal =
-                v === "true" ? true : v === "false" ? false : undefined;
+			return (
+				<div className="flex flex-col gap-1">
+					<span className="text-sm text-muted-foreground">{label}</span>
+					<select
+						className="rounded-md border border-border bg-background px-3 py-2 text-foreground shadow-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary"
+						value={value}
+						onChange={(e) => {
+							const v = e.target.value;
+							const boolVal =
+								v === "true" ? true : v === "false" ? false : undefined;
 
-              setValue(name as any, boolVal as any, {
-                shouldValidate: true,
-                shouldDirty: true,
-              });
-            }}
-          >
-            <option disabled value="">
-              Select {label}
-            </option>
-            {opts.map((o) => (
-              <option key={o.value} value={o.value}>
-                {o.label}
-              </option>
-            ))}
-          </select>
-          {error && (
-            <span className="text-xs text-red-500 dark:text-red-400">
-              {error}
-            </span>
-          )}
-        </div>
-      );
-    }
+							setValue(name as any, boolVal as any, {
+								shouldValidate: true,
+								shouldDirty: true,
+							});
+						}}
+					>
+						<option disabled value="">
+							Select {label}
+						</option>
+						{opts.map((o) => (
+							<option key={o.value} value={o.value}>
+								{o.label}
+							</option>
+						))}
+					</select>
+					{error && (
+						<span className="text-xs text-red-500 dark:text-red-400">
+							{error}
+						</span>
+					)}
+				</div>
+			);
+		}
 
-    return (
-      <label className="flex items-center justify-between gap-3">
-        <span className="text-sm text-muted-foreground">{label}</span>
-        <input
-          className="h-4 w-4 accent-primary"
-          type="checkbox"
-          {...register(name as any)}
-        />
-      </label>
-    );
-  }
+		return (
+			<label className="flex items-center justify-between gap-3">
+				<span className="text-sm text-muted-foreground">{label}</span>
+				<input
+					className="h-4 w-4 accent-primary"
+					type="checkbox"
+					{...register(name as any)}
+				/>
+			</label>
+		);
+	}
 
-  // Number
-  if ((base as any)._def?.typeName === "ZodNumber") {
-    if ((cfg as any).widget === "slider") {
-      return (
-        <div className="flex flex-col gap-1">
-          <label className="text-sm text-muted-foreground">{label}</label>
-          <input
-            className="w-full accent-primary"
-            max={(cfg as any).max}
-            min={(cfg as any).min}
-            step={(cfg as any).step}
-            type="range"
-            {...register(name as any, { valueAsNumber: true })}
-          />
-          {error && (
-            <span className="text-xs text-red-500 dark:text-red-400">
-              {error}
-            </span>
-          )}
-        </div>
-      );
-    }
+	// Number
+	if ((base as any)._def?.typeName === "ZodNumber") {
+		if ((cfg as any).widget === "slider") {
+			return (
+				<div className="flex flex-col gap-1">
+					<span className="text-sm text-muted-foreground">{label}</span>
+					<input
+						className="w-full accent-primary"
+						max={(cfg as any).max}
+						min={(cfg as any).min}
+						step={(cfg as any).step}
+						type="range"
+						{...register(name as any, { valueAsNumber: true })}
+					/>
+					{error && (
+						<span className="text-xs text-red-500 dark:text-red-400">
+							{error}
+						</span>
+					)}
+				</div>
+			);
+		}
 
-    return (
-      <div className="flex flex-col gap-1">
-        <label className="text-sm text-muted-foreground">{label}</label>
-        <input
-          className="rounded-md border border-border bg-background px-3 py-2 text-foreground shadow-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary"
-          type="number"
-          {...register(name as any, { valueAsNumber: true })}
-        />
-        {error && (
-          <span className="text-xs text-red-500 dark:text-red-400">
-            {error}
-          </span>
-        )}
-      </div>
-    );
-  }
+		return (
+			<div className="flex flex-col gap-1">
+				<span className="text-sm text-muted-foreground">{label}</span>
+				<input
+					className="rounded-md border border-border bg-background px-3 py-2 text-foreground shadow-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary"
+					type="number"
+					{...register(name as any, { valueAsNumber: true })}
+				/>
+				{error && (
+					<span className="text-xs text-red-500 dark:text-red-400">
+						{error}
+					</span>
+				)}
+			</div>
+		);
+	}
 
-  // String
-  if ((base as any)._def?.typeName === "ZodString") {
-    const stringDef = (def as any)._def as {
-      description?: string;
-      checks?: Array<{ kind: string; regex?: RegExp }>;
-    };
-    const checks = stringDef.checks ?? [];
-    const regexCheck = checks.find((c) => c.kind === "regex" && c.regex);
-    const isEmail = checks.some((c) => c.kind === "email");
-    const sensitive = isSensitiveString(stringDef, cfg as any);
-    const multiline = isMultilineString(stringDef, cfg as any);
+	// String
+	if ((base as any)._def?.typeName === "ZodString") {
+		const stringDef = (def as any)._def as {
+			description?: string;
+			checks?: Array<{ kind: string; regex?: RegExp }>;
+		};
+		const checks = stringDef.checks ?? [];
+		const regexCheck = checks.find((c) => c.kind === "regex" && c.regex);
+		const isEmail = checks.some((c) => c.kind === "email");
+		const sensitive = isSensitiveString(stringDef, cfg as any);
+		const multiline = isMultilineString(stringDef, cfg as any);
 
-    if (sensitive) {
-      return (
-        <div className="flex flex-col gap-1">
-          <label className="text-sm text-muted-foreground">{label}</label>
-          <SensitiveInput name={name} register={register} />
-          {error && (
-            <span className="text-xs text-red-500 dark:text-red-400">
-              {error}
-            </span>
-          )}
-        </div>
-      );
-    }
+		if (sensitive) {
+			return (
+				<div className="flex flex-col gap-1">
+					<span className="text-sm text-muted-foreground">{label}</span>
+					<SensitiveInput name={name} register={register} />
+					{error && (
+						<span className="text-xs text-red-500 dark:text-red-400">
+							{error}
+						</span>
+					)}
+				</div>
+			);
+		}
 
-    if ((cfg as any).widget === "select" || (cfg as any).options?.length) {
-      const opts = (cfg as any).options ?? [];
+		if ((cfg as any).widget === "select" || (cfg as any).options?.length) {
+			const opts = (cfg as any).options ?? [];
 
-      return renderSelect(opts, Boolean((cfg as any).multiple));
-    }
+			return renderSelect(opts, Boolean((cfg as any).multiple));
+		}
 
-    if (multiline) {
-      return (
-        <div className="flex flex-col gap-1">
-          <label className="text-sm text-muted-foreground">{label}</label>
-          <details className="rounded-md border border-border open:bg-card">
-            <summary className="cursor-pointer select-none bg-muted px-2 py-1 text-xs text-muted-foreground">
-              {`Edit ${label}`}
-            </summary>
-            <div className="p-2">
-              <textarea
-                className="min-h-24 max-h-[60vh] w-full resize-y rounded-md border border-border bg-background px-3 py-2 text-foreground shadow-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary"
-                rows={(cfg as any).rows ?? 5}
-                {...register(name as any)}
-              />
-            </div>
-          </details>
-          {error && (
-            <span className="text-xs text-red-500 dark:text-red-400">
-              {error}
-            </span>
-          )}
-        </div>
-      );
-    }
+		if (multiline) {
+			return (
+				<div className="flex flex-col gap-1">
+					<span className="text-sm text-muted-foreground">{label}</span>
+					<details className="rounded-md border border-border open:bg-card">
+						<summary className="cursor-pointer select-none bg-muted px-2 py-1 text-xs text-muted-foreground">
+							{`Edit ${label}`}
+						</summary>
+						<div className="p-2">
+							<textarea
+								className="min-h-24 max-h-[60vh] w-full resize-y rounded-md border border-border bg-background px-3 py-2 text-foreground shadow-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary"
+								rows={(cfg as any).rows ?? 5}
+								{...register(name as any)}
+							/>
+						</div>
+					</details>
+					{error && (
+						<span className="text-xs text-red-500 dark:text-red-400">
+							{error}
+						</span>
+					)}
+				</div>
+			);
+		}
 
-    return (
-      <div className="flex flex-col gap-1">
-        <label className="text-sm text-muted-foreground">{label}</label>
-        <input
-          className="rounded-md border border-border bg-background px-3 py-2 text-foreground shadow-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary"
-          pattern={regexCheck?.regex ? regexCheck.regex.source : undefined}
-          placeholder={(cfg as any).placeholder}
-          title={regexCheck?.regex ? regexCheck.regex.toString() : undefined}
-          type={isEmail ? "email" : "text"}
-          {...register(name as any)}
-        />
-        {error && (
-          <span className="text-xs text-red-500 dark:text-red-400">
-            {error}
-          </span>
-        )}
-      </div>
-    );
-  }
+		return (
+			<div className="flex flex-col gap-1">
+				<span className="text-sm text-muted-foreground">{label}</span>
+				<input
+					className="rounded-md border border-border bg-background px-3 py-2 text-foreground shadow-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary"
+					pattern={regexCheck?.regex ? regexCheck.regex.source : undefined}
+					placeholder={(cfg as any).placeholder}
+					title={regexCheck?.regex ? regexCheck.regex.toString() : undefined}
+					type={isEmail ? "email" : "text"}
+					{...register(name as any)}
+				/>
+				{error && (
+					<span className="text-xs text-red-500 dark:text-red-400">
+						{error}
+					</span>
+				)}
+			</div>
+		);
+	}
 
-  // File upload marker
-  if ((def as any).description === "file-upload") {
-    return (
-      <div className="flex flex-col gap-1">
-        <label className="text-sm text-muted-foreground">{label}</label>
-        <input
-          multiple
-          className="rounded-md border border-border bg-background px-3 py-2 text-foreground file:mr-4 file:rounded file:border-0 file:bg-muted file:px-2 file:py-1 file:text-foreground focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary"
-          type="file"
-          {...register(name as any)}
-        />
-        {error && (
-          <span className="text-xs text-red-500 dark:text-red-400">
-            {error}
-          </span>
-        )}
-      </div>
-    );
-  }
+	// File upload marker
+	if ((def as any).description === "file-upload") {
+		return (
+			<div className="flex flex-col gap-1">
+				<span className="text-sm text-muted-foreground">{label}</span>
+				<input
+					multiple
+					className="rounded-md border border-border bg-background px-3 py-2 text-foreground file:mr-4 file:rounded file:border-0 file:bg-muted file:px-2 file:py-1 file:text-foreground focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary"
+					type="file"
+					{...register(name as any)}
+				/>
+				{error && (
+					<span className="text-xs text-red-500 dark:text-red-400">
+						{error}
+					</span>
+				)}
+			</div>
+		);
+	}
 
-  // Default text input
-  return (
-    <div className="flex flex-col gap-1">
-      <label className="text-sm text-muted-foreground">{label}</label>
-      <input
-        className="rounded-md border border-border bg-background px-3 py-2 text-foreground shadow-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary"
-        type="text"
-        {...register(name as any)}
-      />
-      {error && (
-        <span className="text-xs text-red-500 dark:text-red-400">{error}</span>
-      )}
-    </div>
-  );
+	// Default text input
+	return (
+		<div className="flex flex-col gap-1">
+			<span className="text-sm text-muted-foreground">{label}</span>
+			<input
+				className="rounded-md border border-border bg-background px-3 py-2 text-foreground shadow-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary"
+				type="text"
+				{...register(name as any)}
+			/>
+			{error && (
+				<span className="text-xs text-red-500 dark:text-red-400">{error}</span>
+			)}
+		</div>
+	);
 };

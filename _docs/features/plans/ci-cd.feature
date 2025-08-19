@@ -6,18 +6,16 @@ Feature: Suggested CI/CD tools for Raretae front-end based on package.json
 
   Background:
     Given the project repository contains a package.json file
-    And the package.json lists dependencies such as React, TypeScript, Jest, and ESLint
+    And the package.json lists dependencies such as React, TypeScript, Vitest, and Biome
 
   Scenario: Suggested quality and CI/CD tools
     Given the stack uses Node.js, React, and TypeScript
     Then it is suggested to use:
       | Tool           | Purpose                                    |
       | GitHub Actions | CI/CD orchestration for builds and tests   |
-      | ESLint         | Linting JavaScript/TypeScript code         |
-      | Prettier       | Code formatting                            |
+      | Biome          | All-in-one formatter and linter            |
       | Jest           | Unit and integration testing               |
       | Husky          | Git hooks for enforcing checks pre-commit  |
-      | Biome          | All-in-one formatter, linter, typechecker  |
       | npm audit      | Dependency vulnerability scanning          |
       | Codecov        | Code coverage reporting in CI              |
       | GitHub Secret Scanning | Detect accidental secret commits   |
@@ -31,8 +29,8 @@ Feature: Suggested CI/CD tools for Raretae front-end based on package.json
       | Step                        | Tool         |
       | Checkout repository         | GitHub Actions |
       | Install dependencies        | pnpm          |
-      | Lint and format code        |  Biome |
-      | Run tests                   | Jest         |
+      | Lint and format code        | Biome        |
+      | Run tests                   | Jest or Vitest |
       | Check code coverage         | Codecov      |
       | Scan dependencies           | npm audit    |
       | Check for secrets           | GitHub Secret Scanning |
