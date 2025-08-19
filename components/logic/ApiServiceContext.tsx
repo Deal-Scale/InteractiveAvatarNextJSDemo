@@ -1,46 +1,46 @@
 import React, {
-  createContext,
-  useContext,
-  ReactNode,
-  Dispatch,
-  SetStateAction,
+	createContext,
+	useContext,
+	ReactNode,
+	Dispatch,
+	SetStateAction,
 } from "react";
 
 import { ApiService } from "@/lib/services/api";
 
 interface ApiServiceContextType {
-  apiService: ApiService | null;
-  setApiService: Dispatch<SetStateAction<ApiService | null>>;
+	apiService: ApiService | null;
+	setApiService: Dispatch<SetStateAction<ApiService | null>>;
 }
 
 const ApiServiceContext = createContext<ApiServiceContextType | undefined>(
-  undefined,
+	undefined,
 );
 
 export const useApiService = () => {
-  const context = useContext(ApiServiceContext);
+	const context = useContext(ApiServiceContext);
 
-  if (context === undefined) {
-    throw new Error("useApiService must be used within an ApiServiceProvider");
-  }
+	if (context === undefined) {
+		throw new Error("useApiService must be used within an ApiServiceProvider");
+	}
 
-  return context;
+	return context;
 };
 
 interface ApiServiceProviderProps {
-  children: ReactNode;
-  service: ApiService | null;
-  setApiService: Dispatch<SetStateAction<ApiService | null>>;
+	children: ReactNode;
+	service: ApiService | null;
+	setApiService: Dispatch<SetStateAction<ApiService | null>>;
 }
 
 export const ApiServiceProvider: React.FC<ApiServiceProviderProps> = ({
-  children,
-  service,
-  setApiService,
+	children,
+	service,
+	setApiService,
 }) => {
-  return (
-    <ApiServiceContext.Provider value={{ apiService: service, setApiService }}>
-      {children}
-    </ApiServiceContext.Provider>
-  );
+	return (
+		<ApiServiceContext.Provider value={{ apiService: service, setApiService }}>
+			{children}
+		</ApiServiceContext.Provider>
+	);
 };

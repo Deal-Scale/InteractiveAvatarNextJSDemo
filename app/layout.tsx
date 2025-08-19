@@ -1,6 +1,6 @@
 import "@/styles/globals.css";
 
-import { Metadata } from "next";
+import type { Metadata } from "next";
 import Script from "next/script";
 import { Fira_Code as FontMono, Inter as FontSans } from "next/font/google";
 
@@ -11,39 +11,39 @@ import ThemeBridge from "@/components/ThemeBridge";
 import AppProviders from "./providers";
 
 const fontSans = FontSans({
-  subsets: ["latin"],
-  variable: "--font-sans",
+	subsets: ["latin"],
+	variable: "--font-sans",
 });
 
 const fontMono = FontMono({
-  subsets: ["latin"],
-  variable: "--font-geist-mono",
+	subsets: ["latin"],
+	variable: "--font-geist-mono",
 });
 
 export const metadata: Metadata = {
-  title: {
-    default: "HeyGen Interactive Avatar SDK Demo",
-    template: `%s - HeyGen Interactive Avatar SDK Demo`,
-  },
-  icons: {
-    icon: "/heygen-logo.png",
-  },
+	title: {
+		default: "HeyGen Interactive Avatar SDK Demo",
+		template: `%s - HeyGen Interactive Avatar SDK Demo`,
+	},
+	icons: {
+		icon: "/heygen-logo.png",
+	},
 };
 
 export default function RootLayout({
-  children,
+	children,
 }: {
-  children: React.ReactNode;
+	children: React.ReactNode;
 }) {
-  return (
-    <html
-      suppressHydrationWarning
-      className={`${fontSans.variable} ${fontMono.variable} font-sans`}
-      lang="en"
-    >
-      <head />
-      <body className="min-h-screen bg-background text-foreground">
-        <Script id="audio-debug-early" strategy="beforeInteractive">{`
+	return (
+		<html
+			suppressHydrationWarning
+			className={`${fontSans.variable} ${fontMono.variable} font-sans`}
+			lang="en"
+		>
+			<head />
+			<body className="min-h-screen bg-background text-foreground">
+				<Script strategy="beforeInteractive">{`
           (function(){
             try {
               var md = navigator.mediaDevices;
@@ -110,24 +110,22 @@ export default function RootLayout({
             } catch(_e){}
           })();
         `}</Script>
-        <ThemeProvider
-          disableTransitionOnChange
-          enableSystem
-          attribute="class"
-          defaultTheme="system"
-        >
-          <ToastProvider>
-            <main className="relative flex flex-col h-screen w-screen">
-              <ThemeBridge />
-              <AudioDebugShim />
+				<ThemeProvider
+					disableTransitionOnChange
+					enableSystem
+					attribute="class"
+					defaultTheme="system"
+				>
+					<ToastProvider>
+						<main className="relative flex flex-col h-screen w-screen">
+							<ThemeBridge />
+							<AudioDebugShim />
 
-              <AppProviders>
-                {children}
-              </AppProviders>
-            </main>
-          </ToastProvider>
-        </ThemeProvider>
-      </body>
-    </html>
-  );
+							<AppProviders>{children}</AppProviders>
+						</main>
+					</ToastProvider>
+				</ThemeProvider>
+			</body>
+		</html>
+	);
 }

@@ -1,12 +1,12 @@
-import { Message, MessageSender } from "@/lib/types";
+import { type Message, MessageSender } from "@/lib/types";
 
 export const exampleMultiCode: {
-  message: Message;
+	message: Message;
 } = {
-  message: {
-    id: "demo-multi-code-1",
-    sender: MessageSender.AVATAR,
-    content: String.raw`# Multiple Code Blocks
+	message: {
+		id: "demo-multi-code-1",
+		sender: MessageSender.AVATAR,
+		content: `# Multiple Code Blocks
 
 Below are several fenced code blocks across different languages in a single message.
 
@@ -69,5 +69,5 @@ print(list(fib(6)))
 }
 ~~~
 `,
-  },
+	},
 };

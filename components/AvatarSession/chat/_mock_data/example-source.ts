@@ -1,21 +1,19 @@
 import { Message, MessageSender } from "@/lib/types";
 
 export const exampleSource: { message: Message } = {
-  message: {
-    id: "demo-source-1",
-    sender: MessageSender.AVATAR,
-    content: String.raw`# Source
+	message: {
+		id: "demo-source-1",
+		sender: MessageSender.AVATAR,
+		content: `# Source
 
 Displays website sources used by AI-generated content, showing URL details, titles, and descriptions on hover.
 
 ---
 
-
-
 ---
 
 `,
-    jsx: String.raw`<div class="flex flex-col gap-4">
+		jsx: `<div class="flex flex-col gap-4">
   {/* Basic usage (auto label from domain, no favicon) */}
   <Source href="https://nextjs.org/docs">
     <SourceTrigger />
@@ -97,5 +95,5 @@ Displays website sources used by AI-generated content, showing URL details, titl
     </Source>
   </div>
 </div>`,
-  },
+	},
 };

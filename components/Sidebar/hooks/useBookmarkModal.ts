@@ -5,82 +5,83 @@ import { useState } from "react";
 import { useBookmarkStore } from "@/lib/stores/bookmarks";
 
 export default function useBookmarkModal() {
-  const {
-    bookmarkedIds,
-    folders: bookmarkFolders,
-    meta: bookmarkMeta,
-    addBookmark: addBm,
-    removeBookmark: removeBm,
-    setBookmarkMeta: setBmMeta,
-    clearBookmarkMeta: clearBmMeta,
-    upsertFolder,
-  } = useBookmarkStore();
+	const {
+		bookmarkedIds,
+		folders: bookmarkFolders,
+		meta: bookmarkMeta,
+		addBookmark: addBm,
+		removeBookmark: removeBm,
+		setBookmarkMeta: setBmMeta,
+		clearBookmarkMeta: clearBmMeta,
+		upsertFolder,
+	} = useBookmarkStore();
 
-  const [bookmarkModalOpen, setBookmarkModalOpen] = useState<boolean>(false);
-  const [bookmarkTargetId, setBookmarkTargetId] = useState<string | null>(null);
-  const [draftFolderId, setDraftFolderId] = useState<string>("");
-  const [draftNewFolder, setDraftNewFolder] = useState<string>("");
-  const [draftTags, setDraftTags] = useState<string>("");
+	const [bookmarkModalOpen, setBookmarkModalOpen] = useState<boolean>(false);
+	const [bookmarkTargetId, setBookmarkTargetId] = useState<string | null>(null);
+	const [draftFolderId, setDraftFolderId] = useState<string>("");
+	const [draftNewFolder, setDraftNewFolder] = useState<string>("");
+	const [draftTags, setDraftTags] = useState<string>("");
 
-  const openBookmarkModal = (id: string) => {
-    setBookmarkTargetId(id);
-    const existing = bookmarkMeta[id];
+	const openBookmarkModal = (id: string) => {
+		setBookmarkTargetId(id);
+		const existing = bookmarkMeta[id];
 
-    setDraftFolderId(existing?.folderId ?? "");
-    setDraftNewFolder("");
-    setDraftTags((existing?.tags ?? []).join(", "));
-    setBookmarkModalOpen(true);
-  };
+		setDraftFolderId(existing?.folderId ?? "");
+		setDraftNewFolder("");
+		setDraftTags((existing?.tags ?? []).join(", "));
+		setBookmarkModalOpen(true);
+	};
 
-  const close = () => setBookmarkModalOpen(false);
+	const close = () => setBookmarkModalOpen(false);
 
-  const saveBookmark = () => {
-    if (!bookmarkTargetId) return;
-    let folderId = draftFolderId;
+	const saveBookmark = () => {
+		if (!bookmarkTargetId) return;
+		let folderId = draftFolderId;
 
-    if (!folderId && draftNewFolder.trim()) {
-      folderId = upsertFolder(draftNewFolder);
-    }
-    const tags = draftTags
-      .split(/[\,\n]/)
-      .map((t) => t.trim())
-      .filter(Boolean);
+		if (!folderId && draftNewFolder.trim()) {
+			folderId = upsertFolder(draftNewFolder);
+		}
+		const tags = draftTags
+			.split(/[\n,]/)
+			.map((t) => t.trim())
+			.filter(Boolean);
 
-    addBm(bookmarkTargetId!);
-    setBmMeta(bookmarkTargetId!, { folderId: folderId || undefined, tags });
-    setBookmarkModalOpen(false);
-  };
+		const id = bookmarkTargetId; // narrowed by the early return above
+		addBm(id);
+		setBmMeta(id, { folderId: folderId || undefined, tags });
+		setBookmarkModalOpen(false);
+	};
 
-  const handleRemoveBookmark = () => {
-    if (!bookmarkTargetId) return;
-    removeBm(bookmarkTargetId);
-    clearBmMeta(bookmarkTargetId);
-    setBookmarkModalOpen(false);
-  };
+	const handleRemoveBookmark = () => {
+		if (!bookmarkTargetId) return;
+		removeBm(bookmarkTargetId);
+		clearBmMeta(bookmarkTargetId);
+		setBookmarkModalOpen(false);
+	};
 
-  return {
-    // store data
-    bookmarkedIds,
-    bookmarkFolders,
-    bookmarkMeta,
+	return {
+		// store data
+		bookmarkedIds,
+		bookmarkFolders,
+		bookmarkMeta,
 
-    // modal state
-    bookmarkModalOpen,
-    bookmarkTargetId,
-    draftFolderId,
-    draftNewFolder,
-    draftTags,
+		// modal state
+		bookmarkModalOpen,
+		bookmarkTargetId,
+		draftFolderId,
+		draftNewFolder,
+		draftTags,
 
-    // setters
-    setBookmarkModalOpen,
-    setDraftFolderId,
-    setDraftNewFolder,
-    setDraftTags,
+		// setters
+		setBookmarkModalOpen,
+		setDraftFolderId,
+		setDraftNewFolder,
+		setDraftTags,
 
-    // actions
-    openBookmarkModal,
-    close,
-    saveBookmark,
-    handleRemoveBookmark,
-  } as const;
+		// actions
+		openBookmarkModal,
+		close,
+		saveBookmark,
+		handleRemoveBookmark,
+	} as const;
 }
