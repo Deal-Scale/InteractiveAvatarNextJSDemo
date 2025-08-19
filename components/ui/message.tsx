@@ -69,6 +69,7 @@ const MessageContent = ({
 	// Filter out Markdown-only props so we don't pass them to a raw <div>
 	const {
 		showHeader: _showHeader, // markdown-only
+		headerLabel: _headerLabel, // markdown-only
 		remarkPlugins: _remarkPlugins,
 		rehypePlugins: _rehypePlugins,
 		components: _mdxComponents,

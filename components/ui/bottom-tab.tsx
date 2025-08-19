@@ -154,7 +154,7 @@ export function BottomTab({
 						{actions}
 					</div>
 				</div>
-				<div className="min-h-0 min-w-0 flex-1 h-full overflow-hidden flex flex-col">
+				<div className="min-h-0 min-w-0 flex-1 overflow-hidden flex flex-col">
 					{children}
 				</div>
 			</section>

@@ -144,13 +144,20 @@ export function SidebarMenuButton({
 }) {
 	return (
 		<li>
-			<button
+			<div
+				role="button"
+				tabIndex={0}
 				className={`w-full text-left rounded-md px-3 py-2 text-foreground hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 ${className}`}
-				type="button"
 				onClick={onClick}
+				onKeyDown={(e) => {
+					if (e.key === "Enter" || e.key === " ") {
+						e.preventDefault();
+						onClick?.();
+					}
+				}}
 			>
 				{children}
-			</button>
+			</div>
 		</li>
 	);
 }
