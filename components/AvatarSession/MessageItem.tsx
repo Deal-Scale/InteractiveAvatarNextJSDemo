@@ -118,6 +118,67 @@ export const MessageItem: React.FC<MessageItemProps> = ({
 }) => {
 	const hasJsx = Boolean(message.jsx && message.jsx.trim().length > 0);
 
+	// Keyboard shortcuts for quick actions when message is focused
+	const handleKeyDown = (e: React.KeyboardEvent<HTMLDivElement>) => {
+		if (e.altKey || e.ctrlKey || e.metaKey) return;
+		const k = e.key.toLowerCase();
+		switch (k) {
+			case "r": {
+				e.preventDefault();
+				if (message.sender === MessageSender.AVATAR) {
+					onRetry
+						? onRetry(message.id, message.content)
+						: handleEditToInput(message.content, message.id);
+				}
+				return;
+			}
+			case "o": {
+				// compare outputs
+				if (message.sender === MessageSender.AVATAR) {
+					e.preventDefault();
+					onCompare
+						? onCompare(message.content, message.id)
+						: handleEditToInput(message.content, message.id);
+				}
+				return;
+			}
+			case "b": {
+				// branch to agent
+				if (message.sender === MessageSender.AVATAR) {
+					e.preventDefault();
+					onBranch
+						? onBranch(message.content, message.id)
+						: handleEditToInput(message.content, message.id);
+				}
+				return;
+			}
+			case "c": {
+				// copy content
+				e.preventDefault();
+				handleCopy(message.id, message.content);
+				return;
+			}
+			case "arrowup": {
+				// upvote avatar response
+				if (message.sender === MessageSender.AVATAR) {
+					e.preventDefault();
+					setVote(message.id, "up");
+				}
+				return;
+			}
+			case "arrowdown": {
+				// downvote avatar response
+				if (message.sender === MessageSender.AVATAR) {
+					e.preventDefault();
+					setVote(message.id, "down");
+				}
+				return;
+			}
+			default:
+				return;
+		}
+	};
+
 	// If we have JSX, stream it using the same text streaming hook used by ResponseStream.
 	const jsxStream = useTextStream({
 		textStream: message.jsx ?? "",
@@ -188,7 +249,14 @@ export const MessageItem: React.FC<MessageItemProps> = ({
 				message.sender === MessageSender.AVATAR
 					? "items-start"
 					: "items-end flex-row-reverse"
-			}`}
+			} rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background`}
+			tabIndex={0}
+			aria-label={`${message.sender === MessageSender.AVATAR ? "Avatar" : "User"} message. Press R to retry, C to copy${
+				message.sender === MessageSender.AVATAR
+					? ", O to compare, B to branch, Arrow Up to upvote, Arrow Down to downvote"
+					: ""
+			}.`}
+			onKeyDown={handleKeyDown}
 		>
 			<MessageAvatar
 				alt={message.sender === MessageSender.AVATAR ? "Avatar" : "User"}
@@ -326,14 +394,16 @@ export const MessageItem: React.FC<MessageItemProps> = ({
 				)}
 				{message.sender !== MessageSender.AVATAR &&
 					renderAssets(message.assets)}
-				<MessageActions>
+				<MessageActions role="toolbar" aria-label="Message quick actions">
 					{message.sender === MessageSender.AVATAR ? (
 						<>
 							<MessageAction tooltip={"Retry (regenerate)"}>
 								<Button
 									aria-label="Retry"
+									aria-keyshortcuts="R"
 									size="icon"
 									variant={onRetry ? "secondary" : "ghost"}
+									className="focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
 									onClick={() =>
 										onRetry
 											? onRetry(message.id, message.content)
@@ -346,8 +416,10 @@ export const MessageItem: React.FC<MessageItemProps> = ({
 							<MessageAction tooltip={"Compare outputs"}>
 								<Button
 									aria-label="Compare outputs"
+									aria-keyshortcuts="O"
 									size="icon"
 									variant={onCompare ? "secondary" : "ghost"}
+									className="focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
 									onClick={() =>
 										onCompare
 											? onCompare(message.content, message.id)
@@ -360,8 +432,10 @@ export const MessageItem: React.FC<MessageItemProps> = ({
 							<MessageAction tooltip={"Branch to agent"}>
 								<Button
 									aria-label="Branch to agent"
+									aria-keyshortcuts="B"
 									size="icon"
 									variant={onBranch ? "secondary" : "ghost"}
+									className="focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
 									onClick={() =>
 										onBranch
 											? onBranch(message.content, message.id)
@@ -378,8 +452,10 @@ export const MessageItem: React.FC<MessageItemProps> = ({
 							>
 								<Button
 									aria-label="Copy message"
+									aria-keyshortcuts="C"
 									size="icon"
 									variant="ghost"
+									className="focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
 									onClick={() => handleCopy(message.id, message.content)}
 								>
 									<ClipboardCopy className="h-4 w-4" />
@@ -392,10 +468,12 @@ export const MessageItem: React.FC<MessageItemProps> = ({
 							>
 								<Button
 									aria-label="Upvote response"
+									aria-keyshortcuts="ArrowUp"
 									size="icon"
 									variant={
 										voteState[message.id] === "up" ? "secondary" : "ghost"
 									}
+									className="focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
 									onClick={() => setVote(message.id, "up")}
 								>
 									<ThumbsUp className="h-4 w-4" />
@@ -410,10 +488,12 @@ export const MessageItem: React.FC<MessageItemProps> = ({
 							>
 								<Button
 									aria-label="Downvote response"
+									aria-keyshortcuts="ArrowDown"
 									size="icon"
 									variant={
 										voteState[message.id] === "down" ? "secondary" : "ghost"
 									}
+									className="focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
 									onClick={() => setVote(message.id, "down")}
 								>
 									<ThumbsDown className="h-4 w-4" />
@@ -429,8 +509,10 @@ export const MessageItem: React.FC<MessageItemProps> = ({
 							>
 								<Button
 									aria-label="Copy message"
+									aria-keyshortcuts="C"
 									size="icon"
 									variant="ghost"
+									className="focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
 									onClick={() => handleCopy(message.id, message.content)}
 								>
 									<ClipboardCopy className="h-4 w-4" />
@@ -439,8 +521,10 @@ export const MessageItem: React.FC<MessageItemProps> = ({
 							<MessageAction tooltip="Edit into input">
 								<Button
 									aria-label="Edit into input"
+									aria-keyshortcuts="E"
 									size="icon"
 									variant="ghost"
+									className="focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
 									onClick={() => handleEditToInput(message.content, message.id)}
 								>
 									<Pencil className="h-4 w-4" />
