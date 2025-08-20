@@ -116,7 +116,7 @@ Feature: Package AutoForm as a standalone NPM module with a single external fold
       | package             | version            |
       | react               | ^18 || ^19         |
       | react-dom           | ^18 || ^19         |
-      | react-hook-form     | ^7                 |
+      | react-hook-form     | ^7  ||              
       | zod                 | ^3 || ^4           |
       | @hookform/resolvers | ^3 || ^4 || ^5     |
 

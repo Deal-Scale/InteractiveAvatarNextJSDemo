@@ -25,6 +25,7 @@ export default function KnowledgebaseSection(props: {
 	onOpenMarkdown?: () => void;
 	onStartApiSync?: () => void;
 	onMoveItem?: (id: string) => void;
+	onOpenAddKB?: () => void;
 }) {
 	const {
 		collapsedKnowledge,
@@ -35,6 +36,7 @@ export default function KnowledgebaseSection(props: {
 		onOpenMarkdown,
 		onStartApiSync,
 		onMoveItem,
+		onOpenAddKB,
 	} = props;
 
 	const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -54,6 +56,22 @@ export default function KnowledgebaseSection(props: {
 
 			{!collapsedKnowledge && (
 				<div className="px-2 pb-2">
+					{/* Actions row: Add Knowledge Base */}
+					<div className="flex items-center justify-end px-1 pb-2">
+						<button
+							type="button"
+							data-testid="kb-add-btn"
+							className="inline-flex items-center gap-2 rounded-md border border-input bg-background px-2 py-1 text-xs hover:bg-accent hover:text-accent-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+							onClick={(e) => {
+								e.stopPropagation();
+								onOpenAddKB
+									? onOpenAddKB()
+									: console.debug("KB: open add modal");
+							}}
+						>
+							Add Knowledge Base
+						</button>
+					</div>
 					{tree.length === 0 ? (
 						<div className="px-1 py-2 text-xs text-muted-foreground">
 							No knowledge items

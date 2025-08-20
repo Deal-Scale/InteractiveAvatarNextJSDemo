@@ -111,17 +111,18 @@ export default function BookmarksSection(props: {
 									{(folder.children || []).map((child) => (
 										<div
 											key={child.id}
-											className="flex items-center justify-between gap-1"
+											className="flex min-w-0 items-center justify-between gap-1"
 										>
 											<div className="min-w-0 flex-1">
 												<File
+													className="min-w-0 flex-1 pr-2"
 													value={child.id}
 													onClick={() => {
 														const c = conversationsById[child.id];
 														if (c) onOpenChat?.(c);
 													}}
 												>
-													<span className="block truncate whitespace-nowrap">
+													<span className="block truncate whitespace-nowrap max-w-[calc(100%-3.75rem)]">
 														{child.name}
 													</span>
 												</File>

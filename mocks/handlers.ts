@@ -32,4 +32,49 @@ export const handlers = [
 	http.get("/api/mock/bookmarks", () => {
 		return HttpResponse.json(bookmarks);
 	}),
+
+	// Knowledge Base mock API (additive)
+	http.get("/api/kb", () => {
+		const list = [
+			{
+				id: "kb_text_1",
+				name: "Team Onboarding",
+				sourceType: "text",
+				status: "synced",
+			},
+			{
+				id: "kb_api_1",
+				name: "Docs Site",
+				sourceType: "api",
+				status: "syncing",
+			},
+		];
+		return HttpResponse.json(list);
+	}),
+
+	http.post("/api/kb", async ({ request }) => {
+		const body = (await request.json()) as any;
+		const id = `kb_${Date.now()}`;
+		const item = {
+			id,
+			name: body.name ?? "Untitled KB",
+			sourceType: body.type === "text" ? "text" : "api",
+			status: body.type === "text" ? "synced" : "pending",
+		};
+		return HttpResponse.json(item, { status: 201 });
+	}),
+
+	http.post("/api/kb/test-connection", async () => {
+		return HttpResponse.json({ ok: true });
+	}),
+
+	http.post("/api/kb/connect", async ({ request }) => {
+		const body = (await request.json()) as any;
+		const id = `kb_${Date.now()}`;
+		return HttpResponse.json({ id, name: body.connectorKey ?? "API KB" });
+	}),
+
+	http.post("/api/kb/:id/sync", () => {
+		return HttpResponse.json({ ok: true });
+	}),
 ];
