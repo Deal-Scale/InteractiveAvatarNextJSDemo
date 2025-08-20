@@ -82,6 +82,10 @@ export const AutoField: React.FC<AutoFieldProps> = ({
 				holidays={(cfg as any).holidays}
 				disableWeekdays={(cfg as any).disableWeekdays}
 				withTime={Boolean((cfg as any).withTime)}
+				numberOfMonths={(cfg as any).numberOfMonths}
+				captionLayout={(cfg as any).captionLayout}
+				fromYear={(cfg as any).fromYear}
+				toYear={(cfg as any).toYear}
 				form={form}
 			/>
 		);
@@ -109,6 +113,7 @@ export const AutoField: React.FC<AutoFieldProps> = ({
 				label={label}
 				error={error}
 				rows={(cfg as any).rows}
+				placeholder={(cfg as any).placeholder}
 				form={form}
 			/>
 		);
@@ -341,6 +346,11 @@ export const AutoField: React.FC<AutoFieldProps> = ({
 				error={error}
 				minDate={(cfg as any).minDate ?? minFromField}
 				maxDate={(cfg as any).maxDate ?? maxFromField}
+				withTime={Boolean((cfg as any).withTime)}
+				numberOfMonths={(cfg as any).numberOfMonths}
+				captionLayout={(cfg as any).captionLayout}
+				fromYear={(cfg as any).fromYear}
+				toYear={(cfg as any).toYear}
 				form={form}
 			/>
 		);
@@ -391,6 +401,7 @@ export const AutoField: React.FC<AutoFieldProps> = ({
 					label={label}
 					error={error}
 					rows={(cfg as any).rows}
+					placeholder={(cfg as any).placeholder}
 					form={form}
 				/>
 			);

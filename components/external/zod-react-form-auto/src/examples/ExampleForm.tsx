@@ -21,6 +21,11 @@ export default function ExampleForm() {
 		const t = new Date();
 		return new Date(t.getFullYear(), t.getMonth(), t.getDate());
 	}, []);
+
+	// Dropdown month/year settings: last 100 years through current year
+	const thisYear = React.useMemo(() => new Date().getFullYear(), []);
+	const fromYear = thisYear - 100;
+	const toYear = thisYear;
 	const holidays = React.useMemo(() => {
 		// Example holidays: next New Year's Day and Christmas
 		const now = new Date();
@@ -75,7 +80,12 @@ export default function ExampleForm() {
 								step: 1,
 								label: "Age",
 							},
-							birthday: { label: "Birthday" },
+							birthday: {
+								label: "Birthday",
+								captionLayout: "dropdown",
+								fromYear,
+								toYear,
+							},
 							startDate: {
 								label: "Trip Dates",
 								widget: "date-range",
@@ -84,6 +94,10 @@ export default function ExampleForm() {
 								holidays,
 								disableWeekdays: [0],
 								withTime: true,
+								numberOfMonths: 2,
+								captionLayout: "dropdown",
+								fromYear,
+								toYear,
 							},
 							endDate: { widget: "hidden" },
 							password: { widget: "password", label: "Password" },
@@ -160,8 +174,16 @@ export default function ExampleForm() {
 							form={rightForm}
 						/>
 
-						{/* Birthday */}
-						<DateField name="birthday" label="Birthday" form={rightForm} />
+						{/* Birthday with optional time */}
+						<DateField
+							name="birthday"
+							label="Birthday"
+							withTime
+							captionLayout="dropdown"
+							fromYear={fromYear}
+							toYear={toYear}
+							form={rightForm}
+						/>
 
 						{/* Start/End Dates on a single calendar with time selection and holidays */}
 						<DateRangeField
@@ -176,6 +198,10 @@ export default function ExampleForm() {
 							holidays={holidays}
 							disableWeekdays={[0]}
 							withTime
+							numberOfMonths={2}
+							captionLayout="dropdown"
+							fromYear={fromYear}
+							toYear={toYear}
 							form={rightForm}
 						/>
 
