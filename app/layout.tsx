@@ -10,6 +10,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { ThemeProvider } from "@/components/ui/theme-provider";
 import ThemeBridge from "@/components/ThemeBridge";
 import AppProviders from "./providers";
+import PlausibleTracker from "@/components/analytics/PlausibleTracker";
 
 const fontSans = FontSans({
 	subsets: ["latin"],
@@ -111,6 +112,14 @@ export default function RootLayout({
             } catch(_e){}
           })();
         `}</Script>
+				{/* Microsoft Clarity */}
+				<Script id="ms-clarity" strategy="afterInteractive">{`
+          (function(c,l,a,r,i,t,y){
+            c[a]=c[a]||function(){(c[a].q=c[a].q||[]).push(arguments)};
+            t=l.createElement(r);t.async=1;t.src="https://www.clarity.ms/tag/"+i;
+            y=l.getElementsByTagName(r)[0];y.parentNode.insertBefore(t,y);
+          })(window, document, "clarity", "script", "REPLACE_ME");
+        `}</Script>
 				<ThemeProvider
 					disableTransitionOnChange
 					enableSystem
@@ -121,6 +130,7 @@ export default function RootLayout({
 						<ToastProvider>
 							<main className="relative flex flex-col h-screen w-screen">
 								<ThemeBridge />
+								<PlausibleTracker />
 								<AudioDebugShim />
 
 								<AppProviders>{children}</AppProviders>

@@ -5,7 +5,8 @@ import { zodResolver } from "@hookform/resolvers/zod";
 
 import { StartAvatarRequestSchema } from "@/lib/schemas/streaming";
 
-export type StartAvatarFormValues = z.infer<typeof StartAvatarRequestSchema>;
+// Use z.input here to match the resolver's input type (fields with defaults are optional on input)
+export type StartAvatarFormValues = z.input<typeof StartAvatarRequestSchema>;
 
 export function useStartAvatarForm(initial?: Partial<StartAvatarFormValues>): {
 	form: UseFormReturn<StartAvatarFormValues>;
