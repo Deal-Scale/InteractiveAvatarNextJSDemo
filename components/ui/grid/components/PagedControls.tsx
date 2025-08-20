@@ -19,17 +19,17 @@ export function PagedControls({
 	return (
 		<div className="flex items-center justify-between gap-3">
 			<button
-				className="rounded-md border px-3 py-2 text-sm disabled:opacity-50"
+				className="rounded-md border border-border bg-background px-3 py-2 text-sm hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary disabled:opacity-50"
 				onClick={() => setPage(Math.max(1, page - 1))}
 				disabled={page <= 1}
 			>
 				Previous
 			</button>
-			<div className="text-sm">
+			<div className="text-sm text-muted-foreground">
 				Page {page} of {Math.max(1, Math.ceil((total ?? 0) / pageSize))}
 			</div>
 			<button
-				className="rounded-md border px-3 py-2 text-sm disabled:opacity-50"
+				className="rounded-md border border-border bg-background px-3 py-2 text-sm hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary disabled:opacity-50"
 				onClick={() => setPage(page + 1)}
 				disabled={!hasNextPage}
 			>

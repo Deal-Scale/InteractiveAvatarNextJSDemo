@@ -48,7 +48,7 @@ export function StandardGrid<TItem extends GridItem = GridItem>({
 						<div
 							key={"skeleton-" + i}
 							aria-hidden
-							className="aspect-[4/3] min-h-[148px] sm:min-h-[164px] animate-pulse rounded-md border bg-gray-100 dark:bg-gray-800"
+							className="aspect-[4/3] min-h-[148px] sm:min-h-[164px] animate-pulse rounded-md border border-border bg-muted"
 						/>
 					))}
 				</>
