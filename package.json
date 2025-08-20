@@ -6,6 +6,8 @@
 		"dev": "next dev",
 		"build": "next build",
 		"start": "next start",
+		"cf:build": "pnpm build && npx @cloudflare/next-on-pages@latest",
+		"cf:preview": "npx @cloudflare/next-on-pages@latest --serve",
 		"lint": "biome lint .",
 		"lint:github": "pnpm biome lint --reporter=github . > biome.out && grep '::error ' biome.out",
 		"format": "biome format --write .",
