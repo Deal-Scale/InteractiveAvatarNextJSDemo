@@ -1,6 +1,6 @@
 "use client";
 import type { FieldsConfig } from "./utils/utils";
-import { unwrapType } from "./utils/utils";
+import { unwrapToZodObject } from "./utils/utils";
 
 import React from "react";
 import { z } from "zod";
@@ -26,8 +26,22 @@ export function AutoForm<TSchema extends z.ZodObject<any, any>>({
 	className,
 }: AutoFormProps<TSchema>) {
 	const { handleSubmit, formState } = form;
-	// Unwrap potential wrappers (Effects/Readonly/Branded/Pipeline/etc) to reach the ZodObject
-	const baseSchema = unwrapType(schema as unknown as z.ZodTypeAny) as any;
+	// Unwrap potential wrappers (Effects/Readonly/Branded/Pipeline/etc) but stop at ZodObject
+	const baseSchema = unwrapToZodObject(
+		schema as unknown as z.ZodTypeAny,
+	) as any;
+	if (process.env.NODE_ENV !== "production") {
+		try {
+			console.debug("[AutoFormDebug] baseSchema", {
+				incomingType: (schema as any)?.constructor?.name,
+				baseType: (baseSchema as any)?.constructor?.name,
+				shapeKeys:
+					typeof baseSchema?._def?.shape === "function"
+						? Object.keys((baseSchema._def.shape() as any) ?? {})
+						: Object.keys((baseSchema?.shape as any) ?? {}),
+			});
+		} catch {}
+	}
 
 	// Support Zod versions where shape is a function vs. a plain object
 	let shape: Record<string, z.ZodTypeAny> = {} as any;
@@ -43,8 +57,8 @@ export function AutoForm<TSchema extends z.ZodObject<any, any>>({
 		if (process.env.NODE_ENV !== "production") {
 			try {
 				console.warn("AutoForm: empty shape", {
-					incomingType: (schema as any)?._def?.typeName,
-					baseType: (baseSchema as any)?._def?.typeName,
+					incomingType: (schema as any)?.constructor?.name,
+					baseType: (baseSchema as any)?.constructor?.name,
 				});
 			} catch {}
 		}
@@ -63,11 +77,19 @@ export function AutoForm<TSchema extends z.ZodObject<any, any>>({
 
 				if (process.env.NODE_ENV !== "production") {
 					try {
-						console.debug("AutoForm field", key, (def as any)?._def?.typeName);
+						console.debug("[AutoFormDebug] field", {
+							key,
+							type: def?.constructor?.name,
+							defType: typeof def,
+							defKeys:
+								def && typeof def === "object"
+									? Object.keys(def as any)
+									: undefined,
+						});
 					} catch {}
 				}
 				// Support nested object fields by rendering their children with dotted names
-				if ((def as any)?._def?.typeName === "ZodObject") {
+				if (def instanceof z.ZodObject) {
 					const innerShape: Record<string, z.ZodTypeAny> =
 						typeof (def as any)._def?.shape === "function"
 							? ((def as any)._def.shape() as Record<string, z.ZodTypeAny>)
