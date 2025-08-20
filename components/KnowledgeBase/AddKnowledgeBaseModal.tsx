@@ -9,7 +9,7 @@ import {
 	DialogDescription,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { KB_CONNECTORS } from "./connectors";
+import { KB_CONNECTORS, type KBConnector } from "./connectors";
 
 export type AddKBTab = "text" | "tool";
 
@@ -29,6 +29,11 @@ export interface AddKnowledgeBaseModalProps {
 		connectorKey: string,
 		cfg: Record<string, string>,
 	) => Promise<{ id: string; name: string }>;
+	onStartOAuth?: (
+		connectorKey: string,
+		authUrl: string,
+		scopes?: string[],
+	) => Promise<{ ok: boolean; code?: string }>;
 }
 
 export default function AddKnowledgeBaseModal({
@@ -37,6 +42,7 @@ export default function AddKnowledgeBaseModal({
 	onCreated,
 	onTestConnection,
 	onConnect,
+	onStartOAuth,
 }: AddKnowledgeBaseModalProps) {
 	const [active, setActive] = useState<AddKBTab>("text");
 
@@ -50,14 +56,13 @@ export default function AddKnowledgeBaseModal({
 	const [selectedConnector, setSelectedConnector] = useState<string | null>(
 		null,
 	);
-	const [apiKey, setApiKey] = useState("");
-	const [apiSecret, setApiSecret] = useState("");
+	const [config, setConfig] = useState<Record<string, string>>({});
 	const [testing, setTesting] = useState(false);
 	const [testResult, setTestResult] = useState<string | null>(null);
 	const [connecting, setConnecting] = useState(false);
 	const canCreate = name.trim().length > 0 && content.trim().length > 0;
 
-	const selectedMeta = useMemo(
+	const selectedMeta = useMemo<KBConnector | null>(
 		() => KB_CONNECTORS.find((c) => c.key === selectedConnector) || null,
 		[selectedConnector],
 	);
@@ -67,8 +72,7 @@ export default function AddKnowledgeBaseModal({
 		setDescription("");
 		setContent("");
 		setSelectedConnector(null);
-		setApiKey("");
-		setApiSecret("");
+		setConfig({});
 		setTesting(false);
 		setTestResult(null);
 	}
@@ -91,10 +95,8 @@ export default function AddKnowledgeBaseModal({
 		try {
 			setTesting(true);
 			setTestResult(null);
-			const res = await (onTestConnection?.(selectedConnector, {
-				apiKey,
-				apiSecret,
-			}) ?? Promise.resolve({ ok: true }));
+			const res = await (onTestConnection?.(selectedConnector, config) ??
+				Promise.resolve({ ok: true }));
 			setTestResult(
 				res.ok ? "Connection successful" : (res.message ?? "Connection failed"),
 			);
@@ -107,10 +109,7 @@ export default function AddKnowledgeBaseModal({
 		if (!selectedConnector) return;
 		try {
 			setConnecting(true);
-			const res = await (onConnect?.(selectedConnector, {
-				apiKey,
-				apiSecret,
-			}) ??
+			const res = await (onConnect?.(selectedConnector, config) ??
 				Promise.resolve({
 					id: `kb_${Date.now()}`,
 					name: selectedMeta?.name || "API KB",
@@ -119,6 +118,21 @@ export default function AddKnowledgeBaseModal({
 			onOpenChange(false);
 		} finally {
 			setConnecting(false);
+		}
+	}
+
+	async function handleOAuthStart(connector: KBConnector) {
+		if (connector.auth.type !== "oauth") return;
+		const result = await (onStartOAuth?.(
+			connector.key,
+			connector.auth.authUrl,
+			connector.auth.scopes,
+		) ?? Promise.resolve({ ok: true, code: "demo_code" }));
+		if (result.ok) {
+			setConfig({ oauth: "true", code: result.code ?? "demo_code" });
+			await handleConnect();
+		} else {
+			setTestResult("OAuth failed");
 		}
 	}
 
@@ -239,47 +253,68 @@ export default function AddKnowledgeBaseModal({
 									<div className="text-sm font-medium">
 										Configure {selectedMeta.name}
 									</div>
-									<label className="grid gap-1 text-sm">
-										<span className="text-muted-foreground">API Key</span>
-										<input
-											value={apiKey}
-											onChange={(e) => setApiKey(e.target.value)}
-											className="h-9 rounded-md border border-input bg-background px-3 text-sm outline-none ring-offset-background placeholder:text-muted-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-											placeholder="Enter API key"
-										/>
-									</label>
-									<label className="grid gap-1 text-sm">
-										<span className="text-muted-foreground">API Secret</span>
-										<input
-											value={apiSecret}
-											onChange={(e) => setApiSecret(e.target.value)}
-											className="h-9 rounded-md border border-input bg-background px-3 text-sm outline-none ring-offset-background placeholder:text-muted-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-											placeholder="Enter API secret"
-										/>
-									</label>
-									<div className="flex items-center gap-2 pt-1">
-										<Button
-											type="button"
-											variant="outline"
-											disabled={testing}
-											onClick={handleTest}
-										>
-											{testing ? "Testing…" : "Test Connection"}
-										</Button>
-										{testResult && (
-											<span className="text-xs text-muted-foreground">
-												{testResult}
-											</span>
-										)}
-										<div className="grow" />
-										<Button
-											type="button"
-											disabled={connecting}
-											onClick={handleConnect}
-										>
-											{connecting ? "Connecting…" : "Connect"}
-										</Button>
-									</div>
+									{selectedMeta.auth.type === "apiKey" && (
+										<>
+											{selectedMeta.auth.fields.map((f) => (
+												<label key={f.key} className="grid gap-1 text-sm">
+													<span className="text-muted-foreground">
+														{f.label}
+													</span>
+													<input
+														value={config[f.key] ?? ""}
+														onChange={(e) =>
+															setConfig((prev) => ({
+																...prev,
+																[f.key]: e.target.value,
+															}))
+														}
+														className="h-9 rounded-md border border-input bg-background px-3 text-sm outline-none ring-offset-background placeholder:text-muted-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+														placeholder={f.placeholder}
+														type={f.secret ? "password" : "text"}
+													/>
+												</label>
+											))}
+											<div className="flex items-center gap-2 pt-1">
+												<Button
+													type="button"
+													variant="outline"
+													disabled={testing}
+													onClick={handleTest}
+												>
+													{testing ? "Testing…" : "Test Connection"}
+												</Button>
+												{testResult && (
+													<span className="text-xs text-muted-foreground">
+														{testResult}
+													</span>
+												)}
+												<div className="grow" />
+												<Button
+													type="button"
+													disabled={connecting}
+													onClick={handleConnect}
+												>
+													{connecting ? "Connecting…" : "Connect"}
+												</Button>
+											</div>
+										</>
+									)}
+									{selectedMeta.auth.type === "oauth" && (
+										<div className="flex items-center justify-between gap-2 pt-1">
+											<div className="text-xs text-muted-foreground">
+												OAuth via {new URL(selectedMeta.auth.authUrl).hostname}
+											</div>
+											<Button
+												type="button"
+												disabled={connecting}
+												onClick={() => handleOAuthStart(selectedMeta)}
+											>
+												{connecting
+													? "Connecting…"
+													: `Connect ${selectedMeta.name}`}
+											</Button>
+										</div>
+									)}
 								</div>
 							)}
 						</div>

@@ -382,6 +382,49 @@ const Sidebar: React.FC<SidebarProps> = ({ onSelect, apps }) => {
 					const kb = await connectKB.mutateAsync({ connectorKey, config: cfg });
 					return { id: kb.id, name: kb.name };
 				}}
+				onStartOAuth={async (connectorKey, authUrl, scopes) => {
+					try {
+						// Build URL with optional scopes and state
+						const state = Math.random().toString(36).slice(2);
+						const url = new URL(authUrl);
+						if (scopes && scopes.length) {
+							url.searchParams.set("scope", scopes.join(" "));
+						}
+						url.searchParams.set("state", state);
+						const popup = window.open(
+							url.toString(),
+							"kb-oauth",
+							"width=480,height=720",
+						);
+						if (!popup) return { ok: false };
+						// Wait for a postMessage with the code or popup close
+						const code: string | undefined = await new Promise((resolve) => {
+							const listener = (e: MessageEvent) => {
+								if (
+									typeof e.data === "object" &&
+									e.data &&
+									(e.data as any).type === "kb-oauth-callback" &&
+									(e.data as any).state === state
+								) {
+									window.removeEventListener("message", listener);
+									resolve((e.data as any).code as string | undefined);
+								}
+							};
+							window.addEventListener("message", listener);
+							const timer = setInterval(() => {
+								if (popup.closed) {
+									clearInterval(timer);
+									window.removeEventListener("message", listener);
+									resolve(undefined);
+								}
+							}, 500);
+						});
+						return { ok: true, code };
+					} catch (e) {
+						console.error("OAuth start failed", e);
+						return { ok: false };
+					}
+				}}
 			/>
 		</SidebarProvider>
 	);
