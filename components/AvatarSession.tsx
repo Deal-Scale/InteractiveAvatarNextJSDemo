@@ -174,7 +174,7 @@ export function AvatarSession({
 			{isFloating && (
 				<div
 					ref={panelRef}
-					className="pointer-events-auto z-30 absolute"
+					className="pointer-events-auto z-50 absolute"
 					style={{
 						left: floatingPos.x,
 						top: floatingPos.y,
