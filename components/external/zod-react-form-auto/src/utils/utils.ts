@@ -65,65 +65,26 @@ export function unwrapType(t: z.ZodTypeAny): z.ZodTypeAny {
 
 	let safety = 20;
 	while (safety-- > 0 && cur) {
-		// Prefer robust detection via _def.typeName to avoid cross-module instanceof issues
 		const typeName = (cur as any)?._def?.typeName as string | undefined;
-		const isKnownBaseByName = Boolean(
-			typeName &&
-				[
-					"ZodObject",
-					"ZodArray",
-					"ZodEnum",
-					"ZodUnion",
-					"ZodLiteral",
-					"ZodString",
-					"ZodNumber",
-					"ZodBoolean",
-					"ZodDate",
-					"ZodBigInt",
-					"ZodRecord",
-					"ZodMap",
-					"ZodSet",
-					"ZodTuple",
-					"ZodUnknown",
-					"ZodAny",
-					"ZodNull",
-					"ZodUndefined",
-				].includes(typeName),
-		);
-		const isKnownBaseByInstance =
-			cur instanceof z.ZodObject ||
-			cur instanceof z.ZodArray ||
-			cur instanceof z.ZodEnum ||
-			cur instanceof z.ZodUnion ||
-			cur instanceof z.ZodLiteral ||
-			cur instanceof z.ZodString ||
-			cur instanceof z.ZodNumber ||
-			cur instanceof z.ZodBoolean ||
-			cur instanceof z.ZodDate ||
-			cur instanceof z.ZodBigInt ||
-			cur instanceof z.ZodRecord ||
-			cur instanceof z.ZodMap ||
-			cur instanceof z.ZodSet ||
-			cur instanceof z.ZodTuple ||
-			cur instanceof z.ZodUnknown ||
-			cur instanceof z.ZodAny ||
-			cur instanceof z.ZodNull ||
-			cur instanceof z.ZodUndefined;
-		if (isKnownBaseByName || isKnownBaseByInstance) {
-			break;
-		}
+		// Only unwrap when we positively identify a WRAPPER
+		const isWrapper = [
+			"ZodOptional",
+			"ZodNullable",
+			"ZodDefault",
+			"ZodEffects",
+			"ZodReadonly",
+			"ZodBranded",
+			"ZodPromise",
+			"ZodCatch",
+			"ZodPipeline",
+		].includes(typeName ?? "");
+		if (!isWrapper) break;
+
 		const def = (cur as any)?._def;
-		// Follow wrapper-like pointers; be careful not to drill into array element types.
-		// We only use def.type when the current node is NOT an Array/Tuple.
-		const isArrayLike =
-			typeName === "ZodArray" ||
-			cur instanceof z.ZodArray ||
-			typeName === "ZodTuple" ||
-			cur instanceof z.ZodTuple;
 		const next =
 			def?.innerType ??
 			def?.schema ??
-			(!isArrayLike ? def?.type : undefined) ??
+			def?.type ??
 			def?.out ??
 			def?.in ??
 			def?.source;

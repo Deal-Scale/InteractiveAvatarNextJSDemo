@@ -15,12 +15,19 @@ export function ArrayStringField({
 	placeholder?: string;
 	form: UseFormReturn<any>;
 }) {
-	const { register, watch, setValue } = form;
+	const { register, setValue, watch } = form;
 	const currentRaw = watch(name as any) as any;
 	const tags: string[] = Array.isArray(currentRaw)
 		? (currentRaw as string[])
 		: [];
 	const [input, setInput] = React.useState("");
+
+	// Debug: render/status logs
+	React.useEffect(() => {
+		try {
+			console.debug("ArrayStringField:render", { name, tags });
+		} catch {}
+	}, [name, tags]);
 
 	const commitTag = React.useCallback(
 		(raw: string) => {
@@ -112,14 +119,6 @@ export function ArrayStringField({
 					placeholder={placeholder ?? "Type a tag and press Enter"}
 				/>
 			</div>
-			<span className="sr-only" aria-hidden>
-				{(() => {
-					try {
-						console.debug("ArrayStringField:render", { name, tags });
-					} catch {}
-					return null;
-				})()}
-			</span>
 			<span className="text-[11px] text-muted-foreground">
 				Press Enter or comma to add. Backspace to remove last.
 			</span>

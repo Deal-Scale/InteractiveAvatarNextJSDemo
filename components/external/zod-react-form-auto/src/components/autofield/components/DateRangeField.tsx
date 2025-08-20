@@ -29,6 +29,10 @@ export function DateRangeField({
 	holidays = [],
 	disableWeekdays = [],
 	withTime,
+	numberOfMonths,
+	captionLayout,
+	fromYear,
+	toYear,
 	form,
 }: {
 	startName: string;
@@ -41,6 +45,10 @@ export function DateRangeField({
 	holidays?: Date[];
 	disableWeekdays?: number[]; // 0..6
 	withTime?: boolean;
+	numberOfMonths?: number;
+	captionLayout?: "label" | "dropdown";
+	fromYear?: number;
+	toYear?: number;
 	form: UseFormReturn<any>;
 }) {
 	const { register, watch, setValue } = form;
@@ -128,6 +136,10 @@ export function DateRangeField({
 					selected={selected}
 					onSelect={onSelect}
 					disabled={disabled}
+					numberOfMonths={numberOfMonths}
+					captionLayout={captionLayout}
+					fromYear={fromYear}
+					toYear={toYear}
 					initialFocus
 				/>
 			</div>
