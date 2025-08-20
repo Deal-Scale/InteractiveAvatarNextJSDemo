@@ -6,6 +6,7 @@ import { Fira_Code as FontMono, Inter as FontSans } from "next/font/google";
 
 import AudioDebugShim from "@/components/AudioDebugShim";
 import { ToastProvider } from "@/components/ui/toaster";
+import { TooltipProvider } from "@/components/ui/tooltip";
 import { ThemeProvider } from "@/components/ui/theme-provider";
 import ThemeBridge from "@/components/ThemeBridge";
 import AppProviders from "./providers";
@@ -116,14 +117,16 @@ export default function RootLayout({
 					attribute="class"
 					defaultTheme="system"
 				>
-					<ToastProvider>
-						<main className="relative flex flex-col h-screen w-screen">
-							<ThemeBridge />
-							<AudioDebugShim />
+					<TooltipProvider>
+						<ToastProvider>
+							<main className="relative flex flex-col h-screen w-screen">
+								<ThemeBridge />
+								<AudioDebugShim />
 
-							<AppProviders>{children}</AppProviders>
-						</main>
-					</ToastProvider>
+								<AppProviders>{children}</AppProviders>
+							</main>
+						</ToastProvider>
+					</TooltipProvider>
 				</ThemeProvider>
 			</body>
 		</html>
