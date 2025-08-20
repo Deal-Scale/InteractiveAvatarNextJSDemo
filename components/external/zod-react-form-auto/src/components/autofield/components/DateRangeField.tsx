@@ -51,7 +51,7 @@ export function DateRangeField({
 	toYear?: number;
 	form: UseFormReturn<any>;
 }) {
-	const { register, watch, setValue } = form;
+	const { register, unregister, getValues, watch, setValue } = form;
 	const start = watch(startName as any) as Date | undefined;
 	const end = watch(endName as any) as Date | undefined;
 	const [startTime, setStartTime] = React.useState<string | undefined>(
@@ -124,12 +124,52 @@ export function DateRangeField({
 		}
 	};
 
+	// Normalize vague Zod errors
+	const normStart = React.useMemo(() => {
+		if (!errorStart) return undefined;
+		const t = String(errorStart).trim();
+		if (t.toLowerCase() === "invalid input")
+			return `${label} start date is required`;
+		return errorStart;
+	}, [errorStart, label]);
+	const normEnd = React.useMemo(() => {
+		if (!errorEnd) return undefined;
+		const t = String(errorEnd).trim();
+		if (t.toLowerCase() === "invalid input")
+			return `${label} end date is required`;
+		return errorEnd;
+	}, [errorEnd, label]);
+
+	// Imperatively register both fields; avoid hidden inputs that can coerce strings on clear
+	React.useEffect(() => {
+		try {
+			register(startName as any);
+		} catch {}
+		try {
+			register(endName as any);
+		} catch {}
+		// Ensure stored values are Date | undefined
+		const v = (getValues() as any)[startName];
+		if (v != null && !(v instanceof Date))
+			setValue(startName as any, undefined as any, { shouldValidate: true });
+		const w = (getValues() as any)[endName];
+		if (w != null && !(w instanceof Date))
+			setValue(endName as any, undefined as any, { shouldValidate: true });
+		return () => {
+			try {
+				unregister(startName as any);
+			} catch {}
+			try {
+				unregister(endName as any);
+			} catch {}
+		};
+		// eslint-disable-next-line react-hooks/exhaustive-deps
+	}, [startName, endName, register, unregister, setValue]);
+
 	return (
 		<div className="flex flex-col gap-1">
 			<span className="text-sm text-muted-foreground">{label}</span>
-			{/* hidden inputs to bind to RHF */}
-			<input type="hidden" {...register(startName as any)} />
-			<input type="hidden" {...register(endName as any)} />
+			{/* Imperatively registered; no hidden inputs that bind string values */}
 			<div className="rounded-md border border-border p-2">
 				<Calendar
 					mode="range"
@@ -169,16 +209,16 @@ export function DateRangeField({
 					</div>
 				</div>
 			)}
-			{(errorStart || errorEnd) && (
+			{(normStart || normEnd) && (
 				<div className="space-y-0.5">
-					{errorStart && (
+					{normStart && (
 						<span className="block text-xs text-red-500 dark:text-red-400">
-							{errorStart}
+							{normStart}
 						</span>
 					)}
-					{errorEnd && (
+					{normEnd && (
 						<span className="block text-xs text-red-500 dark:text-red-400">
-							{errorEnd}
+							{normEnd}
 						</span>
 					)}
 				</div>

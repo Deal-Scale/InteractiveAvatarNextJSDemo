@@ -28,7 +28,7 @@ export function DateField({
 	toYear?: number;
 	form: UseFormReturn<any>;
 }) {
-	const { register, watch, setValue } = form;
+	const { register, unregister, getValues, watch, setValue } = form;
 	const current = watch(name as any) as any as Date | undefined;
 
 	const [time, setTime] = React.useState<string | undefined>(
@@ -47,10 +47,36 @@ export function DateField({
 		return copy;
 	};
 
+	// Normalize vague Zod error
+	const normError = React.useMemo(() => {
+		if (!error) return undefined;
+		const t = String(error).trim();
+		if (t.toLowerCase() === "invalid input") return `${label} is required`;
+		return error;
+	}, [error, label]);
+
+	// Keep field registered without binding a DOM input that might set a string on clear
+	React.useEffect(() => {
+		try {
+			register(name as any);
+		} catch {}
+		// Ensure the stored value is Date | undefined
+		const v = (getValues() as any)[name];
+		if (v != null && !(v instanceof Date)) {
+			setValue(name as any, undefined as any, { shouldValidate: true });
+		}
+		return () => {
+			try {
+				unregister(name as any);
+			} catch {}
+		};
+		// eslint-disable-next-line react-hooks/exhaustive-deps
+	}, [name, register, unregister, setValue]);
+
 	return (
 		<div className="flex flex-col gap-1">
 			<span className="text-sm text-muted-foreground">{label}</span>
-			<input type="hidden" {...register(name as any)} />
+			{/* Imperatively registered; no hidden input bound to a string value */}
 			<div className="rounded-md border border-border p-2">
 				<Calendar
 					mode="single"
@@ -120,8 +146,10 @@ export function DateField({
 					/>
 				</div>
 			)}
-			{error && (
-				<span className="text-xs text-red-500 dark:text-red-400">{error}</span>
+			{normError && (
+				<span className="text-xs text-red-500 dark:text-red-400">
+					{normError}
+				</span>
 			)}
 		</div>
 	);

@@ -53,6 +53,47 @@ export function AutoForm<TSchema extends z.ZodObject<any, any>>({
 
 	const keys = Object.keys(shape);
 
+	// Flatten errors into dotted paths with messages
+	const flatErrors = React.useMemo(() => {
+		const out: Array<{ name: string; message: string }> = [];
+		const walk = (node: any, prefix: string[]) => {
+			if (!node) return;
+			for (const k of Object.keys(node)) {
+				const next = node[k];
+				const path = [...prefix, k];
+				if (next && typeof next === "object") {
+					const msg = (next as any).message as string | undefined;
+					if (msg) out.push({ name: path.join("."), message: msg });
+					// dive deeper for nested objects
+					walk(next as any, path);
+				}
+			}
+		};
+		walk(formState.errors as any, []);
+		return out;
+		// eslint-disable-next-line react-hooks/exhaustive-deps
+	}, [formState.errors]);
+
+	const invalidSummary = React.useMemo(() => {
+		if (!flatErrors.length) return null;
+		return flatErrors.map(({ name, message }) => {
+			const label =
+				(fields as any)?.[name]?.label ?? name.split(".").pop() ?? name;
+			// Normalize vague message for consistency
+			const norm =
+				String(message).trim().toLowerCase() === "invalid input"
+					? `${label} is required`
+					: message;
+			return { label, message: norm };
+		});
+	}, [flatErrors, fields]);
+
+	// Tooltip text for disabled submit
+	const invalidTooltip = React.useMemo(() => {
+		if (!invalidSummary || invalidSummary.length === 0) return undefined;
+		return invalidSummary.map((it) => `${it.label}: ${it.message}`).join("\n");
+	}, [invalidSummary]);
+
 	return (
 		<form
 			className={className ?? "space-y-3"}
@@ -108,9 +149,25 @@ export function AutoForm<TSchema extends z.ZodObject<any, any>>({
 					/>
 				);
 			})}
+			{Boolean(invalidSummary?.length) && (
+				<div className="rounded-md border border-destructive/40 bg-destructive/5 p-2 text-xs">
+					<div className="mb-1 font-medium text-destructive">
+						{invalidSummary!.length} field
+						{invalidSummary!.length > 1 ? "s" : ""} need attention
+					</div>
+					<ul className="list-inside list-disc space-y-0.5 text-destructive">
+						{invalidSummary!.map((it) => (
+							<li key={it.label}>
+								<span className="font-medium">{it.label}:</span> {it.message}
+							</li>
+						))}
+					</ul>
+				</div>
+			)}
 			<button
 				className="inline-flex items-center rounded-md bg-primary px-4 py-2 text-primary-foreground hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary disabled:opacity-50"
 				disabled={!formState.isValid}
+				title={!formState.isValid ? invalidTooltip : undefined}
 				type="submit"
 			>
 				{submitLabel}
