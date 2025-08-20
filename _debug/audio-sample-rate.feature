@@ -45,3 +45,37 @@ Feature: Audio Sample Rate Enforcement
   # - app/layout.tsx: Early AudioContext patch injects forced sampleRate from localStorage "force_sr" (default 16000)
   # - components/AudioDebugShim.tsx: Logs getUserMedia constraints, AudioContext creations, and createMediaStreamSource context sample rate
   # - Acceptance: All AudioContexts log the correct sample rate, no mismatch errors, getUserMedia logs show sanitized constraints
+
+Rule: Heygen Interactive Avatar tasks accept only text input
+
+  # As a developer I need to send only text to Heygen's Interactive Avatar task endpoint
+  # So that the avatar can speak the provided text; any audio must be transcribed first
+
+  Scenario: Send a text task to an Interactive Avatar
+    Given the Heygen task endpoint "https://api.heygen.com/v1/streaming.task"
+    And I have a valid session_id "<SESSION_ID>"
+    And I have text "Hello there!"
+    When I POST JSON with:
+      """json
+      {
+        "session_id": "<SESSION_ID>",
+        "text": "Hello there!",
+        "task_mode": "sync",
+        "task_type": "chat"
+      }
+      """
+    Then the response contains "duration_ms" as number
+    And the response contains "task_id" as string
+
+  Scenario: Repeat mode echoes the provided text
+    Given the Heygen task endpoint "https://api.heygen.com/v1/streaming.task"
+    And I set task_type to "repeat"
+    When I send the task with text "Repeat this back"
+    Then the avatar speaks the same text back
+
+  Scenario: Audio must be transcribed before sending
+    Given I have an audio recording of speech
+    When I transcribe the audio to text using a transcription service
+    And I send the transcribed text in the request body "text" field
+    Then the request succeeds as a text task
+    And no raw audio is sent to the Heygen task endpoint
