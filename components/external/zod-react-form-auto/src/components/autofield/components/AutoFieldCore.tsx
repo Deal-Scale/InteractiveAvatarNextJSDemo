@@ -8,6 +8,7 @@ import { BooleanField } from "./BooleanField";
 import { BooleanSelectField } from "./BooleanSelectField";
 import { NumberField, NumberSliderField } from "./NumberField";
 import { DateField } from "./DateField";
+import { DateRangeField } from "./DateRangeField";
 import { TextareaField, CollapsibleTextareaField } from "./TextareaField";
 import { TextField } from "./TextField";
 import { ArrayStringField } from "./ArrayStringField";
@@ -58,6 +59,37 @@ export const AutoField: React.FC<AutoFieldProps> = ({
 	);
 
 	// Configured widgets
+	if ((cfg as any).widget === "hidden") {
+		return null;
+	}
+
+	if ((cfg as any).widget === "date-range") {
+		const endField = (cfg as any).endDateField as string | undefined;
+		if (!endField) {
+			return <DateField name={name} label={label} error={error} form={form} />;
+		}
+		const errorStart = (formState.errors as any)[name]?.message as
+			| string
+			| undefined;
+		const errorEnd = (formState.errors as any)[endField]?.message as
+			| string
+			| undefined;
+		return (
+			<DateRangeField
+				startName={name}
+				endName={endField}
+				label={label}
+				errorStart={errorStart}
+				errorEnd={errorEnd}
+				minDate={(cfg as any).minDate}
+				maxDate={(cfg as any).maxDate}
+				holidays={(cfg as any).holidays}
+				disableWeekdays={(cfg as any).disableWeekdays}
+				withTime={Boolean((cfg as any).withTime)}
+				form={form}
+			/>
+		);
+	}
 	if ((cfg as any).widget === "select") {
 		const opts = ((cfg as any).options ?? []) as SelectOption[];
 		return renderSelect(opts, Boolean((cfg as any).multiple));

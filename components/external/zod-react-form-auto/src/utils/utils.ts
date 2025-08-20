@@ -25,7 +25,9 @@ export type Widget =
 	| "slider"
 	| "password"
 	| "radios"
-	| "checkboxes";
+	| "checkboxes"
+	| "date-range"
+	| "hidden";
 
 export type FieldConfig = {
 	label?: string;
@@ -47,6 +49,11 @@ export type FieldConfig = {
 	// Link constraints to another field's value (name of the field)
 	minDateField?: string;
 	maxDateField?: string;
+	// Date range support
+	endDateField?: string; // used when widget === "date-range" to link end date field name
+	holidays?: Date[]; // disabled exact dates
+	disableWeekdays?: number[]; // 0=Sun..6=Sat
+	withTime?: boolean; // show time pickers alongside date(s)
 };
 
 export type FieldsConfig<T> = Partial<Record<keyof T & string, FieldConfig>>;
