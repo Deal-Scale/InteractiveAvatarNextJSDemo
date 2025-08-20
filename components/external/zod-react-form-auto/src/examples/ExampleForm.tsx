@@ -14,7 +14,7 @@ import { SelectField } from "../components/autofield/components/SelectField";
 import { FileUploadField } from "../components/autofield/components/FileUploadField";
 import { ArrayStringField } from "../components/autofield/components/ArrayStringField";
 import { RadioGroupField } from "../components/autofield/components/RadioGroupField";
-import { CheckboxGroupField } from "../components/autofield/components/CheckboxGroupField";
+// import { CheckboxGroupField } from "../components/autofield/components/CheckboxGroupField";
 
 export default function ExampleForm() {
 	const today = React.useMemo(() => {
@@ -101,10 +101,16 @@ export default function ExampleForm() {
 							},
 							apiKey: { widget: "password", label: "API Key" },
 							role: { widget: "radios", label: "Role" },
+							tags: { placeholder: "Type a tag and press Enter" },
 							favoriteColors: {
+								label: "Favorite Colors (multi-select)",
 								widget: "select",
 								multiple: true,
-								label: "Favorite Colors (multi-select)",
+								options: [
+									{ value: "red", label: "red" },
+									{ value: "green", label: "green" },
+									{ value: "blue", label: "blue" },
+								],
 							},
 						}}
 						onSubmit={(vals) => setLeftOutput(vals)}
@@ -213,29 +219,13 @@ export default function ExampleForm() {
 						/>
 
 						{/* Tags (array string via newline) */}
-						<ArrayStringField
-							name="tags"
-							label="Tags"
-							rows={4}
-							form={rightForm}
-						/>
+						<ArrayStringField name="tags" label="Tags" form={rightForm} />
 
 						{/* Favorite Colors (multi-select dropdown) */}
 						<SelectField
 							name="favoriteColors"
 							label="Favorite Colors"
 							multiple
-							opts={[
-								{ value: "red", label: "red" },
-								{ value: "green", label: "green" },
-								{ value: "blue", label: "blue" },
-							]}
-							form={rightForm}
-						/>
-						{/* Favorite Colors (checkboxes) */}
-						<CheckboxGroupField
-							name="favoriteColors"
-							label="Favorite Colors (Checkboxes)"
 							opts={[
 								{ value: "red", label: "red" },
 								{ value: "green", label: "green" },
