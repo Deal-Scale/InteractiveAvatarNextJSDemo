@@ -11,6 +11,7 @@ export default function ExampleForm() {
 			password: "",
 			bio: "",
 			age: 30,
+			birthday: undefined as any,
 			termsAccepted: false,
 			role: "user",
 			favoriteFruit: "",
@@ -31,6 +32,7 @@ export default function ExampleForm() {
 				schema={AppSchema}
 				fields={{
 					age: { widget: "slider", min: 0, max: 120, step: 1, label: "Age" },
+					birthday: { label: "Birthday" },
 					password: { widget: "password", label: "Password" },
 					bio: { widget: "textarea", rows: 4, label: "Bio" },
 					termsAccepted: {

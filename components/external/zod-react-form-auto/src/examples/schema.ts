@@ -21,6 +21,7 @@ export const AppSchema = z
 			.min(0, { message: "Age cannot be negative" })
 			.max(120, { message: "Please enter a realistic age (<= 120)" })
 			.describe("Age in years"),
+		birthday: z.date().describe("Date of birth (uses Calendar date picker)"),
 		termsAccepted: z.boolean().describe("Agree to terms"),
 		role: Role, // enum -> select
 		favoriteFruit: z.string().describe("select"), // string -> select via fields.options
