@@ -1,10 +1,10 @@
 "use client";
 
-import Plausible, { Options as PlausibleOptions } from "plausible-tracker";
+import Plausible from "plausible-tracker";
 
 let _client: ReturnType<typeof Plausible> | null = null;
 
-export type InitOptions = PlausibleOptions;
+export type InitOptions = Parameters<typeof Plausible>[0];
 
 export function init(options?: InitOptions) {
 	if (typeof window === "undefined") return null;

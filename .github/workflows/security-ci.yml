@@ -1,0 +1,58 @@
+name: Security CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  codeql:
+    name: CodeQL Analysis
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      # Initialize CodeQL
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@v2
+        with:
+          languages: javascript, typescript
+          # Optionally add queries: security-extended
+          queries: security-extended
+
+      # Autobuild
+      - name: Autobuild
+        uses: github/codeql-action/autobuild@v2
+
+      # Perform CodeQL Analysis
+      - name: Perform CodeQL Analysis
+        uses: github/codeql-action/analyze@v2
+
+  secret-scanning:
+    name: GitHub Secret Scanning
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Enable GitHub Secret Scanning
+        uses: github/secret-scanning@v1
+        with:
+          # Optionally configure custom patterns if needed
+          scan: true
+
+  trufflehog:
+    name: TruffleHog Scan
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Run TruffleHog
+        uses: trufflesecurity/trufflehog-action@v2
+        with:
+          directory: .
+          # optional: can output JSON report
+          json: true
