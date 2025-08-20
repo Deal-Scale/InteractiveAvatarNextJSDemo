@@ -23,7 +23,9 @@ export type Widget =
 	| "select"
 	| "switch"
 	| "slider"
-	| "password";
+	| "password"
+	| "radios"
+	| "checkboxes";
 
 export type FieldConfig = {
 	label?: string;
@@ -39,6 +41,12 @@ export type FieldConfig = {
 	acceptTypes?: string | string[];
 	minFiles?: number;
 	maxFiles?: number;
+	// Date constraints
+	minDate?: Date;
+	maxDate?: Date;
+	// Link constraints to another field's value (name of the field)
+	minDateField?: string;
+	maxDateField?: string;
 };
 
 export type FieldsConfig<T> = Partial<Record<keyof T & string, FieldConfig>>;

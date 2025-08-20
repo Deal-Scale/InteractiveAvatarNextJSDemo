@@ -22,6 +22,25 @@ export const AppSchema = z
 			.max(120, { message: "Please enter a realistic age (<= 120)" })
 			.describe("Age in years"),
 		birthday: z.date().describe("Date of birth (uses Calendar date picker)"),
+		startDate: z
+			.date()
+			.refine(
+				(d) => {
+					const today = new Date();
+					const t = new Date(
+						today.getFullYear(),
+						today.getMonth(),
+						today.getDate(),
+					);
+					const dd = new Date(d.getFullYear(), d.getMonth(), d.getDate());
+					return dd >= t;
+				},
+				{ message: "Start date cannot be in the past" },
+			)
+			.describe("Project start date (not before today)"),
+		endDate: z
+			.date()
+			.describe("Project end date (after or equal to start date)"),
 		termsAccepted: z.boolean().describe("Agree to terms"),
 		role: Role, // enum -> select
 		favoriteFruit: z.string().describe("select"), // string -> select via fields.options
@@ -38,6 +57,27 @@ export const AppSchema = z
 		favoriteColors: z
 			.array(z.enum(["red", "green", "blue"])) // array of enum -> multiselect
 			.default([]),
+	})
+	.superRefine((vals, ctx) => {
+		if (vals.startDate && vals.endDate) {
+			const s = new Date(
+				vals.startDate.getFullYear(),
+				vals.startDate.getMonth(),
+				vals.startDate.getDate(),
+			);
+			const e = new Date(
+				vals.endDate.getFullYear(),
+				vals.endDate.getMonth(),
+				vals.endDate.getDate(),
+			);
+			if (e < s) {
+				ctx.addIssue({
+					code: z.ZodIssueCode.custom,
+					path: ["endDate"],
+					message: "End date cannot be before start date",
+				});
+			}
+		}
 	})
 	.describe("Example application form");
 

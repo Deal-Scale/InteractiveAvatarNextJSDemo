@@ -2,7 +2,18 @@
 import React from "react";
 import { z } from "zod";
 import { UseFormReturn } from "react-hook-form";
-import { SimpleSelect, MultiSelect, type SelectOption } from "../utils/select";
+import { type SelectOption } from "../utils/select";
+import { SelectField } from "./SelectField";
+import { BooleanField } from "./BooleanField";
+import { BooleanSelectField } from "./BooleanSelectField";
+import { NumberField, NumberSliderField } from "./NumberField";
+import { DateField } from "./DateField";
+import { TextareaField, CollapsibleTextareaField } from "./TextareaField";
+import { TextField } from "./TextField";
+import { ArrayStringField } from "./ArrayStringField";
+import { FileUploadField } from "./FileUploadField";
+import { CheckboxGroupField } from "./CheckboxGroupField";
+import { RadioGroupField } from "./RadioGroupField";
 import {
 	unwrapType,
 	enumStringValuesFromZodEnum,
@@ -14,7 +25,6 @@ import {
 	parseFileUploadConfig,
 } from "../../../utils/utils";
 import { SensitiveInput } from "../../../utils/fields";
-import { Calendar } from "../../../../../../ui/calendar";
 
 export type AutoFieldProps = {
 	name: string;
@@ -29,62 +39,23 @@ export const AutoField: React.FC<AutoFieldProps> = ({
 	form,
 	fields = {},
 }) => {
-	const { register, formState, setValue, getValues, watch } = form;
+	const { register, formState, setValue, watch } = form;
 	const cfg = (fields as any)[name] || {};
 	const label = cfg.label ?? name;
 	const error = (formState.errors as any)[name]?.message as string | undefined;
 
 	const base = unwrapType(def);
 
-	const renderSelect = (opts: SelectOption[], multiple = false) => {
-		if (multiple) {
-			const raw = watch(name as any) as any;
-			const current = Array.isArray(raw) ? (raw as string[]) : [];
-			const allowed = new Set(opts.map((o) => o.value));
-			const sanitized = current.filter((v) => allowed.has(v));
-			if (sanitized.length !== current.length) {
-				setValue(name as any, sanitized as any, {
-					shouldValidate: true,
-					shouldDirty: true,
-					shouldTouch: true,
-				});
-			}
-			return (
-				<MultiSelect
-					name={name}
-					label={label}
-					value={sanitized}
-					opts={opts}
-					error={error}
-					register={register}
-					onChange={(v) =>
-						setValue(name as any, v as any, {
-							shouldValidate: true,
-							shouldDirty: true,
-							shouldTouch: true,
-						})
-					}
-				/>
-			);
-		}
-		const current = (watch(name as any) as any) ?? "";
-		return (
-			<SimpleSelect
-				name={name}
-				label={label}
-				value={current as string}
-				opts={opts}
-				error={error}
-				register={register}
-				onChange={(v) =>
-					setValue(name as any, v as any, {
-						shouldValidate: true,
-						shouldDirty: true,
-					})
-				}
-			/>
-		);
-	};
+	const renderSelect = (opts: SelectOption[], multiple = false) => (
+		<SelectField
+			name={name}
+			label={label}
+			error={error}
+			opts={opts}
+			multiple={multiple}
+			form={form}
+		/>
+	);
 
 	// Configured widgets
 	if ((cfg as any).widget === "select") {
@@ -93,19 +64,13 @@ export const AutoField: React.FC<AutoFieldProps> = ({
 	}
 	if ((cfg as any).widget === "textarea") {
 		return (
-			<div className="flex flex-col gap-1">
-				<span className="text-sm text-muted-foreground">{label}</span>
-				<textarea
-					className="min-h-24 max-h-[60vh] w-full resize-y rounded-md border border-border bg-background px-3 py-2 text-foreground shadow-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary"
-					rows={(cfg as any).rows ?? 5}
-					{...register(name as any)}
-				/>
-				{error && (
-					<span className="text-xs text-red-500 dark:text-red-400">
-						{error}
-					</span>
-				)}
-			</div>
+			<TextareaField
+				name={name}
+				label={label}
+				error={error}
+				rows={(cfg as any).rows}
+				form={form}
+			/>
 		);
 	}
 	if ((cfg as any).widget === "password") {
@@ -123,22 +88,15 @@ export const AutoField: React.FC<AutoFieldProps> = ({
 	}
 	if ((cfg as any).widget === "slider") {
 		return (
-			<div className="flex flex-col gap-1">
-				<span className="text-sm text-muted-foreground">{label}</span>
-				<input
-					className="w-full accent-primary"
-					max={(cfg as any).max}
-					min={(cfg as any).min}
-					step={(cfg as any).step}
-					type="range"
-					{...register(name as any, { valueAsNumber: true })}
-				/>
-				{error && (
-					<span className="text-xs text-red-500 dark:text-red-400">
-						{error}
-					</span>
-				)}
-			</div>
+			<NumberSliderField
+				name={name}
+				label={label}
+				error={error}
+				min={(cfg as any).min}
+				max={(cfg as any).max}
+				step={(cfg as any).step}
+				form={form}
+			/>
 		);
 	}
 
@@ -149,10 +107,19 @@ export const AutoField: React.FC<AutoFieldProps> = ({
 		(base as any)?.options
 	) {
 		const values = enumStringValuesFromZodEnum(base as any);
-		return renderSelect(
-			optionsFromStrings(values),
-			Boolean((cfg as any).multiple),
-		);
+		const opts = optionsFromStrings(values);
+		if ((cfg as any).widget === "radios") {
+			return (
+				<RadioGroupField
+					name={name}
+					label={label}
+					error={error}
+					opts={opts}
+					form={form}
+				/>
+			);
+		}
+		return renderSelect(opts, Boolean((cfg as any).multiple));
 	}
 
 	// Union of enums/strings/literals -> select
@@ -191,147 +158,87 @@ export const AutoField: React.FC<AutoFieldProps> = ({
 			(el as any)?.options
 		) {
 			const values = enumStringValuesFromZodEnum(el as any);
-			return renderSelect(optionsFromStrings(values), true);
+			const opts = optionsFromStrings(values);
+			if ((cfg as any).widget === "checkboxes") {
+				return (
+					<CheckboxGroupField
+						name={name}
+						label={label}
+						error={error}
+						opts={opts}
+						form={form}
+					/>
+				);
+			}
+			return renderSelect(opts, true);
 		}
 		if (el instanceof z.ZodString && (cfg as any).options?.length)
 			return renderSelect((cfg as any).options!, true);
-		if (el instanceof z.ZodString) {
-			const currentRaw = watch(name as any) as any;
-			const current = Array.isArray(currentRaw)
-				? (currentRaw as string[])
-				: undefined;
+		if (el instanceof z.ZodString)
 			return (
-				<div className="flex flex-col gap-1">
-					<span className="text-sm text-muted-foreground">{label}</span>
-					<input type="hidden" {...register(name as any)} />
-					<textarea
-						className="min-h-24 max-h-[60vh] w-full resize-y rounded-md border border-border bg-background px-3 py-2 text-foreground shadow-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary"
-						placeholder={cfg.placeholder ?? "Enter values, one per line"}
-						rows={cfg.rows ?? 5}
-						value={(current ?? []).join("\n")}
-						onChange={(e) => {
-							const arr = e.target.value
-								.split("\n")
-								.map((s) => s.trim())
-								.filter(Boolean);
-							setValue(name as any, arr as any, {
-								shouldValidate: true,
-								shouldDirty: true,
-							});
-						}}
-					/>
-					{error && (
-						<span className="text-xs text-red-500 dark:text-red-400">
-							{error}
-						</span>
-					)}
-				</div>
+				<ArrayStringField
+					name={name}
+					label={label}
+					error={error}
+					rows={(cfg as any).rows}
+					placeholder={(cfg as any).placeholder}
+					form={form}
+				/>
 			);
-		}
 	}
 
 	// Boolean
 	if (base instanceof z.ZodBoolean) {
 		if ((cfg as any).widget === "select") {
-			const current = watch(name as any) as any as boolean | undefined;
 			const opts = booleanSelectOptions((cfg as any).options as SelectOption[]);
-			const value = typeof current === "boolean" ? String(current) : "";
 			return (
-				<SimpleSelect
+				<BooleanSelectField
 					name={name}
 					label={label}
-					value={value}
-					opts={opts}
 					error={error}
-					register={register}
-					onChange={(v) =>
-						setValue(
-							name as any,
-							(v === "true" ? true : v === "false" ? false : undefined) as any,
-							{ shouldValidate: true, shouldDirty: true },
-						)
-					}
+					opts={opts}
+					form={form}
 				/>
 			);
 		}
-		return (
-			<label className="flex items-center justify-between gap-3">
-				<span className="text-sm text-muted-foreground">{label}</span>
-				<input
-					className="h-4 w-4 accent-primary"
-					type="checkbox"
-					{...register(name as any)}
-				/>
-			</label>
-		);
+		return <BooleanField name={name} label={label} error={error} form={form} />;
 	}
 
 	// Number
 	if (base instanceof z.ZodNumber) {
 		if ((cfg as any).widget === "slider") {
 			return (
-				<div className="flex flex-col gap-1">
-					<span className="text-sm text-muted-foreground">{label}</span>
-					<input
-						className="w-full accent-primary"
-						max={(cfg as any).max}
-						min={(cfg as any).min}
-						step={(cfg as any).step}
-						type="range"
-						{...register(name as any, { valueAsNumber: true })}
-					/>
-					{error && (
-						<span className="text-xs text-red-500 dark:text-red-400">
-							{error}
-						</span>
-					)}
-				</div>
+				<NumberSliderField
+					name={name}
+					label={label}
+					error={error}
+					min={(cfg as any).min}
+					max={(cfg as any).max}
+					step={(cfg as any).step}
+					form={form}
+				/>
 			);
 		}
-		return (
-			<div className="flex flex-col gap-1">
-				<span className="text-sm text-muted-foreground">{label}</span>
-				<input
-					className="rounded-md border border-border bg-background px-3 py-2 text-foreground shadow-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary"
-					type="number"
-					{...register(name as any, { valueAsNumber: true })}
-				/>
-				{error && (
-					<span className="text-xs text-red-500 dark:text-red-400">
-						{error}
-					</span>
-				)}
-			</div>
-		);
+		return <NumberField name={name} label={label} error={error} form={form} />;
 	}
 
 	// Date
 	if (base instanceof z.ZodDate) {
-		const current = watch(name as any) as any as Date | undefined;
+		const minFromField = (cfg as any).minDateField
+			? (form.watch((cfg as any).minDateField) as Date | undefined)
+			: undefined;
+		const maxFromField = (cfg as any).maxDateField
+			? (form.watch((cfg as any).maxDateField) as Date | undefined)
+			: undefined;
 		return (
-			<div className="flex flex-col gap-1">
-				<span className="text-sm text-muted-foreground">{label}</span>
-				<input type="hidden" {...register(name as any)} />
-				<div className="rounded-md border border-border p-2">
-					<Calendar
-						mode="single"
-						selected={current}
-						onSelect={(d) =>
-							setValue(name as any, (d ?? undefined) as any, {
-								shouldValidate: true,
-								shouldDirty: true,
-								shouldTouch: true,
-							})
-						}
-						initialFocus
-					/>
-				</div>
-				{error && (
-					<span className="text-xs text-red-500 dark:text-red-400">
-						{error}
-					</span>
-				)}
-			</div>
+			<DateField
+				name={name}
+				label={label}
+				error={error}
+				minDate={(cfg as any).minDate ?? minFromField}
+				maxDate={(cfg as any).maxDate ?? maxFromField}
+				form={form}
+			/>
 		);
 	}
 
@@ -368,168 +275,45 @@ export const AutoField: React.FC<AutoFieldProps> = ({
 
 		if (multiline) {
 			return (
-				<div className="flex flex-col gap-1">
-					<span className="text-sm text-muted-foreground">{label}</span>
-					<details className="rounded-md border border-border open:bg-card">
-						<summary className="cursor-pointer select-none bg-muted px-2 py-1 text-xs text-muted-foreground">{`Edit ${label}`}</summary>
-						<div className="p-2">
-							<textarea
-								className="min-h-24 max-h-[60vh] w-full resize-y rounded-md border border-border bg-background px-3 py-2 text-foreground shadow-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary"
-								rows={(cfg as any).rows ?? 5}
-								{...register(name as any)}
-							/>
-						</div>
-					</details>
-					{error && (
-						<span className="text-xs text-red-500 dark:text-red-400">
-							{error}
-						</span>
-					)}
-				</div>
+				<CollapsibleTextareaField
+					name={name}
+					label={label}
+					error={error}
+					rows={(cfg as any).rows}
+					form={form}
+				/>
 			);
 		}
 
 		return (
-			<div className="flex flex-col gap-1">
-				<span className="text-sm text-muted-foreground">{label}</span>
-				<input
-					className="rounded-md border border-border bg-background px-3 py-2 text-foreground shadow-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary"
-					pattern={regexCheck?.regex ? regexCheck.regex.source : undefined}
-					placeholder={(cfg as any).placeholder}
-					title={regexCheck?.regex ? regexCheck.regex.toString() : undefined}
-					type={isEmail ? "email" : "text"}
-					{...register(name as any)}
-				/>
-				{error && (
-					<span className="text-xs text-red-500 dark:text-red-400">
-						{error}
-					</span>
-				)}
-			</div>
+			<TextField
+				name={name}
+				label={label}
+				error={error}
+				placeholder={(cfg as any).placeholder}
+				pattern={regexCheck?.regex ? regexCheck.regex.source : undefined}
+				type={isEmail ? "email" : "text"}
+				form={form}
+			/>
 		);
 	}
 
 	// File upload
 	if (String((def as any).description ?? "").startsWith("file-upload")) {
 		const fileCfg = parseFileUploadConfig((def as any)._def, cfg as any);
-		const raw = watch(name as any) as unknown;
-		const files: File[] = Array.isArray(raw)
-			? (raw as File[])
-			: typeof FileList !== "undefined" &&
-					raw != null &&
-					typeof (raw as any).length === "number"
-				? Array.from(raw as FileList)
-				: [];
-		const tooMany =
-			typeof fileCfg.max === "number" && files.length > fileCfg.max;
-		const tooFew =
-			typeof fileCfg.min === "number" && files.length < fileCfg.min;
-
 		return (
-			<div className="flex flex-col gap-2">
-				<span className="text-sm text-muted-foreground">{label}</span>
-				<input type="hidden" {...register(name as any)} />
-				<input
-					accept={fileCfg.accept}
-					multiple={typeof fileCfg.max !== "number" || fileCfg.max > 1}
-					className="rounded-md border border-border bg-background px-3 py-2 text-foreground file:mr-4 file:rounded file:border-0 file:bg-muted file:px-2 file:py-1 file:text-foreground focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary"
-					type="file"
-					onChange={(e) => {
-						const list = e.target.files ? Array.from(e.target.files) : [];
-						const next =
-							typeof fileCfg.max === "number"
-								? list.slice(0, fileCfg.max)
-								: list;
-						setValue(name as any, next as any, {
-							shouldValidate: true,
-							shouldDirty: true,
-						});
-					}}
-				/>
-				{files.length > 0 && (
-					<div className="grid grid-cols-2 gap-2 md:grid-cols-3">
-						{files.map((f, idx) => {
-							const isImg =
-								typeof f.type === "string" && f.type.startsWith("image/");
-							const url = isImg ? URL.createObjectURL(f) : undefined;
-							return (
-								<div
-									key={`${f.name}-${idx}`}
-									className="relative rounded-md border border-border p-2"
-								>
-									<button
-										type="button"
-										className="absolute right-1 top-1 inline-flex h-6 w-6 items-center justify-center rounded-full bg-destructive text-destructive-foreground"
-										onClick={() => {
-											const next = files.filter((_, i) => i !== idx);
-											setValue(name as any, next as any, {
-												shouldValidate: true,
-												shouldDirty: true,
-												shouldTouch: true,
-											});
-										}}
-										aria-label="Remove file"
-									>
-										×
-									</button>
-									{isImg ? (
-										<img
-											src={url}
-											alt={f.name}
-											className="h-24 w-full rounded object-cover"
-										/>
-									) : (
-										<div className="flex h-24 items-center justify-center rounded bg-muted text-xs text-muted-foreground">
-											{f.name}
-										</div>
-									)}
-									<div
-										className="mt-1 truncate text-xs text-muted-foreground"
-										title={`${f.name} • ${(f.size / 1024).toFixed(1)} KB`}
-									>
-										{f.name} • {(f.size / 1024).toFixed(1)} KB
-									</div>
-								</div>
-							);
-						})}
-					</div>
-				)}
-				<div className="flex items-center gap-2 text-xs">
-					{typeof fileCfg.min === "number" && (
-						<span className="text-muted-foreground">Min: {fileCfg.min}</span>
-					)}
-					{typeof fileCfg.max === "number" && (
-						<span className="text-muted-foreground">Max: {fileCfg.max}</span>
-					)}
-				</div>
-				{(tooMany || tooFew) && (
-					<span className="text-xs text-red-500 dark:text-red-400">
-						{tooMany
-							? `You can upload at most ${fileCfg.max} file(s).`
-							: `Please upload at least ${fileCfg.min} file(s).`}
-					</span>
-				)}
-				{error && (
-					<span className="text-xs text-red-500 dark:text-red-400">
-						{error}
-					</span>
-				)}
-			</div>
+			<FileUploadField
+				name={name}
+				label={label}
+				error={error}
+				accept={fileCfg.accept}
+				min={fileCfg.min}
+				max={fileCfg.max}
+				form={form}
+			/>
 		);
 	}
 
 	// Fallback text input
-	return (
-		<div className="flex flex-col gap-1">
-			<span className="text-sm text-muted-foreground">{label}</span>
-			<input
-				className="rounded-md border border-border bg-background px-3 py-2 text-foreground shadow-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary"
-				type="text"
-				{...register(name as any)}
-			/>
-			{error && (
-				<span className="text-xs text-red-500 dark:text-red-400">{error}</span>
-			)}
-		</div>
-	);
+	return <TextField name={name} label={label} error={error} form={form} />;
 };
