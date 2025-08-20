@@ -7,11 +7,12 @@ import { SidebarGroup, SidebarGroupLabel } from "@/components/ui/sidebar";
 import { Button } from "@/components/ui/button";
 import { useAssetsStore } from "@/lib/stores/assets";
 import { useToast } from "@/components/ui/toaster";
-import AssetCard from "@/components/Sidebar/assets/AssetCard";
+import AssetCard, { type Asset } from "@/components/Sidebar/assets/AssetCard";
 import UploadsList from "@/components/Sidebar/assets/UploadsList";
 import PreviewDialog from "@/components/Sidebar/assets/PreviewDialog";
-import ComponentGrid from "@/components/ui/ComponentGrid";
 import type { GridFetcher, GridResponse } from "@/types/component-grid";
+import ComponentGrid from "@/components/ui/grid/components/ComponentGrid";
+import type { GridItemRendererProps } from "@/components/ui/grid/types";
 
 export default function AssetsSection(props: {
 	assets: {
@@ -105,13 +106,12 @@ export default function AssetsSection(props: {
 	}, [mergedAssets]);
 
 	// Local fetcher with search across name, mimeType, and extension; category filter matches primary mime or extension
-	const fetchAssets: GridFetcher<{
-		id: string;
-		name: string;
-		thumbnailUrl?: string;
-		url?: string;
-		mimeType?: string;
-	}> = async ({ page, pageSize, search, categories: cats }) => {
+	const fetchAssets: GridFetcher<Asset> = async ({
+		page,
+		pageSize,
+		search,
+		categories: cats,
+	}) => {
 		const q = (search || "").trim().toLowerCase();
 		const getExt = (a: {
 			name: string;
@@ -213,19 +213,13 @@ export default function AssetsSection(props: {
 
 					{uploads.length > 0 && <UploadsList uploads={uploads as any} />}
 
-					<ComponentGrid<{
-						id: string;
-						name: string;
-						thumbnailUrl?: string;
-						url?: string;
-						mimeType?: string;
-					}>
+					<ComponentGrid<Asset>
 						fetcher={fetchAssets}
-						ItemComponent={({ item }) => (
+						ItemComponent={({ item }: GridItemRendererProps<Asset>) => (
 							<AssetCard
-								asset={item as any}
+								asset={item}
 								onDelete={onDelete}
-								onAttach={onAttach as any}
+								onAttach={onAttach}
 								onPreview={(id) => setPreviewId(id)}
 							/>
 						)}
