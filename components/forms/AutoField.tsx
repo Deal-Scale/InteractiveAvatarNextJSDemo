@@ -142,11 +142,7 @@ export const AutoField: React.FC<AutoFieldProps> = ({
 		return (
 			<div className="flex flex-col gap-1">
 				<span className="text-sm text-muted-foreground">{label}</span>
-				<SensitiveInput
-					name={name}
-					register={register}
-					placeholder={(cfg as any).placeholder}
-				/>
+				<SensitiveInput name={name} register={register} />
 				{normError && (
 					<span className="text-xs text-red-500 dark:text-red-400">
 						{normError}
@@ -343,14 +339,21 @@ export const AutoField: React.FC<AutoFieldProps> = ({
 		}
 
 		return (
-			<label className="flex items-center justify-between gap-3">
-				<span className="text-sm text-muted-foreground">{label}</span>
-				<input
-					className="h-4 w-4 accent-primary"
-					type="checkbox"
-					{...register(name as any)}
-				/>
-			</label>
+			<div className="flex flex-col gap-1">
+				<label className="flex items-center justify-between gap-3">
+					<span className="text-sm text-muted-foreground">{label}</span>
+					<input
+						className="h-4 w-4 accent-primary"
+						type="checkbox"
+						{...register(name as any)}
+					/>
+				</label>
+				{normError && (
+					<span className="text-xs text-red-500 dark:text-red-400">
+						{normError}
+					</span>
+				)}
+			</div>
 		);
 	}
 

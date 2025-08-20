@@ -15,12 +15,20 @@ export function ArrayStringField({
 	placeholder?: string;
 	form: UseFormReturn<any>;
 }) {
-	const { register, setValue, watch } = form;
+	const { register, setValue, watch, unregister, getValues } = form;
 	const currentRaw = watch(name as any) as any;
 	const tags: string[] = Array.isArray(currentRaw)
 		? (currentRaw as string[])
 		: [];
 	const [input, setInput] = React.useState("");
+
+	// Normalize vague Zod errors
+	const normError = React.useMemo(() => {
+		if (!error) return undefined;
+		const t = String(error).trim();
+		if (t.toLowerCase() === "invalid input") return `${label} is required`;
+		return error;
+	}, [error, label]);
 
 	// Debug: render/status logs
 	React.useEffect(() => {
@@ -87,11 +95,30 @@ export function ArrayStringField({
 		}
 	};
 
+	// Keep the field registered without binding a DOM input that would push a string value
+	React.useEffect(() => {
+		try {
+			register(name as any);
+		} catch {}
+
+		// Ensure initial value is an array
+		const v = (getValues() as any)[name];
+		if (!Array.isArray(v)) {
+			setValue(name as any, [] as any, { shouldValidate: true });
+		}
+
+		return () => {
+			try {
+				unregister(name as any);
+			} catch {}
+		};
+		// eslint-disable-next-line react-hooks/exhaustive-deps
+	}, [name, register, unregister, setValue]);
+
 	return (
 		<div className="flex flex-col gap-1">
 			<span className="text-sm text-muted-foreground">{label}</span>
-			{/* Hidden input to keep RHF field registered */}
-			<input type="hidden" {...register(name as any)} />
+			{/* Field is registered imperatively; no hidden input bound to a string value */}
 
 			<div className="flex min-h-10 w-full flex-wrap items-center gap-2 rounded-md border border-border bg-background px-2 py-2">
 				{tags.map((t) => (
@@ -122,8 +149,10 @@ export function ArrayStringField({
 			<span className="text-[11px] text-muted-foreground">
 				Press Enter or comma to add. Backspace to remove last.
 			</span>
-			{error && (
-				<span className="text-xs text-red-500 dark:text-red-400">{error}</span>
+			{normError && (
+				<span className="text-xs text-red-500 dark:text-red-400">
+					{normError}
+				</span>
 			)}
 		</div>
 	);
