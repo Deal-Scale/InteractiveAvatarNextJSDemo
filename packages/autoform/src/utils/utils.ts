@@ -66,7 +66,7 @@ export function unwrapType(t: z.ZodTypeAny): z.ZodTypeAny {
 
 	if (process.env.NODE_ENV !== "production") {
 		try {
-			console.debug("unwrapType trace", {
+			console.log("unwrapType trace", {
 				wrappers,
 				base: cur?._def?.typeName,
 			});

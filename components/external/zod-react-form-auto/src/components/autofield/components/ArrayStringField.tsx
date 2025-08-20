@@ -33,7 +33,7 @@ export function ArrayStringField({
 	// Debug: render/status logs
 	React.useEffect(() => {
 		try {
-			console.debug("ArrayStringField:render", { name, tags });
+			console.log("ArrayStringField:render", { name, tags });
 		} catch {}
 	}, [name, tags]);
 
@@ -48,7 +48,7 @@ export function ArrayStringField({
 				shouldDirty: true,
 			});
 			try {
-				console.debug("ArrayStringField:add", { name, added: t, next });
+				console.log("ArrayStringField:add", { name, added: t, next });
 			} catch {}
 			setInput("");
 		},
@@ -63,7 +63,7 @@ export function ArrayStringField({
 			shouldDirty: true,
 		});
 		try {
-			console.debug("ArrayStringField:remove", { name, removed: t, next });
+			console.log("ArrayStringField:remove", { name, removed: t, next });
 		} catch {}
 	};
 

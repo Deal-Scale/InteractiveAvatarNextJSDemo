@@ -13,6 +13,23 @@ import {
 	type FieldsConfig,
 } from "./utils";
 import { SensitiveInput } from "./fields";
+import { ArrayStringField } from "@/components/external/zod-react-form-auto/src/components/autofield/components/ArrayStringField";
+
+// Dev-only: one-time console clear and reminder banner
+let __AF_DEBUG_ONCE = false;
+if (process.env.NODE_ENV !== "production" && typeof window !== "undefined") {
+	if (!__AF_DEBUG_ONCE) {
+		try {
+			console.clear();
+			// eslint-disable-next-line no-console
+			console.info(
+				"%c[AutoForm Debug] Verbose detection logs ENABLED (temporary) — remember to remove after fixing tags chips.",
+				"color:#0ea5e9;font-weight:bold;",
+			);
+		} catch {}
+		__AF_DEBUG_ONCE = true;
+	}
+}
 
 export type AutoFieldProps = {
 	name: string;
@@ -174,13 +191,25 @@ export const AutoField: React.FC<AutoFieldProps> = ({
 
 	const base = unwrapType(def);
 
+	// Dev-only structured debug helper
+	const devLog = (
+		label: string,
+		data: Record<string, unknown> | undefined = undefined,
+	) => {
+		if (process.env.NODE_ENV !== "production") {
+			try {
+				// eslint-disable-next-line no-console
+				console.log(`[AFDetect][${name}] ${label}`, data ?? {});
+			} catch {}
+		}
+	};
+
 	if (process.env.NODE_ENV !== "production") {
-		try {
-			console.debug("AutoField detect", {
-				name,
-				typeName: (base as any)?._def?.typeName,
-			});
-		} catch {}
+		devLog("base-type", {
+			baseType: (base as any)?._def?.typeName,
+			defType: (def as any)?._def?.typeName,
+			cfgWidget: (fields as any)[name]?.widget,
+		});
 	}
 
 	// Enum
@@ -236,14 +265,18 @@ export const AutoField: React.FC<AutoFieldProps> = ({
 		return renderSelect(opts, Boolean((cfg as any).multiple));
 	}
 
-	// Array -> multi select or textarea
+	// Array -> multi select or textarea/chips
 	if ((base as any)._def?.typeName === "ZodArray") {
 		const el = (base as any)._def.type as z.ZodTypeAny;
+		devLog("array:detected", {
+			elType: (el as any)?._def?.typeName,
+			cfgHasOptions: Boolean((cfg as any).options?.length),
+		});
 
 		if ((el as any)?._def?.typeName === "ZodEnum") {
 			const values = enumStringValuesFromZodEnum((el as any).options);
 			const opts = optionsFromStrings(values);
-
+			devLog("array:enum -> multi-select", { optionCount: opts.length });
 			return renderSelect(opts, true);
 		}
 		if ((el as any)._def?.typeName === "ZodNativeEnum") {
@@ -252,44 +285,30 @@ export const AutoField: React.FC<AutoFieldProps> = ({
 				(v): v is string => typeof v === "string",
 			);
 			const opts = optionsFromStrings(values);
-
+			devLog("array:native-enum -> multi-select", { optionCount: opts.length });
 			return renderSelect(opts, true);
 		}
 		if (
 			(el as any)._def?.typeName === "ZodString" &&
 			(cfg as any).options?.length
 		) {
+			devLog("array:string + cfg.options -> multi-select", {
+				optionCount: (cfg as any).options.length,
+			});
 			return renderSelect((cfg as any).options!, true);
 		}
 		if ((el as any)._def?.typeName === "ZodString") {
-			const current = (getValues() as any)[name] as string[] | undefined;
-
+			devLog("array:string -> chips", {
+				reason: "no options provided; using ArrayStringField",
+			});
 			return (
-				<div className="flex flex-col gap-1">
-					<span className="text-sm text-muted-foreground">{label}</span>
-					<textarea
-						className="min-h-24 max-h-[60vh] w-full resize-y rounded-md border border-border bg-background px-3 py-2 text-foreground shadow-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary"
-						placeholder={cfg.placeholder ?? "Enter values, one per line"}
-						rows={cfg.rows ?? 5}
-						value={(current ?? []).join("\n")}
-						onChange={(e) => {
-							const arr = e.target.value
-								.split("\n")
-								.map((s) => s.trim())
-								.filter(Boolean);
-
-							setValue(name as any, arr as any, {
-								shouldValidate: true,
-								shouldDirty: true,
-							});
-						}}
-					/>
-					{normError && (
-						<span className="text-xs text-red-500 dark:text-red-400">
-							{normError}
-						</span>
-					)}
-				</div>
+				<ArrayStringField
+					name={name}
+					label={label}
+					error={normError}
+					placeholder={cfg.placeholder}
+					form={form as unknown as UseFormReturn<any>}
+				/>
 			);
 		}
 	}
@@ -413,11 +432,7 @@ export const AutoField: React.FC<AutoFieldProps> = ({
 			return (
 				<div className="flex flex-col gap-1">
 					<span className="text-sm text-muted-foreground">{label}</span>
-					<SensitiveInput
-						name={name}
-						register={register}
-						placeholder={(cfg as any).placeholder}
-					/>
+					<SensitiveInput name={name} register={register} />
 					{normError && (
 						<span className="text-xs text-red-500 dark:text-red-400">
 							{normError}

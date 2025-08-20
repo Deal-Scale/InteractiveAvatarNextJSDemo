@@ -27,7 +27,7 @@ export const AutoField: React.FC<AutoFieldProps> = ({
 	form,
 	fields = {},
 }) => {
-	const { register, formState, setValue, getValues } = form;
+	const { register, formState, setValue, getValues, watch } = form;
 
 	const cfg = (fields as any)[name] || {};
 	const label = cfg.label ?? name;
@@ -163,13 +163,25 @@ export const AutoField: React.FC<AutoFieldProps> = ({
 
 	const base = unwrapType(def);
 
+	// Dev-only structured debug helper
+	const devLog = (
+		label: string,
+		data: Record<string, unknown> | undefined = undefined,
+	) => {
+		if (process.env.NODE_ENV !== "production") {
+			try {
+				// eslint-disable-next-line no-console
+				console.log(`[PkgAF][${name}] ${label}`, data ?? {});
+			} catch {}
+		}
+	};
+
 	if (process.env.NODE_ENV !== "production") {
-		try {
-			console.debug("AutoField detect", {
-				name,
-				typeName: (base as any)?._def?.typeName,
-			});
-		} catch {}
+		devLog("base-type", {
+			baseType: (base as any)?._def?.typeName,
+			defType: (def as any)?._def?.typeName,
+			cfgWidget: (fields as any)[name]?.widget,
+		});
 	}
 
 	// Enum
@@ -225,14 +237,14 @@ export const AutoField: React.FC<AutoFieldProps> = ({
 		return renderSelect(opts, Boolean((cfg as any).multiple));
 	}
 
-	// Array -> multi select or textarea
+	// Array -> multi select or chips for string[]
 	if ((base as any)._def?.typeName === "ZodArray") {
 		const el = (base as any)._def.type as z.ZodTypeAny;
 
 		if ((el as any)?._def?.typeName === "ZodEnum") {
 			const values = enumStringValuesFromZodEnum((el as any).options);
 			const opts = optionsFromStrings(values);
-
+			devLog("array:enum -> multi-select", { optionCount: opts.length });
 			return renderSelect(opts, true);
 		}
 		if ((el as any)._def?.typeName === "ZodNativeEnum") {
@@ -241,38 +253,120 @@ export const AutoField: React.FC<AutoFieldProps> = ({
 				(v): v is string => typeof v === "string",
 			);
 			const opts = optionsFromStrings(values);
-
+			devLog("array:native-enum -> multi-select", { optionCount: opts.length });
 			return renderSelect(opts, true);
 		}
 		if (
 			(el as any)._def?.typeName === "ZodString" &&
 			(cfg as any).options?.length
 		) {
+			devLog("array:string + cfg.options -> multi-select", {
+				optionCount: (cfg as any).options?.length,
+			});
 			return renderSelect((cfg as any).options!, true);
 		}
 		if ((el as any)._def?.typeName === "ZodString") {
-			const current = (getValues() as any)[name] as string[] | undefined;
+			devLog("array:detected", {
+				elType: (el as any)?._def?.typeName,
+				cfgHasOptions: Boolean((cfg as any).options?.length),
+			});
+
+			// Inline chips UI for string[]
+			devLog("array:string -> chips", {
+				reason: "no options provided; using chips UI",
+			});
+
+			const tags = (watch(name as any) as string[] | undefined) ?? [];
+			const [input, setInput] = React.useState("");
+
+			const commitTag = React.useCallback(
+				(raw: string) => {
+					const t = raw.trim();
+					if (!t) return;
+					if (tags.includes(t)) return;
+					const next = [...tags, t];
+					setValue(name as any, next as any, {
+						shouldValidate: true,
+						shouldDirty: true,
+					});
+					try {
+						// eslint-disable-next-line no-console
+						console.log("Pkg:ArrayStringField:add", { name, added: t, next });
+					} catch {}
+					setInput("");
+				},
+				// eslint-disable-next-line react-hooks/exhaustive-deps
+				[tags, name, setValue],
+			);
+
+			const removeTag = (t: string) => {
+				const next = tags.filter((x) => x !== t);
+				setValue(name as any, next as any, {
+					shouldValidate: true,
+					shouldDirty: true,
+				});
+				try {
+					// eslint-disable-next-line no-console
+					console.log("Pkg:ArrayStringField:remove", {
+						name,
+						removed: t,
+						next,
+					});
+				} catch {}
+			};
+
+			const onKeyDown: React.KeyboardEventHandler<HTMLInputElement> = (e) => {
+				if (e.key === "Enter" || e.key === ",") {
+					e.preventDefault();
+					commitTag(input);
+				} else if (e.key === "Backspace" && input === "" && tags.length) {
+					removeTag(tags[tags.length - 1]);
+				}
+			};
+
+			const onPaste: React.ClipboardEventHandler<HTMLInputElement> = (e) => {
+				const text = e.clipboardData.getData("text");
+				const parts = text
+					.split(/\n|,|\t|;/)
+					.map((s) => s.trim())
+					.filter(Boolean);
+				if (parts.length) {
+					e.preventDefault();
+					for (const p of parts) commitTag(p);
+				}
+			};
 
 			return (
 				<div className="flex flex-col gap-1">
 					<span className="text-sm text-muted-foreground">{label}</span>
-					<textarea
-						className="min-h-24 max-h-[60vh] w-full resize-y rounded-md border border-border bg-background px-3 py-2 text-foreground shadow-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary"
-						placeholder={cfg.placeholder ?? "Enter values, one per line"}
-						rows={cfg.rows ?? 5}
-						value={(current ?? []).join("\n")}
-						onChange={(e) => {
-							const arr = e.target.value
-								.split("\n")
-								.map((s) => s.trim())
-								.filter(Boolean);
-
-							setValue(name as any, arr as any, {
-								shouldValidate: true,
-								shouldDirty: true,
-							});
-						}}
-					/>
+					<div className="flex flex-wrap items-center gap-2 rounded-md border border-border bg-background px-2 py-1">
+						{tags.map((t) => (
+							<span
+								key={t}
+								className="inline-flex items-center gap-1 rounded bg-muted px-2 py-0.5 text-xs text-foreground"
+							>
+								{t}
+								<button
+									type="button"
+									className="ml-1 rounded px-1 text-muted-foreground hover:bg-muted-foreground/10"
+									onClick={() => removeTag(t)}
+									aria-label={`Remove ${t}`}
+								>
+									×
+								</button>
+							</span>
+						))}
+						<input
+							className="flex-1 min-w-[8ch] bg-transparent px-1 py-1 outline-none"
+							value={input}
+							onChange={(e) => setInput(e.target.value)}
+							onKeyDown={onKeyDown}
+							onPaste={onPaste}
+							placeholder={
+								(cfg as any).placeholder ?? "Add tag and press Enter"
+							}
+						/>
+					</div>
 					{error && (
 						<span className="text-xs text-red-500 dark:text-red-400">
 							{error}

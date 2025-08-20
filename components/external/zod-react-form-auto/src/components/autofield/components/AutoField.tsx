@@ -47,7 +47,7 @@ export const AutoField: React.FC<AutoFieldProps> = ({
 
 	// Debug: what is the unwrapped base type and configured widget?
 	try {
-		console.debug("AutoField:init", {
+		console.log("AutoField:init", {
 			name,
 			cfgWidget: (cfg as any).widget,
 			baseType: (base as any)?.constructor?.name,
@@ -156,7 +156,7 @@ export const AutoField: React.FC<AutoFieldProps> = ({
 		(base as any)?.options
 	) {
 		try {
-			console.debug("AutoField:enum", {
+			console.log("AutoField:enum", {
 				name,
 				baseType: (base as any)?.constructor?.name,
 			});
@@ -192,7 +192,7 @@ export const AutoField: React.FC<AutoFieldProps> = ({
 		Array.isArray((base as any)?._def?.options)
 	) {
 		try {
-			console.debug("AutoField:union", { name });
+			console.log("AutoField:union", { name });
 		} catch {}
 		const options: z.ZodTypeAny[] = (base as any)?._def?.options ?? [];
 		const stringVals: string[] = [];
@@ -229,7 +229,7 @@ export const AutoField: React.FC<AutoFieldProps> = ({
 	if (base instanceof z.ZodArray) {
 		const el = (base as any)?._def?.type as z.ZodTypeAny;
 		try {
-			console.debug("AutoField:array", {
+			console.log("AutoField:array", {
 				name,
 				elType: (el as any)?.constructor?.name,
 				cfgWidget: (cfg as any).widget,
@@ -247,7 +247,7 @@ export const AutoField: React.FC<AutoFieldProps> = ({
 				opts = (cfg as any).options as Array<{ value: string; label: string }>;
 			}
 			try {
-				console.debug("AutoField:array enum->select", {
+				console.log("AutoField:array enum->select", {
 					name,
 					optsLen: opts.length,
 				});
