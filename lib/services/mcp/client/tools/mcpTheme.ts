@@ -20,21 +20,21 @@ function hasWindow(): boolean {
 	return typeof window !== "undefined";
 }
 
+const w = typeof window !== "undefined" ? window : undefined;
+
 export function setThemeMode(mode: ThemeMode) {
 	if (!hasWindow()) return;
-	window.dispatchEvent(new CustomEvent(THEME_SET_EVENT, { detail: { mode } }));
+	w?.dispatchEvent(new CustomEvent(THEME_SET_EVENT, { detail: { mode } }));
 }
 
 export function setThemeEmotion(emotion: ThemeEmotion) {
 	if (!hasWindow()) return;
-	window.dispatchEvent(
-		new CustomEvent(THEME_SET_EVENT, { detail: { emotion } }),
-	);
+	w?.dispatchEvent(new CustomEvent(THEME_SET_EVENT, { detail: { emotion } }));
 }
 
 export function setTheme(patch: ThemePatch) {
 	if (!hasWindow()) return;
-	window.dispatchEvent(new CustomEvent(THEME_SET_EVENT, { detail: patch }));
+	w?.dispatchEvent(new CustomEvent(THEME_SET_EVENT, { detail: patch }));
 }
 
 // Optional global for direct control
@@ -50,10 +50,11 @@ declare global {
 
 if (hasWindow()) {
 	try {
-		window.mcpTheme = {
-			setMode: setThemeMode,
-			setEmotion: setThemeEmotion,
-			setTheme,
-		};
+		if (w)
+			w.mcpTheme = {
+				setMode: setThemeMode,
+				setEmotion: setThemeEmotion,
+				setTheme,
+			};
 	} catch {}
 }

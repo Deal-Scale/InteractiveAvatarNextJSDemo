@@ -12,14 +12,16 @@ function hasWindow(): boolean {
 	return typeof window !== "undefined";
 }
 
+const w = typeof window !== "undefined" ? window : undefined;
+
 export function requestMic(opts: MCPAudioRequest = {}): void {
 	if (!hasWindow()) return;
-	window.dispatchEvent(new CustomEvent(AUDIO_REQUEST_EVENT, { detail: opts }));
+	w?.dispatchEvent(new CustomEvent(AUDIO_REQUEST_EVENT, { detail: opts }));
 }
 
 export function releaseMic(): void {
 	if (!hasWindow()) return;
-	window.dispatchEvent(new CustomEvent(AUDIO_RELEASE_EVENT));
+	w?.dispatchEvent(new CustomEvent(AUDIO_RELEASE_EVENT));
 }
 
 // Optional global
@@ -34,9 +36,10 @@ declare global {
 
 if (hasWindow()) {
 	try {
-		window.mcpAudio = {
-			request: requestMic,
-			release: releaseMic,
-		};
+		if (w)
+			w.mcpAudio = {
+				request: requestMic,
+				release: releaseMic,
+			};
 	} catch {}
 }

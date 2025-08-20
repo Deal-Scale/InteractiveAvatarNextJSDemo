@@ -130,6 +130,9 @@ const Sidebar: React.FC<SidebarProps> = ({ onSelect, apps }) => {
 	});
 	const scheduleSync = useScheduleKBSync();
 
+	// SSR-safe window alias
+	const w = typeof window !== "undefined" ? window : undefined;
+
 	// Build a map of conversations by ID for fast lookup in bookmarks tree
 	const conversationsById = useMemo(() => {
 		const map: Record<
@@ -391,7 +394,7 @@ const Sidebar: React.FC<SidebarProps> = ({ onSelect, apps }) => {
 							url.searchParams.set("scope", scopes.join(" "));
 						}
 						url.searchParams.set("state", state);
-						const popup = window.open(
+						const popup = w?.open(
 							url.toString(),
 							"kb-oauth",
 							"width=480,height=720",
@@ -406,15 +409,15 @@ const Sidebar: React.FC<SidebarProps> = ({ onSelect, apps }) => {
 									(e.data as any).type === "kb-oauth-callback" &&
 									(e.data as any).state === state
 								) {
-									window.removeEventListener("message", listener);
+									w?.removeEventListener("message", listener);
 									resolve((e.data as any).code as string | undefined);
 								}
 							};
-							window.addEventListener("message", listener);
+							w?.addEventListener("message", listener);
 							const timer = setInterval(() => {
 								if (popup.closed) {
 									clearInterval(timer);
-									window.removeEventListener("message", listener);
+									w?.removeEventListener("message", listener);
 									resolve(undefined);
 								}
 							}, 500);

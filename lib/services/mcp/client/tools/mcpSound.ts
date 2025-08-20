@@ -15,14 +15,16 @@ function hasWindow(): boolean {
 	return typeof window !== "undefined";
 }
 
+const w = typeof window !== "undefined" ? window : undefined;
+
 export function playSound(opts: MCPSoundPlay): void {
 	if (!hasWindow()) return;
-	window.dispatchEvent(new CustomEvent(SOUND_PLAY_EVENT, { detail: opts }));
+	w?.dispatchEvent(new CustomEvent(SOUND_PLAY_EVENT, { detail: opts }));
 }
 
 export function stopAllSounds(): void {
 	if (!hasWindow()) return;
-	window.dispatchEvent(new CustomEvent(SOUND_STOP_ALL_EVENT));
+	w?.dispatchEvent(new CustomEvent(SOUND_STOP_ALL_EVENT));
 }
 
 // Optional global for direct control
@@ -37,9 +39,10 @@ declare global {
 
 if (hasWindow()) {
 	try {
-		window.mcpSound = {
-			play: playSound,
-			stopAll: stopAllSounds,
-		};
+		if (w)
+			w.mcpSound = {
+				play: playSound,
+				stopAll: stopAllSounds,
+			};
 	} catch {}
 }

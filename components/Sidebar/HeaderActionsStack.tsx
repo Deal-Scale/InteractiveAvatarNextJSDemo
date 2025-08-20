@@ -27,6 +27,9 @@ export default function HeaderActionsStack({
 	const { openConfigModal } = useSessionStore();
 	const [placementOpen, setPlacementOpen] = useState(false);
 
+	// SSR-safe window alias
+	const w = typeof window !== "undefined" ? window : undefined;
+
 	// Alt+P global shortcut to open Placement
 	useEffect(() => {
 		const handler = (e: KeyboardEvent) => {
@@ -35,8 +38,8 @@ export default function HeaderActionsStack({
 				setPlacementOpen(true);
 			}
 		};
-		window.addEventListener("keydown", handler);
-		return () => window.removeEventListener("keydown", handler);
+		w?.addEventListener("keydown", handler);
+		return () => w?.removeEventListener("keydown", handler);
 	}, []);
 
 	return (

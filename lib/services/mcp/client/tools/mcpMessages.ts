@@ -17,6 +17,8 @@ function hasWindow(): boolean {
 	return typeof window !== "undefined";
 }
 
+const w = typeof window !== "undefined" ? window : undefined;
+
 /**
  * Fetch timestamp for a given messageId from FastAPI.
  * Assumes endpoint: GET {baseUrl}/messages/{messageId}/timestamp returning { timestamp: string }
@@ -50,7 +52,7 @@ export async function getMessageTimestamp(
  */
 export function requestMessageTimestamp(messageId: string): void {
 	if (!hasWindow()) return;
-	window.dispatchEvent(
+	w?.dispatchEvent(
 		new CustomEvent(MSG_GET_TS_EVENT, { detail: { messageId } }),
 	);
 }
@@ -70,9 +72,10 @@ declare global {
 
 if (hasWindow()) {
 	try {
-		window.mcpMessages = {
-			getTimestamp: getMessageTimestamp,
-			requestTimestamp: requestMessageTimestamp,
-		};
+		if (w)
+			w.mcpMessages = {
+				getTimestamp: getMessageTimestamp,
+				requestTimestamp: requestMessageTimestamp,
+			};
 	} catch {}
 }

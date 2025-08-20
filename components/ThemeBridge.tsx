@@ -24,11 +24,16 @@ export default function ThemeBridge() {
 	const emotion = useThemeStore((s) => s.emotion);
 	const setStore = useThemeStore((s) => s.setTheme);
 
+	// SSR-safe window alias
+	const w = typeof window !== "undefined" ? window : undefined;
+	// SSR-safe document alias
+	const d = typeof document !== "undefined" ? document : undefined;
+
 	// Apply emotion CSS class to <html>
 	const applyEmotionClass = React.useCallback(
 		(emo: ThemeEmotion, resolved: string | null | undefined) => {
-			if (typeof document === "undefined") return;
-			const root = document.documentElement;
+			if (!d) return;
+			const root = d.documentElement;
 			const cls = computeEmotionClass(emo, resolved);
 			// remove previous classes
 			const EMOTIONS: ThemeEmotion[] = [
@@ -71,13 +76,10 @@ export default function ThemeBridge() {
 
 			if (ce.detail) setStore(ce.detail);
 		}
-		window.addEventListener(THEME_SET_EVENT, onThemeEvent as EventListener);
+		w?.addEventListener(THEME_SET_EVENT, onThemeEvent as EventListener);
 
 		return () => {
-			window.removeEventListener(
-				THEME_SET_EVENT,
-				onThemeEvent as EventListener,
-			);
+			w?.removeEventListener(THEME_SET_EVENT, onThemeEvent as EventListener);
 		};
 	}, [setStore]);
 

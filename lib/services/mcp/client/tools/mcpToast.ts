@@ -47,13 +47,15 @@ function hasWindow(): boolean {
 	return typeof window !== "undefined";
 }
 
+const w = typeof window !== "undefined" ? window : undefined;
+
 export function publishToast(opts: MCPToastOptions): string | undefined {
 	if (!hasWindow()) return undefined;
 
 	// Prefer direct global API if available for immediate id return
-	if (window.mcpToast && typeof window.mcpToast.publish === "function") {
+	if (w?.mcpToast && typeof w.mcpToast.publish === "function") {
 		try {
-			return window.mcpToast.publish(opts as any);
+			return w.mcpToast.publish(opts as any);
 		} catch {
 			// fall through to event-based
 		}
@@ -61,7 +63,7 @@ export function publishToast(opts: MCPToastOptions): string | undefined {
 
 	// Event-based call. The React side creates the id; we can't synchronously get it here.
 	// For async update flows, prefer the global API. For fire-and-forget, this is fine.
-	window.dispatchEvent(new CustomEvent(PUBLISH_EVENT, { detail: opts }));
+	w?.dispatchEvent(new CustomEvent(PUBLISH_EVENT, { detail: opts }));
 
 	return undefined;
 }
@@ -69,9 +71,9 @@ export function publishToast(opts: MCPToastOptions): string | undefined {
 export function updateToast(id: string, patch: MCPToastPatch): void {
 	if (!hasWindow()) return;
 
-	if (window.mcpToast && typeof window.mcpToast.update === "function") {
+	if (w?.mcpToast && typeof w.mcpToast.update === "function") {
 		try {
-			window.mcpToast.update(id, patch as any);
+			w.mcpToast.update(id, patch as any);
 
 			return;
 		} catch {
@@ -79,17 +81,15 @@ export function updateToast(id: string, patch: MCPToastPatch): void {
 		}
 	}
 
-	window.dispatchEvent(
-		new CustomEvent(UPDATE_EVENT, { detail: { id, patch } }),
-	);
+	w?.dispatchEvent(new CustomEvent(UPDATE_EVENT, { detail: { id, patch } }));
 }
 
 export function dismissToast(id: string): void {
 	if (!hasWindow()) return;
 
-	if (window.mcpToast && typeof window.mcpToast.dismiss === "function") {
+	if (w?.mcpToast && typeof w.mcpToast.dismiss === "function") {
 		try {
-			window.mcpToast.dismiss(id);
+			w.mcpToast.dismiss(id);
 
 			return;
 		} catch {
@@ -97,7 +97,7 @@ export function dismissToast(id: string): void {
 		}
 	}
 
-	window.dispatchEvent(new CustomEvent(DISMISS_EVENT, { detail: id }));
+	w?.dispatchEvent(new CustomEvent(DISMISS_EVENT, { detail: id }));
 }
 
 // Convenience helpers
