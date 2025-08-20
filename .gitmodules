@@ -4,3 +4,6 @@
 [submodule "scripts"]
 	path = scripts
 	url = https://github.com/TechWithTy/scripts.git
+[submodule "components/external/zod-react-form-auto"]
+	path = components/external/zod-react-form-auto
+	url = https://github.com/techwithty/zod-react-form-auto.git
