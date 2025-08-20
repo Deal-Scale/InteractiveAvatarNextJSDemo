@@ -27,6 +27,10 @@ export const queryKeys = {
 		upload: (sessionId?: string) =>
 			["assets", "upload", sessionId ?? "default"] as const,
 	},
+	kb: {
+		list: ["kb", "list"] as const,
+		detail: (id: string) => ["kb", "detail", id] as const,
+	},
 	auth: {
 		accessToken: ["auth", "access-token"] as const,
 	},

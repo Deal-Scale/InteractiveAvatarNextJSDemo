@@ -34,6 +34,12 @@ import MessagesSection from "@/components/Sidebar/MessagesSection";
 import { useComposerStore } from "@/lib/stores/composer";
 import ActiveSessionsSection from "@/components/Sidebar/ActiveSessionsSection";
 import SessionsHistorySection from "@/components/Sidebar/SessionsHistorySection";
+import AddKnowledgeBaseModal from "@/components/KnowledgeBase/AddKnowledgeBaseModal";
+import {
+	useConnectKBSource,
+	useScheduleKBSync,
+	useTestKBConnection,
+} from "@/lib/query/mutations";
 
 // types, utils, and subcomponents are imported from components/Sidebar/*
 
@@ -110,6 +116,19 @@ const Sidebar: React.FC<SidebarProps> = ({ onSelect, apps }) => {
 		React.useState<boolean>(false);
 	const [collapsedSessionsHistory, setCollapsedSessionsHistory] =
 		React.useState<boolean>(true);
+
+	// Knowledge Base modal state and hooks
+	const [kbModalOpen, setKbModalOpen] = React.useState(false);
+	const testKB = useTestKBConnection();
+	const connectKB = useConnectKBSource({
+		onSuccess: async (kb) => {
+			// Schedule initial sync for API-based KBs
+			if (kb.sourceType === "api") {
+				scheduleSync.mutate({ id: kb.id });
+			}
+		},
+	});
+	const scheduleSync = useScheduleKBSync();
 
 	// Build a map of conversations by ID for fast lookup in bookmarks tree
 	const conversationsById = useMemo(() => {
@@ -292,6 +311,7 @@ const Sidebar: React.FC<SidebarProps> = ({ onSelect, apps }) => {
 							// Trigger OAuth flow for API sync (replace with your real auth)
 							console.debug("KB OAuth: begin auth flow");
 						}}
+						onOpenAddKB={() => setKbModalOpen(true)}
 					/>
 
 					{/* Streaming sections */}
@@ -328,25 +348,40 @@ const Sidebar: React.FC<SidebarProps> = ({ onSelect, apps }) => {
 						/>
 					)}
 				</SidebarContent>
-
-				<SidebarFooter className="px-2" />
 			</UISidebar>
-			<CollapsedEdgeTrigger />
+
 			{/* Bookmark Modal */}
 			<BookmarkModal
-				bookmarkFolders={bookmark.bookmarkFolders}
-				bookmarkTargetId={bookmark.bookmarkTargetId}
-				bookmarkedIds={bookmark.bookmarkedIds}
-				draftFolderId={bookmark.draftFolderId}
-				draftNewFolder={bookmark.draftNewFolder}
-				draftTags={bookmark.draftTags}
 				open={bookmark.bookmarkModalOpen}
+				bookmarkedIds={bookmark.bookmarkedIds}
+				bookmarkTargetId={bookmark.bookmarkTargetId}
+				bookmarkFolders={bookmark.bookmarkFolders}
+				draftFolderId={bookmark.draftFolderId}
 				setDraftFolderId={bookmark.setDraftFolderId}
+				draftNewFolder={bookmark.draftNewFolder}
 				setDraftNewFolder={bookmark.setDraftNewFolder}
+				draftTags={bookmark.draftTags}
 				setDraftTags={bookmark.setDraftTags}
 				onClose={bookmark.close}
 				onRemove={bookmark.handleRemoveBookmark}
 				onSave={bookmark.saveBookmark}
+			/>
+
+			{/* Knowledge Base Add Modal */}
+			<AddKnowledgeBaseModal
+				open={kbModalOpen}
+				onOpenChange={setKbModalOpen}
+				onCreated={() => {
+					// No-op; mutations already invalidate caches via hooks
+				}}
+				onTestConnection={async (connectorKey, cfg) => {
+					const res = await testKB.mutateAsync({ connectorKey, config: cfg });
+					return res;
+				}}
+				onConnect={async (connectorKey, cfg) => {
+					const kb = await connectKB.mutateAsync({ connectorKey, config: cfg });
+					return { id: kb.id, name: kb.name };
+				}}
 			/>
 		</SidebarProvider>
 	);
