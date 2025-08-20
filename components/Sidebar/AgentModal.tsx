@@ -48,7 +48,7 @@ export default function AgentModal(props: {
 	// initial blank for create mode
 	const initialCreate: Agent = useMemo(
 		() => ({
-			id: `new-${Date.now()}`,
+			id: "new",
 			name: "",
 			avatarUrl: "",
 			role: "",
@@ -101,7 +101,7 @@ export default function AgentModal(props: {
 		resolver: zodResolver(AgentFormSchema),
 		mode: "onChange",
 		defaultValues: {
-			id: (working as any)?.id || `new-${Date.now()}`,
+			id: (working as any)?.id || "new",
 			name: working?.name || "",
 			avatarId: undefined as any,
 			role: working?.role || "",
@@ -116,7 +116,7 @@ export default function AgentModal(props: {
 	React.useEffect(() => {
 		// Sync form defaults when switching target or mode
 		form.reset({
-			id: (working as any)?.id || `new-${Date.now()}`,
+			id: (working as any)?.id || "new",
 			name: working?.name || "",
 			avatarId: undefined as any,
 			role: working?.role || "",
