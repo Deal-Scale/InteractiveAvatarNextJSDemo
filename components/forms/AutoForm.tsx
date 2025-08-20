@@ -1,5 +1,6 @@
 "use client";
 import type { FieldsConfig } from "./utils";
+import { unwrapType } from "./utils";
 
 import React from "react";
 import { z } from "zod";
@@ -25,11 +26,30 @@ export function AutoForm<TSchema extends z.ZodObject<any, any>>({
 	className,
 }: AutoFormProps<TSchema>) {
 	const { handleSubmit, formState } = form;
+	// Unwrap potential wrappers (Effects/Readonly/Branded/Pipeline/etc) to reach the ZodObject
+	const baseSchema = unwrapType(schema as unknown as z.ZodTypeAny) as any;
+
 	// Support Zod versions where shape is a function vs. a plain object
-	const shape: Record<string, z.ZodTypeAny> =
-		typeof (schema as any)._def?.shape === "function"
-			? ((schema as any)._def.shape() as Record<string, z.ZodTypeAny>)
-			: ((schema as any).shape as Record<string, z.ZodTypeAny>);
+	let shape: Record<string, z.ZodTypeAny> = {} as any;
+	try {
+		if (typeof baseSchema?._def?.shape === "function") {
+			shape = baseSchema._def.shape() as Record<string, z.ZodTypeAny>;
+		} else if (baseSchema?.shape && typeof baseSchema.shape === "object") {
+			shape = baseSchema.shape as Record<string, z.ZodTypeAny>;
+		}
+	} catch {}
+
+	if (!shape || Object.keys(shape).length === 0) {
+		if (process.env.NODE_ENV !== "production") {
+			try {
+				console.warn("AutoForm: empty shape", {
+					incomingType: (schema as any)?._def?.typeName,
+					baseType: (baseSchema as any)?._def?.typeName,
+				});
+			} catch {}
+		}
+		shape = {} as any;
+	}
 
 	const keys = Object.keys(shape);
 

@@ -100,6 +100,67 @@ export const AutoField: React.FC<AutoFieldProps> = ({
 		);
 	};
 
+	// If the fields config explicitly requests a widget, honor it first
+	if ((cfg as any).widget === "select") {
+		const opts = ((cfg as any).options ?? []) as Array<{
+			value: string;
+			label: string;
+		}>;
+		return (function renderConfiguredSelect() {
+			return renderSelect(opts, Boolean((cfg as any).multiple));
+		})();
+	}
+	if ((cfg as any).widget === "textarea") {
+		return (
+			<div className="flex flex-col gap-1">
+				<span className="text-sm text-muted-foreground">{label}</span>
+				<textarea
+					className="min-h-24 max-h-[60vh] w-full resize-y rounded-md border border-border bg-background px-3 py-2 text-foreground shadow-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary"
+					rows={(cfg as any).rows ?? 5}
+					{...register(name as any)}
+				/>
+				{error && (
+					<span className="text-xs text-red-500 dark:text-red-400">
+						{error}
+					</span>
+				)}
+			</div>
+		);
+	}
+	if ((cfg as any).widget === "password") {
+		return (
+			<div className="flex flex-col gap-1">
+				<span className="text-sm text-muted-foreground">{label}</span>
+				<SensitiveInput name={name} register={register} />
+				{error && (
+					<span className="text-xs text-red-500 dark:text-red-400">
+						{error}
+					</span>
+				)}
+			</div>
+		);
+	}
+	if ((cfg as any).widget === "slider") {
+		return (
+			<div className="flex flex-col gap-1">
+				<span className="text-sm text-muted-foreground">{label}</span>
+				<input
+					className="w-full accent-primary"
+					max={(cfg as any).max}
+					min={(cfg as any).min}
+					step={(cfg as any).step}
+					type="range"
+					{...register(name as any, { valueAsNumber: true })}
+				/>
+				{error && (
+					<span className="text-xs text-red-500 dark:text-red-400">
+						{error}
+					</span>
+				)}
+			</div>
+		);
+	}
+
 	const base = unwrapType(def);
 
 	if (process.env.NODE_ENV !== "production") {
@@ -426,16 +487,36 @@ export const AutoField: React.FC<AutoFieldProps> = ({
 
 	// Default text input
 	return (
-		<div className="flex flex-col gap-1">
-			<span className="text-sm text-muted-foreground">{label}</span>
-			<input
-				className="rounded-md border border-border bg-background px-3 py-2 text-foreground shadow-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary"
-				type="text"
-				{...register(name as any)}
-			/>
-			{error && (
-				<span className="text-xs text-red-500 dark:text-red-400">{error}</span>
+		// In dev, surface a diagnostic when we fall back to generic text input
+		// so we can see which typeName we failed to map.
+		// This helps catch regressions where everything renders as text.
+		<>
+			{process.env.NODE_ENV !== "production" && (
+				<script
+					// eslint-disable-next-line react/no-danger
+					dangerouslySetInnerHTML={{
+						__html: `console.warn("AutoField fallback:text", ${JSON.stringify({
+							name,
+							cfg,
+							baseType: (base as any)?._def?.typeName,
+							defType: (def as any)?._def?.typeName,
+						})}});`,
+					}}
+				/>
 			)}
-		</div>
+			<div className="flex flex-col gap-1">
+				<span className="text-sm text-muted-foreground">{label}</span>
+				<input
+					className="rounded-md border border-border bg-background px-3 py-2 text-foreground shadow-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary"
+					type="text"
+					{...register(name as any)}
+				/>
+				{error && (
+					<span className="text-xs text-red-500 dark:text-red-400">
+						{error}
+					</span>
+				)}
+			</div>
+		</>
 	);
 };
