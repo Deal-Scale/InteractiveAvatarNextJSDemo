@@ -8,8 +8,20 @@ const statsSummary = {
 };
 
 const bookmarks = [
-	{ id: "1", title: "Welcome", tags: ["intro"], lastMessage: "Hello" },
-	{ id: "2", title: "About", tags: ["info"], lastMessage: "Details" },
+	{
+		id: "t1",
+		title: "Project roadmap discussion",
+		tags: ["intro"],
+		lastMessage:
+			"Let's prioritize the authentication features for the next sprint.",
+	},
+	{
+		id: "y1",
+		title: "Database Schema Design",
+		tags: ["design"],
+		lastMessage:
+			"Let's add indexes to improve query performance on these tables.",
+	},
 ];
 
 export const handlers = [
