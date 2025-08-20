@@ -8,7 +8,6 @@
 		"start": "next start",
 		"lint": "biome lint .",
 		"lint:github": "pnpm biome lint --reporter=github . > biome.out && grep '::error ' biome.out",
-
 		"format": "biome format --write .",
 		"check": "biome check .",
 		"typecheck": "tsc --noEmit -p tsconfig.json",
@@ -39,6 +38,7 @@
 		"@tanstack/react-query": "^5.85.3",
 		"@tanstack/react-query-devtools": "^5.85.3",
 		"@tanstack/react-router": "^1.131.26",
+		"@tanstack/react-virtual": "^3.13.12",
 		"@tanstack/router-devtools": "^1.131.26",
 		"ahooks": "^3.8.4",
 		"class-variance-authority": "^0.7.1",
