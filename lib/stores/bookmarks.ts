@@ -148,6 +148,25 @@ export const useBookmarkStore = create<BookmarkState>()(
 						s.hasMigratedLegacy = true;
 					}
 				}
+
+				// Seed default mock bookmarks if none exist after migration/hydration
+				try {
+					const currentSize = (s.bookmarkedIds as Set<string>).size ?? 0;
+					if (currentSize === 0) {
+						// Align with conversation IDs from `components/Sidebar/utils/cache.ts`
+						const defaults = ["t1", "y1"];
+						s.bookmarkedIds = new Set<string>(defaults);
+						// Preserve existing meta while ensuring keys exist for defaults
+						s.meta = {
+							...(s.meta ?? {}),
+							// No default folder; you can move them later via the UI
+							t1: { ...(s.meta?.t1 ?? {}) },
+							y1: { ...(s.meta?.y1 ?? {}) },
+						};
+					}
+				} catch {
+					// ignore seeding errors
+				}
 			},
 		},
 	),
