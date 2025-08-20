@@ -81,7 +81,6 @@ export function Sidebar({ children, className = "" }: SidebarProps) {
 			}
 			data-state={open ? "open" : "collapsed"}
 		>
-			=
 			{!open && (
 				<button
 					aria-label="Open sidebar"

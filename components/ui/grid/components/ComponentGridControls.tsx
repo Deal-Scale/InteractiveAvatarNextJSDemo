@@ -57,13 +57,13 @@ export default function ComponentGridControls({
 					placeholder="Search..."
 					value={search}
 					onChange={(e) => onSearchChange(e.target.value)}
-					className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm shadow-sm focus:border-blue-500 focus:outline-none"
+					className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
 				/>
 				{onClearAll && (
 					<button
 						type="button"
 						onClick={onClearAll}
-						className="rounded-md border px-3 py-2 text-sm hover:bg-gray-50"
+						className="rounded-md border border-border bg-background px-3 py-2 text-sm hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
 						aria-label="Clear filters"
 					>
 						Clear
@@ -75,13 +75,13 @@ export default function ComponentGridControls({
 				<div className="relative" aria-label="Category Filters">
 					<button
 						type="button"
-						className="w-full rounded-md border px-3 py-2 text-left text-sm hover:bg-gray-50"
+						className="w-full rounded-md border border-border bg-background px-3 py-2 text-left text-sm hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
 						onClick={() => setCatOpen((v) => !v)}
 						aria-haspopup="listbox"
 						aria-expanded={catOpen}
 					>
 						<span className="mr-2 font-medium">Categories</span>
-						<span className="text-xs text-gray-500">
+						<span className="text-xs text-muted-foreground">
 							{selectedCategories.length > 0
 								? `${selectedCategories.length} selected`
 								: "All"}
@@ -91,25 +91,25 @@ export default function ComponentGridControls({
 						<div
 							role="listbox"
 							aria-label="Select categories"
-							className="absolute z-20 mt-1 w-full rounded-md border bg-white p-2 shadow-lg"
+							className="absolute z-20 mt-1 w-full rounded-md border border-border bg-popover text-popover-foreground p-2 shadow-lg"
 						>
 							<input
 								aria-label="Filter categories"
 								placeholder="Search categories..."
 								value={catQuery}
 								onChange={(e) => setCatQuery(e.target.value)}
-								className="mb-2 w-full rounded-md border px-2 py-1 text-sm focus:border-blue-500 focus:outline-none"
+								className="mb-2 w-full rounded-md border border-border bg-background px-2 py-1 text-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
 							/>
 							<div className="max-h-56 overflow-auto pr-1">
 								{filteredCategories.length === 0 && (
-									<div className="px-2 py-3 text-sm text-gray-500">
+									<div className="px-2 py-3 text-sm text-muted-foreground">
 										No matches
 									</div>
 								)}
 								{filteredCategories.map((c) => (
 									<label
 										key={c}
-										className="flex cursor-pointer items-center gap-2 rounded px-2 py-1 text-sm hover:bg-gray-50"
+										className="flex cursor-pointer items-center gap-2 rounded px-2 py-1 text-sm hover:bg-muted"
 									>
 										<input
 											type="checkbox"
@@ -124,14 +124,14 @@ export default function ComponentGridControls({
 							<div className="mt-2 flex items-center justify-between">
 								<button
 									type="button"
-									className="rounded-md border px-2 py-1 text-xs hover:bg-gray-50"
+									className="rounded-md border border-border bg-background px-2 py-1 text-xs hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
 									onClick={() => onCategoriesChange([])}
 								>
 									Clear
 								</button>
 								<button
 									type="button"
-									className="rounded-md bg-gray-900 px-2 py-1 text-xs text-white hover:bg-black"
+									className="rounded-md bg-primary px-2 py-1 text-xs text-primary-foreground hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
 									onClick={() => setCatOpen(false)}
 								>
 									Done
