@@ -1,0 +1,26 @@
+version: "3.9"
+
+services:
+  web:
+    container_name: interactive-avatar-nextjs
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+    ports:
+      - "3000:3000"
+    environment:
+      # Prefer configuring in your orchestrator (e.g., Coolify) or via an env file.
+      # Below will load variables from the project root .env for local runs.
+      - NODE_ENV=production
+    env_file:
+      - ../.env
+    restart: unless-stopped
+    # If you want to persist anything at runtime, define volumes here.
+    # volumes:
+    #   - type: volume
+    #     source: next-cache
+    #     target: /app/.next/cache
+
+# Named volumes (optional)
+volumes:
+  next-cache:
