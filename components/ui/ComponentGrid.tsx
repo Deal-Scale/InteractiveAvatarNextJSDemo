@@ -32,7 +32,8 @@ export type ComponentGridProps<TItem extends GridItem = GridItem> = {
 	onItemClick?: (item: TItem) => void;
 	ItemComponent: React.ComponentType<GridItemRendererProps<TItem>>;
 	// Layout
-	columns?: number; // default 4
+	columns?: number; // acts as a fallback when width unknown
+	minItemWidth?: number; // default 220px; used to compute responsive column count
 	className?: string;
 	// Virtualization
 	virtualized?: boolean; // default false
@@ -74,6 +75,7 @@ export default function ComponentGrid<TItem extends GridItem = GridItem>(
 		onItemClick,
 		ItemComponent,
 		columns = 4,
+		minItemWidth = 220,
 		className,
 		virtualized = false,
 		scrollHeight = 480,
@@ -104,14 +106,37 @@ export default function ComponentGrid<TItem extends GridItem = GridItem>(
 		// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, [atBottom, mode, grid.hasNextPage]);
 
+	// Responsive columns calculation via ResizeObserver
+	const containerRef = useRef<HTMLDivElement | null>(null);
+	const [containerWidth, setContainerWidth] = React.useState(0);
+	useEffect(() => {
+		if (!containerRef.current) return;
+		const ro = new ResizeObserver((entries) => {
+			for (const entry of entries) {
+				const cw = entry.contentRect.width;
+				setContainerWidth(cw);
+			}
+		});
+		ro.observe(containerRef.current);
+		return () => ro.disconnect();
+	}, []);
+
+	const computedColumns = useMemo(() => {
+		if (containerWidth > 0) {
+			const count = Math.max(1, Math.floor(containerWidth / minItemWidth));
+			return count;
+		}
+		return Math.max(1, columns);
+	}, [containerWidth, minItemWidth, columns]);
+
 	const gridTemplate = useMemo(
-		() => `repeat(${columns}, minmax(0, 1fr))`,
-		[columns],
+		() => `repeat(${computedColumns}, minmax(0, 1fr))`,
+		[computedColumns],
 	);
 
 	// Virtualization setup (rows-based)
 	const scrollParentRef = useRef<HTMLDivElement | null>(null);
-	const rowCount = Math.max(1, Math.ceil(grid.items.length / columns));
+	const rowCount = Math.max(1, Math.ceil(grid.items.length / computedColumns));
 	const estimateRowSize = 184; // approx for aspect-[4/3] cells with gaps
 	const rowVirtualizer = useVirtualizer({
 		count: virtualized ? rowCount : 0,
@@ -137,6 +162,7 @@ export default function ComponentGrid<TItem extends GridItem = GridItem>(
 
 	return (
 		<div
+			ref={containerRef}
 			className={"relative flex flex-col gap-4 " + (className ?? "")}
 			aria-busy={grid.isFetching}
 			data-mode={mode}
@@ -205,13 +231,15 @@ export default function ComponentGrid<TItem extends GridItem = GridItem>(
 					{/* Skeleton placeholders to stabilize layout while fetching */}
 					{grid.isFetching && grid.items.length > 0 && (
 						<>
-							{Array.from({ length: Math.min(6, columns) }).map((_, i) => (
-								<div
-									key={"skeleton-" + i}
-									aria-hidden
-									className="aspect-[4/3] min-h-[148px] sm:min-h-[164px] animate-pulse rounded-md border bg-gray-100 dark:bg-gray-800"
-								/>
-							))}
+							{Array.from({ length: Math.min(6, computedColumns) }).map(
+								(_, i) => (
+									<div
+										key={"skeleton-" + i}
+										aria-hidden
+										className="aspect-[4/3] min-h-[148px] sm:min-h-[164px] animate-pulse rounded-md border bg-gray-100 dark:bg-gray-800"
+									/>
+								),
+							)}
 						</>
 					)}
 				</div>
@@ -242,21 +270,22 @@ export default function ComponentGrid<TItem extends GridItem = GridItem>(
 					>
 						{rowVirtualizer.getVirtualItems().map((virtualRow) => {
 							const rowIndex = virtualRow.index;
-							const start = rowIndex * columns;
-							const end = Math.min(start + columns, grid.items.length);
+							const start = rowIndex * computedColumns;
+							const end = Math.min(start + computedColumns, grid.items.length);
 							return (
 								<div
 									key={virtualRow.key}
 									data-index={rowIndex}
+									className="grid gap-4"
 									style={{
 										position: "absolute",
 										top: 0,
 										left: 0,
 										width: "100%",
+										height: virtualRow.size,
 										transform: `translateY(${virtualRow.start}px)`,
 										gridTemplateColumns: gridTemplate,
 									}}
-									className="grid gap-4"
 									role="row"
 								>
 									{Array.from({ length: end - start }).map((_, ci) => {
