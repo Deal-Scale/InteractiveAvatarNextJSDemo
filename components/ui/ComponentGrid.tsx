@@ -105,10 +105,20 @@ export default function ComponentGrid<TItem extends GridItem = GridItem>(
 
 	return (
 		<div
-			className={"flex flex-col gap-4 " + (className ?? "")}
+			className={"relative flex flex-col gap-4 " + (className ?? "")}
 			aria-busy={grid.isFetching}
 			data-mode={mode}
+			data-fetching={grid.isFetching ? "true" : "false"}
 		>
+			{/* Thin progress bar while fetching to avoid jumpy feel */}
+			{grid.isFetching && (
+				<div
+					aria-hidden
+					className="pointer-events-none absolute inset-x-0 top-0 z-10 h-0.5 overflow-hidden"
+				>
+					<div className="h-full w-1/3 animate-pulse rounded-r bg-muted-foreground/40" />
+				</div>
+			)}
 			<ComponentGridControls
 				search={grid.search}
 				onSearchChange={grid.setSearch}
@@ -143,14 +153,34 @@ export default function ComponentGrid<TItem extends GridItem = GridItem>(
 			<div
 				role="grid"
 				aria-rowcount={grid.total}
-				className="grid gap-4"
+				className={
+					"grid gap-4 transition-opacity duration-150 " +
+					(grid.isFetching ? "opacity-60" : "")
+				}
 				style={{ gridTemplateColumns: gridTemplate }}
 			>
 				{grid.items.map((item, idx) => (
-					<div role="gridcell" key={(item as any).id ?? idx}>
+					<div
+						role="gridcell"
+						key={(item as any).id ?? idx}
+						className="aspect-[4/3] min-h-[148px] sm:min-h-[164px]"
+					>
 						<ItemComponent item={item} index={idx} onSelect={onItemClick} />
 					</div>
 				))}
+
+				{/* Skeleton placeholders to stabilize layout while fetching */}
+				{grid.isFetching && grid.items.length > 0 && (
+					<>
+						{Array.from({ length: Math.min(6, columns) }).map((_, i) => (
+							<div
+								key={"skeleton-" + i}
+								aria-hidden
+								className="aspect-[4/3] min-h-[148px] sm:min-h-[164px] animate-pulse rounded-md border bg-gray-100 dark:bg-gray-800"
+							/>
+						))}
+					</>
+				)}
 			</div>
 
 			{/* Paged controls */}

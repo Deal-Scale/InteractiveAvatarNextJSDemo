@@ -105,6 +105,22 @@ export function useGridData<TItem extends GridItem = GridItem>(
 		refetchOnWindowFocus: true,
 	});
 
+	// When search/categories/tags change, reset paged mode to page 1
+	useEffect(() => {
+		if (mode !== "paged") return;
+		setPage(1);
+		// eslint-disable-next-line react-hooks/exhaustive-deps
+	}, [mode, debouncedSearch, categories, tags]);
+
+	// Prefetch first page for new search/category/tag combinations
+	useEffect(() => {
+		// Warm the cache so switching feels instant
+		qc.prefetchQuery({
+			queryKey: [...baseKey, 1],
+			queryFn: () => fetchPage(1),
+		});
+	}, [qc, baseKey, fetchPage]);
+
 	// Infinite mode: useInfiniteQuery
 	const infiniteQuery = useInfiniteQuery({
 		queryKey: baseKey,
@@ -117,6 +133,9 @@ export function useGridData<TItem extends GridItem = GridItem>(
 			return next <= totalPages ? next : undefined;
 		},
 		refetchOnWindowFocus: true,
+		// Keep prior data visible while new params (search/filters) are being fetched
+		placeholderData: (previous) => previous,
+		staleTime: 30_000,
 	});
 
 	// Derived values
