@@ -3,6 +3,7 @@ import "@/styles/globals.css";
 import type { Metadata } from "next";
 import Script from "next/script";
 import { Fira_Code as FontMono, Inter as FontSans } from "next/font/google";
+import { Suspense } from "react";
 
 import AudioDebugShim from "@/components/AudioDebugShim";
 import { ToastProvider } from "@/components/ui/toaster";
@@ -131,8 +132,12 @@ export default function RootLayout({
 						<ToastProvider>
 							<main className="relative flex flex-col h-screen w-screen">
 								<ThemeBridge />
-								<PlausibleTracker />
-								<GA4Tracker />
+								<Suspense fallback={null}>
+									<PlausibleTracker />
+								</Suspense>
+								<Suspense fallback={null}>
+									<GA4Tracker />
+								</Suspense>
 								<AudioDebugShim />
 
 								<AppProviders>{children}</AppProviders>

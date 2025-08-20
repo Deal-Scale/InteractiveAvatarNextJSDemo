@@ -103,7 +103,7 @@ export function SessionConfigModal({
 		defaultValues: {
 			userId: "",
 			language: "",
-			quality: "",
+			quality: "medium",
 		} as Partial<UserSettings>,
 		mode: "onChange",
 	});
@@ -111,9 +111,9 @@ export function SessionConfigModal({
 	// Global (App) Settings form instance
 	const globalForm = useZodForm(AppGlobalSettingsSchema, {
 		defaultValues: {
-			theme: "",
+			theme: "system",
 			telemetryEnabled: false,
-			apiBaseUrl: "",
+			apiBaseUrl: "https://api.heygen.com",
 		} as Partial<AppGlobalSettings>,
 		mode: "onChange",
 	});

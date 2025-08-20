@@ -1,5 +1,6 @@
 "use client";
 
+import { useMemo } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
 	Link,
@@ -173,12 +174,13 @@ const Bookmarks = createRoute({
 
 const routeTree = Root.addChildren([Index, Dashboard, Bookmarks]);
 
-const router = createRouter({
-	routeTree,
-	history: createHashHistory(),
-});
-
 function SpaApp() {
+	// Create the router only on the client to avoid touching window.history during prerender
+	const router = useMemo(() => {
+		if (typeof window === "undefined") return null as any;
+		return createRouter({ routeTree, history: createHashHistory() });
+	}, []);
+	if (!router) return null;
 	return <RouterProvider router={router} />;
 }
 
