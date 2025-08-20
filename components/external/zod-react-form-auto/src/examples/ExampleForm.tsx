@@ -8,6 +8,7 @@ import { TextField } from "../components/autofield/components/TextField";
 import { TextareaField } from "../components/autofield/components/TextareaField";
 import { NumberSliderField } from "../components/autofield/components/NumberField";
 import { DateField } from "../components/autofield/components/DateField";
+import { DateRangeField } from "../components/autofield/components/DateRangeField";
 import { BooleanSelectField } from "../components/autofield/components/BooleanSelectField";
 import { SelectField } from "../components/autofield/components/SelectField";
 import { FileUploadField } from "../components/autofield/components/FileUploadField";
@@ -19,6 +20,14 @@ export default function ExampleForm() {
 	const today = React.useMemo(() => {
 		const t = new Date();
 		return new Date(t.getFullYear(), t.getMonth(), t.getDate());
+	}, []);
+	const holidays = React.useMemo(() => {
+		// Example holidays: next New Year's Day and Christmas
+		const now = new Date();
+		const y = now.getFullYear();
+		// normalize to date-only
+		const d = (y: number, m: number, day: number) => new Date(y, m, day);
+		return [d(y, 0, 1), d(y, 11, 25)];
 	}, []);
 	const leftForm = useZodForm(AppSchema, {
 		defaultValues: {
@@ -67,11 +76,16 @@ export default function ExampleForm() {
 								label: "Age",
 							},
 							birthday: { label: "Birthday" },
-							startDate: { label: "Start Date (>= today)", minDate: today },
-							endDate: {
-								label: "End Date (>= start)",
-								minDateField: "startDate",
+							startDate: {
+								label: "Trip Dates",
+								widget: "date-range",
+								endDateField: "endDate",
+								minDate: today,
+								holidays,
+								disableWeekdays: [0],
+								withTime: true,
 							},
+							endDate: { widget: "hidden" },
 							password: { widget: "password", label: "Password" },
 							bio: { widget: "textarea", rows: 4, label: "Bio" },
 							termsAccepted: { widget: "select", label: "Accept Terms?" },
@@ -143,18 +157,20 @@ export default function ExampleForm() {
 						{/* Birthday */}
 						<DateField name="birthday" label="Birthday" form={rightForm} />
 
-						{/* Start/End Dates with constraints */}
-						<DateField
-							name="startDate"
-							label="Start Date (>= today)"
-							form={rightForm}
+						{/* Start/End Dates on a single calendar with time selection and holidays */}
+						<DateRangeField
+							startName="startDate"
+							endName="endDate"
+							label="Trip Dates"
+							errorStart={
+								(rightForm.formState.errors as any).startDate?.message
+							}
+							errorEnd={(rightForm.formState.errors as any).endDate?.message}
 							minDate={today}
-						/>
-						<DateField
-							name="endDate"
-							label="End Date (>= start)"
+							holidays={holidays}
+							disableWeekdays={[0]}
+							withTime
 							form={rightForm}
-							minDate={(rightForm.watch("startDate") as any) || today}
 						/>
 
 						{/* Terms Accepted (select true/false) */}
@@ -166,14 +182,6 @@ export default function ExampleForm() {
 								{ value: "true", label: "Yes" },
 								{ value: "false", label: "No" },
 							]}
-							form={rightForm}
-						/>
-
-						{/* Role (radios) */}
-						<RadioGroupField
-							name="role"
-							label="Role"
-							opts={Role.options.map((v: string) => ({ value: v, label: v }))}
 							form={rightForm}
 						/>
 
