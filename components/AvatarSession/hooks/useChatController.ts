@@ -33,6 +33,9 @@ export function useChatController(sessionState: StreamingAvatarSessionState) {
 	const [userVideoStream, setUserVideoStream] = useState<MediaStream | null>(
 		null,
 	);
+	const [userAudioStream, setUserAudioStream] = useState<MediaStream | null>(
+		null,
+	);
 
 	const isConnected = useMemo(
 		() => sessionState === StreamingAvatarSessionState.CONNECTED,
@@ -116,11 +119,21 @@ export function useChatController(sessionState: StreamingAvatarSessionState) {
 				video: true,
 				audio: false,
 			});
-
 			setUserVideoStream(videoOnly);
 
-			// Start voice chat without injecting our own MediaStream.
-			await startVoiceChat({});
+			// Capture microphone audio explicitly for voice chat.
+			const audioStream = await navigator.mediaDevices.getUserMedia({
+				audio: {
+					echoCancellation: true,
+					noiseSuppression: true,
+					autoGainControl: true,
+				},
+				video: false,
+			});
+			setUserAudioStream(audioStream);
+
+			// Start voice chat with our captured mic stream so recording actually begins.
+			await startVoiceChat({ mediaStream: audioStream });
 		} catch (error) {
 			// Surface in devtools; consider toast in UI
 			console.error("Failed to start voice chat:", error);
@@ -141,6 +154,12 @@ export function useChatController(sessionState: StreamingAvatarSessionState) {
 				t.stop();
 			});
 			setUserVideoStream(null);
+		}
+		if (userAudioStream) {
+			userAudioStream.getTracks().forEach((t) => {
+				t.stop();
+			});
+			setUserAudioStream(null);
 		}
 	});
 
