@@ -65,16 +65,70 @@ export function unwrapType(t: z.ZodTypeAny): z.ZodTypeAny {
 
 	let safety = 20;
 	while (safety-- > 0 && cur) {
+		// Prefer robust detection via _def.typeName to avoid cross-module instanceof issues
+		const typeName = (cur as any)?._def?.typeName as string | undefined;
+		const isKnownBaseByName = Boolean(
+			typeName &&
+				[
+					"ZodObject",
+					"ZodArray",
+					"ZodEnum",
+					"ZodUnion",
+					"ZodLiteral",
+					"ZodString",
+					"ZodNumber",
+					"ZodBoolean",
+					"ZodDate",
+					"ZodBigInt",
+					"ZodRecord",
+					"ZodMap",
+					"ZodSet",
+					"ZodTuple",
+					"ZodUnknown",
+					"ZodAny",
+					"ZodNull",
+					"ZodUndefined",
+				].includes(typeName),
+		);
+		const isKnownBaseByInstance =
+			cur instanceof z.ZodObject ||
+			cur instanceof z.ZodArray ||
+			cur instanceof z.ZodEnum ||
+			cur instanceof z.ZodUnion ||
+			cur instanceof z.ZodLiteral ||
+			cur instanceof z.ZodString ||
+			cur instanceof z.ZodNumber ||
+			cur instanceof z.ZodBoolean ||
+			cur instanceof z.ZodDate ||
+			cur instanceof z.ZodBigInt ||
+			cur instanceof z.ZodRecord ||
+			cur instanceof z.ZodMap ||
+			cur instanceof z.ZodSet ||
+			cur instanceof z.ZodTuple ||
+			cur instanceof z.ZodUnknown ||
+			cur instanceof z.ZodAny ||
+			cur instanceof z.ZodNull ||
+			cur instanceof z.ZodUndefined;
+		if (isKnownBaseByName || isKnownBaseByInstance) {
+			break;
+		}
 		const def = (cur as any)?._def;
+		// Follow wrapper-like pointers; be careful not to drill into array element types.
+		// We only use def.type when the current node is NOT an Array/Tuple.
+		const isArrayLike =
+			typeName === "ZodArray" ||
+			cur instanceof z.ZodArray ||
+			typeName === "ZodTuple" ||
+			cur instanceof z.ZodTuple;
 		const next =
 			def?.innerType ??
 			def?.schema ??
-			def?.type ??
+			(!isArrayLike ? def?.type : undefined) ??
 			def?.out ??
 			def?.in ??
 			def?.source;
 		if (!next) break;
-		wrappers.push(cur?.constructor?.name ?? "unknown");
+		wrappers.push(typeName ?? cur?.constructor?.name ?? "unknown");
 		cur = next;
 	}
 
@@ -82,7 +136,7 @@ export function unwrapType(t: z.ZodTypeAny): z.ZodTypeAny {
 		try {
 			console.debug("unwrapType trace", {
 				wrappers,
-				base: cur?.constructor?.name,
+				base: (cur as any)?._def?.typeName ?? cur?.constructor?.name,
 			});
 		} catch {}
 	}
@@ -126,11 +180,38 @@ export function unwrapToZodObject(
 }
 
 export function enumStringValuesFromZodEnum(enumLike: any): string[] {
-	const raw =
-		(enumLike as any)?._def?.values ?? (enumLike as any).options ?? enumLike;
-	const values: unknown[] = Array.isArray(raw) ? raw : Object.values(raw ?? {});
-
-	return values.filter((v): v is string => typeof v === "string");
+	// Try known locations first
+	const fromDef = (enumLike as any)?._def?.values;
+	if (Array.isArray(fromDef)) {
+		return fromDef.filter((v): v is string => typeof v === "string");
+	}
+	if (fromDef && typeof fromDef === "object") {
+		return Object.values(fromDef).filter(
+			(v): v is string => typeof v === "string",
+		);
+	}
+	const fromOptions = (enumLike as any)?.options;
+	if (Array.isArray(fromOptions)) {
+		return fromOptions.filter((v): v is string => typeof v === "string");
+	}
+	if (fromOptions && typeof fromOptions === "object") {
+		return Object.values(fromOptions).filter(
+			(v): v is string => typeof v === "string",
+		);
+	}
+	// If the input itself is an array of strings, return it
+	if (Array.isArray(enumLike)) {
+		return (enumLike as unknown[]).filter(
+			(v): v is string => typeof v === "string",
+		);
+	}
+	// Safe final fallback for plain objects
+	if (enumLike && typeof enumLike === "object") {
+		return Object.values(enumLike).filter(
+			(v): v is string => typeof v === "string",
+		);
+	}
+	return [];
 }
 
 export function optionsFromStrings(values: string[]) {

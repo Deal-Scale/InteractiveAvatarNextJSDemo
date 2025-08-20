@@ -45,6 +45,15 @@ export const AutoField: React.FC<AutoFieldProps> = ({
 	const error = (formState.errors as any)[name]?.message as string | undefined;
 	const base = unwrapType(def);
 
+	// Debug: what is the unwrapped base type and configured widget?
+	try {
+		console.debug("AutoField:init", {
+			name,
+			cfgWidget: (cfg as any).widget,
+			baseType: (base as any)?.constructor?.name,
+		});
+	} catch {}
+
 	// explicit widgets first
 	if ((cfg as any).widget === "hidden") {
 		return null;
@@ -137,6 +146,12 @@ export const AutoField: React.FC<AutoFieldProps> = ({
 		(base as any)?._def?.values ||
 		(base as any)?.options
 	) {
+		try {
+			console.debug("AutoField:enum", {
+				name,
+				baseType: (base as any)?.constructor?.name,
+			});
+		} catch {}
 		const values = enumStringValuesFromZodEnum(base as any);
 		const opts = optionsFromStrings(values);
 		if ((cfg as any).widget === "radios") {
@@ -167,6 +182,9 @@ export const AutoField: React.FC<AutoFieldProps> = ({
 		base instanceof z.ZodUnion ||
 		Array.isArray((base as any)?._def?.options)
 	) {
+		try {
+			console.debug("AutoField:union", { name });
+		} catch {}
 		const options: z.ZodTypeAny[] = (base as any)?._def?.options ?? [];
 		const stringVals: string[] = [];
 		for (const opt of options) {
@@ -201,13 +219,30 @@ export const AutoField: React.FC<AutoFieldProps> = ({
 	// arrays
 	if (base instanceof z.ZodArray) {
 		const el = (base as any)?._def?.type as z.ZodTypeAny;
+		try {
+			console.debug("AutoField:array", {
+				name,
+				elType: (el as any)?.constructor?.name,
+				cfgWidget: (cfg as any).widget,
+			});
+		} catch {}
 		if (
 			el instanceof z.ZodEnum ||
 			(el as any)?._def?.values ||
 			(el as any)?.options
 		) {
 			const values = enumStringValuesFromZodEnum(el as any);
-			const opts = optionsFromStrings(values);
+			let opts = optionsFromStrings(values);
+			// Fallback: allow explicit options from field config when enum extraction fails
+			if (!opts.length && Array.isArray((cfg as any).options)) {
+				opts = (cfg as any).options as Array<{ value: string; label: string }>;
+			}
+			try {
+				console.debug("AutoField:array enum->select", {
+					name,
+					optsLen: opts.length,
+				});
+			} catch {}
 			if ((cfg as any).widget === "checkboxes") {
 				return (
 					<CheckboxGroupField
@@ -247,7 +282,6 @@ export const AutoField: React.FC<AutoFieldProps> = ({
 					name={name}
 					label={label}
 					error={error}
-					rows={(cfg as any).rows}
 					placeholder={(cfg as any).placeholder}
 					form={form}
 				/>
