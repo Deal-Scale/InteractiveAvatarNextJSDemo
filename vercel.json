@@ -1,0 +1,14 @@
+{
+	"version": 3,
+	"name": "brainme-app",
+	"builds": [
+		{
+			"src": "package.json",
+			"use": "@vercel/next",
+			"config": {}
+		}
+	],
+	"installCommand": "pnpm install",
+	"buildCommand": "pnpm build",
+	"routes": [{ "src": "/api/(.*)", "dest": "/api/$1.js" }]
+}

@@ -11,14 +11,16 @@ function hasWindow(): boolean {
 	return typeof window !== "undefined";
 }
 
+const w = typeof window !== "undefined" ? window : undefined;
+
 export function requestWebcam(opts: MCPWebcamRequest = {}): void {
 	if (!hasWindow()) return;
-	window.dispatchEvent(new CustomEvent(WEBCAM_REQUEST_EVENT, { detail: opts }));
+	w?.dispatchEvent(new CustomEvent(WEBCAM_REQUEST_EVENT, { detail: opts }));
 }
 
 export function releaseWebcam(): void {
 	if (!hasWindow()) return;
-	window.dispatchEvent(new CustomEvent(WEBCAM_RELEASE_EVENT));
+	w?.dispatchEvent(new CustomEvent(WEBCAM_RELEASE_EVENT));
 }
 
 // Optional global
@@ -33,9 +35,10 @@ declare global {
 
 if (hasWindow()) {
 	try {
-		window.mcpWebcam = {
-			request: requestWebcam,
-			release: releaseWebcam,
-		};
+		if (w)
+			w.mcpWebcam = {
+				request: requestWebcam,
+				release: releaseWebcam,
+			};
 	} catch {}
 }

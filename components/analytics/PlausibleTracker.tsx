@@ -20,10 +20,11 @@ import {
  * - NEXT_PUBLIC_PLAUSIBLE_HASH_MODE: "true" to enable hashMode
  */
 export default function PlausibleTracker() {
+	const w = typeof window !== "undefined" ? window : undefined;
 	useEffect(() => {
 		try {
 			const domain =
-				process.env.NEXT_PUBLIC_PLAUSIBLE_DOMAIN || window.location.hostname;
+				process.env.NEXT_PUBLIC_PLAUSIBLE_DOMAIN || w?.location.hostname || "";
 			const trackLocalhost =
 				process.env.NEXT_PUBLIC_PLAUSIBLE_TRACK_LOCALHOST === "true";
 			const apiHost = process.env.NEXT_PUBLIC_PLAUSIBLE_API_HOST || undefined;

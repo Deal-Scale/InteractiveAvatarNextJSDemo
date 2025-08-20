@@ -16,6 +16,8 @@ import { initGA, sendPageview } from "@/lib/analytics/ga";
 export default function GA4Tracker() {
 	const pathname = usePathname();
 	const searchParams = useSearchParams();
+	const w = typeof window !== "undefined" ? window : undefined;
+	const d = typeof document !== "undefined" ? document : undefined;
 
 	useEffect(() => {
 		try {
@@ -33,13 +35,13 @@ export default function GA4Tracker() {
 				process.env.NEXT_PUBLIC_GA4_ALLOW_LOCALHOST === "true";
 			const isLocalhost =
 				typeof window !== "undefined" &&
-				/^(localhost|127\.0\.0\.1)/.test(window.location.hostname);
+				/^(localhost|127\.0\.0\.1)/.test(w?.location.hostname || "");
 			if (isLocalhost && !allowLocalhost) return;
 
 			initGA({ ids });
 			// initial pageview
-			const url = `${window.location.pathname}${window.location.search}`;
-			sendPageview(url, document.title);
+			const url = `${w?.location.pathname || ""}${w?.location.search || ""}`;
+			sendPageview(url, d?.title || "");
 		} catch (e) {
 			if (process.env.NODE_ENV !== "production") {
 				// eslint-disable-next-line no-console
@@ -56,7 +58,7 @@ export default function GA4Tracker() {
 			const enabled = process.env.NEXT_PUBLIC_ENABLE_GA4 === "true";
 			if (!enabled) return;
 			const url = `${pathname}${searchParams?.toString() ? `?${searchParams.toString()}` : ""}`;
-			sendPageview(url, document.title);
+			sendPageview(url, d?.title || "");
 		} catch {}
 	}, [pathname, searchParams]);
 

@@ -231,7 +231,9 @@ function FileUploadContent({ className, ...props }: FileUploadContentProps) {
 		/>
 	);
 
-	const target = typeof document !== "undefined" ? document.body : null;
+	// SSR-safe document alias for portal target
+	const d = typeof document !== "undefined" ? document : undefined;
+	const target = d?.body ?? null;
 
 	if (!target) return null;
 

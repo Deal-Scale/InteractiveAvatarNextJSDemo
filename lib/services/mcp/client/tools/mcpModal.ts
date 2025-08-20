@@ -17,14 +17,16 @@ function hasWindow(): boolean {
 	return typeof window !== "undefined";
 }
 
+const w = typeof window !== "undefined" ? window : undefined;
+
 export function openModal(opts: MCPModalOpen): void {
 	if (!hasWindow()) return;
-	window.dispatchEvent(new CustomEvent(MODAL_OPEN_EVENT, { detail: opts }));
+	w?.dispatchEvent(new CustomEvent(MODAL_OPEN_EVENT, { detail: opts }));
 }
 
 export function closeModal(id?: string): void {
 	if (!hasWindow()) return;
-	window.dispatchEvent(new CustomEvent(MODAL_CLOSE_EVENT, { detail: { id } }));
+	w?.dispatchEvent(new CustomEvent(MODAL_CLOSE_EVENT, { detail: { id } }));
 }
 
 // Optional global for direct control
@@ -39,9 +41,10 @@ declare global {
 
 if (hasWindow()) {
 	try {
-		window.mcpModal = {
-			open: openModal,
-			close: closeModal,
-		};
+		if (w)
+			w.mcpModal = {
+				open: openModal,
+				close: closeModal,
+			};
 	} catch {}
 }

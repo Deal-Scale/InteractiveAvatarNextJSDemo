@@ -18,15 +18,17 @@ function useDebouncedValue<T>(value: T, delay = 250) {
 	useEffect(() => {
 		// Only run on client
 		// Clear any pending timeout
+		const w = typeof window !== "undefined" ? window : undefined;
 		if (timeoutRef.current) {
-			window.clearTimeout(timeoutRef.current);
+			w?.clearTimeout(timeoutRef.current);
 		}
-		timeoutRef.current = window.setTimeout(() => {
-			setDebounced(value);
-		}, delay);
+		timeoutRef.current =
+			(w?.setTimeout(() => {
+				setDebounced(value);
+			}, delay) as unknown as number) ?? null;
 		return () => {
 			if (timeoutRef.current) {
-				window.clearTimeout(timeoutRef.current);
+				w?.clearTimeout(timeoutRef.current);
 			}
 		};
 	}, [value, delay]);
