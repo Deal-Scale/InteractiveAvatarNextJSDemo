@@ -2,11 +2,7 @@
 import React from "react";
 import { z } from "zod";
 import { UseFormReturn } from "react-hook-form";
-import {
-	SimpleSelect,
-	MultiSelect,
-	type SelectOption,
-} from "../../utils/select";
+import { SimpleSelect, MultiSelect, type SelectOption } from "../utils/select";
 import {
 	unwrapType,
 	enumStringValuesFromZodEnum,
@@ -416,11 +412,13 @@ export const AutoField: React.FC<AutoFieldProps> = ({
 	// File upload
 	if (String((def as any).description ?? "").startsWith("file-upload")) {
 		const fileCfg = parseFileUploadConfig((def as any)._def, cfg as any);
-		const value = watch(name as any) as any as File[] | undefined;
-		const files: File[] = Array.isArray(value)
-			? value
-			: typeof FileList !== "undefined" && value && value.length != null
-				? Array.from(value as any)
+		const raw = watch(name as any) as unknown;
+		const files: File[] = Array.isArray(raw)
+			? (raw as File[])
+			: typeof FileList !== "undefined" &&
+					raw != null &&
+					typeof (raw as any).length === "number"
+				? Array.from(raw as FileList)
 				: [];
 		const tooMany =
 			typeof fileCfg.max === "number" && files.length > fileCfg.max;
