@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
-import { ChevronRight, MoreVertical } from "lucide-react";
+import { ChevronRight, MoreVertical, Plus } from "lucide-react";
 import {
 	DropdownMenu,
 	DropdownMenuContent,
@@ -15,6 +15,7 @@ import {
 	Tree,
 	type TreeViewElement,
 } from "@/components/magicui/file-tree";
+import { Button } from "@/components/ui/button";
 
 export default function KnowledgebaseSection(props: {
 	collapsedKnowledge: boolean;
@@ -58,19 +59,23 @@ export default function KnowledgebaseSection(props: {
 				<div className="px-2 pb-2">
 					{/* Actions row: Add Knowledge Base */}
 					<div className="flex items-center justify-end px-1 pb-2">
-						<button
-							type="button"
+						<Button
+							variant="outline"
+							size="sm"
+							title="Add Knowledge Base"
+							aria-label="Add Knowledge Base"
 							data-testid="kb-add-btn"
-							className="inline-flex items-center gap-2 rounded-md border border-input bg-background px-2 py-1 text-xs hover:bg-accent hover:text-accent-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
 							onClick={(e) => {
 								e.stopPropagation();
 								onOpenAddKB
 									? onOpenAddKB()
 									: console.debug("KB: open add modal");
 							}}
+							className="inline-flex items-center gap-2"
 						>
-							Add Knowledge Base
-						</button>
+							<Plus className="size-3" />
+							<span className="text-xs">Add Knowledge Base</span>
+						</Button>
 					</div>
 					{tree.length === 0 ? (
 						<div className="px-1 py-2 text-xs text-muted-foreground">
