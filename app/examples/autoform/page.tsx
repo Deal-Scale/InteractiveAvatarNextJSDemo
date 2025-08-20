@@ -1,14 +1,6 @@
 "use client";
-import dynamic from "next/dynamic";
 import React from "react";
-
-const ExampleForm = dynamic(
-	() =>
-		import(
-			"@/components/external/zod-react-form-auto/src/examples/ExampleForm"
-		),
-	{ ssr: false },
-);
+import ExampleForm from "@/components/external/zod-react-form-auto/src/examples/ExampleForm";
 
 export default function AutoformExamplePage() {
 	return (

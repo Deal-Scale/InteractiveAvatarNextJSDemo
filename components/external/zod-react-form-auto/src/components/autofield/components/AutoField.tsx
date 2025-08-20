@@ -276,24 +276,45 @@ export const AutoField: React.FC<AutoFieldProps> = ({
 		}
 		if (el instanceof z.ZodString && (cfg as any).options?.length)
 			return (
-				<SelectField
-					name={name}
-					label={label}
-					error={error}
-					opts={(cfg as any).options!}
-					multiple
-					form={form}
-				/>
+				// eslint-disable-next-line react/jsx-no-useless-fragment
+				<>
+					{(() => {
+						try {
+							console.log("AutoField:array string+options -> select", {
+								name,
+								optsLen: (cfg as any).options?.length,
+							});
+						} catch {}
+						return null;
+					})()}
+					<SelectField
+						name={name}
+						label={label}
+						error={error}
+						opts={(cfg as any).options!}
+						multiple
+						form={form}
+					/>
+				</>
 			);
 		if (el instanceof z.ZodString)
 			return (
-				<ArrayStringField
-					name={name}
-					label={label}
-					error={error}
-					placeholder={(cfg as any).placeholder}
-					form={form}
-				/>
+				// eslint-disable-next-line react/jsx-no-useless-fragment
+				<>
+					{(() => {
+						try {
+							console.log("AutoField:array string -> chips", { name });
+						} catch {}
+						return null;
+					})()}
+					<ArrayStringField
+						name={name}
+						label={label}
+						error={error}
+						placeholder={(cfg as any).placeholder}
+						form={form}
+					/>
+				</>
 			);
 	}
 
