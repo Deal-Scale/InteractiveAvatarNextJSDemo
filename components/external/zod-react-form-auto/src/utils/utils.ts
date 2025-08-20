@@ -100,7 +100,7 @@ export function unwrapType(t: z.ZodTypeAny): z.ZodTypeAny {
 
 	if (process.env.NODE_ENV !== "production") {
 		try {
-			console.debug("unwrapType trace", {
+			console.log("unwrapType trace", {
 				wrappers,
 				base: (cur as any)?._def?.typeName ?? cur?.constructor?.name,
 			});
@@ -135,7 +135,7 @@ export function unwrapToZodObject(
 
 	if (process.env.NODE_ENV !== "production") {
 		try {
-			console.debug("unwrapToZodObject trace", {
+			console.log("unwrapToZodObject trace", {
 				wrappers,
 				base: cur?.constructor?.name,
 			});
