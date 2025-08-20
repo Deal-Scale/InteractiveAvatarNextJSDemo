@@ -7,11 +7,15 @@ export function DateField({
 	name,
 	label,
 	error,
+	minDate,
+	maxDate,
 	form,
 }: {
 	name: string;
 	label: string;
 	error?: string;
+	minDate?: Date;
+	maxDate?: Date;
 	form: UseFormReturn<any>;
 }) {
 	const { register, watch, setValue } = form;
@@ -24,6 +28,30 @@ export function DateField({
 				<Calendar
 					mode="single"
 					selected={current}
+					disabled={(date) => {
+						const d = new Date(
+							date.getFullYear(),
+							date.getMonth(),
+							date.getDate(),
+						);
+						if (minDate) {
+							const m = new Date(
+								minDate.getFullYear(),
+								minDate.getMonth(),
+								minDate.getDate(),
+							);
+							if (d < m) return true;
+						}
+						if (maxDate) {
+							const M = new Date(
+								maxDate.getFullYear(),
+								maxDate.getMonth(),
+								maxDate.getDate(),
+							);
+							if (d > M) return true;
+						}
+						return false;
+					}}
 					onSelect={(d) =>
 						setValue(name as any, (d ?? undefined) as any, {
 							shouldValidate: true,

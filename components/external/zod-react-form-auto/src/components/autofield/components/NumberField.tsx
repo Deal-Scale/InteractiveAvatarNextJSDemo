@@ -46,10 +46,16 @@ export function NumberSliderField({
 	step?: number;
 	form: UseFormReturn<any>;
 }) {
-	const { register } = form;
+	const { register, watch } = form;
+	const current = watch(name as any) as number | undefined;
 	return (
 		<div className="flex flex-col gap-1">
 			<span className="text-sm text-muted-foreground">{label}</span>
+			<div className="flex w-full items-center justify-between text-xs text-muted-foreground">
+				<span>{min ?? 0}</span>
+				<span className="font-medium text-foreground">{current ?? "-"}</span>
+				<span>{max ?? 100}</span>
+			</div>
 			<input
 				className="w-full accent-primary"
 				min={min}

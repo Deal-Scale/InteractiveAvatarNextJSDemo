@@ -11,6 +11,8 @@ import { TextareaField, CollapsibleTextareaField } from "./TextareaField";
 import { TextField } from "./TextField";
 import { ArrayStringField } from "./ArrayStringField";
 import { SensitiveInput } from "../../../utils/fields";
+import { CheckboxGroupField } from "./CheckboxGroupField";
+import { RadioGroupField } from "./RadioGroupField";
 import {
 	unwrapType,
 	enumStringValuesFromZodEnum,
@@ -104,12 +106,24 @@ export const AutoField: React.FC<AutoFieldProps> = ({
 		(base as any)?.options
 	) {
 		const values = enumStringValuesFromZodEnum(base as any);
+		const opts = optionsFromStrings(values);
+		if ((cfg as any).widget === "radios") {
+			return (
+				<RadioGroupField
+					name={name}
+					label={label}
+					error={error}
+					opts={opts}
+					form={form}
+				/>
+			);
+		}
 		return (
 			<SelectField
 				name={name}
 				label={label}
 				error={error}
-				opts={optionsFromStrings(values)}
+				opts={opts}
 				multiple={Boolean((cfg as any).multiple)}
 				form={form}
 			/>
@@ -161,12 +175,24 @@ export const AutoField: React.FC<AutoFieldProps> = ({
 			(el as any)?.options
 		) {
 			const values = enumStringValuesFromZodEnum(el as any);
+			const opts = optionsFromStrings(values);
+			if ((cfg as any).widget === "checkboxes") {
+				return (
+					<CheckboxGroupField
+						name={name}
+						label={label}
+						error={error}
+						opts={opts}
+						form={form}
+					/>
+				);
+			}
 			return (
 				<SelectField
 					name={name}
 					label={label}
 					error={error}
-					opts={optionsFromStrings(values)}
+					opts={opts}
 					multiple
 					form={form}
 				/>
@@ -235,8 +261,24 @@ export const AutoField: React.FC<AutoFieldProps> = ({
 	}
 
 	// date
-	if (base instanceof z.ZodDate)
-		return <DateField name={name} label={label} error={error} form={form} />;
+	if (base instanceof z.ZodDate) {
+		const minFromField = (cfg as any).minDateField
+			? (watch((cfg as any).minDateField) as Date | undefined)
+			: undefined;
+		const maxFromField = (cfg as any).maxDateField
+			? (watch((cfg as any).maxDateField) as Date | undefined)
+			: undefined;
+		return (
+			<DateField
+				name={name}
+				label={label}
+				error={error}
+				minDate={(cfg as any).minDate ?? minFromField}
+				maxDate={(cfg as any).maxDate ?? maxFromField}
+				form={form}
+			/>
+		);
+	}
 
 	// string
 	if (base instanceof z.ZodString) {

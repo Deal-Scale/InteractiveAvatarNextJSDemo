@@ -4,8 +4,22 @@ import { AppSchema, type AppValues, Role } from "./schema";
 import { AutoForm } from "../AutoForm";
 import { useZodForm } from "../utils/useZodForm";
 import { SensitiveInput } from "../utils/fields";
+import { TextField } from "../components/autofield/components/TextField";
+import { TextareaField } from "../components/autofield/components/TextareaField";
+import { NumberSliderField } from "../components/autofield/components/NumberField";
+import { DateField } from "../components/autofield/components/DateField";
+import { BooleanSelectField } from "../components/autofield/components/BooleanSelectField";
+import { SelectField } from "../components/autofield/components/SelectField";
+import { FileUploadField } from "../components/autofield/components/FileUploadField";
+import { ArrayStringField } from "../components/autofield/components/ArrayStringField";
+import { RadioGroupField } from "../components/autofield/components/RadioGroupField";
+import { CheckboxGroupField } from "../components/autofield/components/CheckboxGroupField";
 
 export default function ExampleForm() {
+	const today = React.useMemo(() => {
+		const t = new Date();
+		return new Date(t.getFullYear(), t.getMonth(), t.getDate());
+	}, []);
 	const leftForm = useZodForm(AppSchema, {
 		defaultValues: {
 			email: "alice@example.com",
@@ -14,13 +28,15 @@ export default function ExampleForm() {
 			age: 30,
 			birthday: undefined as any,
 			termsAccepted: false,
+			startDate: undefined as any,
+			endDate: undefined as any,
 			role: "user",
 			favoriteFruit: "",
 			apiKey: "",
 			files: undefined as any,
 			tags: ["react", "zod"],
 			favoriteColors: ["red"],
-		} satisfies Partial<AppValues>,
+		} as Partial<AppValues>,
 	});
 
 	const rightForm = useZodForm(AppSchema, {
@@ -51,6 +67,11 @@ export default function ExampleForm() {
 								label: "Age",
 							},
 							birthday: { label: "Birthday" },
+							startDate: { label: "Start Date (>= today)", minDate: today },
+							endDate: {
+								label: "End Date (>= start)",
+								minDateField: "startDate",
+							},
 							password: { widget: "password", label: "Password" },
 							bio: { widget: "textarea", rows: 4, label: "Bio" },
 							termsAccepted: { widget: "select", label: "Accept Terms?" },
@@ -65,6 +86,12 @@ export default function ExampleForm() {
 								],
 							},
 							apiKey: { widget: "password", label: "API Key" },
+							role: { widget: "radios", label: "Role" },
+							favoriteColors: {
+								widget: "select",
+								multiple: true,
+								label: "Favorite Colors (multi-select)",
+							},
 						}}
 						onSubmit={(vals) => setLeftOutput(vals)}
 						submitLabel="Submit"
@@ -87,14 +114,12 @@ export default function ExampleForm() {
 						className="space-y-3"
 					>
 						{/* Email */}
-						<div className="flex flex-col gap-1">
-							<label className="text-sm text-muted-foreground">Email</label>
-							<input
-								type="email"
-								className="rounded-md border border-border bg-background px-3 py-2 text-foreground shadow-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary"
-								{...rightForm.register("email")}
-							/>
-						</div>
+						<TextField
+							name="email"
+							label="Email"
+							type="email"
+							form={rightForm}
+						/>
 
 						{/* Password (SensitiveInput) */}
 						<div className="flex flex-col gap-1">
@@ -103,93 +128,67 @@ export default function ExampleForm() {
 						</div>
 
 						{/* Bio (textarea) */}
-						<div className="flex flex-col gap-1">
-							<label className="text-sm text-muted-foreground">Bio</label>
-							<textarea
-								rows={4}
-								className="min-h-24 max-h-[60vh] w-full resize-y rounded-md border border-border bg-background px-3 py-2 text-foreground shadow-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary"
-								{...rightForm.register("bio")}
-							/>
-						</div>
+						<TextareaField name="bio" label="Bio" rows={4} form={rightForm} />
 
 						{/* Age (slider) */}
-						<div className="flex flex-col gap-1">
-							<label className="text-sm text-muted-foreground">Age</label>
-							<input
-								type="range"
-								min={0}
-								max={120}
-								step={1}
-								className="accent-primary"
-								{...rightForm.register("age", { valueAsNumber: true })}
-							/>
-						</div>
+						<NumberSliderField
+							name="age"
+							label="Age"
+							min={0}
+							max={120}
+							step={1}
+							form={rightForm}
+						/>
 
-						{/* Birthday (date input for demo) */}
-						<div className="flex flex-col gap-1">
-							<label className="text-sm text-muted-foreground">Birthday</label>
-							<input
-								type="date"
-								className="rounded-md border border-border bg-background px-3 py-2 text-foreground shadow-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary"
-								{...rightForm.register("birthday", { valueAsDate: true })}
-							/>
-						</div>
+						{/* Birthday */}
+						<DateField name="birthday" label="Birthday" form={rightForm} />
+
+						{/* Start/End Dates with constraints */}
+						<DateField
+							name="startDate"
+							label="Start Date (>= today)"
+							form={rightForm}
+							minDate={today}
+						/>
+						<DateField
+							name="endDate"
+							label="End Date (>= start)"
+							form={rightForm}
+							minDate={(rightForm.watch("startDate") as any) || today}
+						/>
 
 						{/* Terms Accepted (select true/false) */}
-						<div className="flex flex-col gap-1">
-							<label className="text-sm text-muted-foreground">
-								Accept Terms?
-							</label>
-							<select
-								className="rounded-md border border-border bg-background px-3 py-2 text-foreground shadow-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary"
-								value={(() => {
-									const v = rightForm.watch("termsAccepted");
-									return typeof v === "boolean" ? String(v) : "";
-								})()}
-								onChange={(e) =>
-									rightForm.setValue(
-										"termsAccepted",
-										e.target.value === "true",
-										{ shouldDirty: true, shouldValidate: true },
-									)
-								}
-							>
-								<option value="">-- choose --</option>
-								<option value="true">Yes</option>
-								<option value="false">No</option>
-							</select>
-						</div>
+						<BooleanSelectField
+							name="termsAccepted"
+							label="Accept Terms?"
+							opts={[
+								{ value: "", label: "-- choose --" },
+								{ value: "true", label: "Yes" },
+								{ value: "false", label: "No" },
+							]}
+							form={rightForm}
+						/>
 
-						{/* Role (enum select) */}
-						<div className="flex flex-col gap-1">
-							<label className="text-sm text-muted-foreground">Role</label>
-							<select
-								className="rounded-md border border-border bg-background px-3 py-2 text-foreground shadow-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary"
-								{...rightForm.register("role")}
-							>
-								{Role.options.map((v: string) => (
-									<option key={v} value={v}>
-										{v}
-									</option>
-								))}
-							</select>
-						</div>
+						{/* Role (radios) */}
+						<RadioGroupField
+							name="role"
+							label="Role"
+							opts={Role.options.map((v: string) => ({ value: v, label: v }))}
+							form={rightForm}
+						/>
 
 						{/* Favorite Fruit (string select) */}
-						<div className="flex flex-col gap-1">
-							<label className="text-sm text-muted-foreground">
-								Favorite Fruit
-							</label>
-							<select
-								className="rounded-md border border-border bg-background px-3 py-2 text-foreground shadow-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary"
-								{...rightForm.register("favoriteFruit")}
-							>
-								<option value="">-- choose --</option>
-								<option value="apple">Apple</option>
-								<option value="banana">Banana</option>
-								<option value="orange">Orange</option>
-							</select>
-						</div>
+						<SelectField
+							name="favoriteFruit"
+							label="Favorite Fruit"
+							opts={[
+								{ value: "", label: "-- choose --" },
+								{ value: "apple", label: "Apple" },
+								{ value: "banana", label: "Banana" },
+								{ value: "orange", label: "Orange" },
+							]}
+							form={rightForm}
+						/>
 
 						{/* API Key (SensitiveInput) */}
 						<div className="flex flex-col gap-1">
@@ -198,67 +197,44 @@ export default function ExampleForm() {
 						</div>
 
 						{/* Files (file-upload) */}
-						<div className="flex flex-col gap-1">
-							<label className="text-sm text-muted-foreground">Files</label>
-							<input
-								type="file"
-								multiple
-								accept="image/*,application/pdf"
-								className="rounded-md border border-border bg-background px-3 py-2 text-foreground file:mr-4 file:rounded file:border-0 file:bg-muted file:px-2 file:py-1 file:text-foreground focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary"
-								onChange={(e) =>
-									rightForm.setValue(
-										"files",
-										e.target.files ? Array.from(e.target.files) : [],
-										{ shouldDirty: true, shouldValidate: true },
-									)
-								}
-							/>
-						</div>
+						<FileUploadField
+							name="files"
+							label="Files"
+							accept="image/*,application/pdf"
+							form={rightForm}
+						/>
 
 						{/* Tags (array string via newline) */}
-						<div className="flex flex-col gap-1">
-							<label className="text-sm text-muted-foreground">Tags</label>
-							<textarea
-								rows={4}
-								className="min-h-24 max-h-[60vh] w-full resize-y rounded-md border border-border bg-background px-3 py-2 text-foreground shadow-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary"
-								value={(rightForm.watch("tags") ?? []).join("\n")}
-								onChange={(e) =>
-									rightForm.setValue(
-										"tags",
-										e.target.value
-											.split("\n")
-											.map((s) => s.trim())
-											.filter(Boolean),
-										{ shouldDirty: true, shouldValidate: true },
-									)
-								}
-							/>
-						</div>
+						<ArrayStringField
+							name="tags"
+							label="Tags"
+							rows={4}
+							form={rightForm}
+						/>
 
-						{/* Favorite Colors (multi-select enum) */}
-						<div className="flex flex-col gap-1">
-							<label className="text-sm text-muted-foreground">
-								Favorite Colors
-							</label>
-							<select
-								multiple
-								className="rounded-md border border-border bg-background px-3 py-2 text-foreground shadow-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary"
-								value={rightForm.watch("favoriteColors") ?? []}
-								onChange={(e) => {
-									const opts = Array.from(e.target.selectedOptions).map(
-										(o) => o.value,
-									);
-									rightForm.setValue("favoriteColors", opts, {
-										shouldDirty: true,
-										shouldValidate: true,
-									});
-								}}
-							>
-								<option value="red">red</option>
-								<option value="green">green</option>
-								<option value="blue">blue</option>
-							</select>
-						</div>
+						{/* Favorite Colors (multi-select dropdown) */}
+						<SelectField
+							name="favoriteColors"
+							label="Favorite Colors"
+							multiple
+							opts={[
+								{ value: "red", label: "red" },
+								{ value: "green", label: "green" },
+								{ value: "blue", label: "blue" },
+							]}
+							form={rightForm}
+						/>
+						{/* Favorite Colors (checkboxes) */}
+						<CheckboxGroupField
+							name="favoriteColors"
+							label="Favorite Colors (Checkboxes)"
+							opts={[
+								{ value: "red", label: "red" },
+								{ value: "green", label: "green" },
+								{ value: "blue", label: "blue" },
+							]}
+							form={rightForm}
+						/>
 
 						<button
 							type="submit"
