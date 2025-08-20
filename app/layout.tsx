@@ -11,6 +11,7 @@ import { ThemeProvider } from "@/components/ui/theme-provider";
 import ThemeBridge from "@/components/ThemeBridge";
 import AppProviders from "./providers";
 import PlausibleTracker from "@/components/analytics/PlausibleTracker";
+import GA4Tracker from "@/components/analytics/GA4Tracker";
 
 const fontSans = FontSans({
 	subsets: ["latin"],
@@ -131,6 +132,7 @@ export default function RootLayout({
 							<main className="relative flex flex-col h-screen w-screen">
 								<ThemeBridge />
 								<PlausibleTracker />
+								<GA4Tracker />
 								<AudioDebugShim />
 
 								<AppProviders>{children}</AppProviders>

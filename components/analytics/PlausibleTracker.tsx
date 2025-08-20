@@ -1,7 +1,11 @@
 "use client";
 
 import { useEffect } from "react";
-import Plausible from "plausible-tracker";
+import {
+	init as initPlausible,
+	enableAutoPageviews,
+	enableAutoOutboundTracking,
+} from "@/lib/analytics/plausible";
 
 /**
  * Initializes Plausible Analytics on the client.
@@ -13,6 +17,7 @@ import Plausible from "plausible-tracker";
  * - NEXT_PUBLIC_PLAUSIBLE_DOMAIN: your Plausible domain (e.g. example.com)
  * - NEXT_PUBLIC_PLAUSIBLE_TRACK_LOCALHOST: "true" to track localhost during development
  * - NEXT_PUBLIC_PLAUSIBLE_API_HOST: override Plausible API host if self-hosting
+ * - NEXT_PUBLIC_PLAUSIBLE_HASH_MODE: "true" to enable hashMode
  */
 export default function PlausibleTracker() {
 	useEffect(() => {
@@ -22,17 +27,17 @@ export default function PlausibleTracker() {
 			const trackLocalhost =
 				process.env.NEXT_PUBLIC_PLAUSIBLE_TRACK_LOCALHOST === "true";
 			const apiHost = process.env.NEXT_PUBLIC_PLAUSIBLE_API_HOST || undefined;
+			const hashMode = process.env.NEXT_PUBLIC_PLAUSIBLE_HASH_MODE === "true";
 
-			const plausible = Plausible({
+			initPlausible({
 				domain,
 				trackLocalhost,
-				// Set hashMode=true only if your routing uses URL hashes
-				hashMode: false,
+				hashMode,
 				...(apiHost ? { apiHost } : {}),
 			});
 
-			const cleanupAutoPageviews = plausible.enableAutoPageviews();
-			const cleanupOutbound = plausible.enableAutoOutboundTracking?.();
+			const cleanupAutoPageviews = enableAutoPageviews();
+			const cleanupOutbound = enableAutoOutboundTracking();
 
 			return () => {
 				try {
@@ -43,7 +48,6 @@ export default function PlausibleTracker() {
 				} catch {}
 			};
 		} catch (e) {
-			// Non-fatal: analytics should not break the app
 			if (process.env.NODE_ENV !== "production") {
 				// eslint-disable-next-line no-console
 				console.warn("[Plausible] init failed", e);

@@ -5,6 +5,7 @@ import { useEffect } from "react";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { ReactQueryDevtools } from "@tanstack/react-query-devtools";
 import { queryClient } from "@/lib/query/client";
+import PostHogProviderBridge from "@/components/analytics/PostHogProviderBridge";
 
 // QueryClient is provided by lib/query/client with real-time friendly defaults
 
@@ -36,9 +37,11 @@ export default function AppProviders({
 	}, []);
 
 	return (
-		<QueryClientProvider client={queryClient}>
-			{children}
-			<ReactQueryDevtools initialIsOpen={false} position="bottom" />
-		</QueryClientProvider>
+		<PostHogProviderBridge>
+			<QueryClientProvider client={queryClient}>
+				{children}
+				<ReactQueryDevtools initialIsOpen={false} position="bottom" />
+			</QueryClientProvider>
+		</PostHogProviderBridge>
 	);
 }
