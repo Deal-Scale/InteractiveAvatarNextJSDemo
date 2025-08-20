@@ -34,7 +34,7 @@ export type AutoFieldProps = {
 	fields?: FieldsConfig<any>;
 };
 
-export const AutoField: React.FC<AutoFieldProps> = ({
+export const AutoFieldCore: React.FC<AutoFieldProps> = ({
 	name,
 	def,
 	form,
