@@ -7,7 +7,9 @@ export type Widget =
 	| "select"
 	| "switch"
 	| "slider"
-	| "password";
+	| "password"
+	| "date"
+	| "date-range";
 
 export type FieldConfig = {
 	label?: string;
@@ -19,6 +21,11 @@ export type FieldConfig = {
 	multiple?: boolean;
 	rows?: number;
 	placeholder?: string;
+	// Calendar UI options (for date/date-range widgets)
+	numberOfMonths?: number;
+	captionLayout?: "dropdown" | "buttons";
+	fromYear?: number;
+	toYear?: number;
 };
 
 export type FieldsConfig<T> = Partial<Record<keyof T & string, FieldConfig>>;

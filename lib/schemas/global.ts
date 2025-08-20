@@ -6,10 +6,12 @@ export const UserSettingsSchema = z.object({
 	organizationId: z.string().optional(),
 
 	// General preferences
-	language: z.string().default("en-US"),
+	language: z.string().min(1, "Language is required"),
 	quality: z
 		.union([z.nativeEnum(AvatarQuality), z.enum(["high", "medium", "low"])])
-		.default("high"),
+		.refine((v) => v != null && String(v).length > 0, {
+			message: "Quality is required",
+		}),
 	// Fields moved to AgentConfig: voiceChatTransport, stt, disableIdleTimeout, activityIdleTimeout
 });
 

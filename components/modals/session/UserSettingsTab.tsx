@@ -30,6 +30,7 @@ export function UserSettingsTab({
 						label: "Language",
 						widget: "select",
 						options: languagesOptions,
+						placeholder: "Select language",
 					},
 					quality: {
 						label: "Quality",
@@ -39,6 +40,7 @@ export function UserSettingsTab({
 							{ value: "medium", label: "Medium" },
 							{ value: "low", label: "Low" },
 						],
+						placeholder: "Select quality",
 					},
 				}}
 				form={form as any}

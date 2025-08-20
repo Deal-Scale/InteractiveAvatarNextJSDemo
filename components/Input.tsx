@@ -15,7 +15,7 @@ export const Input = (props: InputProps) => {
 	return (
 		<input
 			{...rest}
-			className={`w-full text-foreground text-sm bg-muted py-2 px-6 rounded-lg outline-none ${className ?? ""}`}
+			className={`w-full text-foreground text-sm bg-muted py-2 px-6 rounded-lg outline-none placeholder:text-muted-foreground/60 ${className ?? ""}`}
 			placeholder={placeholder}
 			type="text"
 			value={value ?? ""}

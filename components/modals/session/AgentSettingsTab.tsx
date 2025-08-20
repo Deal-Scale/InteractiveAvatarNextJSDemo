@@ -36,7 +36,7 @@ export function AgentSettingsTab({
 			<AutoForm
 				className="space-y-3"
 				fields={{
-					quality: { label: "Quality" },
+					quality: { label: "Quality", placeholder: "Select quality" },
 					temperature: {
 						label: "Temperature",
 						widget: "slider",
@@ -48,14 +48,24 @@ export function AgentSettingsTab({
 						label: "Avatar",
 						widget: "select",
 						options: avatarOptions,
+						placeholder: "Select avatar",
 					},
-					voiceId: { label: "Voice", widget: "select", options: voiceOptions },
+					voiceId: {
+						label: "Voice",
+						widget: "select",
+						options: voiceOptions,
+						placeholder: "Select voice",
+					},
 					knowledgeBaseId: {
 						label: "Knowledge Base",
 						widget: "select",
 						options: knowledgeBaseOptions,
+						placeholder: "Select knowledge base",
 					},
-					voiceChatTransport: { label: "Voice Chat Transport" },
+					voiceChatTransport: {
+						label: "Voice Chat Transport",
+						placeholder: "Select transport",
+					},
 					disableIdleTimeout: {
 						label: "Disable Idle Timeout",
 						widget: "select",
@@ -63,6 +73,7 @@ export function AgentSettingsTab({
 							{ value: "true", label: "Enabled" },
 							{ value: "false", label: "Disabled" },
 						],
+						placeholder: "Select option",
 					},
 					activityIdleTimeout: {
 						label: "Activity Idle Timeout (sec)",
@@ -76,16 +87,19 @@ export function AgentSettingsTab({
 						label: "Language",
 						widget: "select",
 						options: languagesOptions,
+						placeholder: "Select language",
 					},
 					systemPrompt: {
 						label: "System Prompt / Knowledge Base Text",
 						widget: "textarea",
+						placeholder: "Describe your agent's behavior or paste KB text...",
 					},
 					// Array<string> -> AutoForm will render as multi-select when options are provided
 					mcpServers: {
 						label: "MCP Servers",
 						widget: "select",
 						options: mcpServerOptions,
+						placeholder: "Select servers",
 					},
 				}}
 				form={form as any}

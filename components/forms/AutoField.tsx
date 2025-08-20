@@ -33,6 +33,16 @@ export const AutoField: React.FC<AutoFieldProps> = ({
 	const label = cfg.label ?? name;
 	const error = (formState.errors as any)[name]?.message as string | undefined;
 
+	// Normalize vague Zod errors like "Invalid input" to a clearer, field-specific message
+	const normError = React.useMemo(() => {
+		if (!error) return undefined;
+		const trimmed = String(error).trim();
+		if (trimmed.toLowerCase() === "invalid input") {
+			return `${label} is required`;
+		}
+		return error;
+	}, [error, label]);
+
 	// Helper to render a select (single or multi)
 	const renderSelect = (
 		opts: Array<{ value: string; label: string }>,
@@ -65,9 +75,9 @@ export const AutoField: React.FC<AutoFieldProps> = ({
 							</option>
 						))}
 					</select>
-					{error && (
+					{normError && (
 						<span className="text-xs text-red-500 dark:text-red-400">
-							{error}
+							{normError}
 						</span>
 					)}
 				</div>
@@ -91,9 +101,9 @@ export const AutoField: React.FC<AutoFieldProps> = ({
 						</option>
 					))}
 				</select>
-				{error && (
+				{normError && (
 					<span className="text-xs text-red-500 dark:text-red-400">
-						{error}
+						{normError}
 					</span>
 				)}
 			</div>
@@ -117,11 +127,12 @@ export const AutoField: React.FC<AutoFieldProps> = ({
 				<textarea
 					className="min-h-24 max-h-[60vh] w-full resize-y rounded-md border border-border bg-background px-3 py-2 text-foreground shadow-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary"
 					rows={(cfg as any).rows ?? 5}
+					placeholder={(cfg as any).placeholder}
 					{...register(name as any)}
 				/>
-				{error && (
+				{normError && (
 					<span className="text-xs text-red-500 dark:text-red-400">
-						{error}
+						{normError}
 					</span>
 				)}
 			</div>
@@ -131,10 +142,14 @@ export const AutoField: React.FC<AutoFieldProps> = ({
 		return (
 			<div className="flex flex-col gap-1">
 				<span className="text-sm text-muted-foreground">{label}</span>
-				<SensitiveInput name={name} register={register} />
-				{error && (
+				<SensitiveInput
+					name={name}
+					register={register}
+					placeholder={(cfg as any).placeholder}
+				/>
+				{normError && (
 					<span className="text-xs text-red-500 dark:text-red-400">
-						{error}
+						{normError}
 					</span>
 				)}
 			</div>
@@ -152,9 +167,9 @@ export const AutoField: React.FC<AutoFieldProps> = ({
 					type="range"
 					{...register(name as any, { valueAsNumber: true })}
 				/>
-				{error && (
+				{normError && (
 					<span className="text-xs text-red-500 dark:text-red-400">
-						{error}
+						{normError}
 					</span>
 				)}
 			</div>
@@ -273,9 +288,9 @@ export const AutoField: React.FC<AutoFieldProps> = ({
 							});
 						}}
 					/>
-					{error && (
+					{normError && (
 						<span className="text-xs text-red-500 dark:text-red-400">
-							{error}
+							{normError}
 						</span>
 					)}
 				</div>
@@ -318,9 +333,9 @@ export const AutoField: React.FC<AutoFieldProps> = ({
 							</option>
 						))}
 					</select>
-					{error && (
+					{normError && (
 						<span className="text-xs text-red-500 dark:text-red-400">
-							{error}
+							{normError}
 						</span>
 					)}
 				</div>
@@ -353,9 +368,9 @@ export const AutoField: React.FC<AutoFieldProps> = ({
 						type="range"
 						{...register(name as any, { valueAsNumber: true })}
 					/>
-					{error && (
+					{normError && (
 						<span className="text-xs text-red-500 dark:text-red-400">
-							{error}
+							{normError}
 						</span>
 					)}
 				</div>
@@ -370,9 +385,9 @@ export const AutoField: React.FC<AutoFieldProps> = ({
 					type="number"
 					{...register(name as any, { valueAsNumber: true })}
 				/>
-				{error && (
+				{normError && (
 					<span className="text-xs text-red-500 dark:text-red-400">
-						{error}
+						{normError}
 					</span>
 				)}
 			</div>
@@ -395,10 +410,14 @@ export const AutoField: React.FC<AutoFieldProps> = ({
 			return (
 				<div className="flex flex-col gap-1">
 					<span className="text-sm text-muted-foreground">{label}</span>
-					<SensitiveInput name={name} register={register} />
-					{error && (
+					<SensitiveInput
+						name={name}
+						register={register}
+						placeholder={(cfg as any).placeholder}
+					/>
+					{normError && (
 						<span className="text-xs text-red-500 dark:text-red-400">
-							{error}
+							{normError}
 						</span>
 					)}
 				</div>
@@ -423,13 +442,14 @@ export const AutoField: React.FC<AutoFieldProps> = ({
 							<textarea
 								className="min-h-24 max-h-[60vh] w-full resize-y rounded-md border border-border bg-background px-3 py-2 text-foreground shadow-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary"
 								rows={(cfg as any).rows ?? 5}
+								placeholder={(cfg as any).placeholder}
 								{...register(name as any)}
 							/>
 						</div>
 					</details>
-					{error && (
+					{normError && (
 						<span className="text-xs text-red-500 dark:text-red-400">
-							{error}
+							{normError}
 						</span>
 					)}
 				</div>
@@ -447,9 +467,9 @@ export const AutoField: React.FC<AutoFieldProps> = ({
 					type={isEmail ? "email" : "text"}
 					{...register(name as any)}
 				/>
-				{error && (
+				{normError && (
 					<span className="text-xs text-red-500 dark:text-red-400">
-						{error}
+						{normError}
 					</span>
 				)}
 			</div>
@@ -467,9 +487,9 @@ export const AutoField: React.FC<AutoFieldProps> = ({
 					type="file"
 					{...register(name as any)}
 				/>
-				{error && (
+				{normError && (
 					<span className="text-xs text-red-500 dark:text-red-400">
-						{error}
+						{normError}
 					</span>
 				)}
 			</div>
@@ -502,9 +522,9 @@ export const AutoField: React.FC<AutoFieldProps> = ({
 					type="text"
 					{...register(name as any)}
 				/>
-				{error && (
+				{normError && (
 					<span className="text-xs text-red-500 dark:text-red-400">
-						{error}
+						{normError}
 					</span>
 				)}
 			</div>

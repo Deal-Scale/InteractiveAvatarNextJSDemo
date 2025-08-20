@@ -122,7 +122,11 @@ export const AutoField: React.FC<AutoFieldProps> = ({
 		return (
 			<div className="flex flex-col gap-1">
 				<span className="text-sm text-muted-foreground">{label}</span>
-				<SensitiveInput name={name} register={form.register} />
+				<SensitiveInput
+					name={name}
+					register={form.register}
+					placeholder={(cfg as any).placeholder}
+				/>
 				{error && (
 					<span className="text-xs text-red-500 dark:text-red-400">
 						{error}
@@ -372,7 +376,11 @@ export const AutoField: React.FC<AutoFieldProps> = ({
 				<div className="flex flex-col gap-1">
 					<span className="text-sm text-muted-foreground">{label}</span>
 					{/* keep inlined to avoid exposing password value to props */}
-					<SensitiveInput name={name} register={form.register} />
+					<SensitiveInput
+						name={name}
+						register={form.register}
+						placeholder={(cfg as any).placeholder}
+					/>
 					{error && (
 						<span className="text-xs text-red-500 dark:text-red-400">
 							{error}
