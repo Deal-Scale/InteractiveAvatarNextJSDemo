@@ -10,6 +10,10 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { KB_CONNECTORS, type KBConnector } from "./connectors";
+import { useResponsiveColumns } from "@/components/ui/grid/utils/useResponsiveColumns";
+import { useGridData } from "@/components/ui/hooks/useGridData";
+import type { GridItem, GridResponse } from "@/types/component-grid";
+import ComponentGridControls from "@/components/ui/grid/components/ComponentGridControls";
 
 export type AddKBTab = "text" | "tool";
 
@@ -66,6 +70,56 @@ export default function AddKnowledgeBaseModal({
 		() => KB_CONNECTORS.find((c) => c.key === selectedConnector) || null,
 		[selectedConnector],
 	);
+
+	// Responsive columns for connector grid
+	const { containerRef, gridTemplate } = useResponsiveColumns(220, 2);
+
+	// Grid hook over static connector list for search/filter/sort
+	type ConnectorItem = GridItem & KBConnector;
+	const connectorCategories = ["OAuth", "API Key"];
+	const connectorGrid = useGridData<ConnectorItem>({
+		fetcher: async ({
+			page,
+			pageSize,
+			search,
+			categories,
+		}): Promise<GridResponse<ConnectorItem>> => {
+			const q = (search ?? "").trim().toLowerCase();
+			const cats = categories ?? [];
+			let items = KB_CONNECTORS.map((c) => ({ ...c })) as ConnectorItem[];
+			if (q) {
+				items = items.filter(
+					(c) =>
+						c.name.toLowerCase().includes(q) ||
+						c.description.toLowerCase().includes(q) ||
+						c.key.toLowerCase().includes(q),
+				);
+			}
+			if (cats.length > 0) {
+				const wantOAuth = cats.includes("OAuth");
+				const wantApi = cats.includes("API Key");
+				items = items.filter(
+					(c) =>
+						(wantOAuth && c.auth.type === "oauth") ||
+						(wantApi && c.auth.type === "apiKey"),
+				);
+			}
+			// Simple alpha sort by name
+			items.sort((a, b) => a.name.localeCompare(b.name));
+			const start = (page - 1) * pageSize;
+			const paged = items.slice(start, start + pageSize);
+			return {
+				items: paged,
+				total: items.length,
+				page,
+				pageSize,
+			};
+		},
+		pageSize: 8,
+		mode: "paged",
+		initialPage: 1,
+		queryKeyBase: ["kb-connectors"],
+	});
 
 	function resetDraft() {
 		setName("");
@@ -144,7 +198,7 @@ export default function AddKnowledgeBaseModal({
 				onOpenChange(v);
 			}}
 		>
-			<DialogContent>
+			<DialogContent className="sm:max-w-xl max-h-[85dvh]">
 				<DialogHeader>
 					<DialogTitle>Add Knowledge Base</DialogTitle>
 					<DialogDescription>
@@ -153,7 +207,7 @@ export default function AddKnowledgeBaseModal({
 				</DialogHeader>
 
 				{/* Tabs */}
-				<div className="px-1">
+				<div className="px-1 overflow-y-auto max-h-[calc(85dvh-6rem)]">
 					<div
 						role="tablist"
 						className="mb-3 flex gap-1 border-b border-border"
@@ -229,17 +283,36 @@ export default function AddKnowledgeBaseModal({
 
 					{active === "tool" && (
 						<div role="tabpanel" className="grid gap-3">
+							<ComponentGridControls
+								search={connectorGrid.search}
+								onSearchChange={connectorGrid.setSearch}
+								categories={connectorCategories}
+								selectedCategories={connectorGrid.categories}
+								onCategoriesChange={connectorGrid.setCategories}
+								mode="paged"
+								onClearAll={connectorGrid.clearFilters}
+							/>
+
 							{/* connectors grid */}
-							<div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
-								{KB_CONNECTORS.map((c) => (
+							<div
+								ref={containerRef}
+								className="grid gap-2"
+								style={{ gridTemplateColumns: gridTemplate }}
+							>
+								{connectorGrid.items.map((c) => (
 									<button
-										key={c.key}
+										key={c.key as string}
 										type="button"
 										className={`rounded-md border border-input p-3 text-left text-sm hover:bg-accent ${selectedConnector === c.key ? "ring-2 ring-ring" : ""}`}
 										onClick={() => setSelectedConnector(c.key)}
 										aria-pressed={selectedConnector === c.key}
 									>
-										<div className="font-medium">{c.name}</div>
+										<div className="font-medium flex items-center justify-between">
+											<span>{c.name}</span>
+											<span className="text-[10px] rounded bg-muted px-1 py-0.5 text-muted-foreground">
+												{c.auth.type === "oauth" ? "OAuth" : "API Key"}
+											</span>
+										</div>
 										<div className="text-xs text-muted-foreground">
 											{c.description}
 										</div>
@@ -247,74 +320,100 @@ export default function AddKnowledgeBaseModal({
 								))}
 							</div>
 
-							{/* simple config form when selected */}
-							{selectedMeta && (
-								<div className="mt-1 grid gap-2 rounded-md border border-dashed border-input p-3">
-									<div className="text-sm font-medium">
-										Configure {selectedMeta.name}
+							{/* Paged controls minimal */}
+							<div className="flex items-center justify-between pt-1 text-xs text-muted-foreground">
+								<span>
+									Page {connectorGrid.page} · {connectorGrid.total} items
+								</span>
+								<div className="flex gap-2">
+									<Button
+										variant="outline"
+										size="sm"
+										disabled={connectorGrid.page <= 1}
+										onClick={() =>
+											connectorGrid.setPage(Math.max(1, connectorGrid.page - 1))
+										}
+									>
+										Prev
+									</Button>
+									<Button
+										variant="outline"
+										size="sm"
+										disabled={!connectorGrid.hasNextPage}
+										onClick={() =>
+											connectorGrid.setPage(connectorGrid.page + 1)
+										}
+									>
+										Next
+									</Button>
+								</div>
+							</div>
+						</div>
+					)}
+
+					{selectedMeta && (
+						<div className="mt-1 grid gap-2 rounded-md border border-dashed border-input p-3">
+							<div className="text-sm font-medium">
+								Configure {selectedMeta.name}
+							</div>
+							{selectedMeta.auth.type === "apiKey" && (
+								<>
+									{selectedMeta.auth.fields.map((f) => (
+										<label key={f.key} className="grid gap-1 text-sm">
+											<span className="text-muted-foreground">{f.label}</span>
+											<input
+												value={config[f.key] ?? ""}
+												onChange={(e) =>
+													setConfig((prev) => ({
+														...prev,
+														[f.key]: e.target.value,
+													}))
+												}
+												className="h-9 rounded-md border border-input bg-background px-3 text-sm outline-none ring-offset-background placeholder:text-muted-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+												placeholder={f.placeholder}
+												type={f.secret ? "password" : "text"}
+											/>
+										</label>
+									))}
+									<div className="flex items-center gap-2 pt-1">
+										<Button
+											type="button"
+											variant="outline"
+											disabled={testing}
+											onClick={handleTest}
+										>
+											{testing ? "Testing…" : "Test Connection"}
+										</Button>
+										{testResult && (
+											<span className="text-xs text-muted-foreground">
+												{testResult}
+											</span>
+										)}
+										<div className="grow" />
+										<Button
+											type="button"
+											disabled={connecting}
+											onClick={handleConnect}
+										>
+											{connecting ? "Connecting…" : "Connect"}
+										</Button>
 									</div>
-									{selectedMeta.auth.type === "apiKey" && (
-										<>
-											{selectedMeta.auth.fields.map((f) => (
-												<label key={f.key} className="grid gap-1 text-sm">
-													<span className="text-muted-foreground">
-														{f.label}
-													</span>
-													<input
-														value={config[f.key] ?? ""}
-														onChange={(e) =>
-															setConfig((prev) => ({
-																...prev,
-																[f.key]: e.target.value,
-															}))
-														}
-														className="h-9 rounded-md border border-input bg-background px-3 text-sm outline-none ring-offset-background placeholder:text-muted-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-														placeholder={f.placeholder}
-														type={f.secret ? "password" : "text"}
-													/>
-												</label>
-											))}
-											<div className="flex items-center gap-2 pt-1">
-												<Button
-													type="button"
-													variant="outline"
-													disabled={testing}
-													onClick={handleTest}
-												>
-													{testing ? "Testing…" : "Test Connection"}
-												</Button>
-												{testResult && (
-													<span className="text-xs text-muted-foreground">
-														{testResult}
-													</span>
-												)}
-												<div className="grow" />
-												<Button
-													type="button"
-													disabled={connecting}
-													onClick={handleConnect}
-												>
-													{connecting ? "Connecting…" : "Connect"}
-												</Button>
-											</div>
-										</>
-									)}
-									{selectedMeta.auth.type === "oauth" && (
-										<div className="flex items-center justify-between gap-2 pt-1">
-											<div className="text-xs text-muted-foreground">
-												OAuth via {new URL(selectedMeta.auth.authUrl).hostname}
-											</div>
-											<Button
-												type="button"
-												disabled={connecting}
-												onClick={() => handleOAuthStart(selectedMeta)}
-											>
-												{connecting
-													? "Connecting…"
-													: `Connect ${selectedMeta.name}`}
-											</Button>
-										</div>
-									)}
+								</>
+							)}
+							{selectedMeta.auth.type === "oauth" && (
+								<div className="flex items-center justify-between gap-2 pt-1">
+									<div className="text-xs text-muted-foreground">
+										OAuth via {new URL(selectedMeta.auth.authUrl).hostname}
+									</div>
+									<Button
+										type="button"
+										disabled={connecting}
+										onClick={() => handleOAuthStart(selectedMeta)}
+									>
+										{connecting
+											? "Connecting…"
+											: `Connect ${selectedMeta.name}`}
+									</Button>
 								</div>
 							)}
 						</div>
