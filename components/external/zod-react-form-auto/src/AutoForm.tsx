@@ -7,6 +7,12 @@ import { z } from "zod";
 import { UseFormReturn } from "react-hook-form";
 
 import { AutoField } from "./AutoField";
+import {
+	Tooltip,
+	TooltipTrigger,
+	TooltipContent,
+	TooltipProvider,
+} from "@/components/ui/tooltip";
 
 type AutoFormProps<TSchema extends z.ZodObject<any, any>> = {
 	schema: TSchema;
@@ -66,6 +72,48 @@ export function AutoForm<TSchema extends z.ZodObject<any, any>>({
 	}
 
 	const keys = Object.keys(shape);
+
+	// Flatten errors into dotted paths with messages (cycle-safe and selective)
+	const flatErrors = React.useMemo(() => {
+		const out: Array<{ name: string; message: string }> = [];
+		const visited = new WeakSet<object>();
+		const skipKeys = new Set(["message", "type", "types", "ref"]);
+		const walk = (node: any, prefix: string[]) => {
+			if (!node || typeof node !== "object") return;
+			if (visited.has(node as object)) return;
+			visited.add(node as object);
+			for (const k of Object.keys(node)) {
+				if (skipKeys.has(k)) continue;
+				const next: any = (node as any)[k];
+				const path = [...prefix, k];
+				if (next && typeof next === "object") {
+					const msg = (next as any).message as string | undefined;
+					if (msg) out.push({ name: path.join("."), message: msg });
+					walk(next, path);
+				}
+			}
+		};
+		walk(formState.errors as any, []);
+		return out;
+	}, [formState.errors]);
+
+	const invalidSummary = React.useMemo(() => {
+		if (!flatErrors.length) return null;
+		return flatErrors.map(({ name, message }) => {
+			const label =
+				(fields as any)?.[name]?.label ?? name.split(".").pop() ?? name;
+			const norm =
+				String(message).trim().toLowerCase() === "invalid input"
+					? `${label} is required`
+					: message;
+			return { label, message: norm };
+		});
+	}, [flatErrors, fields]);
+
+	const invalidTooltip = React.useMemo(() => {
+		if (!invalidSummary || invalidSummary.length === 0) return undefined;
+		return invalidSummary.map((it) => `${it.label}: ${it.message}`).join("\n");
+	}, [invalidSummary]);
 
 	return (
 		<form
@@ -130,13 +178,67 @@ export function AutoForm<TSchema extends z.ZodObject<any, any>>({
 					/>
 				);
 			})}
-			<button
-				className="inline-flex items-center rounded-md bg-primary px-4 py-2 text-primary-foreground hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary disabled:opacity-50"
-				disabled={!formState.isValid}
-				type="submit"
-			>
-				{submitLabel}
-			</button>
+			{Boolean(invalidSummary?.length) && (
+				<div className="rounded-md border border-destructive/40 bg-destructive/5 p-2 text-xs">
+					<div className="mb-1 font-medium text-destructive">
+						{invalidSummary!.length} field
+						{invalidSummary!.length > 1 ? "s" : ""} need attention
+					</div>
+					<ul className="list-inside list-disc space-y-0.5 text-destructive">
+						{invalidSummary!.map((it) => (
+							<li key={it.label}>
+								<span className="font-medium">{it.label}:</span> {it.message}
+							</li>
+						))}
+					</ul>
+				</div>
+			)}
+			{!formState.isValid ? (
+				<TooltipProvider>
+					<Tooltip
+						onOpenChange={(open) => {
+							if (open) {
+								try {
+									void form.trigger();
+								} catch {}
+							}
+						}}
+					>
+						<TooltipTrigger asChild>
+							<span
+								className="inline-block"
+								onMouseEnter={() => {
+									try {
+										void form.trigger();
+									} catch {}
+								}}
+							>
+								<button
+									className="pointer-events-none inline-flex items-center rounded-md bg-primary px-4 py-2 text-primary-foreground hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary disabled:opacity-50"
+									disabled
+									type="submit"
+								>
+									{submitLabel}
+								</button>
+							</span>
+						</TooltipTrigger>
+						<TooltipContent forceMount>
+							<div className="max-w-xs whitespace-pre-wrap">
+								{formState.isValidating
+									? "Validating..."
+									: (invalidTooltip ?? "Complete required fields")}
+							</div>
+						</TooltipContent>
+					</Tooltip>
+				</TooltipProvider>
+			) : (
+				<button
+					className="inline-flex items-center rounded-md bg-primary px-4 py-2 text-primary-foreground hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary disabled:opacity-50"
+					type="submit"
+				>
+					{submitLabel}
+				</button>
+			)}
 		</form>
 	);
 }

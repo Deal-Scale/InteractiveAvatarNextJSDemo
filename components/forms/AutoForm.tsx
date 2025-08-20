@@ -7,6 +7,12 @@ import { z } from "zod";
 import { UseFormReturn } from "react-hook-form";
 
 import { AutoField } from "./AutoField";
+import {
+	Tooltip,
+	TooltipTrigger,
+	TooltipContent,
+	TooltipProvider,
+} from "@/components/ui/tooltip";
 
 type AutoFormProps<TSchema extends z.ZodObject<any, any>> = {
 	schema: TSchema;
@@ -53,25 +59,28 @@ export function AutoForm<TSchema extends z.ZodObject<any, any>>({
 
 	const keys = Object.keys(shape);
 
-	// Flatten errors into dotted paths with messages
+	// Flatten errors into dotted paths with messages (cycle-safe and selective)
 	const flatErrors = React.useMemo(() => {
 		const out: Array<{ name: string; message: string }> = [];
+		const visited = new WeakSet<object>();
+		const skipKeys = new Set(["message", "type", "types", "ref"]);
 		const walk = (node: any, prefix: string[]) => {
-			if (!node) return;
+			if (!node || typeof node !== "object") return;
+			if (visited.has(node as object)) return;
+			visited.add(node as object);
 			for (const k of Object.keys(node)) {
-				const next = node[k];
+				if (skipKeys.has(k)) continue;
+				const next = (node as any)[k];
 				const path = [...prefix, k];
 				if (next && typeof next === "object") {
 					const msg = (next as any).message as string | undefined;
 					if (msg) out.push({ name: path.join("."), message: msg });
-					// dive deeper for nested objects
 					walk(next as any, path);
 				}
 			}
 		};
 		walk(formState.errors as any, []);
 		return out;
-		// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, [formState.errors]);
 
 	const invalidSummary = React.useMemo(() => {
@@ -164,14 +173,52 @@ export function AutoForm<TSchema extends z.ZodObject<any, any>>({
 					</ul>
 				</div>
 			)}
-			<button
-				className="inline-flex items-center rounded-md bg-primary px-4 py-2 text-primary-foreground hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary disabled:opacity-50"
-				disabled={!formState.isValid}
-				title={!formState.isValid ? invalidTooltip : undefined}
-				type="submit"
-			>
-				{submitLabel}
-			</button>
+			{!formState.isValid ? (
+				<TooltipProvider>
+					<Tooltip
+						onOpenChange={(open) => {
+							if (open) {
+								try {
+									void form.trigger();
+								} catch {}
+							}
+						}}
+					>
+						<TooltipTrigger asChild>
+							<span
+								className="inline-block"
+								onMouseEnter={() => {
+									try {
+										void form.trigger();
+									} catch {}
+								}}
+							>
+								<button
+									className="pointer-events-none inline-flex items-center rounded-md bg-primary px-4 py-2 text-primary-foreground hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary disabled:opacity-50"
+									disabled
+									type="submit"
+								>
+									{submitLabel}
+								</button>
+							</span>
+						</TooltipTrigger>
+						<TooltipContent forceMount>
+							<div className="max-w-xs whitespace-pre-wrap">
+								{formState.isValidating
+									? "Validating..."
+									: (invalidTooltip ?? "Complete required fields")}
+							</div>
+						</TooltipContent>
+					</Tooltip>
+				</TooltipProvider>
+			) : (
+				<button
+					className="inline-flex items-center rounded-md bg-primary px-4 py-2 text-primary-foreground hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary disabled:opacity-50"
+					type="submit"
+				>
+					{submitLabel}
+				</button>
+			)}
 		</form>
 	);
 }
