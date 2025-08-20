@@ -54,6 +54,11 @@ export type FieldConfig = {
 	holidays?: Date[]; // disabled exact dates
 	disableWeekdays?: number[]; // 0=Sun..6=Sat
 	withTime?: boolean; // show time pickers alongside date(s)
+	// Calendar UI options
+	numberOfMonths?: number; // show multiple months side-by-side
+	captionLayout?: "dropdown" | "buttons"; // month/year selector UI
+	fromYear?: number; // earliest year for dropdown
+	toYear?: number; // latest year for dropdown
 };
 
 export type FieldsConfig<T> = Partial<Record<keyof T & string, FieldConfig>>;

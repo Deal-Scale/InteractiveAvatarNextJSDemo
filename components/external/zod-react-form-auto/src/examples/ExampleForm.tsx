@@ -36,9 +36,9 @@ export default function ExampleForm() {
 	}, []);
 	const leftForm = useZodForm(AppSchema, {
 		defaultValues: {
-			email: "alice@example.com",
-			password: "hunter2",
-			bio: "Short bio about Alice...",
+			email: "",
+			password: "",
+			bio: "",
 			age: 30,
 			birthday: undefined as any,
 			termsAccepted: false,
@@ -48,7 +48,7 @@ export default function ExampleForm() {
 			favoriteFruit: "",
 			apiKey: "",
 			files: undefined as any,
-			tags: ["react", "zod"],
+			tags: [],
 			favoriteColors: ["red"],
 		} as Partial<AppValues>,
 	});
@@ -73,6 +73,7 @@ export default function ExampleForm() {
 						form={leftForm}
 						schema={AppSchema}
 						fields={{
+							email: { placeholder: "name@example.com" },
 							age: {
 								widget: "slider",
 								min: 0,
@@ -100,8 +101,17 @@ export default function ExampleForm() {
 								toYear,
 							},
 							endDate: { widget: "hidden" },
-							password: { widget: "password", label: "Password" },
-							bio: { widget: "textarea", rows: 4, label: "Bio" },
+							password: {
+								widget: "password",
+								label: "Password",
+								placeholder: "Enter your password",
+							},
+							bio: {
+								widget: "textarea",
+								rows: 4,
+								label: "Bio",
+								placeholder: "Tell us about yourself",
+							},
 							termsAccepted: { widget: "select", label: "Accept Terms?" },
 							favoriteFruit: {
 								widget: "select",
@@ -113,7 +123,11 @@ export default function ExampleForm() {
 									{ value: "orange", label: "Orange" },
 								],
 							},
-							apiKey: { widget: "password", label: "API Key" },
+							apiKey: {
+								widget: "password",
+								label: "API Key",
+								placeholder: "sk-...",
+							},
 							role: { widget: "radios", label: "Role" },
 							tags: { placeholder: "Type a tag and press Enter" },
 							favoriteColors: {
@@ -153,16 +167,27 @@ export default function ExampleForm() {
 							label="Email"
 							type="email"
 							form={rightForm}
+							placeholder="name@example.com"
 						/>
 
 						{/* Password (SensitiveInput) */}
 						<div className="flex flex-col gap-1">
 							<label className="text-sm text-muted-foreground">Password</label>
-							<SensitiveInput name="password" register={rightForm.register} />
+							<SensitiveInput
+								name="password"
+								register={rightForm.register}
+								placeholder="Enter your password"
+							/>
 						</div>
 
 						{/* Bio (textarea) */}
-						<TextareaField name="bio" label="Bio" rows={4} form={rightForm} />
+						<TextareaField
+							name="bio"
+							label="Bio"
+							rows={4}
+							form={rightForm}
+							placeholder="Tell us about yourself"
+						/>
 
 						{/* Age (slider) */}
 						<NumberSliderField
@@ -233,7 +258,11 @@ export default function ExampleForm() {
 						{/* API Key (SensitiveInput) */}
 						<div className="flex flex-col gap-1">
 							<label className="text-sm text-muted-foreground">API Key</label>
-							<SensitiveInput name="apiKey" register={rightForm.register} />
+							<SensitiveInput
+								name="apiKey"
+								register={rightForm.register}
+								placeholder="sk-..."
+							/>
 						</div>
 
 						{/* Files (file-upload) */}
@@ -245,7 +274,12 @@ export default function ExampleForm() {
 						/>
 
 						{/* Tags (array string via newline) */}
-						<ArrayStringField name="tags" label="Tags" form={rightForm} />
+						<ArrayStringField
+							name="tags"
+							label="Tags"
+							form={rightForm}
+							placeholder="Type a tag and press Enter"
+						/>
 
 						{/* Favorite Colors (multi-select dropdown) */}
 						<SelectField

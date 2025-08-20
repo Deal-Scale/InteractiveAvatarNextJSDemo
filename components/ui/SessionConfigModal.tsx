@@ -101,9 +101,9 @@ export function SessionConfigModal({
 	// User Settings form instance
 	const userForm = useZodForm(UserSettingsSchema, {
 		defaultValues: {
-			userId: "local-user",
-			language: "en-US",
-			quality: "high",
+			userId: "",
+			language: "",
+			quality: "",
 		} as Partial<UserSettings>,
 		mode: "onChange",
 	});
@@ -111,9 +111,9 @@ export function SessionConfigModal({
 	// Global (App) Settings form instance
 	const globalForm = useZodForm(AppGlobalSettingsSchema, {
 		defaultValues: {
-			theme: "system",
+			theme: "",
 			telemetryEnabled: false,
-			apiBaseUrl: "https://api.heygen.com",
+			apiBaseUrl: "",
 		} as Partial<AppGlobalSettings>,
 		mode: "onChange",
 	});
@@ -121,8 +121,8 @@ export function SessionConfigModal({
 	// Agent Settings form instance
 	const agentForm = useZodForm(AgentConfigSchema, {
 		defaultValues: {
-			id: "local-agent",
-			name: "Local Agent",
+			id: "",
+			name: "",
 			avatarId: "",
 		} as z.infer<typeof AgentConfigSchema>,
 		mode: "onChange",

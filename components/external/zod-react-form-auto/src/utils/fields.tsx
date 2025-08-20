@@ -4,14 +4,16 @@ import { UseFormRegister } from "react-hook-form";
 export const SensitiveInput: React.FC<{
 	name: string;
 	register: UseFormRegister<any>;
-}> = ({ name, register }) => {
+	placeholder?: string;
+}> = ({ name, register, placeholder }) => {
 	const [show, setShow] = React.useState(false);
 
 	return (
 		<div className="relative">
 			<input
-				className="w-full rounded-md border border-zinc-300 bg-white px-3 py-2 pr-20 text-zinc-900 shadow-sm focus:outline-none focus:ring-2 focus:ring-zinc-500 focus:border-zinc-500 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100"
+				className="w-full rounded-md border border-zinc-300 bg-white px-3 py-2 pr-20 text-zinc-900 shadow-sm placeholder:text-zinc-400 focus:outline-none focus:ring-2 focus:ring-zinc-500 focus:border-zinc-500 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100 dark:placeholder:text-zinc-500"
 				type={show ? "text" : "password"}
+				placeholder={placeholder}
 				{...register(name as any)}
 			/>
 			<button
