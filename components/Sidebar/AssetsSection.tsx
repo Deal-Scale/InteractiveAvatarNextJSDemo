@@ -10,6 +10,8 @@ import { useToast } from "@/components/ui/toaster";
 import AssetCard from "@/components/Sidebar/assets/AssetCard";
 import UploadsList from "@/components/Sidebar/assets/UploadsList";
 import PreviewDialog from "@/components/Sidebar/assets/PreviewDialog";
+import ComponentGrid from "@/components/ui/ComponentGrid";
+import type { GridFetcher, GridResponse } from "@/types/component-grid";
 
 export default function AssetsSection(props: {
 	assets: {
@@ -48,8 +50,6 @@ export default function AssetsSection(props: {
 	const fileInputRef = useRef<HTMLInputElement | null>(null);
 	const { publish } = useToast();
 	const notifiedErrors = useRef<Set<string>>(new Set());
-
-	const [query, setQuery] = useState("");
 	const [previewId, setPreviewId] = useState<string | null>(null);
 
 	const mergedAssets = useMemo(() => {
@@ -81,15 +81,9 @@ export default function AssetsSection(props: {
 		[mergedAssets, previewId],
 	);
 
-	const filteredAssets = useMemo(() => {
-		const q = query.trim().toLowerCase();
-		if (!q) return mergedAssets;
-		const isExtQuery = q.startsWith(".") || q.startsWith("ext:");
-		const wanted = q.startsWith("ext:")
-			? q.slice(4)
-			: q.startsWith(".")
-				? q.slice(1)
-				: q;
+	// Derive categories from primary mime type (e.g., image, video, application) or file extension
+	const categories = useMemo(() => {
+		const set = new Set<string>();
 		const getExt = (a: {
 			name: string;
 			url?: string;
@@ -99,12 +93,61 @@ export default function AssetsSection(props: {
 			const m = /(\.([a-z0-9]+)(?:$|\?))/i.exec(src);
 			return (m?.[2] || "").toLowerCase();
 		};
-		return mergedAssets.filter((a) => {
-			const nameHit = a.name.toLowerCase().includes(q);
-			if (!isExtQuery) return nameHit;
-			return getExt(a) === wanted;
+		for (const a of mergedAssets) {
+			if (a.mimeType && a.mimeType.includes("/")) {
+				set.add(a.mimeType.split("/")[0]);
+			} else {
+				const ext = getExt(a);
+				if (ext) set.add(ext);
+			}
+		}
+		return Array.from(set);
+	}, [mergedAssets]);
+
+	// Local fetcher with search across name, mimeType, and extension; category filter matches primary mime or extension
+	const fetchAssets: GridFetcher<{
+		id: string;
+		name: string;
+		thumbnailUrl?: string;
+		url?: string;
+		mimeType?: string;
+	}> = async ({ page, pageSize, search, categories: cats }) => {
+		const q = (search || "").trim().toLowerCase();
+		const getExt = (a: {
+			name: string;
+			url?: string;
+			thumbnailUrl?: string;
+		}) => {
+			const src = a.url || a.thumbnailUrl || a.name;
+			const m = /(\.([a-z0-9]+)(?:$|\?))/i.exec(src);
+			return (m?.[2] || "").toLowerCase();
+		};
+		const primaryType = (a: { mimeType?: string }) =>
+			a.mimeType && a.mimeType.includes("/") ? a.mimeType.split("/")[0] : "";
+
+		const filtered = mergedAssets.filter((a) => {
+			const nameHit = !q || a.name.toLowerCase().includes(q);
+			const mimeHit = !q || (a.mimeType || "").toLowerCase().includes(q);
+			const extHit =
+				!q || getExt(a).includes(q.replace(/^ext:/, "").replace(/^\./, ""));
+			const matchesSearch = nameHit || mimeHit || extHit;
+			const cat = primaryType(a) || getExt(a);
+			const matchesCats =
+				!cats || cats.length === 0 || (cat && cats.includes(cat));
+			return matchesSearch && matchesCats;
 		});
-	}, [mergedAssets, query]);
+
+		const start = (page - 1) * pageSize;
+		const end = start + pageSize;
+		const items = filtered.slice(start, end);
+		const resp: GridResponse<(typeof items)[number]> = {
+			items,
+			total: filtered.length,
+			page,
+			pageSize,
+		};
+		return new Promise((resolve) => setTimeout(() => resolve(resp), 50));
+	};
 
 	// Surface upload errors as toasts (deduplicated per temp upload id)
 	useEffect(() => {
@@ -166,36 +209,33 @@ export default function AssetsSection(props: {
 								}
 							}}
 						/>
-						<input
-							aria-label="Search assets by name or extension"
-							className="w-full rounded-md border bg-background px-2 py-1 text-xs outline-none ring-0 focus:border-primary"
-							onChange={(e) => setQuery(e.target.value)}
-							placeholder="Search assets (e.g., hero, .png, ext:pdf)"
-							type="text"
-							value={query}
-						/>
 					</div>
 
 					{uploads.length > 0 && <UploadsList uploads={uploads as any} />}
-					{filteredAssets.length === 0 ? (
-						<div className="px-1 py-2 text-xs text-muted-foreground">
-							No assets found
-						</div>
-					) : (
-						<div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2">
-							{filteredAssets.map((asset) => {
-								return (
-									<AssetCard
-										key={asset.id}
-										asset={asset}
-										onDelete={onDelete}
-										onAttach={onAttach as any}
-										onPreview={(id) => setPreviewId(id)}
-									/>
-								);
-							})}
-						</div>
-					)}
+
+					<ComponentGrid<{
+						id: string;
+						name: string;
+						thumbnailUrl?: string;
+						url?: string;
+						mimeType?: string;
+					}>
+						fetcher={fetchAssets}
+						ItemComponent={({ item }) => (
+							<AssetCard
+								asset={item as any}
+								onDelete={onDelete}
+								onAttach={onAttach as any}
+								onPreview={(id) => setPreviewId(id)}
+							/>
+						)}
+						categories={categories}
+						pageSize={12}
+						mode="infinite"
+						columns={2}
+						queryKeyBase={["sidebar", "assets"]}
+						className="[&_[role=grid]]:grid-cols-2 sm:[&_[role=grid]]:grid-cols-3"
+					/>
 				</div>
 			)}
 
