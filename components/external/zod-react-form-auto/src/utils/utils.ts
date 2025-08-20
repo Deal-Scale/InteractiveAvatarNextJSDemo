@@ -1,3 +1,19 @@
+/*
+===============================================================
+ DO NOT EDIT — Zod v4 classic: accessible constructors we rely on
+ This package uses Zod v4 (classic build). The following constructors
+ are available and safe to reference via `z`:
+ - z.ZodObject, z.ZodArray, z.ZodString, z.ZodNumber, z.ZodBoolean
+ - z.ZodBigInt, z.ZodDate, z.ZodEnum, z.ZodLiteral, z.ZodUnion
+ - z.ZodDiscriminatedUnion, z.ZodIntersection, z.ZodRecord, z.ZodSet
+ - z.ZodMap, z.ZodTuple, z.ZodUnknown, z.ZodAny, z.ZodNull, z.ZodUndefined
+
+ NOTE: Wrapper types like "Effects", "Readonly", etc. may not have
+ exported constructors on `z`. To unwrap any wrapper, follow the
+ internal `_def` chain (innerType | schema | type | out | in | source)
+ instead of instanceof checks against non-exported constructors.
+===============================================================
+*/
 import { z } from "zod";
 
 export type Widget =
@@ -19,6 +35,10 @@ export type FieldConfig = {
 	multiple?: boolean;
 	rows?: number;
 	placeholder?: string;
+	// File upload specific overrides
+	acceptTypes?: string | string[];
+	minFiles?: number;
+	maxFiles?: number;
 };
 
 export type FieldsConfig<T> = Partial<Record<keyof T & string, FieldConfig>>;
@@ -26,64 +46,28 @@ export type FieldsConfig<T> = Partial<Record<keyof T & string, FieldConfig>>;
 // Unwrap wrappers like Optional/Nullable/Default/Effects to detect the base type
 export function unwrapType(t: z.ZodTypeAny): z.ZodTypeAny {
 	let cur: any = t;
-	const trace: string[] = [];
+	const wrappers: string[] = [];
 
-	// To avoid infinite loops, cap the number of unwrap iterations
 	let safety = 20;
-	while (safety-- > 0) {
-		const tn = cur?._def?.typeName as string | undefined;
-		if (!tn) break;
-
-		// List of wrapper typeNames we want to unwrap through
-		const isWrapper =
-			tn === "ZodOptional" ||
-			tn === "ZodNullable" ||
-			tn === "ZodDefault" ||
-			tn === "ZodEffects" ||
-			tn === "ZodReadonly" ||
-			tn === "ZodBranded" ||
-			tn === "ZodPromise" ||
-			tn === "ZodCatch" ||
-			tn === "ZodPipeline";
-		if (!isWrapper) break;
-
-		trace.push(tn);
-
-		// Common inner references used by Zod wrappers
-		if (cur?._def?.innerType) {
-			cur = cur._def.innerType;
-			continue;
-		}
-		if (cur?._def?.schema) {
-			cur = cur._def.schema;
-			continue;
-		}
-		// ZodPromise
-		if (cur?._def?.type) {
-			cur = cur._def.type;
-			continue;
-		}
-		// ZodPipeline (in/out); prefer out if present, else in/source
-		if (cur?._def?.out) {
-			cur = cur._def.out;
-			continue;
-		}
-		if (cur?._def?.in) {
-			cur = cur._def.in;
-			continue;
-		}
-		if (cur?._def?.source) {
-			cur = cur._def.source;
-			continue;
-		}
-		break;
+	while (safety-- > 0 && cur) {
+		const def = (cur as any)?._def;
+		const next =
+			def?.innerType ??
+			def?.schema ??
+			def?.type ??
+			def?.out ??
+			def?.in ??
+			def?.source;
+		if (!next) break;
+		wrappers.push(cur?.constructor?.name ?? "unknown");
+		cur = next;
 	}
 
 	if (process.env.NODE_ENV !== "production") {
 		try {
 			console.debug("unwrapType trace", {
-				wrappers: trace,
-				base: cur?._def?.typeName,
+				wrappers,
+				base: cur?.constructor?.name,
 			});
 		} catch {}
 	}
@@ -91,8 +75,44 @@ export function unwrapType(t: z.ZodTypeAny): z.ZodTypeAny {
 	return cur as z.ZodTypeAny;
 }
 
+// Specifically unwrap only until we reach a ZodObject (used by AutoForm)
+export function unwrapToZodObject(
+	t: z.ZodTypeAny,
+): z.ZodObject<any, any> | z.ZodTypeAny {
+	let cur: any = t;
+	const wrappers: string[] = [];
+
+	let safety = 20;
+	while (safety-- > 0 && cur) {
+		if (cur instanceof z.ZodObject) break;
+		const def = (cur as any)?._def;
+		const next =
+			def?.innerType ??
+			def?.schema ??
+			def?.type ??
+			def?.out ??
+			def?.in ??
+			def?.source;
+		if (!next) break;
+		wrappers.push(cur?.constructor?.name ?? "unknown");
+		cur = next;
+	}
+
+	if (process.env.NODE_ENV !== "production") {
+		try {
+			console.debug("unwrapToZodObject trace", {
+				wrappers,
+				base: cur?.constructor?.name,
+			});
+		} catch {}
+	}
+
+	return cur as any;
+}
+
 export function enumStringValuesFromZodEnum(enumLike: any): string[] {
-	const raw = (enumLike as any).options ?? enumLike;
+	const raw =
+		(enumLike as any)?._def?.values ?? (enumLike as any).options ?? enumLike;
 	const values: unknown[] = Array.isArray(raw) ? raw : Object.values(raw ?? {});
 
 	return values.filter((v): v is string => typeof v === "string");
@@ -127,4 +147,49 @@ export function isMultilineString(def: any, cfg?: FieldConfig) {
 	const desc = def?.description?.toLowerCase?.() ?? "";
 
 	return desc.includes("multiline") || cfg?.widget === "textarea";
+}
+
+export function parseFileUploadConfig(
+	def: any,
+	cfg?: FieldConfig,
+): {
+	accept?: string;
+	min?: number;
+	max?: number;
+} {
+	const out: { accept?: string; min?: number; max?: number } = {};
+	const desc = String(def?.description ?? "");
+
+	// Accept from cfg
+	if (cfg?.acceptTypes) {
+		out.accept = Array.isArray(cfg.acceptTypes)
+			? cfg.acceptTypes.join(",")
+			: cfg.acceptTypes;
+	}
+	if (typeof cfg?.minFiles === "number") out.min = cfg.minFiles;
+	if (typeof cfg?.maxFiles === "number") out.max = cfg.maxFiles;
+
+	if (desc.startsWith("file-upload")) {
+		const idx = desc.indexOf(":");
+		const kvPart = idx >= 0 ? desc.slice(idx + 1).trim() : "";
+		if (kvPart) {
+			for (const segment of kvPart.split(";")) {
+				const [kRaw, vRaw] = segment.split("=");
+				const k = (kRaw ?? "").trim().toLowerCase();
+				const v = (vRaw ?? "").trim();
+				if (!k) continue;
+				if (k === "accept" && v) out.accept = v;
+				if (k === "min") {
+					const n = Number(v);
+					if (Number.isFinite(n)) out.min = n;
+				}
+				if (k === "max") {
+					const n = Number(v);
+					if (Number.isFinite(n)) out.max = n;
+				}
+			}
+		}
+	}
+
+	return out;
 }

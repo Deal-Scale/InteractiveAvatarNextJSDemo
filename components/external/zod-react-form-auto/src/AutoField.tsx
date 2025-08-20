@@ -11,6 +11,7 @@ import {
 	isSensitiveString,
 	isMultilineString,
 	type FieldsConfig,
+	parseFileUploadConfig,
 } from "./utils/utils";
 import { SensitiveInput } from "./utils/fields";
 
@@ -27,7 +28,7 @@ export const AutoField: React.FC<AutoFieldProps> = ({
 	form,
 	fields = {},
 }) => {
-	const { register, formState, setValue, getValues } = form;
+	const { register, formState, setValue, getValues, watch } = form;
 
 	const cfg = (fields as any)[name] || {};
 	const label = cfg.label ?? name;
@@ -39,24 +40,69 @@ export const AutoField: React.FC<AutoFieldProps> = ({
 		multiple = false,
 	) => {
 		if (multiple) {
-			const current = (getValues() as any)[name] ?? [];
+			const currentRaw = watch(name as any) as any;
+			let current = Array.isArray(currentRaw) ? (currentRaw as string[]) : [];
+			// Sanitize against available options to avoid stale/invalid values
+			const allowed = new Set(opts.map((o) => o.value));
+			const sanitized = current.filter((v) => allowed.has(v));
+			if (process.env.NODE_ENV !== "production") {
+				try {
+					console.debug("[AutoFormDebug] multi-select pre", {
+						name,
+						current,
+						sanitized,
+						allowed: Array.from(allowed),
+						opts,
+						getValues: getValues(name as any),
+					});
+				} catch {}
+			}
+			if (sanitized.length !== current.length) {
+				current = sanitized;
+				setValue(name as any, sanitized as any, {
+					shouldValidate: true,
+					shouldDirty: true,
+					shouldTouch: true,
+				});
+				if (process.env.NODE_ENV !== "production") {
+					try {
+						console.warn(
+							"[AutoFormDebug] multi-select sanitized mismatch fixed",
+							{
+								name,
+								applied: sanitized,
+							},
+						);
+					} catch {}
+				}
+			}
 
 			return (
 				<div className="flex flex-col gap-1">
 					<span className="text-sm text-muted-foreground">{label}</span>
+					{/* Ensure RHF knows about this field when we fully control it */}
+					<input type="hidden" {...register(name as any)} />
 					<select
 						multiple
 						className="rounded-md border border-border bg-background px-3 py-2 text-foreground shadow-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary"
 						value={current as string[]}
 						onChange={(e) => {
-							const selected = Array.from(e.target.selectedOptions).map(
-								(o) => o.value,
+							const selected = Array.from(e.target.selectedOptions).map((o) =>
+								String(o.value),
 							);
-
 							setValue(name as any, selected as any, {
 								shouldValidate: true,
 								shouldDirty: true,
+								shouldTouch: true,
 							});
+							if (process.env.NODE_ENV !== "production") {
+								try {
+									console.debug("[AutoFormDebug] multi-select change", {
+										name,
+										selected,
+									});
+								} catch {}
+							}
 						}}
 					>
 						{opts.map((o) => (
@@ -74,13 +120,22 @@ export const AutoField: React.FC<AutoFieldProps> = ({
 			);
 		}
 
+		const current = (watch(name as any) as any) ?? "";
+
 		return (
 			<div className="flex flex-col gap-1">
 				<span className="text-sm text-muted-foreground">{label}</span>
+				{/* Hidden register so RHF tracks field when we control value */}
+				<input type="hidden" {...register(name as any)} />
 				<select
 					className="rounded-md border border-border bg-background px-3 py-2 text-foreground shadow-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary"
-					defaultValue=""
-					{...register(name as any)}
+					value={current as string}
+					onChange={(e) => {
+						setValue(name as any, e.target.value as any, {
+							shouldValidate: true,
+							shouldDirty: true,
+						});
+					}}
 				>
 					<option disabled value="">
 						Select {label}
@@ -168,40 +223,40 @@ export const AutoField: React.FC<AutoFieldProps> = ({
 			console.debug("AutoField detect", {
 				name,
 				typeName: (base as any)?._def?.typeName,
+				ctor: (base as any)?.constructor?.name,
 			});
 		} catch {}
 	}
 
-	// Enum
-	if ((base as any)?._def?.typeName === "ZodEnum") {
-		const values = enumStringValuesFromZodEnum((base as any).options);
+	// Enum (includes nativeEnum in classic build)
+	if (
+		base instanceof z.ZodEnum ||
+		(base as any)?._def?.values ||
+		(base as any)?.options
+	) {
+		const values = enumStringValuesFromZodEnum(base as any);
 		const opts = optionsFromStrings(values);
 
 		return renderSelect(opts, Boolean((cfg as any).multiple));
 	}
 
 	// Union of enums/strings/literals -> select
-	if ((base as any)._def?.typeName === "ZodUnion") {
-		const options: z.ZodTypeAny[] = (base as any)._def?.options ?? [];
+	if (
+		base instanceof z.ZodUnion ||
+		Array.isArray((base as any)?._def?.options)
+	) {
+		const options: z.ZodTypeAny[] = (base as any)?._def?.options ?? [];
 		const stringVals: string[] = [];
 
 		for (const opt of options) {
-			if ((opt as any)?._def?.typeName === "ZodEnum") {
-				const raw = (opt as any).options;
-				const vals: unknown[] = Array.isArray(raw)
-					? raw
-					: Object.values(raw ?? {});
-
+			if (
+				opt instanceof z.ZodEnum ||
+				(opt as any)?._def?.values ||
+				(opt as any)?.options
+			) {
+				const vals = enumStringValuesFromZodEnum(opt as any);
 				for (const v of vals) if (typeof v === "string") stringVals.push(v);
-			} else if ((opt as any)._def?.typeName === "ZodNativeEnum") {
-				const enumObj = (opt as any)._def.values as Record<
-					string,
-					string | number
-				>;
-
-				for (const v of Object.values(enumObj))
-					if (typeof v === "string") stringVals.push(v);
-			} else if ((opt as any)._def?.typeName === "ZodLiteral") {
+			} else if ((opt as any)?._def?.typeName === "ZodLiteral") {
 				const litVal = (opt as any)._def?.value;
 
 				if (typeof litVal === "string") stringVals.push(litVal);
@@ -217,54 +272,36 @@ export const AutoField: React.FC<AutoFieldProps> = ({
 		}
 	}
 
-	// Native enum
-	if ((base as any)._def?.typeName === "ZodNativeEnum") {
-		const enumObj = (base as any)._def.values as Record<
-			string,
-			string | number
-		>;
-		const values = Object.values(enumObj).filter(
-			(v): v is string => typeof v === "string",
-		);
-		const opts = optionsFromStrings(values);
-
-		return renderSelect(opts, Boolean((cfg as any).multiple));
-	}
+	// Native enum handled by the ZodEnum branch above
 
 	// Array -> multi select or textarea
-	if ((base as any)._def?.typeName === "ZodArray") {
-		const el = (base as any)._def.type as z.ZodTypeAny;
+	if (base instanceof z.ZodArray) {
+		const el = (base as any)?._def?.type as z.ZodTypeAny;
 
-		if ((el as any)?._def?.typeName === "ZodEnum") {
-			const values = enumStringValuesFromZodEnum((el as any).options);
-			const opts = optionsFromStrings(values);
-
-			return renderSelect(opts, true);
-		}
-		if ((el as any)._def?.typeName === "ZodNativeEnum") {
-			const enumObj = (el as any)._def.values as Record<
-				string,
-				string | number
-			>;
-			const values = Object.values(enumObj).filter(
-				(v): v is string => typeof v === "string",
-			);
-			const opts = optionsFromStrings(values);
-
-			return renderSelect(opts, true);
-		}
 		if (
-			(el as any)._def?.typeName === "ZodString" &&
-			(cfg as any).options?.length
+			el instanceof z.ZodEnum ||
+			(el as any)?._def?.values ||
+			(el as any)?.options
 		) {
+			const values = enumStringValuesFromZodEnum(el as any);
+			const opts = optionsFromStrings(values);
+
+			return renderSelect(opts, true);
+		}
+		if (el instanceof z.ZodString && (cfg as any).options?.length) {
 			return renderSelect((cfg as any).options!, true);
 		}
-		if ((el as any)._def?.typeName === "ZodString") {
-			const current = (getValues() as any)[name] as string[] | undefined;
+		if (el instanceof z.ZodString) {
+			const currentRaw = watch(name as any) as any;
+			const current = Array.isArray(currentRaw)
+				? (currentRaw as string[])
+				: undefined;
 
 			return (
 				<div className="flex flex-col gap-1">
 					<span className="text-sm text-muted-foreground">{label}</span>
+					{/* Register hidden so RHF knows about this array field */}
+					<input type="hidden" {...register(name as any)} />
 					<textarea
 						className="min-h-24 max-h-[60vh] w-full resize-y rounded-md border border-border bg-background px-3 py-2 text-foreground shadow-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary"
 						placeholder={cfg.placeholder ?? "Enter values, one per line"}
@@ -293,9 +330,9 @@ export const AutoField: React.FC<AutoFieldProps> = ({
 	}
 
 	// Boolean
-	if ((base as any)._def?.typeName === "ZodBoolean") {
+	if (base instanceof z.ZodBoolean) {
 		if ((cfg as any).widget === "select") {
-			const current = (getValues() as any)[name] as boolean | undefined;
+			const current = watch(name as any) as any as boolean | undefined;
 			const opts = booleanSelectOptions(
 				(cfg as any).options as Array<{ value: string; label: string }>,
 			);
@@ -304,6 +341,8 @@ export const AutoField: React.FC<AutoFieldProps> = ({
 			return (
 				<div className="flex flex-col gap-1">
 					<span className="text-sm text-muted-foreground">{label}</span>
+					{/* Register hidden so RHF tracks boolean select */}
+					<input type="hidden" {...register(name as any)} />
 					<select
 						className="rounded-md border border-border bg-background px-3 py-2 text-foreground shadow-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary"
 						value={value}
@@ -349,7 +388,7 @@ export const AutoField: React.FC<AutoFieldProps> = ({
 	}
 
 	// Number
-	if ((base as any)._def?.typeName === "ZodNumber") {
+	if (base instanceof z.ZodNumber) {
 		if ((cfg as any).widget === "slider") {
 			return (
 				<div className="flex flex-col gap-1">
@@ -389,7 +428,7 @@ export const AutoField: React.FC<AutoFieldProps> = ({
 	}
 
 	// String
-	if ((base as any)._def?.typeName === "ZodString") {
+	if (base instanceof z.ZodString) {
 		const stringDef = (def as any)._def as {
 			description?: string;
 			checks?: Array<{ kind: string; regex?: RegExp }>;
@@ -465,17 +504,106 @@ export const AutoField: React.FC<AutoFieldProps> = ({
 		);
 	}
 
-	// File upload marker
-	if ((def as any).description === "file-upload") {
+	// File upload marker (supports accept/min/max with previews)
+	if (String((def as any).description ?? "").startsWith("file-upload")) {
+		const fileCfg = parseFileUploadConfig((def as any)._def, cfg as any);
+		const value = watch(name as any) as any as File[] | undefined;
+		const files: File[] = Array.isArray(value)
+			? value
+			: typeof FileList !== "undefined" && value && value.length != null
+				? Array.from(value as any)
+				: [];
+
+		const tooMany =
+			typeof fileCfg.max === "number" && files.length > fileCfg.max;
+		const tooFew =
+			typeof fileCfg.min === "number" && files.length < fileCfg.min;
+
 		return (
-			<div className="flex flex-col gap-1">
+			<div className="flex flex-col gap-2">
 				<span className="text-sm text-muted-foreground">{label}</span>
+				{/* Register hidden so RHF tracks this field */}
+				<input type="hidden" {...register(name as any)} />
 				<input
-					multiple
+					accept={fileCfg.accept}
+					multiple={typeof fileCfg.max !== "number" || fileCfg.max > 1}
 					className="rounded-md border border-border bg-background px-3 py-2 text-foreground file:mr-4 file:rounded file:border-0 file:bg-muted file:px-2 file:py-1 file:text-foreground focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary"
 					type="file"
-					{...register(name as any)}
+					onChange={(e) => {
+						const list = e.target.files ? Array.from(e.target.files) : [];
+						const next =
+							typeof fileCfg.max === "number"
+								? list.slice(0, fileCfg.max)
+								: list;
+						setValue(name as any, next as any, {
+							shouldValidate: true,
+							shouldDirty: true,
+						});
+					}}
 				/>
+				{files.length > 0 && (
+					<div className="grid grid-cols-2 gap-2 md:grid-cols-3">
+						{files.map((f, idx) => {
+							const isImg =
+								typeof f.type === "string" && f.type.startsWith("image/");
+							const url = isImg ? URL.createObjectURL(f) : undefined;
+							return (
+								<div
+									key={`${f.name}-${idx}`}
+									className="relative rounded-md border border-border p-2"
+								>
+									<button
+										type="button"
+										className="absolute right-1 top-1 inline-flex h-6 w-6 items-center justify-center rounded-full bg-destructive text-destructive-foreground"
+										onClick={() => {
+											const next = files.filter((_, i) => i !== idx);
+											setValue(name as any, next as any, {
+												shouldValidate: true,
+												shouldDirty: true,
+												shouldTouch: true,
+											});
+										}}
+										aria-label="Remove file"
+									>
+										×
+									</button>
+									{isImg ? (
+										<img
+											src={url}
+											alt={f.name}
+											className="h-24 w-full rounded object-cover"
+										/>
+									) : (
+										<div className="flex h-24 items-center justify-center rounded bg-muted text-xs text-muted-foreground">
+											{f.name}
+										</div>
+									)}
+									<div
+										className="mt-1 truncate text-xs text-muted-foreground"
+										title={`${f.name} • ${(f.size / 1024).toFixed(1)} KB`}
+									>
+										{f.name} • {(f.size / 1024).toFixed(1)} KB
+									</div>
+								</div>
+							);
+						})}
+					</div>
+				)}
+				<div className="flex items-center gap-2 text-xs">
+					{typeof fileCfg.min === "number" && (
+						<span className="text-muted-foreground">Min: {fileCfg.min}</span>
+					)}
+					{typeof fileCfg.max === "number" && (
+						<span className="text-muted-foreground">Max: {fileCfg.max}</span>
+					)}
+				</div>
+				{(tooMany || tooFew) && (
+					<span className="text-xs text-red-500 dark:text-red-400">
+						{tooMany
+							? `You can upload at most ${fileCfg.max} file(s).`
+							: `Please upload at least ${fileCfg.min} file(s).`}
+					</span>
+				)}
 				{error && (
 					<span className="text-xs text-red-500 dark:text-red-400">
 						{error}
@@ -498,8 +626,8 @@ export const AutoField: React.FC<AutoFieldProps> = ({
 						__html: `console.warn("AutoField fallback:text", ${JSON.stringify({
 							name,
 							cfg,
-							baseType: (base as any)?._def?.typeName,
-							defType: (def as any)?._def?.typeName,
+							baseType: (base as any)?.constructor?.name,
+							defType: (def as any)?.constructor?.name,
 						})}});`,
 					}}
 				/>
