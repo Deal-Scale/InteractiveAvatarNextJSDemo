@@ -8,8 +8,9 @@ import AgentModal from "./AgentModal";
 
 import { SidebarGroup, SidebarGroupLabel } from "@/components/ui/sidebar";
 import { Button } from "@/components/ui/button";
-import ComponentGrid from "@/components/ui/ComponentGrid";
 import type { GridFetcher, GridResponse } from "@/types/component-grid";
+import ComponentGrid from "@/components/ui/grid/components/ComponentGrid";
+import type { GridItemRendererProps } from "@/components/ui/grid/types";
 
 export default function AgentsSection(props: {
 	agents: Array<Agent | { id: string; name: string }>;
@@ -126,7 +127,7 @@ export default function AgentsSection(props: {
 
 					<ComponentGrid<Agent>
 						fetcher={fetchAgents}
-						ItemComponent={({ item }) => (
+						ItemComponent={({ item }: GridItemRendererProps<Agent>) => (
 							<AgentCard
 								agent={item}
 								onDelete={onDelete}
