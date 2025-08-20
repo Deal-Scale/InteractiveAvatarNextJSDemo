@@ -29,7 +29,7 @@ export default function AssetCard(props: {
 
 	return (
 		<div
-			className="group relative rounded-md border border-border bg-background overflow-hidden"
+			className="group relative h-full rounded-md border border-border bg-background overflow-hidden flex flex-col"
 			title={asset.name}
 			draggable
 			onDragStart={(e) => {
@@ -62,23 +62,27 @@ export default function AssetCard(props: {
 
 			{/* Content */}
 			{img && src ? (
-				<button
-					className="block w-full aspect-square"
-					aria-label="Open preview"
-					title="Preview"
-					onClick={() => onPreview?.(asset.id)}
-					type="button"
-				>
-					{/* eslint-disable-next-line @next/next/no-img-element */}
-					<img
-						alt={asset.name}
-						src={src}
-						className="h-full w-full object-cover"
-					/>
-				</button>
+				<div className="flex-1">
+					<button
+						className="block w-full h-full"
+						aria-label="Open preview"
+						title="Preview"
+						onClick={() => onPreview?.(asset.id)}
+						type="button"
+					>
+						{/* eslint-disable-next-line @next/next/no-img-element */}
+						<img
+							alt={asset.name}
+							src={src}
+							className="h-full w-full object-cover"
+						/>
+					</button>
+				</div>
 			) : (
-				<div className="flex aspect-square w-full items-center justify-center bg-muted/40">
-					<FileIcon className="size-6 text-muted-foreground" />
+				<div className="flex-1">
+					<div className="flex w-full h-full items-center justify-center bg-muted/40">
+						<FileIcon className="size-6 text-muted-foreground" />
+					</div>
 				</div>
 			)}
 
