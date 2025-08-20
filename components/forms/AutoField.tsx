@@ -194,10 +194,7 @@ export const AutoField: React.FC<AutoFieldProps> = ({
 
 				for (const v of vals) if (typeof v === "string") stringVals.push(v);
 			} else if ((opt as any)._def?.typeName === "ZodNativeEnum") {
-				const enumObj = (opt as any)._def.values as Record<
-					string,
-					string | number
-				>;
+				const enumObj = (opt as any).enum as Record<string, string | number>;
 
 				for (const v of Object.values(enumObj))
 					if (typeof v === "string") stringVals.push(v);
@@ -219,10 +216,7 @@ export const AutoField: React.FC<AutoFieldProps> = ({
 
 	// Native enum
 	if ((base as any)._def?.typeName === "ZodNativeEnum") {
-		const enumObj = (base as any)._def.values as Record<
-			string,
-			string | number
-		>;
+		const enumObj = (base as any).enum as Record<string, string | number>;
 		const values = Object.values(enumObj).filter(
 			(v): v is string => typeof v === "string",
 		);
@@ -242,10 +236,7 @@ export const AutoField: React.FC<AutoFieldProps> = ({
 			return renderSelect(opts, true);
 		}
 		if ((el as any)._def?.typeName === "ZodNativeEnum") {
-			const enumObj = (el as any)._def.values as Record<
-				string,
-				string | number
-			>;
+			const enumObj = (el as any).enum as Record<string, string | number>;
 			const values = Object.values(enumObj).filter(
 				(v): v is string => typeof v === "string",
 			);
