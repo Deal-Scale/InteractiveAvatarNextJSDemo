@@ -71,8 +71,9 @@ export function unwrapType(t: z.ZodTypeAny): z.ZodTypeAny {
 	let safety = 20;
 	while (safety-- > 0 && cur) {
 		const typeName = (cur as any)?._def?.typeName as string | undefined;
-		// Only unwrap when we positively identify a WRAPPER
-		const isWrapper = [
+		const ctorName = (cur as any)?.constructor?.name as string | undefined;
+		// Only unwrap when we positively identify a WRAPPER (support both def.typeName and constructor name)
+		const knownWrappers = new Set([
 			"ZodOptional",
 			"ZodNullable",
 			"ZodDefault",
@@ -82,7 +83,9 @@ export function unwrapType(t: z.ZodTypeAny): z.ZodTypeAny {
 			"ZodPromise",
 			"ZodCatch",
 			"ZodPipeline",
-		].includes(typeName ?? "");
+		]);
+		const nameForCheck = typeName ?? ctorName ?? "";
+		const isWrapper = knownWrappers.has(nameForCheck);
 		if (!isWrapper) break;
 
 		const def = (cur as any)?._def;
@@ -94,7 +97,7 @@ export function unwrapType(t: z.ZodTypeAny): z.ZodTypeAny {
 			def?.in ??
 			def?.source;
 		if (!next) break;
-		wrappers.push(typeName ?? cur?.constructor?.name ?? "unknown");
+		wrappers.push(nameForCheck || "unknown");
 		cur = next;
 	}
 
@@ -103,6 +106,7 @@ export function unwrapType(t: z.ZodTypeAny): z.ZodTypeAny {
 			console.log("unwrapType trace", {
 				wrappers,
 				base: (cur as any)?._def?.typeName ?? cur?.constructor?.name,
+				baseCtor: cur?.constructor?.name,
 			});
 		} catch {}
 	}
