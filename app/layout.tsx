@@ -141,6 +141,17 @@ export default function RootLayout({
 								<AudioDebugShim />
 
 								<AppProviders>{children}</AppProviders>
+
+								{/* Zoho SalesIQ Support Chat (bottom-right) */}
+								<Script
+									id="zoho-salesiq-init"
+									strategy="afterInteractive"
+								>{`window.$zoho=window.$zoho||{};$zoho.salesiq=$zoho.salesiq||{ready:function(){}};`}</Script>
+								<Script
+									id="zoho-salesiq"
+									strategy="afterInteractive"
+									src="https://salesiq.zoho.com/widget?wc=siq529bca77706436d0c99699a1417ac2691cd1efb7eb4b4e5c20cef923065ef066"
+								/>
 							</main>
 						</ToastProvider>
 					</TooltipProvider>
