@@ -174,7 +174,7 @@ export function AvatarSession({
 			{isFloating && (
 				<div
 					ref={panelRef}
-					className="pointer-events-auto z-50 absolute"
+					className="pointer-events-auto fixed z-[60]"
 					style={{
 						left: floatingPos.x,
 						top: floatingPos.y,
@@ -183,16 +183,18 @@ export function AvatarSession({
 					}}
 				>
 					<ChatPanel dock={dock} expanded={expanded} {...chatPanelProps} />
-					{/* Resize handle (bottom-right corner) - more noticeable */}
+					{/* Resize handle (bottom-right corner) - larger, always on top */}
 					<div
-						className="absolute bottom-1 right-1 w-5 h-5 cursor-nwse-resize rounded-md border-2 border-border bg-muted-foreground/40 shadow-sm hover:bg-muted-foreground/60 hover:border-foreground/90"
-						role="presentation"
+						className="absolute bottom-1 right-1 z-[70] w-6 h-6 cursor-nwse-resize rounded-md border-2 border-border bg-muted-foreground/40 shadow-sm hover:bg-muted-foreground/60 hover:border-foreground/90 pointer-events-auto select-none"
+						role="button"
+						aria-label="Resize chat"
 						style={{
 							backgroundImage:
 								"repeating-linear-gradient(135deg, rgba(255,255,255,0.9) 0 2px, transparent 2px 6px)",
 							backgroundClip: "padding-box",
 						}}
 						onPointerDown={startFloatingResize}
+						onPointerDownCapture={startFloatingResize}
 					/>
 				</div>
 			)}

@@ -91,6 +91,8 @@ export function BottomTab({
 			w.addEventListener("pointermove", onMove, { passive: true });
 			w.addEventListener("pointerup", onUp, { once: true });
 		}
+		// Capture pointer so moves track even if we leave the rail
+		(e.target as Element).setPointerCapture?.(e.pointerId);
 	};
 
 	const onClick = () => {
@@ -121,13 +123,17 @@ export function BottomTab({
 				style={{ height: heightPx }}
 			>
 				<div className="relative flex h-9 w-full items-center justify-center border-b border-border/60">
-					{/* Resize handle area (full bar) */}
-					<hr
-						className="absolute inset-y-0 left-0 right-40 cursor-ns-resize"
+					{/* Visual cue line across the draggable strip (non-interactive) */}
+					<div className="pointer-events-none absolute top-0 left-0 right-0 h-px bg-foreground/20" />
+					{/* Resize handle rail (thin top strip) */}
+					<div
+						className="absolute top-0 left-0 right-0 h-2 z-50 cursor-ns-resize touch-none hover:bg-foreground/10"
+						aria-label="Resize chat height"
 						onPointerDown={onPointerDown}
+						onPointerDownCapture={onPointerDown}
 					/>
 					{/* Grip */}
-					<span className="pointer-events-none h-1 w-12 rounded-full bg-muted-foreground/50" />
+					<span className="pointer-events-none h-1.5 w-14 rounded-full bg-foreground/55 shadow-sm" />
 					{/* Actions on the right */}
 					<div className="absolute right-2 top-1/2 -translate-y-1/2 z-10 flex items-center gap-1">
 						<button

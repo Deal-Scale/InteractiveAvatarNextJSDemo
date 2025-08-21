@@ -207,12 +207,20 @@ export function ChatPanel({
 		>
 			<div
 				className={cn(
-					"flex items-center justify-between gap-2 px-3 py-2 border-b border-border",
+					"relative flex items-center justify-between gap-2 px-3 py-2 border-b border-border",
 					isChatSolidBg ? "bg-card" : "bg-popover/80",
-					"cursor-grab active:cursor-grabbing",
+					"cursor-grab active:cursor-grabbing pointer-events-auto select-none",
 				)}
 				onPointerDown={onHeaderPointerDown}
+				onPointerDownCapture={onHeaderPointerDown}
 			>
+				{/* Drag overlay: covers header except right-side action buttons */}
+				<div
+					className="absolute inset-y-0 left-0 right-28 z-20 cursor-grab active:cursor-grabbing touch-none"
+					role="presentation"
+					onPointerDown={onHeaderPointerDown}
+					onPointerDownCapture={onHeaderPointerDown}
+				/>
 				<div className="flex items-center gap-2 text-xs text-muted-foreground">
 					<MoveIcon className="h-4 w-4" />
 					<span>Chat</span>

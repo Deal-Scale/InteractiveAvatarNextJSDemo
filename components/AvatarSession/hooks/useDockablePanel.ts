@@ -127,18 +127,17 @@ export function useDockablePanel(
 	const onGlobalPointerMove = useCallback(
 		(e: PointerEvent) => {
 			if (!dragState.current.dragging || dock !== "floating") return;
-			const parent = panelRef.current?.parentElement;
-
-			if (!parent) return;
-			const parentRect = parent.getBoundingClientRect();
+			const w = safeWindow();
+			const vw = w?.innerWidth ?? 0;
+			const vh = w?.innerHeight ?? 0;
 			const el = panelRef.current;
 			const width = el?.offsetWidth ?? 0;
 			const height = el?.offsetHeight ?? 0;
-			let x = e.clientX - parentRect.left - dragState.current.offsetX;
-			let y = e.clientY - parentRect.top - dragState.current.offsetY;
+			let x = e.clientX - dragState.current.offsetX;
+			let y = e.clientY - dragState.current.offsetY;
 
-			x = Math.max(0, Math.min(x, parentRect.width - width));
-			y = Math.max(0, Math.min(y, parentRect.height - height));
+			x = Math.max(0, Math.min(x, vw - width));
+			y = Math.max(0, Math.min(y, vh - height));
 			console.debug("[dockable] drag move -> setWindowPosition", { x, y });
 			setWindowPosition({ x, y });
 		},
@@ -172,10 +171,15 @@ export function useDockablePanel(
 	useEffect(() => {
 		const onMove = (e: PointerEvent) => {
 			if (!resizing) return;
-			const root = rootRef.current;
-
-			if (!root) return;
-			const rect = root.getBoundingClientRect();
+			const w = safeWindow();
+			const rect = {
+				width: w?.innerWidth ?? 0,
+				height: w?.innerHeight ?? 0,
+				left: 0,
+				top: 0,
+				right: w?.innerWidth ?? 0,
+				bottom: w?.innerHeight ?? 0,
+			} as const;
 
 			if (resizing === "bottom") {
 				const chatPct = ((rect.bottom - e.clientY) / rect.height) * 100;
@@ -304,20 +308,19 @@ export function useDockablePanel(
 	// Snap when switching to floating
 	useEffect(() => {
 		if (dock !== "floating") return;
-		const parent = panelRef.current?.parentElement;
-
-		if (!parent) return;
-		const parentRect = parent.getBoundingClientRect();
+		const w = safeWindow();
+		const vw = w?.innerWidth ?? 0;
+		const vh = w?.innerHeight ?? 0;
 		const width = expanded ? 520 : sizeW;
 		const height = expanded ? 520 : sizeH;
-		const x = Math.max(0, parentRect.width - width - 24);
-		const y = Math.max(0, parentRect.height - height - 24);
+		const x = Math.max(0, vw - width - 24);
+		const y = Math.max(0, vh - height - 24);
 
 		if (Math.abs(posX - x) > 0.5 || Math.abs(posY - y) > 0.5) {
 			console.debug("[dockable] snap floating -> setWindowPosition", { x, y });
 			setWindowPosition({ x, y });
 		}
-	}, [dock, expanded, sizeW, sizeH, posX, posY, setWindowPosition, panelRef]);
+	}, [dock, expanded, sizeW, sizeH, posX, posY, setWindowPosition]);
 
 	const toggleExpand = useCallback(() => {
 		if (dock === "floating") {
@@ -361,6 +364,9 @@ export function useDockablePanel(
 	]);
 
 	const startFloatingResize = (e: React.PointerEvent) => {
+		// Avoid text selection or focus changes while resizing
+		e.preventDefault();
+		e.stopPropagation();
 		floatingResizeState.current = {
 			startX: e.clientX,
 			startY: e.clientY,
