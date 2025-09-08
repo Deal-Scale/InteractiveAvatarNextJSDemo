@@ -10,6 +10,16 @@ Feel free to play around with the existing code and please leave any feedback fo
 ### Setting up the demo
 
 1. Clone this repo
+   ```bash
+   git clone --recurse-submodules https://github.com/TechWithTy/InteractiveAvatarNextJSDemo.git
+   ```
+   
+   *OR*
+   
+   If you already cloned without submodules:
+   ```bash
+   git submodule update --init --recursive
+   ```
 
 2. Navigate to the repo folder in your terminal
 
