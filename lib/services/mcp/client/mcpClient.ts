@@ -53,15 +53,19 @@ class MCPClientWrapper {
 
 		// Prefer connecting to a remote/local MCP server over Streamable HTTP if MCP_SERVER_URL is set.
 		// Example: MCP_SERVER_URL=http://localhost:8000/mcp
-		const serverUrl = process.env.MCP_SERVER_URL;
+		const serverUrl =
+			process.env.TEST_MCP_SERVER_URL || process.env.MCP_SERVER_URL;
 		const useHttp = !!serverUrl;
 
 		let transport: StreamableHTTPClientTransport | StdioClientTransport;
 
 		if (useHttp) {
-			transport = new StreamableHTTPClientTransport(
-				new URL(serverUrl as string),
+			const url = new URL(serverUrl as string);
+			url.searchParams.set(
+				"token",
+				process.env.TEST_MCP_KEY || process.env.MCP_AUTH_TOKEN || "",
 			);
+			transport = new StreamableHTTPClientTransport(url);
 		} else {
 			const args = process.env.MCP_STDIO_ARGS?.split(" ") ?? [
 				"-y",
