@@ -30,18 +30,45 @@ vi.mock("@modelcontextprotocol/sdk/client/stdio.js", () => {
 });
 
 // Capture the constructed client instance methods
+interface Tool {
+	name: string;
+}
+interface Resource {
+	uri: string;
+}
+interface Prompt {
+	name: string;
+}
+interface Message {
+	content: string;
+}
+
+// Properly typed clientApi with all type parameters
 const clientApi = {
-	connect: vi.fn(async () => {}),
-	listTools: vi.fn(async () => ({ tools: [{ name: "mock-tool" }] })),
-	listResources: vi.fn(async () => ({
-		resources: [{ uri: "resource://mock" }],
-	})),
-	listPrompts: vi.fn(async () => ({ prompts: [{ name: "mock-prompt" }] })),
-	getPrompt: vi.fn(async (_: any) => ({ messages: [] })),
-	readResource: vi.fn(async (_: any) => ({ contents: [] })),
-	callTool: vi.fn(async (_: any) => ({ content: [] })),
-	complete: vi.fn(async (_: any) => ({ isCompleted: true })),
-	close: vi.fn(async () => {}),
+	connect: vi.fn<[], Promise<void>>(() => Promise.resolve()),
+	listTools: vi.fn<[], Promise<{ tools: Tool[] }>>(() =>
+		Promise.resolve({ tools: [{ name: "mock-tool" }] }),
+	),
+	listResources: vi.fn<[], Promise<{ resources: Resource[] }>>(() =>
+		Promise.resolve({ resources: [{ uri: "resource://mock" }] }),
+	),
+	listPrompts: vi.fn<[], Promise<{ prompts: Prompt[] }>>(() =>
+		Promise.resolve({ prompts: [{ name: "mock-prompt" }] }),
+	),
+	getPrompt: vi.fn<[{ name: string }], Promise<{ messages: Message[] }>>(() =>
+		Promise.resolve({ messages: [{ content: "" }] }),
+	),
+	readResource: vi.fn<[{ uri: string }], Promise<{ contents: unknown[] }>>(() =>
+		Promise.resolve({ contents: [] }),
+	),
+	callTool: vi.fn<
+		[{ name: string; arguments: Record<string, unknown> }],
+		Promise<{ content: unknown[] }>
+	>(() => Promise.resolve({ content: [] })),
+	complete: vi.fn<[unknown], Promise<{ isCompleted: boolean }>>(() =>
+		Promise.resolve({ isCompleted: true }),
+	),
+	close: vi.fn<[], Promise<void>>(() => Promise.resolve()),
 };
 
 vi.mock("@modelcontextprotocol/sdk/client/index.js", () => {
@@ -74,14 +101,12 @@ vi.mock("@modelcontextprotocol/sdk/client/index.js", () => {
 
 // Helper to import fresh module with current env
 async function importFreshClient() {
-	// Ensure a fresh module instance each time
+	// Clear module cache
 	const modPath = "@/lib/services/mcpClient";
-	const moduleNode =
-		await vi.importActual<typeof import("@/lib/services/mcp/client/mcpClient")>(
-			modPath,
-		);
+	delete require.cache[require.resolve(modPath)];
 
-	return moduleNode;
+	// Return fresh module
+	return await import(modPath);
 }
 
 // Ensure we reset state between tests
@@ -103,6 +128,7 @@ describe("mcpClient transport selection", () => {
 		process.env.MCP_SERVER_URL = "http://localhost:8000/mcp";
 		const { mcpClient } = await importFreshClient();
 
+		await mcpClient.connect(); // Ensure connection is established
 		const res = await mcpClient.listTools();
 
 		expect(res.tools[0].name).toBe("mock-tool");

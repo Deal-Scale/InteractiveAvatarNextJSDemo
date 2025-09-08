@@ -6,9 +6,12 @@ export default defineConfig({
 		globals: true,
 		setupFiles: [],
 		coverage: {
+			provider: "v8",
 			reporter: ["text", "lcov", "text-summary"],
 			reportsDirectory: "./coverage",
 			exclude: ["**/*.d.ts", "node_modules/**", "dist/**", ".next/**"],
+			all: true,
+			include: ["**/*.{ts,tsx}"],
 		},
 	},
 });
