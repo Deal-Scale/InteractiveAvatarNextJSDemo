@@ -1,5 +1,6 @@
 {
 	"name": "mind-stream",
+	"type": "module",
 	"version": "0.0.1",
 	"private": true,
 	"scripts": {
@@ -13,7 +14,7 @@
 		"format": "biome format --write .",
 		"check": "biome check .",
 		"typecheck": "tsc --noEmit -p tsconfig.json",
-		"test": "vitest run --coverage",
+		"test": "vitest run --config vitest.config.mts --coverage",
 		"test:watch": "vitest",
 		"prepare": "husky"
 	},
@@ -78,12 +79,14 @@
 	},
 	"devDependencies": {
 		"@biomejs/biome": "^2.2.0",
+		"@types/dotenv": "^8.2.3",
 		"@types/node": "20.5.7",
 		"@types/react": "^19.0.1",
 		"@types/react-dom": "^19.1.2",
 		"@vitest/coverage-v8": "^3.2.4",
 		"ahooks": "^3.9.5",
 		"autoprefixer": "10.4.19",
+		"dotenv": "^17.2.2",
 		"husky": "^9.1.7",
 		"jsdom": "^26.1.0",
 		"postcss": "8.4.38",
