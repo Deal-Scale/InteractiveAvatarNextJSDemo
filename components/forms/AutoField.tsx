@@ -523,6 +523,7 @@ export const AutoField: React.FC<AutoFieldProps> = ({
 			{process.env.NODE_ENV !== "production" && (
 				<script
 					// eslint-disable-next-line react/no-danger
+					// biome-ignore lint/security/noDangerouslySetInnerHtml: <explanation>
 					dangerouslySetInnerHTML={{
 						__html: `console.warn("AutoField fallback:text", ${JSON.stringify({
 							name,
