@@ -38,11 +38,13 @@ jobs:
         continue-on-error: true
 
       - name: Notify Slack
-        uses: rtCamp/action-slack-notify@v2
+        uses: slackapi/slack-github-action@v1.25.0
         if: always()
+        with:
+          channel-id: 'general'
+          slack-message: "Typecheck results: ${{ job.status }}"
         env:
-          SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK_URL }}
-          SLACK_MESSAGE: "Typecheck results: ${{ job.status }}"
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
 
       - name: Lint (Biome)
         run: pnpm run lint || echo "Lint issues found (non-blocking for now)"

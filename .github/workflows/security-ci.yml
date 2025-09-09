@@ -19,11 +19,13 @@ jobs:
       - run: pnpm install
       - run: pnpm add ./components/external/zod-react-form-auto
       - run: pnpm run typecheck || echo "Typecheck failed but continuing workflow"
-      - uses: rtCamp/action-slack-notify@v2
+      - uses: slackapi/slack-github-action@v1.25.0
         if: always()
+        with:
+          channel-id: 'general'
+          slack-message: "Typecheck results: ${{ job.status }}"
         env:
-          SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK_URL }}
-          SLACK_MESSAGE: "Typecheck results: ${{ job.status }}"
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
 
   codeql:
     name: CodeQL Analysis
