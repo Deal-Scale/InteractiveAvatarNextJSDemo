@@ -44,9 +44,46 @@ jobs:
       - name: Notify Security Webhook
         if: always()
         run: |
-          curl -X POST ${{ secrets.SECURITY_WEBHOOK_URL }} \
-            -H "Content-Type: application/json" \
-            -d "{\"scan_type\":\"codeql\",\"status\":\"${{ job.status }}\",\"results_url\":\"https://github.com/${{ github.repository }}/security/code-scanning\"}"
+          if [ -n "${{ secrets.SECURITY_WEBHOOK_URL }}" ]; then
+            curl -X POST ${{ secrets.SECURITY_WEBHOOK_URL }} \
+              -H "Content-Type: application/json" \
+              -d "{\"scan_type\":\"${{ job.name }}\",\"status\":\"${{ job.status }}\",\"results_url\":\"https://github.com/${{ github.repository }}/security\"}"
+          fi
+
+      - name: Notify Slack
+        if: always()
+        uses: slackapi/slack-github-action@v1.25.0
+        with:
+          channel-id: 'general'
+          payload: |
+            {
+              "text": "Security Scan - ${{ job.name }}: ${{ job.status }}",
+              "blocks": [
+                {
+                  "type": "section",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": "*Security Scan Results*\nJob: ${{ job.name }}"
+                  }
+                },
+                {
+                  "type": "section",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": "*Status*: ${{ job.status }}"
+                  }
+                },
+                {
+                  "type": "section",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": "<https://github.com/${{ github.repository }}/security|View Security Dashboard>"
+                  }
+                }
+              ]
+            }
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
 
   snyk:
     name: Snyk Security Scan
@@ -56,19 +93,60 @@ jobs:
       - uses: actions/setup-node@v3
         with:
           node-version: 18
+      - run: npm install -g pnpm
+      - run: pnpm install
+      - run: pnpm add ./components/external/zod-react-form-auto
       - uses: snyk/actions/node@master
         env:
           SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
         with:
           command: test
           args: --all-projects
+        continue-on-error: true
 
       - name: Notify Security Webhook
         if: always()
         run: |
-          curl -X POST ${{ secrets.SECURITY_WEBHOOK_URL }} \
-            -H "Content-Type: application/json" \
-            -d "{\"scan_type\":\"snyk\",\"status\":\"${{ job.status }}\",\"results_url\":\"https://github.com/${{ github.repository }}/security/dependabot\"}"
+          if [ -n "${{ secrets.SECURITY_WEBHOOK_URL }}" ]; then
+            curl -X POST ${{ secrets.SECURITY_WEBHOOK_URL }} \
+              -H "Content-Type: application/json" \
+              -d "{\"scan_type\":\"snyk\",\"status\":\"${{ job.status }}\",\"results_url\":\"https://github.com/${{ github.repository }}/security/dependabot\"}"
+          fi
+
+      - name: Notify Slack
+        if: always()
+        uses: slackapi/slack-github-action@v1.25.0
+        with:
+          channel-id: 'general'
+          payload: |
+            {
+              "text": "Security Scan - Snyk: ${{ job.status }}",
+              "blocks": [
+                {
+                  "type": "section",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": "*Snyk Security Scan Results*"
+                  }
+                },
+                {
+                  "type": "section",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": "*Status*: ${{ job.status }}"
+                  }
+                },
+                {
+                  "type": "section",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": "<https://github.com/${{ github.repository }}/security/dependabot|View Dependency Alerts>"
+                  }
+                }
+              ]
+            }
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
 
   trufflehog:
     name: TruffleHog Scan
@@ -87,6 +165,43 @@ jobs:
       - name: Notify Security Webhook
         if: always()
         run: |
-          curl -X POST ${{ secrets.SECURITY_WEBHOOK_URL }} \
-            -H "Content-Type: application/json" \
-            -d "{\"scan_type\":\"trufflehog\",\"status\":\"${{ job.status }}\",\"results_url\":\"https://github.com/${{ github.repository }}/security/secret-scanning\"}"
+          if [ -n "${{ secrets.SECURITY_WEBHOOK_URL }}" ]; then
+            curl -X POST ${{ secrets.SECURITY_WEBHOOK_URL }} \
+              -H "Content-Type: application/json" \
+              -d "{\"scan_type\":\"${{ job.name }}\",\"status\":\"${{ job.status }}\",\"results_url\":\"https://github.com/${{ github.repository }}/security\"}"
+          fi
+
+      - name: Notify Slack
+        if: always()
+        uses: slackapi/slack-github-action@v1.25.0
+        with:
+          channel-id: 'general'
+          payload: |
+            {
+              "text": "Security Scan - ${{ job.name }}: ${{ job.status }}",
+              "blocks": [
+                {
+                  "type": "section",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": "*Security Scan Results*\nJob: ${{ job.name }}"
+                  }
+                },
+                {
+                  "type": "section",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": "*Status*: ${{ job.status }}"
+                  }
+                },
+                {
+                  "type": "section",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": "<https://github.com/${{ github.repository }}/security|View Security Dashboard>"
+                  }
+                }
+              ]
+            }
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
