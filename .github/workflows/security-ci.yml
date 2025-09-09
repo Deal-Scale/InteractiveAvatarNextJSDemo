@@ -273,12 +273,22 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Install dependencies
+        run: pnpm install
+        working-directory: ./app
+
       - name: Start Application
-        run: pnpm run start &
+        run: |
+          pnpm run build
+          pnpm run start &
+          sleep 10
         working-directory: ./app
 
       - name: Wait for Application
-        run: sleep 60
+        run: |
+          until curl --output /dev/null --silent --head --fail http://localhost:3000; do
+            sleep 1
+          done
 
       - name: ZAP Full Scan
         uses: zaproxy/action-full-scan@v0.12.0
