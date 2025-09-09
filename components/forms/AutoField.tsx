@@ -13,7 +13,7 @@ import {
 	type FieldsConfig,
 } from "./utils";
 import { SensitiveInput } from "./fields";
-import { ArrayStringField } from "@/components/external/zod-react-form-auto/src/components/autofield/components/ArrayStringField";
+import { ArrayStringField } from "../external/zod-react-form-auto/src/components/autofield/components/ArrayStringField";
 
 // Dev-only: one-time console clear and reminder banner
 let __AF_DEBUG_ONCE = false;

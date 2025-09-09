@@ -21,7 +21,10 @@
 			}
 		],
 		"paths": {
-			"@/*": ["./*"]
+			"@/*": ["./*"],
+			"@/components/external/zod-react-form-auto/*": [
+				"./components/external/zod-react-form-auto/src/*"
+			]
 		}
 	},
 	"include": [
