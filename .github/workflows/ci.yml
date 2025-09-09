@@ -132,35 +132,6 @@ jobs:
       - name: Run tests
         run: pnpm run test
 
-  snyk:
-    name: Snyk Security Scan
-    runs-on: ubuntu-latest
-    needs: [build]
-    steps:
-      - uses: actions/checkout@v4
-      - name: Setup Node.js
-        uses: actions/setup-node@v3
-        with:
-          node-version: 18
-      - name: Install pnpm
-        run: npm install -g pnpm@latest
-      - name: Enable corepack
-        run: corepack enable
-      - name: Install dependencies
-        run: |
-          npm install -g pnpm
-          pnpm install
-          cd components/external/zod-react-form-auto
-          pnpm install
-          cd ../../..
-          pnpm add ./components/external/zod-react-form-auto
-      - uses: snyk/actions/node@master
-        env:
-          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
-        with:
-          command: test
-        continue-on-error: true
-
   codecov:
     name: Upload Coverage to Codecov
     runs-on: ubuntu-latest

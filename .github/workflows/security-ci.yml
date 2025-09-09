@@ -31,13 +31,13 @@ jobs:
           node-version: 18
 
       - name: Initialize CodeQL
-        uses: github/codeql-action/init@v2
+        uses: github/codeql-action/init@v3
         with:
           languages: javascript,typescript
           queries: security-extended
 
       - name: Perform CodeQL Analysis
-        uses: github/codeql-action/analyze@v2
+        uses: github/codeql-action/analyze@v3
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
@@ -199,6 +199,61 @@ jobs:
                   "text": {
                     "type": "mrkdwn",
                     "text": "<https://github.com/${{ github.repository }}/security|View Security Dashboard>"
+                  }
+                }
+              ]
+            }
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+
+  secrets-scan:
+    name: GitHub Secrets Scan
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Scan for secrets
+        uses: actions/github-script@v6
+        with:
+          script: |
+            const patterns = [
+              // Common secret patterns
+              /[A-Za-z0-9]{40}/, // GitHub tokens
+              /[0-9a-f]{32}/,    // MD5 hashes
+              /[0-9a-f]{64}/,    // SHA256 hashes
+              /[0-9a-zA-Z]{24}/  // API keys
+            ]
+            
+            const results = await github.rest.secretScanning.listAlertsForRepo({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              state: 'open'
+            })
+            
+            core.setOutput('secrets_found', results.data.length > 0)
+
+      - name: Notify Slack
+        if: always()
+        uses: slackapi/slack-github-action@v1.25.0
+        with:
+          channel-id: 'general'
+          payload: |
+            {
+              "text": "GitHub Secrets Scan Results",
+              "blocks": [
+                {
+                  "type": "section",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": "*GitHub Secrets Scan Completed*"
+                  }
+                },
+                {
+                  "type": "section",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": "<https://github.com/${{ github.repository }}/security/secret-scanning|View Secret Scanning Results>"
                   }
                 }
               ]
