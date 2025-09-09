@@ -45,14 +45,47 @@ jobs:
           fi
         continue-on-error: true
 
+      - name: Lint (Biome)
+        run: pnpm run lint || echo "Lint issues found (non-blocking for now)"
+        continue-on-error: true
+
+      - name: Build
+        id: build
+        run: |
+          BUILD_LOG=$(pnpm run build 2>&1 || echo "::set-output name=status::failure")
+          echo "::set-output name=build_log::$BUILD_LOG"
+          echo "Build completed with status: ${{ steps.build.outputs.status }}"
+          echo "$BUILD_LOG"
+          if [ -z "$BUILD_LOG" ]; then
+            echo "::set-output name=status::success"
+          fi
+        continue-on-error: true
+
+      - run: pnpm run test
+
+      - uses: snyk/actions/node@master
+        env:
+          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+        with:
+          command: test
+        continue-on-error: true
+
+      - name: Upload coverage to Codecov
+        env:
+          CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
+        if: ${{ env.CODECOV_TOKEN != '' }}
+        uses: codecov/codecov-action@v4
+        with:
+          token: ${{ env.CODECOV_TOKEN }}
+          files: ./coverage/lcov.info
+
       - name: Notify Slack
         uses: slackapi/slack-github-action@v1.25.0
-        if: always()
         with:
           channel-id: 'general'
           payload: |
             {
-              "text": "Build and Typecheck Results - Branch: ${{ github.ref_name }}",
+              "text": "CI Results - Branch: ${{ github.ref_name }}",
               "blocks": [
                 {
                   "type": "section",
@@ -94,39 +127,6 @@ jobs:
         env:
           SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
 
-      - name: Lint (Biome)
-        run: pnpm run lint || echo "Lint issues found (non-blocking for now)"
-        continue-on-error: true
-
-      - name: Build
-        id: build
-        run: |
-          BUILD_LOG=$(pnpm run build 2>&1 || echo "::set-output name=status::failure")
-          echo "::set-output name=build_log::$BUILD_LOG"
-          echo "Build completed with status: ${{ steps.build.outputs.status }}"
-          echo "$BUILD_LOG"
-          if [ -z "$BUILD_LOG" ]; then
-            echo "::set-output name=status::success"
-          fi
-        continue-on-error: true
-
-      - run: pnpm run test
-
-      - uses: snyk/actions/node@master
-        env:
-          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
-        with:
-          command: test
-        continue-on-error: true
-
-      - name: Upload coverage to Codecov
-        env:
-          CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
-        if: ${{ env.CODECOV_TOKEN != '' }}
-        uses: codecov/codecov-action@v4
-        with:
-          token: ${{ env.CODECOV_TOKEN }}
-          files: ./coverage/lcov.info
   notify-slack:
     needs: build-test-lint
     runs-on: ubuntu-latest
@@ -135,6 +135,46 @@ jobs:
       - uses: slackapi/slack-github-action@v1.25.0
         with:
           channel-id: 'general'
-          slack-message: "CI ${{ job.status }} for ${{ github.repository }}"
+          payload: |
+            {
+              "text": "CI Results - Branch: ${{ github.ref_name }}",
+              "blocks": [
+                {
+                  "type": "section",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": "*Build and Typecheck Results*\nBranch: ${{ github.ref_name }}"
+                  }
+                },
+                {
+                  "type": "section",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": "Commit: <${{ github.server_url }}/${{ github.repository }}/commit/${{ github.sha }}|${{ github.sha }}>"
+                  }
+                },
+                {
+                  "type": "section",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": "*Typecheck*: ${{ needs.build-test-lint.outputs.typecheck_status || 'unknown' }}"
+                  }
+                },
+                {
+                  "type": "section",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": "*Build*: ${{ needs.build-test-lint.outputs.build_status || 'unknown' }}"
+                  }
+                },
+                {
+                  "type": "section",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": "View run: <${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}|Details>"
+                  }
+                }
+              ]
+            }
         env:
           SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
