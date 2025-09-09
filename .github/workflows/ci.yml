@@ -6,82 +6,48 @@ on:
   pull_request:
     branches: ["**"]
 
-# Environment variables for the workflow
-env:
-  # Set these secrets in your repository settings:
-  # - SNYK_TOKEN: Get from Snyk dashboard
-  # - CODECOV_TOKEN: Get from Codecov dashboard
-  # - SLACK_WEBHOOK_URL: Create incoming webhook in Slack
-
 jobs:
   build-test-lint:
     name: Lint, Typecheck, Build, Test
     runs-on: ubuntu-latest
-    permissions:
-      contents: read
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
+      - uses: actions/checkout@v4
+      
+      - uses: actions/setup-node@v4
         with:
           node-version: '20'
           cache: 'pnpm'
 
-      - name: Enable Corepack (pnpm)
-        run: corepack enable
+      - run: corepack enable
+      
+      - run: pnpm install --frozen-lockfile
 
-      - name: Install dependencies
-        run: pnpm install --frozen-lockfile
+      - run: pnpm run lint
+      - run: pnpm run typecheck
+      - run: pnpm run build
+      - run: pnpm run test
 
-      - name: Lint (Biome)
-        run: pnpm run lint
-
-      - name: Typecheck (TS)
-        run: pnpm run typecheck
-
-      - name: Build (Next.js)
-        run: pnpm run build
-
-      - name: Test (Vitest) with coverage
-        run: pnpm run test
-
-      - name: Snyk test (non-blocking)
-        uses: snyk/actions/node@master
+      - uses: snyk/actions/node@master
         env:
           SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
         with:
           command: test
         continue-on-error: true
 
-      - name: Snyk monitor (optional on main)
-        if: ${{ github.ref == 'refs/heads/main' }}
-        uses: snyk/actions/node@master
-        env:
-          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
-        with:
-          command: monitor
-        continue-on-error: true
-
-      - name: Upload coverage to Codecov
-        if: ${{ secrets.CODECOV_TOKEN != '' }}
-        uses: codecov/codecov-action@v4
+      - uses: codecov/codecov-action@v4
+        if: ${{ secrets.CODECOV_TOKEN }}
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
           files: ./coverage/lcov.info
-          fail_ci_if_error: false
 
   notify-slack:
-    name: Slack Notification
     needs: build-test-lint
     runs-on: ubuntu-latest
     if: always()
     steps:
-      - name: Send Slack notification
-        uses: slackapi/slack-github-action@v1.25.0
+      - uses: slackapi/slack-github-action@v1.25.0
         with:
-          channel-id: 'general' # Replace with your channel ID
-          slack-message: "CI ${{ job.status }} for ${{ github.repository }} (${{ github.ref }})\n${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+          channel-id: 'general'
+          slack-message: "CI ${{ job.status }} for ${{ github.repository }}"
         env:
           SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
