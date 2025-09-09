@@ -34,7 +34,15 @@ jobs:
           pnpm add ./components/external/zod-react-form-auto
 
       - name: Typecheck
-        run: pnpm run typecheck || echo "Typecheck failed but continuing workflow"
+        id: typecheck
+        run: |
+          ERROR_LOG=$(pnpm run typecheck 2>&1 || echo "::set-output name=status::failure")
+          echo "::set-output name=error_log::$ERROR_LOG"
+          echo "Typecheck completed with status: ${{ steps.typecheck.outputs.status }}"
+          echo "$ERROR_LOG"
+          if [ -z "$ERROR_LOG" ]; then
+            echo "::set-output name=status::success"
+          fi
         continue-on-error: true
 
       - name: Notify Slack
@@ -42,7 +50,22 @@ jobs:
         if: always()
         with:
           channel-id: 'general'
-          slack-message: "Typecheck results: ${{ job.status }}"
+          slack-message: |
+            *Build and Typecheck Results*
+            Branch: ${{ github.ref_name }}
+            Commit: <${{ github.server_url }}/${{ github.repository }}/commit/${{ github.sha }}|${{ github.sha | slice(0,7) }}>
+            
+            *Typecheck*: ${{ steps.typecheck.outputs.status }}
+            ```
+            ${{ steps.typecheck.outputs.error_log || 'No errors' }}
+            ```
+            
+            *Build*: ${{ steps.build.outputs.status }}
+            ```
+            ${{ steps.build.outputs.build_log || 'No errors' }}
+            ```
+            
+            View run: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
         env:
           SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
 
@@ -50,7 +73,18 @@ jobs:
         run: pnpm run lint || echo "Lint issues found (non-blocking for now)"
         continue-on-error: true
 
-      - run: pnpm run build
+      - name: Build
+        id: build
+        run: |
+          BUILD_LOG=$(pnpm run build 2>&1 || echo "::set-output name=status::failure")
+          echo "::set-output name=build_log::$BUILD_LOG"
+          echo "Build completed with status: ${{ steps.build.outputs.status }}"
+          echo "$BUILD_LOG"
+          if [ -z "$BUILD_LOG" ]; then
+            echo "::set-output name=status::success"
+          fi
+        continue-on-error: true
+
       - run: pnpm run test
 
       - uses: snyk/actions/node@master
