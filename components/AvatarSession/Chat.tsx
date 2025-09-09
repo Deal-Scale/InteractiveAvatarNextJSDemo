@@ -35,6 +35,10 @@ import {
 	dedupeAdjacent,
 } from "./chat/utils";
 import { cn } from "@/lib/utils";
+// * Provider switching & capabilities
+import { ProviderSwitcher } from "./ProviderSwitcher";
+import { useChatProviderStore } from "@/lib/stores/chatProvider";
+import { getProvider } from "@/lib/chat/registry";
 
 interface ChatProps {
 	chatInput: string;
@@ -148,6 +152,11 @@ export const Chat: React.FC<ChatProps> = ({
 	const inputWrapRef = useRef<HTMLDivElement | null>(null);
 	const inputHeight = useInputAutoHeight(inputWrapRef);
 
+	// Determine active provider capability (voice vs. text-only)
+	const mode = useChatProviderStore((s) => s.mode);
+	const provider = getProvider(mode);
+	const supportsVoice = provider.supportsVoice;
+
 	useEffect(() => {
 		if (!scrollRef.current) return;
 		if (isAtBottom) {
@@ -219,6 +228,7 @@ export const Chat: React.FC<ChatProps> = ({
 				)}
 			>
 				{/* Dynamically pad bottom by input height to avoid overlap */}
+				<ProviderSwitcher />
 				<ChatContainerRoot
 					ref={scrollRef}
 					onScroll={handleScroll}
@@ -282,16 +292,16 @@ export const Chat: React.FC<ChatProps> = ({
 					inputRef={inputRef}
 					isEditing={isEditing}
 					isSending={isSending}
-					isVoiceChatActive={isVoiceChatActive}
-					isVoiceChatLoading={isVoiceChatLoading}
+					isVoiceChatActive={supportsVoice ? isVoiceChatActive : false}
+					isVoiceChatLoading={supportsVoice ? isVoiceChatLoading : false}
 					promptSuggestions={promptSuggestions}
 					removeAttachment={removeAttachment}
 					removeComposerAttachment={removeComposerAttachment}
 					sendWithAttachments={sendWithAttachments}
 					onChatInputChange={onChatInputChange}
 					onFilesAdded={onFilesAdded}
-					onStartVoiceChat={onStartVoiceChat}
-					onStopVoiceChat={onStopVoiceChat}
+					onStartVoiceChat={supportsVoice ? onStartVoiceChat : () => {}}
+					onStopVoiceChat={supportsVoice ? onStopVoiceChat : () => {}}
 				/>
 			</div>
 		</div>
