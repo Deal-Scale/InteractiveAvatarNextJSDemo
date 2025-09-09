@@ -53,7 +53,7 @@ jobs:
           slack-message: |
             *Build and Typecheck Results*
             Branch: ${{ github.ref_name }}
-            Commit: <${{ github.server_url }}/${{ github.repository }}/commit/${{ github.sha }}|${{ github.sha | slice(0,7) }}>
+            Commit: <${{ github.server_url }}/${{ github.repository }}/commit/${{ github.sha }}|${{ github.sha | slice(0, 7) }}>
             
             *Typecheck*: ${{ steps.typecheck.outputs.status }}
             ```
