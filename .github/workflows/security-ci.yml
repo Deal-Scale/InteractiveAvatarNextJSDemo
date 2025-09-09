@@ -10,7 +10,6 @@ permissions:
   security-events: write
   actions: read
   contents: read
-  secret-scanning-alerts: read
 
 jobs:
   codeql:
@@ -212,7 +211,6 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       security-events: write
-      secret-scanning-alerts: read
     steps:
       - name: Checkout repository
         uses: actions/checkout@v3
