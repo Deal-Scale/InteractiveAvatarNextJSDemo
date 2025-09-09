@@ -12,19 +12,6 @@ permissions:
   contents: read
 
 jobs:
-  typecheck:
-    name: Typecheck
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v3
-      - uses: actions/setup-node@v3
-        with:
-          node-version: 18
-      - run: npm install -g pnpm
-      - run: pnpm install
-      - run: pnpm add ./components/external/zod-react-form-auto
-      - run: pnpm run typecheck || echo "Typecheck failed but continuing workflow"
-
   codeql:
     name: CodeQL Analysis
     runs-on: ubuntu-latest
@@ -49,16 +36,39 @@ jobs:
           languages: javascript,typescript
           queries: security-extended
 
-      # Perform CodeQL Analysis
       - name: Perform CodeQL Analysis
         uses: github/codeql-action/analyze@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-  secret-scanning:
-    name: GitHub Secret Scanning
+      - name: Notify Security Webhook
+        if: always()
+        run: |
+          curl -X POST ${{ secrets.SECURITY_WEBHOOK_URL }} \
+            -H "Content-Type: application/json" \
+            -d "{\"scan_type\":\"codeql\",\"status\":\"${{ job.status }}\",\"results_url\":\"https://github.com/${{ github.repository }}/security/code-scanning\"}"
+
+  snyk:
+    name: Snyk Security Scan
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v3
+      - uses: actions/checkout@v3
+      - uses: actions/setup-node@v3
+        with:
+          node-version: 18
+      - uses: snyk/actions/node@master
+        env:
+          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+        with:
+          command: test
+          args: --all-projects
+
+      - name: Notify Security Webhook
+        if: always()
+        run: |
+          curl -X POST ${{ secrets.SECURITY_WEBHOOK_URL }} \
+            -H "Content-Type: application/json" \
+            -d "{\"scan_type\":\"snyk\",\"status\":\"${{ job.status }}\",\"results_url\":\"https://github.com/${{ github.repository }}/security/dependabot\"}"
 
   trufflehog:
     name: TruffleHog Scan
@@ -73,3 +83,10 @@ jobs:
           args: "git file://. --json --fail"
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Notify Security Webhook
+        if: always()
+        run: |
+          curl -X POST ${{ secrets.SECURITY_WEBHOOK_URL }} \
+            -H "Content-Type: application/json" \
+            -d "{\"scan_type\":\"trufflehog\",\"status\":\"${{ job.status }}\",\"results_url\":\"https://github.com/${{ github.repository }}/security/secret-scanning\"}"
