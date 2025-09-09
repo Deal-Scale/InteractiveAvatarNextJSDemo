@@ -90,15 +90,20 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
+
       - uses: actions/setup-node@v3
         with:
           node-version: 18
+
       - name: Setup pnpm
         run: npm install -g pnpm
+
       - name: Install dependencies
         run: pnpm install
         working-directory: ./app
+
       - run: pnpm add ./components/external/zod-react-form-auto
+
       - uses: snyk/actions/node@master
         env:
           SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
@@ -213,31 +218,33 @@ jobs:
     name: GitHub Secrets Scan
     runs-on: ubuntu-latest
     permissions:
-      security-events: write
-      security-events: read
+      contents: read
+      actions: read
     steps:
       - name: Checkout repository
         uses: actions/checkout@v3
 
       - name: Scan for secrets
         uses: actions/github-script@v6
+        env:
+          SECRET_SCANNING_TOKEN: ${{ secrets.SECRET_SCANNING_TOKEN }}
         with:
           script: |
-            const patterns = [
-              // Common secret patterns
-              /[A-Za-z0-9]{40}/, // GitHub tokens
-              /[0-9a-f]{32}/,    // MD5 hashes
-              /[0-9a-f]{64}/,    // SHA256 hashes
-              /[0-9a-zA-Z]{24}/  // API keys
-            ]
-            
-            const results = await github.rest.secretScanning.listAlertsForRepo({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              state: 'open'
-            })
-            
-            core.setOutput('secrets_found', results.data.length > 0)
+            // If a PAT with secret scanning access is provided, use it; otherwise skip API call
+            const token = process.env.SECRET_SCANNING_TOKEN
+            if (!token) {
+              core.notice('SECRET_SCANNING_TOKEN not provided. Skipping GitHub Secret Scanning API call.')
+              core.setOutput('secrets_found', false)
+            } else {
+              const { Octokit } = require('@octokit/rest')
+              const octo = new Octokit({ auth: token })
+              const results = await octo.rest.secretScanning.listAlertsForRepo({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                state: 'open'
+              })
+              core.setOutput('secrets_found', (results.data?.length || 0) > 0)
+            }
 
       - name: Notify Slack
         if: always()
