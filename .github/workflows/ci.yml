@@ -50,22 +50,47 @@ jobs:
         if: always()
         with:
           channel-id: 'general'
-          slack-message: |
-            *Build and Typecheck Results*
-            Branch: ${{ github.ref_name }}
-            Commit: <${{ github.server_url }}/${{ github.repository }}/commit/${{ github.sha }}|${{ github.sha.substring(0, 7) }}>
-            
-            *Typecheck*: ${{ steps.typecheck.outputs.status }}
-            ```
-            ${{ steps.typecheck.outputs.error_log || 'No errors' }}
-            ```
-            
-            *Build*: ${{ steps.build.outputs.status }}
-            ```
-            ${{ steps.build.outputs.build_log || 'No errors' }}
-            ```
-            
-            View run: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          payload: |
+            {
+              "text": "Build and Typecheck Results",
+              "blocks": [
+                {
+                  "type": "section",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": "*Build and Typecheck Results*\nBranch: ${{ github.ref_name }}"
+                  }
+                },
+                {
+                  "type": "section",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": "Commit: <${{ github.server_url }}/${{ github.repository }}/commit/${{ github.sha }}|${{ github.sha }}"
+                  }
+                },
+                {
+                  "type": "section",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": "*Typecheck*: ${{ steps.typecheck.outputs.status }}"
+                  }
+                },
+                {
+                  "type": "section",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": "*Build*: ${{ steps.build.outputs.status }}"
+                  }
+                },
+                {
+                  "type": "section",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": "View run: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+                  }
+                }
+              ]
+            }
         env:
           SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
 
