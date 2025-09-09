@@ -1,6 +1,6 @@
 "use client";
-import ExampleForm from "../../../components/external/zod-react-form-auto/src/examples/ExampleForm";
-import React from "react";
+
+import ExampleForm from "@/components/external/zod-react-form-auto/examples/ExampleForm";
 
 export default function AutoformExamplePage() {
 	return (
