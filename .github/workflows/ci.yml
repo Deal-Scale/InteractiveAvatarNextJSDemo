@@ -79,19 +79,18 @@ jobs:
           token: ${{ env.CODECOV_TOKEN }}
           files: ./coverage/lcov.info
 
-      - name: Notify Slack
-        uses: slackapi/slack-github-action@v1.25.0
+      - uses: slackapi/slack-github-action@v1.25.0
         with:
           channel-id: 'general'
           payload: |
             {
-              "text": "Build and Typecheck Results - Branch: ${{ github.ref_name }}",
+              "text": "CI Results - Branch: ${{ github.ref_name }}",
               "blocks": [
                 {
                   "type": "section",
                   "text": {
                     "type": "mrkdwn",
-                    "text": "*Build and Typecheck Results*\\nBranch: ${{ github.ref_name }}"
+                    "text": "*Build and Typecheck Results*\nBranch: ${{ github.ref_name }}"
                   }
                 },
                 {
@@ -119,6 +118,13 @@ jobs:
                   "type": "section",
                   "text": {
                     "type": "mrkdwn",
+                    "text": "*Coverage*: <https://app.codecov.io/gh/${{ github.repository }}/commit/${{ github.sha }}|View Report>"
+                  }
+                },
+                {
+                  "type": "section",
+                  "text": {
+                    "type": "mrkdwn",
                     "text": "View run: <${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}|Details>"
                   }
                 }
@@ -137,13 +143,13 @@ jobs:
           channel-id: 'general'
           payload: |
             {
-              "text": "Build and Typecheck Results - Branch: ${{ github.ref_name }}",
+              "text": "CI Results - Branch: ${{ github.ref_name }}",
               "blocks": [
                 {
                   "type": "section",
                   "text": {
                     "type": "mrkdwn",
-                    "text": "*Build and Typecheck Results*\\nBranch: ${{ github.ref_name }}"
+                    "text": "*Build and Typecheck Results*\nBranch: ${{ github.ref_name }}"
                   }
                 },
                 {
@@ -165,6 +171,13 @@ jobs:
                   "text": {
                     "type": "mrkdwn",
                     "text": "*Build*: ${{ needs.build-test-lint.outputs.build_status || 'unknown' }}"
+                  }
+                },
+                {
+                  "type": "section",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": "*Coverage*: <https://app.codecov.io/gh/${{ github.repository }}/commit/${{ github.sha }}|View Report>"
                   }
                 },
                 {
