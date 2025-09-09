@@ -1,7 +1,8 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { POST } from "../route";
 
-const URL = "http://localhost/api/pollinations/text/vision";
+// For function calling we recommend using the chat-completion proxy route.
+const URL = "http://localhost/api/pollinations/text/chat-completion";
 
 function makeRequest(body: unknown) {
 	return new Request(URL, {
@@ -11,7 +12,7 @@ function makeRequest(body: unknown) {
 	});
 }
 
-describe("Pollinations vision route", () => {
+describe("Function Calling (chat-completion) route", () => {
 	const originalFetch = global.fetch;
 
 	beforeEach(() => {
@@ -25,7 +26,6 @@ describe("Pollinations vision route", () => {
 	});
 
 	it("returns 400 on invalid JSON body", async () => {
-		// Malformed request: no model/messages
 		global.fetch = vi.fn();
 		const req = makeRequest({ foo: "bar" });
 		const res = await POST(req);
@@ -34,10 +34,10 @@ describe("Pollinations vision route", () => {
 		expect(json.error).toBeDefined();
 	});
 
-	it("proxies non-streaming success JSON", async () => {
+	it("proxies success JSON with tools payload", async () => {
 		const upstreamJson = {
 			id: "x",
-			choices: [{ message: { role: "assistant", content: "vision result" } }],
+			choices: [{ message: { role: "assistant", content: "ok" } }],
 		};
 		global.fetch = vi.fn().mockResolvedValue(
 			new Response(JSON.stringify(upstreamJson), {
@@ -48,25 +48,28 @@ describe("Pollinations vision route", () => {
 
 		const body = {
 			model: "openai",
-			messages: [
+			messages: [{ role: "user", content: "What is the weather in Boston?" }],
+			tools: [
 				{
-					role: "user",
-					content: [
-						{ type: "text", text: "What is in this image?" },
-						{
-							type: "image_url",
-							image_url: { url: "https://example.com/cat.jpg" },
+					type: "function",
+					function: {
+						name: "get_current_weather",
+						description: "Get weather",
+						parameters: {
+							type: "object",
+							properties: { location: { type: "string" } },
+							required: ["location"],
 						},
-					],
+					},
 				},
 			],
-			max_tokens: 300,
+			tool_choice: "auto",
 		};
 		const req = makeRequest(body);
 		const res = await POST(req);
 		expect(res.status).toBe(200);
 		const text = await res.text();
-		expect(text).toContain("vision result");
+		expect(text).toContain("ok");
 	});
 
 	it("bubbles upstream error", async () => {
