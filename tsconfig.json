@@ -22,8 +22,11 @@
 		],
 		"paths": {
 			"@/*": ["./*"],
-			"@/components/external/zod-react-form-auto/*": [
-				"./components/external/zod-react-form-auto/src/*"
+			"@/components/external/zod-react-form-auto/examples/*": [
+				"./components/external/zod-react-form-auto/src/examples/*"
+			],
+			"@/components/external/zod-react-form-auto/components/autofield/components/*": [
+				"./components/external/zod-react-form-auto/src/components/autofield/components/*"
 			]
 		}
 	},
