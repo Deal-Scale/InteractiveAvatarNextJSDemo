@@ -10,7 +10,7 @@ permissions:
   security-events: write
   actions: read
   contents: read
-  secret-scanning-alerts: read
+  secrets: read
 
 jobs:
   codeql:
@@ -211,8 +211,8 @@ jobs:
     name: GitHub Secrets Scan
     runs-on: ubuntu-latest
     permissions:
-      secret-scanning-alerts: read
       security-events: write
+      secrets: read
     steps:
       - name: Checkout repository
         uses: actions/checkout@v3
