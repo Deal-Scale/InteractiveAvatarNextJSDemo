@@ -13,6 +13,8 @@ import { useMessageHistory } from "@/components/logic/useMessageHistory";
 import { useSessionStore } from "@/lib/stores/session";
 import { MessageSender, type MessageAsset } from "@/lib/types";
 import { useSendTaskMutation } from "@/lib/services/streaming/query";
+import { useChatProviderStore } from "@/lib/stores/chatProvider";
+import { getProvider } from "@/lib/chat/registry";
 
 export function useChatController(sessionState: StreamingAvatarSessionState) {
 	const { apiService } = useApiService();
@@ -74,24 +76,35 @@ export function useChatController(sessionState: StreamingAvatarSessionState) {
 
 			// Choose message handling path
 			try {
-				// Prefer server API if we have a session id; otherwise use SDK service; fallback to mock
-				if (currentSessionId) {
-					// Map to chat task by default
-					await sendTaskMutation.mutateAsync({
-						session_id: currentSessionId,
-						text,
-						task_mode: "sync",
-						task_type: "chat",
+				// Provider-aware routing: Pollinations uses provider adapter; Heygen keeps current flow
+				const mode = useChatProviderStore.getState().mode;
+				if (mode === "pollinations") {
+					const provider = getProvider("pollinations");
+					const reply = await provider.sendMessage({
+						history: messages,
+						input: text,
 					});
-				} else if (apiService) {
-					if (text.trim().toLowerCase().startsWith("/mcp")) {
-						await handleMcpCommand(text);
-					} else {
-						await apiService.textChat.sendMessageSync(text, assets);
+					addMessage(reply);
+				} else {
+					// Prefer server API if we have a session id; otherwise use SDK service; fallback to mock
+					if (currentSessionId) {
+						// Map to chat task by default
+						await sendTaskMutation.mutateAsync({
+							session_id: currentSessionId,
+							text,
+							task_mode: "sync",
+							task_type: "chat",
+						});
+					} else if (apiService) {
+						if (text.trim().toLowerCase().startsWith("/mcp")) {
+							await handleMcpCommand(text);
+						} else {
+							await apiService.textChat.sendMessageSync(text, assets);
+						}
+					} else if (mockChatEnabled) {
+						const reply = await mockOpenRouter(text);
+						addAvatarMessage(reply);
 					}
-				} else if (mockChatEnabled) {
-					const reply = await mockOpenRouter(text);
-					addAvatarMessage(reply);
 				}
 			} finally {
 				resetHistory();

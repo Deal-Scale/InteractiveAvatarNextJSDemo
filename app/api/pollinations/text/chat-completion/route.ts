@@ -1,5 +1,5 @@
 import { isStreamingRequest, type ChatCompletionRequest } from "./_requests";
-import { BadRequestError, UpstreamError, jsonError } from "./_exceptions";
+import { jsonError } from "./_exceptions";
 
 export const runtime = "edge"; // * Edge runtime for low-latency streaming
 
@@ -72,5 +72,3 @@ export async function POST(req: Request) {
 		headers: streamHeaders,
 	});
 }
-
-1;
