@@ -79,7 +79,9 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v3
 
-      - name: Run TruffleHog
+      - name: Run TruffleHog Secret Scan
         uses: docker://trufflesecurity/trufflehog:latest
         with:
-          args: github . --json
+          args: github . --json --fail
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
