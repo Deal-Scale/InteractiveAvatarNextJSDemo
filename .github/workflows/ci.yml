@@ -85,20 +85,20 @@ jobs:
           channel-id: 'general'
           payload: |
             {
-              "text": "CI Results - Branch: ${{ github.ref_name }}",
+              "text": "Build and Typecheck Results - Branch: ${{ github.ref_name }}",
               "blocks": [
                 {
                   "type": "section",
                   "text": {
                     "type": "mrkdwn",
-                    "text": "*Build and Typecheck Results*\nBranch: ${{ github.ref_name }}"
+                    "text": "*Build and Typecheck Results*\\nBranch: ${{ github.ref_name }}"
                   }
                 },
                 {
                   "type": "section",
                   "text": {
                     "type": "mrkdwn",
-                    "text": "Commit: <${{ github.server_url }}/${{ github.repository }}/commit/${{ github.sha }}|${{ github.sha }}>"
+                    "text": "Commit: <${{ github.server_url }}/${{ github.repository }}/commit/${{ github.sha }}|${{ github.sha }}"
                   }
                 },
                 {
@@ -137,20 +137,20 @@ jobs:
           channel-id: 'general'
           payload: |
             {
-              "text": "CI Results - Branch: ${{ github.ref_name }}",
+              "text": "Build and Typecheck Results - Branch: ${{ github.ref_name }}",
               "blocks": [
                 {
                   "type": "section",
                   "text": {
                     "type": "mrkdwn",
-                    "text": "*Build and Typecheck Results*\nBranch: ${{ github.ref_name }}"
+                    "text": "*Build and Typecheck Results*\\nBranch: ${{ github.ref_name }}"
                   }
                 },
                 {
                   "type": "section",
                   "text": {
                     "type": "mrkdwn",
-                    "text": "Commit: <${{ github.server_url }}/${{ github.repository }}/commit/${{ github.sha }}|${{ github.sha }}>"
+                    "text": "Commit: <${{ github.server_url }}/${{ github.repository }}/commit/${{ github.sha }}|${{ github.sha }}"
                   }
                 },
                 {
