@@ -7,23 +7,19 @@ on:
     branches: ["**"]
 
 jobs:
-  build-test-lint:
-    name: Lint, Typecheck, Build, Test
+  typecheck:
+    name: Typecheck
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-
       - name: Setup Node.js
         uses: actions/setup-node@v3
         with:
           node-version: 18
-
       - name: Install pnpm
         run: npm install -g pnpm@latest
-
       - name: Enable corepack
         run: corepack enable
-
       - name: Install dependencies
         run: |
           npm install -g pnpm
@@ -32,37 +28,132 @@ jobs:
           pnpm install
           cd ../../..
           pnpm add ./components/external/zod-react-form-auto
-
       - name: Typecheck
         id: typecheck
         run: |
-          ERROR_LOG=$(pnpm run typecheck 2>&1 || echo "::set-output name=status::failure")
-          echo "::set-output name=error_log::$ERROR_LOG"
-          echo "Typecheck completed with status: ${{ steps.typecheck.outputs.status }}"
-          echo "$ERROR_LOG"
-          if [ -z "$ERROR_LOG" ]; then
-            echo "::set-output name=status::success"
-          fi
+          pnpm run typecheck
         continue-on-error: true
+      - name: Save typecheck status
+        id: save_status
+        run: |
+          if [ ${{ steps.typecheck.outcome }} == 'success' ]; then
+            echo "status=success" >> $GITHUB_OUTPUT
+          else
+            echo "status=failure" >> $GITHUB_OUTPUT
+          fi
+    outputs:
+      typecheck_status: ${{ steps.save_status.outputs.status }}
 
-      - name: Lint (Biome)
+  lint:
+    name: Lint (Biome)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: 18
+      - name: Install pnpm
+        run: npm install -g pnpm@latest
+      - name: Enable corepack
+        run: corepack enable
+      - name: Install dependencies
+        run: |
+          npm install -g pnpm
+          pnpm install
+          cd components/external/zod-react-form-auto
+          pnpm install
+          cd ../../..
+          pnpm add ./components/external/zod-react-form-auto
+      - name: Lint
         run: pnpm run lint || echo "Lint issues found (non-blocking for now)"
         continue-on-error: true
 
+  build:
+    name: Build
+    runs-on: ubuntu-latest
+    needs: [typecheck]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: 18
+      - name: Install pnpm
+        run: npm install -g pnpm@latest
+      - name: Enable corepack
+        run: corepack enable
+      - name: Install dependencies
+        run: |
+          npm install -g pnpm
+          pnpm install
+          cd components/external/zod-react-form-auto
+          pnpm install
+          cd ../../..
+          pnpm add ./components/external/zod-react-form-auto
       - name: Build
         id: build
         run: |
-          BUILD_LOG=$(pnpm run build 2>&1 || echo "::set-output name=status::failure")
-          echo "::set-output name=build_log::$BUILD_LOG"
-          echo "Build completed with status: ${{ steps.build.outputs.status }}"
-          echo "$BUILD_LOG"
-          if [ -z "$BUILD_LOG" ]; then
-            echo "::set-output name=status::success"
-          fi
+          pnpm run build
         continue-on-error: true
+      - name: Save build status
+        id: save_status
+        run: |
+          if [ ${{ steps.build.outcome }} == 'success' ]; then
+            echo "status=success" >> $GITHUB_OUTPUT
+          else
+            echo "status=failure" >> $GITHUB_OUTPUT
+          fi
+    outputs:
+      build_status: ${{ steps.save_status.outputs.status }}
 
-      - run: pnpm run test
+  test:
+    name: Test
+    runs-on: ubuntu-latest
+    needs: [build]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: 18
+      - name: Install pnpm
+        run: npm install -g pnpm@latest
+      - name: Enable corepack
+        run: corepack enable
+      - name: Install dependencies
+        run: |
+          npm install -g pnpm
+          pnpm install
+          cd components/external/zod-react-form-auto
+          pnpm install
+          cd ../../..
+          pnpm add ./components/external/zod-react-form-auto
+      - name: Run tests
+        run: pnpm run test
 
+  snyk:
+    name: Snyk Security Scan
+    runs-on: ubuntu-latest
+    needs: [build]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: 18
+      - name: Install pnpm
+        run: npm install -g pnpm@latest
+      - name: Enable corepack
+        run: corepack enable
+      - name: Install dependencies
+        run: |
+          npm install -g pnpm
+          pnpm install
+          cd components/external/zod-react-form-auto
+          pnpm install
+          cd ../../..
+          pnpm add ./components/external/zod-react-form-auto
       - uses: snyk/actions/node@master
         env:
           SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
@@ -70,72 +161,25 @@ jobs:
           command: test
         continue-on-error: true
 
+  codecov:
+    name: Upload Coverage to Codecov
+    runs-on: ubuntu-latest
+    needs: [test]
+    if: ${{ env.CODECOV_TOKEN != '' }}
+    steps:
+      - uses: actions/checkout@v4
       - name: Upload coverage to Codecov
         env:
           CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
-        if: ${{ env.CODECOV_TOKEN != '' }}
         uses: codecov/codecov-action@v4
         with:
           token: ${{ env.CODECOV_TOKEN }}
           files: ./coverage/lcov.info
 
-      - uses: slackapi/slack-github-action@v1.25.0
-        with:
-          channel-id: 'general'
-          payload: |
-            {
-              "text": "CI Results - Branch: ${{ github.ref_name }}",
-              "blocks": [
-                {
-                  "type": "section",
-                  "text": {
-                    "type": "mrkdwn",
-                    "text": "*Build and Typecheck Results*\nBranch: ${{ github.ref_name }}"
-                  }
-                },
-                {
-                  "type": "section",
-                  "text": {
-                    "type": "mrkdwn",
-                    "text": "Commit: <${{ github.server_url }}/${{ github.repository }}/commit/${{ github.sha }}|${{ github.sha }}"
-                  }
-                },
-                {
-                  "type": "section",
-                  "text": {
-                    "type": "mrkdwn",
-                    "text": "*Typecheck*: ${{ steps.typecheck.outputs.status || 'unknown' }}"
-                  }
-                },
-                {
-                  "type": "section",
-                  "text": {
-                    "type": "mrkdwn",
-                    "text": "*Build*: ${{ steps.build.outputs.status || 'unknown' }}"
-                  }
-                },
-                {
-                  "type": "section",
-                  "text": {
-                    "type": "mrkdwn",
-                    "text": "*Coverage*: <https://app.codecov.io/gh/${{ github.repository }}/commit/${{ github.sha }}|View Report>"
-                  }
-                },
-                {
-                  "type": "section",
-                  "text": {
-                    "type": "mrkdwn",
-                    "text": "View run: <${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}|Details>"
-                  }
-                }
-              ]
-            }
-        env:
-          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
-
   notify-slack:
-    needs: build-test-lint
+    name: Notify Slack
     runs-on: ubuntu-latest
+    needs: [typecheck, build, test, codecov]
     if: always()
     steps:
       - uses: slackapi/slack-github-action@v1.25.0
@@ -156,21 +200,21 @@ jobs:
                   "type": "section",
                   "text": {
                     "type": "mrkdwn",
-                    "text": "Commit: <${{ github.server_url }}/${{ github.repository }}/commit/${{ github.sha }}|${{ github.sha }}"
+                    "text": "Commit: <${{ github.server_url }}/${{ github.repository }}/commit/${{ github.sha }}|${{ github.sha }}>"
                   }
                 },
                 {
                   "type": "section",
                   "text": {
                     "type": "mrkdwn",
-                    "text": "*Typecheck*: ${{ needs.build-test-lint.outputs.typecheck_status || 'unknown' }}"
+                    "text": "*Typecheck*: ${{ needs.typecheck.outputs.status || 'unknown' }}"
                   }
                 },
                 {
                   "type": "section",
                   "text": {
                     "type": "mrkdwn",
-                    "text": "*Build*: ${{ needs.build-test-lint.outputs.build_status || 'unknown' }}"
+                    "text": "*Build*: ${{ needs.build.outputs.build_status || 'unknown' }}"
                   }
                 },
                 {
