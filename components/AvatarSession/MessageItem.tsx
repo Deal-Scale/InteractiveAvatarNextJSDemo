@@ -1,3 +1,4 @@
+import { useRef, useState } from "react";
 import {
 	ClipboardCopy,
 	ThumbsUp,
@@ -7,6 +8,7 @@ import {
 	RotateCcw,
 	GitBranch,
 	SplitSquareHorizontal,
+	Volume2,
 } from "lucide-react";
 
 import {
@@ -117,6 +119,50 @@ export const MessageItem: React.FC<MessageItemProps> = ({
 	avatarMarkdownHeaderLabel,
 }) => {
 	const hasJsx = Boolean(message.jsx && message.jsx.trim().length > 0);
+	const [isTtsLoading, setIsTtsLoading] = useState(false);
+	const audioRef = useRef<HTMLAudioElement | null>(null);
+
+	const handleSpeak = async () => {
+		if (!message?.content || typeof message.content !== "string") return;
+		try {
+			setIsTtsLoading(true);
+			// Stop any prior playback
+			if (audioRef.current) {
+				audioRef.current.pause();
+				audioRef.current.src = "";
+				audioRef.current.load();
+				audioRef.current = null;
+			}
+			const params = new URLSearchParams({
+				prompt: message.content,
+				voice: "alloy",
+			});
+			const res = await fetch(
+				`/api/pollinations/text/tts?${params.toString()}`,
+			);
+			if (!res.ok) {
+				// Best-effort surface of error
+				const text = await res.text().catch(() => "");
+				// eslint-disable-next-line no-console
+				console.error("TTS error:", text || res.statusText);
+				return;
+			}
+			const blob = await res.blob();
+			const url = URL.createObjectURL(blob);
+			const audio = new Audio(url);
+			audioRef.current = audio;
+			audio.onended = () => {
+				URL.revokeObjectURL(url);
+				audioRef.current = null;
+			};
+			await audio.play();
+		} catch (e) {
+			// eslint-disable-next-line no-console
+			console.error("Failed to play TTS:", e);
+		} finally {
+			setIsTtsLoading(false);
+		}
+	};
 
 	// Keyboard shortcuts for quick actions when message is focused
 	const handleKeyDown = (e: React.KeyboardEvent<HTMLDivElement>) => {
@@ -278,7 +324,7 @@ export const MessageItem: React.FC<MessageItemProps> = ({
 						(isTalking || isToolsRunning);
 
 					return (
-						<div className="flex items-center gap-2">
+						<div className="flex items-center gap-2 w-full">
 							<p className="text-xs text-muted-foreground">
 								{message.sender === MessageSender.AVATAR ? "Avatar" : "You"}
 							</p>
@@ -295,6 +341,21 @@ export const MessageItem: React.FC<MessageItemProps> = ({
 									{isTalking ? "Talking…" : "Tools running"}
 								</span>
 							)}
+							{message.sender === MessageSender.AVATAR && message.content ? (
+								<Button
+									aria-label={
+										isTtsLoading ? "Generating audio…" : "Speak response"
+									}
+									title="Speak response"
+									size="icon"
+									variant="ghost"
+									className="ml-auto"
+									disabled={isTtsLoading}
+									onClick={handleSpeak}
+								>
+									<Volume2 className="h-4 w-4" />
+								</Button>
+							) : null}
 						</div>
 					);
 				})()}
