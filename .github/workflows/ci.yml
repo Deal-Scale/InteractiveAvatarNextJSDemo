@@ -34,12 +34,14 @@ jobs:
           command: test
         continue-on-error: true
 
-      - uses: codecov/codecov-action@v4
-        if: ${{ secrets.CODECOV_TOKEN }}
+      - name: Upload coverage to Codecov
+        env:
+          CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
+        if: ${{ env.CODECOV_TOKEN != '' }}
+        uses: codecov/codecov-action@v4
         with:
-          token: ${{ secrets.CODECOV_TOKEN }}
+          token: ${{ env.CODECOV_TOKEN }}
           files: ./coverage/lcov.info
-
   notify-slack:
     needs: build-test-lint
     runs-on: ubuntu-latest
