@@ -1,7 +1,7 @@
 import dotenv from "dotenv";
 dotenv.config({ path: ".env" });
 
-import { mcpClient } from "../lib/services/mcp/client/mcpClient";
+import { mcpClient } from "../mcp/client/mcpClient";
 import { describe, it, expect, beforeAll, afterAll } from "vitest";
 
 const DEFAULT_METHODS = [
