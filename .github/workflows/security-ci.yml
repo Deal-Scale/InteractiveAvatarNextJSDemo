@@ -10,6 +10,7 @@ permissions:
   security-events: write
   actions: read
   contents: read
+  secret-scanning-alerts: read
 
 jobs:
   codeql:
@@ -209,6 +210,9 @@ jobs:
   secrets-scan:
     name: GitHub Secrets Scan
     runs-on: ubuntu-latest
+    permissions:
+      secret-scanning-alerts: read
+      security-events: write
     steps:
       - name: Checkout repository
         uses: actions/checkout@v3
@@ -260,3 +264,24 @@ jobs:
             }
         env:
           SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+
+  zap-scan:
+    name: ZAP Full Scan
+    runs-on: ubuntu-latest
+    needs: [build]
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          path: '.'
+
+      - name: ZAP Full Scan
+        uses: zaproxy/action-full-scan@v0.12.0
+        with:
+          target: 'http://localhost:3000'
+          token: ${{ secrets.GITHUB_TOKEN }}
+          rules_file_name: '.zap/rules.tsv'
+          fail_action: true
+          issue_title: 'ZAP Security Scan Results'
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
