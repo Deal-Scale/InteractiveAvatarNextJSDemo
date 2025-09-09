@@ -52,7 +52,7 @@ jobs:
           channel-id: 'general'
           payload: |
             {
-              "text": "Build and Typecheck Results",
+              "text": "Build and Typecheck Results - Branch: ${{ github.ref_name }}",
               "blocks": [
                 {
                   "type": "section",
@@ -65,28 +65,28 @@ jobs:
                   "type": "section",
                   "text": {
                     "type": "mrkdwn",
-                    "text": "Commit: <${{ github.server_url }}/${{ github.repository }}/commit/${{ github.sha }}|${{ github.sha }}"
+                    "text": "Commit: <${{ github.server_url }}/${{ github.repository }}/commit/${{ github.sha }}|${{ github.sha }}>"
                   }
                 },
                 {
                   "type": "section",
                   "text": {
                     "type": "mrkdwn",
-                    "text": "*Typecheck*: ${{ steps.typecheck.outputs.status }}"
+                    "text": "*Typecheck*: ${{ steps.typecheck.outputs.status || 'unknown' }}"
                   }
                 },
                 {
                   "type": "section",
                   "text": {
                     "type": "mrkdwn",
-                    "text": "*Build*: ${{ steps.build.outputs.status }}"
+                    "text": "*Build*: ${{ steps.build.outputs.status || 'unknown' }}"
                   }
                 },
                 {
                   "type": "section",
                   "text": {
                     "type": "mrkdwn",
-                    "text": "View run: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+                    "text": "View run: <${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}|Details>"
                   }
                 }
               ]
