@@ -82,6 +82,6 @@ jobs:
       - name: Run TruffleHog Secret Scan
         uses: docker://trufflesecurity/trufflehog:latest
         with:
-          args: github . --json --fail
+          args: "git file://. --json --fail"
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
