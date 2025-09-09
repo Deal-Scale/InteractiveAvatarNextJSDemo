@@ -41,25 +41,11 @@ jobs:
         with:
           node-version: 18
 
-      - name: Install dependencies
-        run: |
-          npm install -g pnpm
-          pnpm install
-          cd components/external/zod-react-form-auto
-          pnpm install
-          cd ../../..
-          pnpm add ./components/external/zod-react-form-auto
-
-      # Initialize CodeQL
       - name: Initialize CodeQL
         uses: github/codeql-action/init@v2
         with:
           languages: javascript,typescript
           queries: security-extended
-
-      # Autobuild
-      - name: Autobuild
-        uses: github/codeql-action/autobuild@v2
 
       # Perform CodeQL Analysis
       - name: Perform CodeQL Analysis
