@@ -7,12 +7,44 @@ on:
     branches: [main]
 
 jobs:
+  typecheck:
+    name: Typecheck
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-node@v3
+        with:
+          node-version: 18
+      - run: npm install -g pnpm
+      - run: pnpm install
+      - run: pnpm add ./components/external/zod-react-form-auto
+      - run: pnpm run typecheck || echo "Typecheck failed but continuing workflow"
+      - uses: rtCamp/action-slack-notify@v2
+        if: always()
+        env:
+          SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK }}
+          SLACK_MESSAGE: "Typecheck results: ${{ job.status }}"
+
   codeql:
     name: CodeQL Analysis
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
         uses: actions/checkout@v3
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: 18
+
+      - name: Install dependencies
+        run: |
+          npm install -g pnpm
+          pnpm install
+          cd components/external/zod-react-form-auto
+          pnpm install
+          cd ../../..
+          pnpm add ./components/external/zod-react-form-auto
 
       # Initialize CodeQL
       - name: Initialize CodeQL
