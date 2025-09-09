@@ -1,30 +1,45 @@
-# Pollinations Chat Completion Examples (cURL)
+# Pollinations Vision Examples (cURL)
 
-## Basic JSON (non-streaming)
+## Vision cURL Examples
+
+## Analyze image by URL
 
 ```bash
-curl http://localhost:3000/api/pollinations/text/chat-completion \
+curl http://localhost:3000/api/pollinations/text/vision \
   -H "Content-Type: application/json" \
   -d '{
     "model": "openai",
     "messages": [
-      {"role": "system", "content": "You are a helpful assistant."},
-      {"role": "user", "content": "What is the capital of France?"}
+      {
+        "role": "user",
+        "content": [
+          {"type": "text", "text": "What is in this image?"},
+          {"type": "image_url", "image_url": {"url": "https://upload.wikimedia.org/wikipedia/commons/thumb/d/dd/Gfp-wisconsin-madison-the-nature-boardwalk.jpg/1024px-Gfp-wisconsin-madison-the-nature-boardwalk.jpg"}}
+        ]
+      }
     ],
-    "seed": 42
+    "max_tokens": 300
   }'
 ```
 
-## Streaming (SSE)
+## Analyze local image (base64 inline)
 
 ```bash
-curl -N http://localhost:3000/api/pollinations/text/chat-completion \
+# Encode a local image to base64 first (Linux/macOS):
+# base64 -i ./photo.jpg > photo.b64
+
+curl http://localhost:3000/api/pollinations/text/vision \
   -H "Content-Type: application/json" \
   -d '{
     "model": "openai",
     "messages": [
-      {"role": "user", "content": "Write a short poem about the sea."}
-    ],
-    "stream": true
+      {
+        "role": "user",
+        "content": [
+          {"type": "text", "text": "Describe this image"},
+          {"type": "image_url", "image_url": {"url": "data:image/jpeg;base64,REPLACE_WITH_CONTENTS_OF_photo.b64"}}
+        ]
+      }
+    ]
   }'
 ```

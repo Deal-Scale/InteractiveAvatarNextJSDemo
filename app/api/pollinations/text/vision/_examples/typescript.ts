@@ -1,38 +1,31 @@
-// Example: TypeScript client calling the local Pollinations proxy route
+// Example: TypeScript client calling the local Pollinations Vision proxy route
 
-async function chatCompletion(
-	messages: { role: string; content: unknown }[],
-	stream = false,
+async function analyzeImageUrl(
+	imageUrl: string,
+	question = "What is in this image?",
 ) {
-	const res = await fetch("/api/pollinations/text/chat-completion", {
+	const body = {
+		model: "openai",
+		messages: [
+			{
+				role: "user",
+				content: [
+					{ type: "text", text: question },
+					{ type: "image_url", image_url: { url: imageUrl } },
+				],
+			},
+		],
+		max_tokens: 300,
+	};
+	const res = await fetch("/api/pollinations/text/vision", {
 		method: "POST",
 		headers: { "Content-Type": "application/json" },
-		body: JSON.stringify({ model: "openai", messages, stream }),
+		body: JSON.stringify(body),
 	});
-
-	if (!stream) {
-		const json = await res.json();
-		return json.choices?.[0]?.message?.content as string | undefined;
-	}
-
-	// Streaming example (SSE). Here we just read chunks as text
-	const reader = res.body?.getReader();
-	const decoder = new TextDecoder();
-	if (!reader) return;
-
-	let full = "";
-	for (;;) {
-		const { done, value } = await reader.read();
-		if (done) break;
-		const chunk = decoder.decode(value);
-		// Parse `data: ...` lines here if needed; this demo just concatenates
-		full += chunk;
-	}
-	return full;
+	if (!res.ok) throw new Error(await res.text());
+	const json = await res.json();
+	return json?.choices?.[0]?.message?.content as string | undefined;
 }
 
 // Usage
-chatCompletion([
-	{ role: "system", content: "You are a helpful assistant." },
-	{ role: "user", content: "Say hi in one sentence." },
-]).then(console.log);
+// void analyzeImageUrl("https://upload.wikimedia.org/wikipedia/commons/thumb/d/dd/Gfp-wisconsin-madison-the-nature-boardwalk.jpg/1024px-Gfp-wisconsin-madison-the-nature-boardwalk.jpg").then(console.log);

@@ -1,21 +1,8 @@
-# Pollinations Chat Completion Examples (cURL)
+# Pollinations Vision Examples (cURL)
 
-## Basic JSON (non-streaming)
+## Function Calling (Tools) cURL Examples
 
-```bash
-curl http://localhost:3000/api/pollinations/text/chat-completion \
-  -H "Content-Type: application/json" \
-  -d '{
-    "model": "openai",
-    "messages": [
-      {"role": "system", "content": "You are a helpful assistant."},
-      {"role": "user", "content": "What is the capital of France?"}
-    ],
-    "seed": 42
-  }'
-```
-
-## Function Calling (tools)
+## Define tools and let the model call them
 
 ```bash
 curl http://localhost:3000/api/pollinations/text/chat-completion \
@@ -44,16 +31,23 @@ curl http://localhost:3000/api/pollinations/text/chat-completion \
   }'
 ```
 
-## Streaming (SSE)
+## Execute tool call and send response
 
 ```bash
-curl -N http://localhost:3000/api/pollinations/text/chat-completion \
+# After receiving `tool_calls` in the response, execute the function(s) locally and send a second request with a `tool` role message including the `tool_call_id`.
+
+curl http://localhost:3000/api/pollinations/text/chat-completion \
   -H "Content-Type: application/json" \
   -d '{
     "model": "openai",
     "messages": [
-      {"role": "user", "content": "Write a short poem about the sea."}
-    ],
-    "stream": true
+      {
+        "role": "user",
+        "content": [
+          {"type": "text", "text": "Describe this image"},
+          {"type": "image_url", "image_url": {"url": "data:image/jpeg;base64,REPLACE_WITH_CONTENTS_OF_photo.b64"}}
+        ]
+      }
+    ]
   }'
 ```

@@ -48,6 +48,13 @@ To enable streaming:
 - cURL examples: `../_examples/curl.md`
 - TypeScript usage: `../_examples/typescript.ts`
 
+### Function Calling (Tools)
+
+The route supports OpenAI-style tool (function) calling. Define your tools in the request body and inspect `choices[0].message.tool_calls` in the response. If present, execute your function(s) and send a second request with the tool output appended to `messages` using role `tool` and the `tool_call_id`.
+
+- cURL example included in `../_examples/curl.md`
+- TypeScript example: `../_examples/function-calling.ts`
+
 ## Testing
 
 Vitest tests under `../_tests/pollinations.route.test.ts` cover:
