@@ -93,8 +93,11 @@ jobs:
       - uses: actions/setup-node@v3
         with:
           node-version: 18
-      - run: npm install -g pnpm
-      - run: pnpm install
+      - name: Setup pnpm
+        run: npm install -g pnpm
+      - name: Install dependencies
+        run: pnpm install
+        working-directory: ./app
       - run: pnpm add ./components/external/zod-react-form-auto
       - uses: snyk/actions/node@master
         env:
@@ -272,12 +275,12 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Setup pnpm
+        run: npm install -g pnpm
+
       - name: Install dependencies
-        run: |
-          npm install -g pnpm
-          cd ./app
-          pnpm install
-        working-directory: .
+        run: pnpm install
+        working-directory: ./app
 
       - name: Start Application
         run: |
