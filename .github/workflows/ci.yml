@@ -169,7 +169,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Upload coverage to Codecov
-        if: ${{ secrets.CODECOV_TOKEN }}
+        if: ${{ github.event.repository.private == false && github.ref == 'refs/heads/main' }}
         env:
           CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
         uses: codecov/codecov-action@v4
