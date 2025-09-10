@@ -15,19 +15,33 @@ export async function simpleExample() {
 	console.log(text);
 }
 
-// 2) Extra body via providerOptions.openrouter
-export async function extraBodyViaProviderOptions() {
-	const openrouterInstance = createOpenRouter({ apiKey: "your-api-key" });
-	const model = openrouterInstance("anthropic/claude-3.7-sonnet:thinking");
-	await streamText({
-		model,
-		messages: [{ role: "user", content: "Hello" }],
+// 2) Streaming text with extra body options
+export async function streamingExample() {
+	// Create a custom OpenRouter instance with your API key
+	const openrouterInstance = createOpenRouter({
+		apiKey: "your-api-key", // Replace with your actual API key
+	});
+
+	// Create a stream of text using Anthropic's Claude model with extra body options
+	const stream = await streamText({
+		model: openrouterInstance("anthropic/claude-3.7-sonnet:thinking"), // Specify the model
+		messages: [
+			{ role: "user", content: "Explain quantum computing in simple terms" },
+		],
 		providerOptions: {
 			openrouter: {
-				reasoning: { max_tokens: 10 },
+				// Extra body options specific to OpenRouter
+				reasoning: {
+					max_tokens: 1000, // Limit the reasoning tokens
+				},
 			},
 		},
 	});
+
+	// Process the stream
+	for await (const chunk of stream.textStream) {
+		process.stdout.write(chunk);
+	}
 }
 
 // 3) Extra body via model settings
@@ -99,17 +113,18 @@ export async function usageExample() {
 		prompt: "Hello, how are you today?",
 	});
 	if (result.providerMetadata?.openrouter?.usage) {
-		console.log("Cost:", result.providerMetadata.openrouter.usage.cost);
-		console.log(
-			"Total Tokens:",
-			result.providerMetadata.openrouter.usage.totalTokens,
-		);
+		const usage = result.providerMetadata.openrouter.usage as {
+			cost: number;
+			totalTokens: number;
+		};
+		console.log("Cost:", usage.cost);
+		console.log("Total Tokens:", usage.totalTokens);
 	}
 }
 
 // You can import and call any of the above examples where appropriate.
 // simpleExample();
-// extraBodyViaProviderOptions();
+// streamingExample();
 // extraBodyViaModelSettings();
 // extraBodyViaModelFactory();
 // promptCachingExample();

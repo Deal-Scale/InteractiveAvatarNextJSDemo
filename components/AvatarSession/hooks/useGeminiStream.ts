@@ -115,10 +115,14 @@ export function useGeminiStream<T = unknown>(
 					const { done, value } = await reader.read();
 					if (done) break;
 					buffer += decoder.decode(value, { stream: true });
-					let idx;
-					while ((idx = buffer.indexOf("\n\n")) !== -1) {
-						const frame = buffer.slice(0, idx).trim();
-						buffer = buffer.slice(idx + 2);
+					const idx = buffer.indexOf("\n\n");
+					if (idx === -1) break;
+					let idx2 = idx;
+					while (true) {
+						idx2 = buffer.indexOf("\n\n", idx2 + 2);
+						if (idx2 === -1) break;
+						const frame = buffer.slice(idx2 + 2, idx2 + 4).trim();
+						buffer = buffer.slice(idx2 + 4);
 						if (!frame.startsWith("data:")) continue;
 						const payload = frame.slice("data:".length).trim();
 						if (!payload) continue;
