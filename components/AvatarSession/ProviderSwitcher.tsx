@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { useGeminiAvailability } from "./hooks/useGeminiAvailability";
 import { useHeygenAvailability } from "./hooks/useHeygenAvailability";
 import { usePollinationsAvailability } from "./hooks/usePollinationsAvailability";
+import { useOpenRouterAvailability } from "./hooks/useOpenRouterAvailability";
 import { useEffect } from "react";
 
 export const ProviderSwitcher = () => {
@@ -15,20 +16,32 @@ export const ProviderSwitcher = () => {
 		useHeygenAvailability();
 	const { available: pollOk, checking: pollChecking } =
 		usePollinationsAvailability();
+	const { available: orOk, checking: orChecking } = useOpenRouterAvailability();
 
-	// Auto-fallback if current mode becomes unavailable. Priority: pollinations -> heygen -> gemini
+	// Auto-fallback if current mode becomes unavailable. Priority: pollinations -> heygen -> gemini -> openrouter
 	useEffect(() => {
+		const tryFallback = (
+			...choices: ("pollinations" | "heygen" | "gemini" | "openrouter")[]
+		) => {
+			for (const c of choices) {
+				if (c === "pollinations" && pollOk) return setMode("pollinations");
+				if (c === "heygen" && heygenOk) return setMode("heygen");
+				if (c === "gemini" && geminiOk) return setMode("gemini");
+				if (c === "openrouter" && orOk) return setMode("openrouter");
+			}
+		};
+
 		if (mode === "gemini" && !geminiChecking && !geminiOk) {
-			if (pollOk) return setMode("pollinations");
-			if (heygenOk) return setMode("heygen");
+			return tryFallback("pollinations", "heygen", "openrouter");
 		}
 		if (mode === "heygen" && !heygenChecking && !heygenOk) {
-			if (pollOk) return setMode("pollinations");
-			if (geminiOk) return setMode("gemini");
+			return tryFallback("pollinations", "gemini", "openrouter");
 		}
 		if (mode === "pollinations" && !pollChecking && !pollOk) {
-			if (heygenOk) return setMode("heygen");
-			if (geminiOk) return setMode("gemini");
+			return tryFallback("heygen", "gemini", "openrouter");
+		}
+		if (mode === "openrouter" && !orChecking && !orOk) {
+			return tryFallback("pollinations", "heygen", "gemini");
 		}
 	}, [
 		mode,
@@ -38,6 +51,8 @@ export const ProviderSwitcher = () => {
 		heygenChecking,
 		pollOk,
 		pollChecking,
+		orOk,
+		orChecking,
 		setMode,
 	]);
 
@@ -80,6 +95,18 @@ export const ProviderSwitcher = () => {
 					title={!geminiOk ? "Gemini unavailable" : undefined}
 				>
 					Gemini
+				</Button>
+				<Button
+					type="button"
+					size="sm"
+					variant={mode === "openrouter" ? "default" : "ghost"}
+					onClick={() => setMode("openrouter")}
+					aria-pressed={mode === "openrouter"}
+					disabled={!orOk || orChecking}
+					aria-disabled={!orOk || orChecking}
+					title={!orOk ? "OpenRouter unavailable" : undefined}
+				>
+					OpenRouter
 				</Button>
 			</div>
 		</div>

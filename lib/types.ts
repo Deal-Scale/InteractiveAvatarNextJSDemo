@@ -24,6 +24,9 @@ export interface Message {
 	id: string;
 	content: string;
 	sender: MessageSender;
+	// Optional provider metadata for UI transparency
+	provider?: string; // e.g., "gemini", "openrouter"
+	fallbackFrom?: string; // original provider if a fallback was used
 	// Optional JSX payload for rich rendering. When present, render with JSXPreview.
 	jsx?: string;
 	// Optional tool call parts to visualize tool usage within the message
