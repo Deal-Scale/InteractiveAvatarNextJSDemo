@@ -13,3 +13,6 @@
 [submodule "app/api/gemini-stream"]
 	path = app/api/gemini-stream
 	url = https://github.com/techwithty/gemini-stream.git
+[submodule "app/api/openrouter"]
+	path = app/api/openrouter
+	url = https://github.com/techwithty/openrouter.git
