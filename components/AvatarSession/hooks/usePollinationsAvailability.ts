@@ -7,7 +7,7 @@ import { useCallback, useEffect, useState } from "react";
  * GET /api/pollinations/health returns 204 when upstream is reachable.
  */
 export function usePollinationsAvailability() {
-	const [available, setAvailable] = useState<boolean>(true);
+	const [available, setAvailable] = useState<boolean>(false);
 	const [checking, setChecking] = useState<boolean>(false);
 	const [lastError, setLastError] = useState<string | null>(null);
 

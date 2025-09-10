@@ -7,7 +7,7 @@ import { useCallback, useEffect, useState } from "react";
  * GET /api/streaming/health returns 204 when HEYGEN_API_KEY is present.
  */
 export function useHeygenAvailability() {
-	const [available, setAvailable] = useState<boolean>(true);
+	const [available, setAvailable] = useState<boolean>(false);
 	const [checking, setChecking] = useState<boolean>(false);
 	const [lastError, setLastError] = useState<string | null>(null);
 

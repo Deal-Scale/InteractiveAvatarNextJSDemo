@@ -7,7 +7,7 @@ import { useCallback, useEffect, useState } from "react";
  * GET /api/openrouter/health returns 204 when upstream is reachable and API key is configured.
  */
 export function useOpenRouterAvailability() {
-	const [available, setAvailable] = useState<boolean>(true);
+	const [available, setAvailable] = useState<boolean>(false);
 	const [checking, setChecking] = useState<boolean>(false);
 	const [lastError, setLastError] = useState<string | null>(null);
 

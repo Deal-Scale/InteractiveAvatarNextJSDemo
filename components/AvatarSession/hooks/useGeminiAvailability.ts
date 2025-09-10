@@ -7,7 +7,7 @@ import { useCallback, useEffect, useState } from "react";
  * Uses GET /api/gemini-stream?health=1 which returns 204 when OK.
  */
 export function useGeminiAvailability() {
-	const [available, setAvailable] = useState<boolean>(true);
+	const [available, setAvailable] = useState<boolean>(false);
 	const [checking, setChecking] = useState<boolean>(false);
 	const [lastError, setLastError] = useState<string | null>(null);
 
