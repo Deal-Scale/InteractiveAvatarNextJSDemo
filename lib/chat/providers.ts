@@ -1,6 +1,6 @@
 import type { Message } from "@/lib/types";
 
-export type ProviderId = "heygen" | "pollinations";
+export type ProviderId = "heygen" | "pollinations" | "gemini";
 
 export interface ProviderSendOptions {
 	jsonMode?: boolean;

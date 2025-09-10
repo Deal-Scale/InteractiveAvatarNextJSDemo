@@ -1,6 +1,6 @@
 import { create } from "zustand";
 
-export type ChatProviderMode = "heygen" | "pollinations";
+export type ChatProviderMode = "heygen" | "pollinations" | "gemini";
 
 interface ChatProviderState {
 	mode: ChatProviderMode;
@@ -15,7 +15,7 @@ const getInitialMode = (): ChatProviderMode => {
 	const saved = window.localStorage.getItem(
 		STORAGE_KEY,
 	) as ChatProviderMode | null;
-	return saved === "pollinations" || saved === "heygen"
+	return saved === "pollinations" || saved === "heygen" || saved === "gemini"
 		? saved
 		: "pollinations";
 };

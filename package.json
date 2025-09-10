@@ -3,6 +3,9 @@
 	"type": "module",
 	"version": "0.0.1",
 	"private": true,
+	"engines": {
+		"node": ">=20.0.0"
+	},
 	"scripts": {
 		"dev": "next dev",
 		"build": "next build",
@@ -20,6 +23,7 @@
 	},
 	"dependencies": {
 		"3d-force-graph": "^1.78.4",
+		"@google/genai": "^1.19.0",
 		"@heygen/streaming-avatar": "^2.0.13",
 		"@hookform/resolvers": "^5.2.1",
 		"@modelcontextprotocol/sdk": "^1.17.3",
