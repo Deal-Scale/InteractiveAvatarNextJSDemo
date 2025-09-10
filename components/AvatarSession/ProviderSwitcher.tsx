@@ -73,54 +73,60 @@ export const ProviderSwitcher = () => {
 		<div className="mb-3 flex items-center gap-2">
 			<span className="text-xs text-muted-foreground">Chat provider:</span>
 			<div className="flex rounded-md overflow-hidden border border-input">
-				<Button
-					type="button"
-					size="sm"
-					variant={mode === "heygen" ? "default" : "ghost"}
-					onClick={() => setMode("heygen")}
-					aria-pressed={mode === "heygen"}
-					disabled={!heygenOk || heygenChecking}
-					aria-disabled={!heygenOk || heygenChecking}
-					title={!heygenOk ? heygenErr || "Heygen unavailable" : undefined}
-				>
-					Heygen
-				</Button>
-				<Button
-					type="button"
-					size="sm"
-					variant={mode === "pollinations" ? "default" : "ghost"}
-					onClick={() => setMode("pollinations")}
-					aria-pressed={mode === "pollinations"}
-					disabled={!pollOk || pollChecking}
-					aria-disabled={!pollOk || pollChecking}
+				<span title={!heygenOk ? heygenErr || "Heygen unavailable" : undefined}>
+					<Button
+						type="button"
+						size="sm"
+						variant={mode === "heygen" ? "default" : "ghost"}
+						onClick={() => setMode("heygen")}
+						aria-pressed={mode === "heygen"}
+						disabled={!heygenOk || heygenChecking}
+						aria-disabled={!heygenOk || heygenChecking}
+					>
+						Heygen
+					</Button>
+				</span>
+				<span
 					title={!pollOk ? pollErr || "Pollinations unavailable" : undefined}
 				>
-					Pollinations
-				</Button>
-				<Button
-					type="button"
-					size="sm"
-					variant={mode === "gemini" ? "default" : "ghost"}
-					onClick={() => setMode("gemini")}
-					aria-pressed={mode === "gemini"}
-					disabled={!geminiOk || geminiChecking}
-					aria-disabled={!geminiOk || geminiChecking}
-					title={!geminiOk ? geminiErr || "Gemini unavailable" : undefined}
-				>
-					Gemini
-				</Button>
-				<Button
-					type="button"
-					size="sm"
-					variant={mode === "openrouter" ? "default" : "ghost"}
-					onClick={() => setMode("openrouter")}
-					aria-pressed={mode === "openrouter"}
-					disabled={!orOk || orChecking}
-					aria-disabled={!orOk || orChecking}
-					title={!orOk ? orErr || "OpenRouter unavailable" : undefined}
-				>
-					OpenRouter
-				</Button>
+					<Button
+						type="button"
+						size="sm"
+						variant={mode === "pollinations" ? "default" : "ghost"}
+						onClick={() => setMode("pollinations")}
+						aria-pressed={mode === "pollinations"}
+						disabled={!pollOk || pollChecking}
+						aria-disabled={!pollOk || pollChecking}
+					>
+						Pollinations
+					</Button>
+				</span>
+				<span title={!geminiOk ? geminiErr || "Gemini unavailable" : undefined}>
+					<Button
+						type="button"
+						size="sm"
+						variant={mode === "gemini" ? "default" : "ghost"}
+						onClick={() => setMode("gemini")}
+						aria-pressed={mode === "gemini"}
+						disabled={!geminiOk || geminiChecking}
+						aria-disabled={!geminiOk || geminiChecking}
+					>
+						Gemini
+					</Button>
+				</span>
+				<span title={!orOk ? orErr || "OpenRouter unavailable" : undefined}>
+					<Button
+						type="button"
+						size="sm"
+						variant={mode === "openrouter" ? "default" : "ghost"}
+						onClick={() => setMode("openrouter")}
+						aria-pressed={mode === "openrouter"}
+						disabled={!orOk || orChecking}
+						aria-disabled={!orOk || orChecking}
+					>
+						OpenRouter
+					</Button>
+				</span>
 			</div>
 		</div>
 	);
