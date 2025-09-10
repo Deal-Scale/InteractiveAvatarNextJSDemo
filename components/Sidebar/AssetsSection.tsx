@@ -167,6 +167,12 @@ export default function AssetsSection(props: {
 		}
 	}, [uploads, publish]);
 
+	// Prevent hydration mismatches by deferring render until after mount.
+	// This component depends on client-only stores/state that may differ from SSR.
+	const [mounted, setMounted] = useState(false);
+	useEffect(() => setMounted(true), []);
+	if (!mounted) return null;
+
 	return (
 		<SidebarGroup>
 			<button
