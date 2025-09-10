@@ -10,3 +10,6 @@
 [submodule "app/api/pollinations"]
 	path = app/api/pollinations
 	url = https://github.com/techwithty/pollinations.git
+[submodule "app/api/gemini-stream"]
+	path = app/api/gemini-stream
+	url = https://github.com/techwithty/gemini-stream.git
