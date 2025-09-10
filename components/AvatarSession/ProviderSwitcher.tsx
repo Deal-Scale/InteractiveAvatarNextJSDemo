@@ -10,13 +10,26 @@ import { useEffect } from "react";
 export const ProviderSwitcher = () => {
 	const mode = useChatProviderStore((s) => s.mode);
 	const setMode = useChatProviderStore((s) => s.setMode);
-	const { available: geminiOk, checking: geminiChecking } =
-		useGeminiAvailability();
-	const { available: heygenOk, checking: heygenChecking } =
-		useHeygenAvailability();
-	const { available: pollOk, checking: pollChecking } =
-		usePollinationsAvailability();
-	const { available: orOk, checking: orChecking } = useOpenRouterAvailability();
+	const {
+		available: geminiOk,
+		checking: geminiChecking,
+		lastError: geminiErr,
+	} = useGeminiAvailability();
+	const {
+		available: heygenOk,
+		checking: heygenChecking,
+		lastError: heygenErr,
+	} = useHeygenAvailability();
+	const {
+		available: pollOk,
+		checking: pollChecking,
+		lastError: pollErr,
+	} = usePollinationsAvailability();
+	const {
+		available: orOk,
+		checking: orChecking,
+		lastError: orErr,
+	} = useOpenRouterAvailability();
 
 	// Auto-fallback if current mode becomes unavailable. Priority: pollinations -> heygen -> gemini -> openrouter
 	useEffect(() => {
@@ -68,7 +81,7 @@ export const ProviderSwitcher = () => {
 					aria-pressed={mode === "heygen"}
 					disabled={!heygenOk || heygenChecking}
 					aria-disabled={!heygenOk || heygenChecking}
-					title={!heygenOk ? "Heygen unavailable" : undefined}
+					title={!heygenOk ? heygenErr || "Heygen unavailable" : undefined}
 				>
 					Heygen
 				</Button>
@@ -80,7 +93,7 @@ export const ProviderSwitcher = () => {
 					aria-pressed={mode === "pollinations"}
 					disabled={!pollOk || pollChecking}
 					aria-disabled={!pollOk || pollChecking}
-					title={!pollOk ? "Pollinations unavailable" : undefined}
+					title={!pollOk ? pollErr || "Pollinations unavailable" : undefined}
 				>
 					Pollinations
 				</Button>
@@ -92,7 +105,7 @@ export const ProviderSwitcher = () => {
 					aria-pressed={mode === "gemini"}
 					disabled={!geminiOk || geminiChecking}
 					aria-disabled={!geminiOk || geminiChecking}
-					title={!geminiOk ? "Gemini unavailable" : undefined}
+					title={!geminiOk ? geminiErr || "Gemini unavailable" : undefined}
 				>
 					Gemini
 				</Button>
@@ -104,7 +117,7 @@ export const ProviderSwitcher = () => {
 					aria-pressed={mode === "openrouter"}
 					disabled={!orOk || orChecking}
 					aria-disabled={!orOk || orChecking}
-					title={!orOk ? "OpenRouter unavailable" : undefined}
+					title={!orOk ? orErr || "OpenRouter unavailable" : undefined}
 				>
 					OpenRouter
 				</Button>
