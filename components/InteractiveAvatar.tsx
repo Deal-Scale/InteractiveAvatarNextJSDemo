@@ -168,8 +168,10 @@ function InteractiveAvatarCore() {
 			</div>
 			<div className="w-full h-full">
 				<AvatarSession
+					initialConfig={DEFAULT_CONFIG}
 					mediaStream={mediaStreamRef}
 					sessionState={sessionState}
+					startSession={startSessionV2}
 					stopSession={stopSessionV2}
 				/>
 			</div>

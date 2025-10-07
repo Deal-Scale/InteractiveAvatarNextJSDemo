@@ -14,8 +14,8 @@ import { useDynamicOptions } from "../modals/session/hooks";
 import { PublishAgentModal } from "../modals/session/PublishAgentModal";
 import {
 	applyUserSettingsToConfig,
+	buildSessionConfig,
 	initFormsFromStorage,
-	mapAgentAndSettingsToConfig,
 } from "../modals/session/utils";
 import { SessionConfigHeader } from "../modals/session/Header";
 
@@ -94,11 +94,11 @@ export function SessionConfigModal({
 
 			setLastStarted(latestAgent as any);
 			markClean();
-			finalConfig = mapAgentAndSettingsToConfig(
-				config,
-				latestAgent,
+			finalConfig = buildSessionConfig({
+				baseConfig: config,
+				agentConfig: latestAgent,
 				userSettings,
-			);
+			});
 		} catch {
 			// fallback to current config
 		}
