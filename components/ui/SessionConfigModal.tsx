@@ -1,5 +1,6 @@
 import type { StartAvatarRequest } from "@heygen/streaming-avatar";
 import type { UserSettings, AppGlobalSettings } from "@/lib/schemas/global";
+import type { ConfigModalTab } from "@/lib/stores/session";
 
 import { useEffect, useRef, useState } from "react";
 import { z } from "zod";
@@ -43,17 +44,20 @@ export function SessionConfigModal({
 	initialConfig,
 	startSession,
 }: SessionConfigModalProps) {
-	const { isConfigModalOpen, closeConfigModal, agentSettings } =
-		useSessionStore();
+	const {
+		isConfigModalOpen,
+		closeConfigModal,
+		agentSettings,
+		configModalTab,
+		setConfigModalTab,
+	} = useSessionStore();
 	const { userSettings, setUserSettings, globalSettings, setGlobalSettings } =
 		useSettingsStore();
 	const setThemeMode = useThemeStore((s) => s.setMode);
 	const { currentAgent, setAgent, updateAgent, setLastStarted, markClean } =
 		useAgentStore();
 	const [config, setConfig] = useState<StartAvatarRequest>(initialConfig);
-	const [activeTab, setActiveTab] = useState<
-		"session" | "global" | "user" | "agent"
-	>("session");
+	const [activeTab, setActiveTab] = useState<ConfigModalTab>(configModalTab);
 	const [isPublishOpen, setPublishOpen] = useState(false);
 	const {
 		avatarOptions,
@@ -65,6 +69,10 @@ export function SessionConfigModal({
 	useEffect(() => {
 		setConfig(initialConfig);
 	}, [initialConfig]);
+
+	useEffect(() => {
+		setActiveTab(configModalTab);
+	}, [configModalTab]);
 
 	// Prefill/merge settings into session config whenever user settings change
 	useEffect(() => {
@@ -98,6 +106,11 @@ export function SessionConfigModal({
 		closeConfigModal();
 	};
 
+	const handleTabChange = (tab: ConfigModalTab) => {
+		setActiveTab(tab);
+		setConfigModalTab(tab);
+	};
+
 	// User Settings form instance
 	const userForm = useZodForm(UserSettingsSchema, {
 		defaultValues: {
@@ -113,7 +126,6 @@ export function SessionConfigModal({
 		defaultValues: {
 			theme: "system",
 			telemetryEnabled: false,
-			apiBaseUrl: "https://api.heygen.com",
 		} as Partial<AppGlobalSettings>,
 		mode: "onChange",
 	});
@@ -214,12 +226,17 @@ export function SessionConfigModal({
 	]);
 
 	return (
-		<Dialog open={isConfigModalOpen} onOpenChange={closeConfigModal}>
+		<Dialog
+			open={isConfigModalOpen}
+			onOpenChange={(open) => {
+				if (!open) closeConfigModal();
+			}}
+		>
 			<DialogContent className="w-[96vw] md:w-[92vw] max-w-[1280px] p-0 bg-card text-foreground flex flex-col max-h-[90vh]">
 				<SessionConfigHeader />
 
 				{/* Tabs Header */}
-				<TabsHeader activeTab={activeTab} setActiveTab={setActiveTab} />
+				<TabsHeader activeTab={activeTab} setActiveTab={handleTabChange} />
 
 				{/* Tabs Content */}
 				<div className="flex-1 overflow-y-auto p-4 md:p-6">

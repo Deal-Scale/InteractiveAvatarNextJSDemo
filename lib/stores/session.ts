@@ -10,10 +10,15 @@ import type { MessageSender } from "@/lib/types";
 
 export type ChatMode = "voice" | "text";
 
+export type ConfigModalTab = "session" | "global" | "user" | "agent";
+
 interface SessionState {
 	isConfigModalOpen: boolean;
-	openConfigModal: () => void;
+	openConfigModal: (tab?: ConfigModalTab) => void;
 	closeConfigModal: () => void;
+
+	configModalTab: ConfigModalTab;
+	setConfigModalTab: (tab: ConfigModalTab) => void;
 
 	config: StartAvatarRequest | null;
 	setConfig: (config: StartAvatarRequest) => void;
@@ -60,8 +65,15 @@ export const useSessionStore = create<SessionState>()(
 	persist(
 		(set) => ({
 			isConfigModalOpen: true, // Open modal by default
-			openConfigModal: () => set({ isConfigModalOpen: true }),
+			openConfigModal: (tab = "session") =>
+				set({
+					isConfigModalOpen: true,
+					configModalTab: tab,
+				}),
 			closeConfigModal: () => set({ isConfigModalOpen: false }),
+
+			configModalTab: "session",
+			setConfigModalTab: (tab) => set({ configModalTab: tab }),
 
 			config: null,
 			setConfig: (config) => set({ config }),
@@ -144,6 +156,7 @@ export const useSessionStore = create<SessionState>()(
 				globalSettings: state.globalSettings,
 				agentSettings: state.agentSettings,
 				currentSessionId: state.currentSessionId,
+				configModalTab: state.configModalTab,
 			}),
 		},
 	),
