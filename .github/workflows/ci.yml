@@ -1,0 +1,209 @@
+name: CI
+
+on:
+  push:
+    branches: ["**"]
+  pull_request:
+    branches: ["**"]
+
+jobs:
+  typecheck:
+    name: Typecheck
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: 18
+      - name: Install pnpm
+        run: npm install -g pnpm@latest
+      - name: Enable corepack
+        run: corepack enable
+      - name: Install dependencies
+        run: |
+          npm install -g pnpm
+          pnpm install
+          cd components/external/zod-react-form-auto
+          pnpm install
+          cd ../../..
+          pnpm add ./components/external/zod-react-form-auto
+      - name: Typecheck
+        id: typecheck
+        run: |
+          pnpm run typecheck
+        continue-on-error: true
+      - name: Save typecheck status
+        id: save_status
+        run: |
+          if [ ${{ steps.typecheck.outcome }} == 'success' ]; then
+            echo "status=success" >> $GITHUB_OUTPUT
+          else
+            echo "status=failure" >> $GITHUB_OUTPUT
+          fi
+    outputs:
+      typecheck_status: ${{ steps.save_status.outputs.status }}
+
+  lint:
+    name: Lint (Biome)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: 18
+      - name: Install pnpm
+        run: npm install -g pnpm@latest
+      - name: Enable corepack
+        run: corepack enable
+      - name: Install dependencies
+        run: |
+          npm install -g pnpm
+          pnpm install
+          cd components/external/zod-react-form-auto
+          pnpm install
+          cd ../../..
+          pnpm add ./components/external/zod-react-form-auto
+      - name: Lint
+        run: pnpm run lint || echo "Lint issues found (non-blocking for now)"
+        continue-on-error: true
+
+  build:
+    name: Build
+    runs-on: ubuntu-latest
+    needs: [typecheck]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: 18
+      - name: Install pnpm
+        run: npm install -g pnpm@latest
+      - name: Enable corepack
+        run: corepack enable
+      - name: Install dependencies
+        run: |
+          npm install -g pnpm
+          pnpm install
+          cd components/external/zod-react-form-auto
+          pnpm install
+          cd ../../..
+          pnpm add ./components/external/zod-react-form-auto
+      - name: Build
+        id: build
+        run: |
+          pnpm run build
+        continue-on-error: true
+      - name: Save build status
+        id: save_status
+        run: |
+          if [ ${{ steps.build.outcome }} == 'success' ]; then
+            echo "status=success" >> $GITHUB_OUTPUT
+          else
+            echo "status=failure" >> $GITHUB_OUTPUT
+          fi
+    outputs:
+      build_status: ${{ steps.save_status.outputs.status }}
+
+  test:
+    name: Test
+    runs-on: ubuntu-latest
+    needs: [build]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: 18
+      - name: Install pnpm
+        run: npm install -g pnpm@latest
+      - name: Enable corepack
+        run: corepack enable
+      - name: Install dependencies
+        run: |
+          npm install -g pnpm
+          pnpm install
+          cd components/external/zod-react-form-auto
+          pnpm install
+          cd ../../..
+          pnpm add ./components/external/zod-react-form-auto
+      - name: Run tests
+        run: pnpm run test
+
+  codecov:
+    name: Upload Coverage to Codecov
+    runs-on: ubuntu-latest
+    needs: [test]
+    if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
+    steps:
+      - uses: actions/checkout@v4
+      - name: Upload coverage to Codecov
+        if: ${{ github.event.repository.private == false && github.ref == 'refs/heads/main' }}
+        env:
+          CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
+        uses: codecov/codecov-action@v4
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          files: ./coverage/lcov.info
+
+  notify-slack:
+    name: Notify Slack
+    runs-on: ubuntu-latest
+    needs: [typecheck, build, test, codecov]
+    if: always()
+    steps:
+      - uses: slackapi/slack-github-action@v1.25.0
+        with:
+          channel-id: 'general'
+          payload: |
+            {
+              "text": "CI Results - Branch: ${{ github.ref_name }}",
+              "blocks": [
+                {
+                  "type": "section",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": "*Build and Typecheck Results*\nBranch: ${{ github.ref_name }}"
+                  }
+                },
+                {
+                  "type": "section",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": "Commit: <${{ github.server_url }}/${{ github.repository }}/commit/${{ github.sha }}|${{ github.sha }}>"
+                  }
+                },
+                {
+                  "type": "section",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": "*Typecheck*: ${{ needs.typecheck.outputs.status || 'unknown' }}"
+                  }
+                },
+                {
+                  "type": "section",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": "*Build*: ${{ needs.build.outputs.build_status || 'unknown' }}"
+                  }
+                },
+                {
+                  "type": "section",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": "*Coverage*: <https://app.codecov.io/gh/${{ github.repository }}/commit/${{ github.sha }}|View Report>"
+                  }
+                },
+                {
+                  "type": "section",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": "View run: <${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}|Details>"
+                  }
+                }
+              ]
+            }
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}

@@ -1,0 +1,42 @@
+{
+	"compilerOptions": {
+		"target": "es5",
+		"lib": ["dom", "dom.iterable", "esnext"],
+		"allowJs": true,
+		"skipLibCheck": true,
+		"strict": true,
+		"forceConsistentCasingInFileNames": true,
+		"noEmit": true,
+		"esModuleInterop": true,
+		"module": "esnext",
+		"moduleResolution": "Bundler",
+		"resolveJsonModule": true,
+		"isolatedModules": true,
+		"jsx": "preserve",
+		"incremental": true,
+		"baseUrl": ".",
+		"plugins": [
+			{
+				"name": "next"
+			}
+		],
+		"paths": {
+			"@/*": ["./*"],
+			"@/components/external/zod-react-form-auto/examples/*": [
+				"./components/external/zod-react-form-auto/src/examples/*"
+			],
+			"@/components/external/zod-react-form-auto/components/autofield/components/*": [
+				"./components/external/zod-react-form-auto/src/components/autofield/components/*"
+			]
+		}
+	},
+	"include": [
+		"next-env.d.ts",
+		"**/*.ts",
+		"**/*.d.ts",
+		"**/*.tsx",
+		".next/types/**/*.ts",
+		"components/AvatarSession/chat/utils/message.tss"
+	],
+	"exclude": ["node_modules"]
+}
