@@ -18,7 +18,7 @@ export async function GET() {
 			method: "GET",
 			headers: {
 				"Content-Type": "application/json",
-				Authorization: `Bearer ${HEYGEN_API_KEY}`,
+				"x-api-key": HEYGEN_API_KEY,
 			},
 			// don't cache so we always see latest
 			cache: "no-store",

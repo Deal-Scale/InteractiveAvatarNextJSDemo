@@ -3,7 +3,7 @@ import "@/styles/globals.css";
 import type { Metadata } from "next";
 import Script from "next/script";
 import { Fira_Code as FontMono, Inter as FontSans } from "next/font/google";
-import { Suspense } from "react";
+import { Suspense, useId } from "react";
 
 import AudioDebugShim from "@/components/AudioDebugShim";
 import { ToastProvider } from "@/components/ui/toaster";
@@ -115,12 +115,12 @@ export default function RootLayout({
           })();
         `}</Script>
 				{/* Microsoft Clarity */}
-				<Script id="ms-clarity" strategy="afterInteractive">{`
+				<Script id={useId()} strategy="afterInteractive">{`
           (function(c,l,a,r,i,t,y){
             c[a]=c[a]||function(){(c[a].q=c[a].q||[]).push(arguments)};
             t=l.createElement(r);t.async=1;t.src="https://www.clarity.ms/tag/"+i;
             y=l.getElementsByTagName(r)[0];y.parentNode.insertBefore(t,y);
-          })(window, document, "clarity", "script", "REPLACE_ME");
+          })(window, document, "clarity", "script", "${process.env.NEXT_PUBLIC_CLARITY_ID || "demo123456"}");
         `}</Script>
 				<ThemeProvider
 					disableTransitionOnChange
@@ -144,11 +144,11 @@ export default function RootLayout({
 
 								{/* Zoho SalesIQ Support Chat (bottom-right) */}
 								<Script
-									id="zoho-salesiq-init"
+									id={useId()}
 									strategy="afterInteractive"
 								>{`window.$zoho=window.$zoho||{};$zoho.salesiq=$zoho.salesiq||{ready:function(){}};`}</Script>
 								<Script
-									id="zoho-salesiq"
+									id={useId()}
 									strategy="afterInteractive"
 									src="https://salesiq.zoho.com/widget?wc=siq529bca77706436d0c99699a1417ac2691cd1efb7eb4b4e5c20cef923065ef066"
 								/>

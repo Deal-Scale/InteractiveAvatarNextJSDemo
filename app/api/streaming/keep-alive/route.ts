@@ -18,7 +18,7 @@ export async function POST(req: Request) {
 			method: "POST",
 			headers: {
 				"Content-Type": "application/json",
-				Authorization: `Bearer ${HEYGEN_API_KEY}`,
+				"x-api-key": HEYGEN_API_KEY,
 			},
 			body: JSON.stringify(body ?? {}),
 		});

@@ -62,16 +62,19 @@ function InteractiveAvatarCore() {
 
 	const startSessionV2 = useMemoizedFn(async (config: StartAvatarRequest) => {
 		try {
-			// Create a server-tracked session to obtain access_token and session_id
-			const resp = await newSessionMutation.mutateAsync({
-				avatar_id: config.avatarName,
-			} as any);
-			const token = resp?.data?.access_token as string;
-			const sessionId = resp?.data?.session_id as string;
+			console.log("[DEBUG] Starting avatar session with config:", config);
 
-			if (sessionId) setCurrentSessionId(sessionId);
+			// Get the API key directly for the StreamingAvatar SDK
+			const apiKey = process.env.NEXT_PUBLIC_HEYGEN_API_KEY;
+			console.log("[DEBUG] Using API key for SDK:", !!apiKey);
 
-			const avatar = initAvatar(token);
+			if (!apiKey) {
+				throw new Error(
+					"NEXT_PUBLIC_HEYGEN_API_KEY environment variable is not set",
+				);
+			}
+
+			const avatar = initAvatar(apiKey!);
 
 			const heygenService = new HeyGenService(avatar);
 

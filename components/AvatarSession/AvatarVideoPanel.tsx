@@ -83,9 +83,9 @@ export function AvatarVideoPanel({
 			{viewTab === "video" && (
 				<div
 					className={
-						"absolute inset-0 z-0 pointer-events-none transition-opacity duration-700 ease-out " +
+						"absolute inset-0 z-0 pointer-events-none transition-all duration-1000 ease-out " +
 						(sessionState === StreamingAvatarSessionState.CONNECTED
-							? "opacity-0"
+							? "opacity-0 pointer-events-none"
 							: "opacity-100")
 					}
 				>

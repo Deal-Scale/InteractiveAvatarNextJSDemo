@@ -20,23 +20,22 @@ export async function GET() {
 			method: "GET",
 			headers: {
 				"Content-Type": "application/json",
-				Authorization: `Bearer ${HEYGEN_API_KEY}`,
+				"x-api-key": HEYGEN_API_KEY,
 			},
-			cache: "no-store",
 		});
 
-		if (res.ok) {
-			return new Response(null, { status: 204 });
+		const text = await res.text().catch(() => "");
+		if (!res.ok) {
+			return NextResponse.json(
+				{
+					error: `Heygen health failed: ${res.status}`,
+					body: text.slice(0, 300),
+				},
+				{ status: 502 },
+			);
 		}
 
-		const text = await res.text().catch(() => "");
-		return NextResponse.json(
-			{
-				error: `Heygen health failed: ${res.status}`,
-				body: text.slice(0, 300),
-			},
-			{ status: 502 },
-		);
+		return NextResponse.json({ status: "healthy" }, { status: 200 });
 	} catch (e) {
 		return NextResponse.json({ error: (e as Error).message }, { status: 502 });
 	}

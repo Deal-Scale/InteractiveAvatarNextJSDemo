@@ -83,6 +83,16 @@ export const AvatarVideo = forwardRef<HTMLVideoElement>((_props, ref) => {
 	const isLoaded = sessionState === StreamingAvatarSessionState.CONNECTED;
 	const videoRef = useRef<HTMLVideoElement | null>(null);
 
+	// Debug logging
+	useEffect(() => {
+		console.log(
+			"[AvatarVideo] Session state changed:",
+			sessionState,
+			"isLoaded:",
+			isLoaded,
+		);
+	}, [sessionState, isLoaded]);
+
 	// Keep both local and forwarded refs in sync
 	const setVideoEl = (el: HTMLVideoElement | null) => {
 		videoRef.current = el;
@@ -154,12 +164,14 @@ export const AvatarVideo = forwardRef<HTMLVideoElement>((_props, ref) => {
 				ref={setVideoEl}
 				autoPlay
 				playsInline
+				className={isLoaded ? "z-10 relative" : ""}
 				style={{
 					position: "absolute",
 					inset: 0,
 					width: "100%",
 					height: "100%",
 					objectFit: "cover",
+					zIndex: isLoaded ? 10 : "auto",
 				}}
 				onError={(e) => console.error("[AvatarVideo] video error", e)}
 				onLoadedData={() => console.debug("[AvatarVideo] loadeddata")}

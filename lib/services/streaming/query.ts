@@ -95,9 +95,19 @@ export function useSessionsHistoryQuery(params?: {
 export function useNewSessionMutation() {
 	const qc = useQueryClient();
 	return useMutation({
-		mutationFn: (body: any) =>
-			postJson<NewSessionResponse>("/api/streaming/new", body),
+		mutationFn: async (body: any) => {
+			console.log("[DEBUG] useNewSessionMutation called with body:", body);
+			const response = await postJson<NewSessionResponse>(
+				"/api/streaming/new",
+				body,
+			);
+			console.log("[DEBUG] useNewSessionMutation response:", response);
+			return response;
+		},
 		onSuccess: async () => {
+			console.log(
+				"[DEBUG] useNewSessionMutation success, invalidating queries",
+			);
 			// Refresh active sessions immediately
 			await qc.invalidateQueries({ queryKey: queryKeys.sessions.active });
 		},

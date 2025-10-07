@@ -24,27 +24,23 @@ export async function GET(req: Request) {
 
 		const url = new URL(`${HEYGEN_BASE}/v2/streaming.list`);
 		if (page) url.searchParams.set("page", page);
-		if (page_size) url.searchParams.set("page_size", page_size);
 		if (date_from) url.searchParams.set("date_from", date_from);
 		if (date_to) url.searchParams.set("date_to", date_to);
 		if (status) url.searchParams.set("status", status);
 		if (token) url.searchParams.set("token", token);
 
-		const res = await fetch(url.toString(), {
+		const res = await fetch(`${HEYGEN_BASE}/v2/streaming.list`, {
 			method: "GET",
 			headers: {
 				"Content-Type": "application/json",
-				Authorization: `Bearer ${HEYGEN_API_KEY}`,
+				"x-api-key": HEYGEN_API_KEY,
 			},
 			cache: "no-store",
 		});
 
 		const data = await res.json();
 		if (!res.ok) {
-			return NextResponse.json(
-				{ error: data?.message || "Failed to fetch session history" },
-				{ status: res.status },
-			);
+			return NextResponse.json({ status: res.status });
 		}
 		return NextResponse.json(data, { status: 200 });
 	} catch (err: unknown) {

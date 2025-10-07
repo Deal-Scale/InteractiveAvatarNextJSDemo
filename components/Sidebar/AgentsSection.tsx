@@ -96,16 +96,18 @@ export default function AgentsSection(props: {
 
 	return (
 		<SidebarGroup>
-			<button
-				className="flex w-full items-center justify-between rounded-md px-2 py-1 text-left hover:bg-muted"
-				type="button"
-				onClick={() => setCollapsedAgents((v) => !v)}
-			>
-				<SidebarGroupLabel>Agents</SidebarGroupLabel>
-				<ChevronRight
-					className={`size-3 transition-transform ${collapsedAgents ? "rotate-0" : "rotate-90"}`}
-				/>
-			</button>
+			<div className="px-2 py-2">
+				<button
+					className="flex w-full items-center justify-between rounded-md px-2 py-1 text-left hover:bg-muted"
+					type="button"
+					onClick={() => setCollapsedAgents((v) => !v)}
+				>
+					<SidebarGroupLabel>Agents</SidebarGroupLabel>
+					<ChevronRight
+						className={`size-3 transition-transform ${collapsedAgents ? "rotate-0" : "rotate-90"}`}
+					/>
+				</button>
+			</div>
 
 			{!collapsedAgents && (
 				<div className="px-2 pb-2">
