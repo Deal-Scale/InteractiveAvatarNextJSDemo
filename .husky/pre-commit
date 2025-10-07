@@ -1,4 +1,0 @@
-# Format with Biome (no lint or tests)
-pnpm run format || exit 1
-# Re-stage formatted files so the commit includes them
-git add -A
