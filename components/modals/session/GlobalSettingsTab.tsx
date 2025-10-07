@@ -18,8 +18,8 @@ export function GlobalSettingsTab({
 	return (
 		<div className="space-y-4 rounded-xl border border-border bg-card p-4 md:p-6 shadow-sm">
 			<p className="text-sm text-muted-foreground">
-				Configure app-wide options (theme, telemetry, API base URL). These
-				persist locally in your browser.
+				Configure app-wide options (theme and telemetry). These persist locally
+				in your browser.
 			</p>
 			<AutoForm
 				className="space-y-3"

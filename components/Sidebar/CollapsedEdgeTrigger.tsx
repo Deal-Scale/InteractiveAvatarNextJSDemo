@@ -26,7 +26,7 @@ export default function CollapsedEdgeTrigger() {
 				aria-label="Avatar settings"
 				className="size-9 inline-flex items-center justify-center rounded-full border border-primary/40 bg-primary/10 text-primary shadow-md hover:bg-primary/15 backdrop-blur supports-[backdrop-filter]:bg-primary/10"
 				variant="ghost"
-				onClick={openConfigModal}
+				onClick={() => openConfigModal()}
 			>
 				<Settings className="size-5" />
 			</Button>

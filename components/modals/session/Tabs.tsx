@@ -1,6 +1,8 @@
 import React from "react";
 
-export type TabKey = "session" | "global" | "user" | "agent";
+import type { ConfigModalTab } from "@/lib/stores/session";
+
+export type TabKey = ConfigModalTab;
 
 interface TabsHeaderProps {
 	activeTab: TabKey;

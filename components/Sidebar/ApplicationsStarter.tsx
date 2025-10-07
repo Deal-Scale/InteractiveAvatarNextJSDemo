@@ -28,6 +28,9 @@ export default function ApplicationsStarter(props: {
 	showGlobalForm: boolean;
 	setShowGlobalForm: (fn: (v: boolean) => boolean) => void;
 	apps?: AppOption[];
+	onOpenAgentSettings?: () => void;
+	onOpenGlobalSettings?: () => void;
+	onOpenUserSettings?: () => void;
 }) {
 	const {
 		collapsedStarter,
@@ -42,6 +45,9 @@ export default function ApplicationsStarter(props: {
 		showGlobalForm,
 		setShowGlobalForm,
 		apps,
+		onOpenAgentSettings,
+		onOpenGlobalSettings,
+		onOpenUserSettings,
 	} = props;
 
 	const starterApps: AppOption[] = useMemo(
@@ -98,8 +104,19 @@ export default function ApplicationsStarter(props: {
 
 					{/* Inline Agent Controls */}
 					<div className="px-2 py-2 space-y-2 text-xs group-data-[state=collapsed]/sidebar:hidden">
-						<div className="font-medium text-muted-foreground">
-							Agent quick settings
+						<div className="flex items-center justify-between gap-2">
+							<span className="font-medium text-muted-foreground">
+								Agent quick settings
+							</span>
+							{onOpenAgentSettings && (
+								<button
+									className="text-[11px] font-medium text-primary hover:underline"
+									type="button"
+									onClick={onOpenAgentSettings}
+								>
+									Open full agent settings
+								</button>
+							)}
 						</div>
 						<div className="grid grid-cols-1 gap-2">
 							{/* Language */}
@@ -196,29 +213,48 @@ export default function ApplicationsStarter(props: {
 								/>
 							</div>
 						</div>
+						{onOpenUserSettings && (
+							<button
+								className="text-[11px] font-medium text-primary hover:underline"
+								type="button"
+								onClick={onOpenUserSettings}
+							>
+								View user settings
+							</button>
+						)}
 					</div>
 
 					{/* Inline Global Settings */}
 					<div className="px-2 py-2 space-y-2 text-xs group-data-[state=collapsed]/sidebar:hidden">
-						<button
-							className="flex w-full items-center justify-between rounded-md px-2 py-1 text-left hover:bg-muted"
-							type="button"
-							onClick={() => setShowGlobalForm((v) => !v)}
-						>
-							<span className="font-medium text-muted-foreground">
-								Global settings
-							</span>
-							<ChevronRight
-								className={`size-3 transition-transform ${showGlobalForm ? "rotate-90" : "rotate-0"}`}
-							/>
-						</button>
+						<div className="flex items-center justify-between gap-2">
+							<button
+								className="flex w-full flex-1 items-center justify-between rounded-md px-2 py-1 text-left hover:bg-muted"
+								type="button"
+								onClick={() => setShowGlobalForm((v) => !v)}
+							>
+								<span className="font-medium text-muted-foreground">
+									Global settings
+								</span>
+								<ChevronRight
+									className={`size-3 transition-transform ${showGlobalForm ? "rotate-90" : "rotate-0"}`}
+								/>
+							</button>
+							{onOpenGlobalSettings && (
+								<button
+									className="text-[11px] font-medium text-primary hover:underline"
+									type="button"
+									onClick={onOpenGlobalSettings}
+								>
+									Open full
+								</button>
+							)}
+						</div>
 						{showGlobalForm && (
 							<div className="grid grid-cols-1 gap-2">
 								{(() => {
 									const defaults = {
 										theme: "system",
 										telemetryEnabled: false,
-										apiBaseUrl: "https://api.heygen.com",
 									} as const;
 									const gs = globalSettings ?? (defaults as any);
 
@@ -258,24 +294,6 @@ export default function ApplicationsStarter(props: {
 														setGlobalSettings({
 															...(gs as any),
 															telemetryEnabled: e.target.checked,
-														})
-													}
-												/>
-											</label>
-
-											{/* API Base URL */}
-											<label className="grid gap-1">
-												<span className="text-[10px] uppercase tracking-wide text-muted-foreground">
-													API Base URL
-												</span>
-												<input
-													className="h-8 rounded-md border border-border bg-background px-2 text-sm"
-													placeholder="https://api.heygen.com"
-													value={(gs as any).apiBaseUrl ?? ""}
-													onChange={(e) =>
-														setGlobalSettings({
-															...(gs as any),
-															apiBaseUrl: e.target.value,
 														})
 													}
 												/>

@@ -72,7 +72,7 @@ export default function HeaderActionsStack({
 				aria-label="Avatar settings"
 				className="size-8 text-foreground hover:bg-muted"
 				variant="ghost"
-				onClick={openConfigModal}
+				onClick={() => openConfigModal()}
 			>
 				<Settings className="size-4" />
 			</Button>

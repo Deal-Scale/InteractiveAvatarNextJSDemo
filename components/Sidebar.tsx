@@ -239,6 +239,9 @@ const Sidebar: React.FC<SidebarProps> = ({ onSelect, apps }) => {
 						showGlobalForm={showGlobalForm}
 						starterScale={starterScale}
 						updateAgent={updateAgent}
+						onOpenAgentSettings={() => openConfigModal("agent")}
+						onOpenGlobalSettings={() => openConfigModal("global")}
+						onOpenUserSettings={() => openConfigModal("user")}
 					/>
 
 					{conv.loading && (
