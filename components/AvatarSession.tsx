@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 import { ChatPanel } from "./AvatarSession/ChatPanel";
 import { useDockablePanel } from "./AvatarSession/hooks/useDockablePanel";
@@ -10,6 +10,11 @@ import { useStartMockChat } from "./AvatarSession/hooks/useStartMockChat";
 import { AvatarVideoPanel } from "./AvatarSession/AvatarVideoPanel";
 import { StreamingAvatarSessionState } from "./logic/context";
 
+import { buildSessionConfig } from "@/components/modals/session/utils";
+import type { AgentConfig } from "@/lib/schemas/agent";
+import type { StartAvatarRequest } from "@heygen/streaming-avatar";
+import { useAgentStore } from "@/lib/stores/agent";
+import { useSettingsStore } from "@/lib/stores/settings";
 import { useSessionStore } from "@/lib/stores/session";
 import { usePlacementStore } from "@/lib/stores/placement";
 import { cn } from "@/lib/utils";
@@ -21,16 +26,23 @@ interface AvatarSessionProps {
 	mediaStream: React.RefObject<HTMLVideoElement>;
 	sessionState: StreamingAvatarSessionState;
 	stopSession: () => void;
+	startSession: (config: StartAvatarRequest) => Promise<void> | void;
+	initialConfig: StartAvatarRequest;
 }
 
 export function AvatarSession({
 	stopSession,
 	mediaStream,
 	sessionState,
+	startSession,
+	initialConfig,
 }: AvatarSessionProps) {
 	const [mounted, setMounted] = useState(false);
 	useEffect(() => setMounted(true), []);
-	const { messages } = useSessionStore();
+	const messages = useSessionStore((state) => state.messages);
+	const setConfig = useSessionStore((state) => state.setConfig);
+	const { currentAgent, setLastStarted, markClean } = useAgentStore();
+	const userSettings = useSettingsStore((state) => state.userSettings);
 
 	// Refs for dockable panel root and panel
 	const panelRef = useRef<HTMLDivElement | null>(null);
@@ -114,12 +126,65 @@ export function AvatarSession({
 		onStartMockChat: startMockChat,
 	});
 
+	/**
+	 * Starts a streaming session using inline selections from the video panel while merging
+	 * persisted agent and user preferences.
+	 */
+	const startFromVideoPanel = useCallback(
+		async (options?: { avatarId?: string; knowledgeBaseId?: string }) => {
+			try {
+				const overrides = options
+					? {
+							avatarId: options.avatarId,
+							knowledgeBaseId: options.knowledgeBaseId,
+						}
+					: undefined;
+
+				const finalConfig = buildSessionConfig({
+					baseConfig: initialConfig,
+					agentConfig: currentAgent ?? undefined,
+					userSettings,
+					overrides,
+				});
+
+				setConfig(finalConfig);
+
+				if (currentAgent) {
+					const nextAgent: AgentConfig = {
+						...currentAgent,
+						...(overrides?.avatarId ? { avatarId: overrides.avatarId } : {}),
+						...(overrides?.knowledgeBaseId !== undefined
+							? { knowledgeBaseId: overrides.knowledgeBaseId ?? undefined }
+							: {}),
+					} as AgentConfig;
+
+					setLastStarted(nextAgent);
+					markClean();
+				}
+
+				await startSession(finalConfig);
+			} catch (error) {
+				console.error("Failed to start session from video panel", error);
+			}
+		},
+		[
+			currentAgent,
+			initialConfig,
+			markClean,
+			setConfig,
+			setLastStarted,
+			startSession,
+			userSettings,
+		],
+	);
+
 	const avatarVideoPanel = (
 		<AvatarVideoPanel
 			mediaStream={mediaStream}
 			sessionState={sessionState}
 			stopSession={stopSession}
 			userVideoStream={userVideoStream}
+			onStartSession={startFromVideoPanel}
 			onStartWithoutAvatar={startWithoutAvatar}
 		/>
 	);
