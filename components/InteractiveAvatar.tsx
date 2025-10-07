@@ -58,20 +58,22 @@ function InteractiveAvatarCore() {
 
 	const mediaStreamRef = useRef<HTMLVideoElement>(null!);
 
-	const newSessionMutation = useNewSessionMutation();
-
 	const startSessionV2 = useMemoizedFn(async (config: StartAvatarRequest) => {
 		try {
 			console.log("[DEBUG] Starting avatar session with config:", config);
 
-			// Get the API key directly for the StreamingAvatar SDK
-			const apiKey = process.env.NEXT_PUBLIC_HEYGEN_API_KEY;
+			// Get access token from our API route instead of using API key directly
+			const tokenResponse = await fetch("/api/get-access-token", {
+				method: "POST",
+			});
+			if (!tokenResponse.ok) {
+				throw new Error("Failed to get access token");
+			}
+			const apiKey = await tokenResponse.text();
 			console.log("[DEBUG] Using API key for SDK:", !!apiKey);
 
 			if (!apiKey) {
-				throw new Error(
-					"NEXT_PUBLIC_HEYGEN_API_KEY environment variable is not set",
-				);
+				throw new Error("Failed to retrieve access token");
 			}
 
 			const avatar = initAvatar(apiKey!);

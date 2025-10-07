@@ -1,52 +1,252 @@
-# HeyGen Interactive Avatar NextJS Demo
+# MindStream - Interactive AI Avatar Platform
 
-![HeyGen Interactive Avatar NextJS Demo Screenshot](./public/demo.png)
+![MindStream Interactive Avatar Platform](./public/demo.png)
 
-This is a sample project and was bootstrapped using [NextJS](https://nextjs.org/).
-Feel free to play around with the existing code and please leave any feedback for the SDK [here](https://github.com/HeyGen-Official/StreamingAvatarSDK/discussions).
+A sophisticated, full-stack AI avatar platform built with Next.js, featuring multi-provider chat capabilities, knowledge base integration, and advanced real-time interactions.
 
-## Getting Started FAQ
+## ✨ Features
 
-### Setting up the demo
+### 🤖 Multi-Provider AI Integration
+- **HeyGen Streaming Avatars** - Interactive video avatars with real-time speech
+- **Pollinations** - Text-to-image and avatar generation
+- **OpenRouter** - Access to 100+ AI models (Claude, GPT, Gemini, etc.)
+- **Google GenAI** - Advanced multimodal AI capabilities
 
-1. Clone this repo
+### 💬 Advanced Chat System
+- **Real-time messaging** with streaming responses
+- **Chat mode switching** between different AI providers
+- **Message persistence** with Zustand state management
+- **Asset upload support** for images and files within chats
+
+### 🧠 Knowledge Base Integration
+- **Dynamic knowledge bases** with vector search
+- **Connector system** for external data sources
+- **Incremental sync** and real-time updates
+
+### 🎨 Modern UI/UX
+- **Responsive design** with mobile-first approach
+- **Dark/light theme** support
+- **Smooth animations** with Framer Motion
+- **Accessible components** using Radix UI
+- **Interactive tours** and guided experiences
+
+### 🚀 Production-Ready Architecture
+- **TypeScript** for type safety
+- **TanStack Query** for server state management
+- **TanStack Router** for client-side routing
+- **Zustand** for global state management
+- **Comprehensive testing** with Vitest
+- **Code quality** with Biome linting and formatting
+
+## 🛠️ Tech Stack
+
+### Frontend
+- **Next.js 15** - React framework with App Router
+- **React 19** - Latest React with concurrent features
+- **TypeScript** - Type-safe development
+- **Tailwind CSS** - Utility-first styling
+- **Radix UI** - Accessible component library
+- **Framer Motion** - Animation library
+- **Zustand** - Lightweight state management
+
+### Backend & APIs
+- **Next.js API Routes** - Serverless API endpoints
+- **TanStack Query** - Server state management
+- **HeyGen Streaming Avatar SDK** - Real-time avatar interactions
+- **OpenRouter** - Multi-model AI gateway
+- **Google GenAI** - Advanced AI capabilities
+
+### Development & Quality
+- **Biome** - Fast linting and formatting
+- **Vitest** - Modern testing framework
+- **Husky** - Git hooks for quality gates
+- **TypeScript** - Strict type checking
+
+## 🚀 Quick Start
+
+### Prerequisites
+- **Node.js 20+**
+- **npm** or **pnpm** (recommended)
+
+### Installation
+
+1. **Clone the repository**
    ```bash
    git clone --recurse-submodules https://github.com/TechWithTy/InteractiveAvatarNextJSDemo.git
+   cd InteractiveAvatarNextJSDemo
    ```
-   
-   *OR*
-   
-   If you already cloned without submodules:
+
+   If you cloned without submodules:
    ```bash
    git submodule update --init --recursive
    ```
 
-2. Navigate to the repo folder in your terminal
+2. **Install dependencies**
+   ```bash
+   pnpm install
+   ```
 
-3. Run `npm install` (assuming you have npm installed. If not, please follow these instructions: https://docs.npmjs.com/downloading-and-installing-node-js-and-npm/)
+3. **Environment Setup**
 
-4. Enter your HeyGen Enterprise API Token in the `.env` file. Replace `HEYGEN_API_KEY` with your API key. This will allow the Client app to generate secure Access Tokens with which to create interactive sessions.
+   Copy the example environment file:
+   ```bash
+   cp .env.example .env.local
+   ```
 
-   You can retrieve either the API Key by logging in to HeyGen and navigating to this page in your settings: [https://app.heygen.com/settings?from=&nav=Subscriptions%20%26%20API]. 
+   Configure your API keys in `.env.local`:
+   ```env
+   # HeyGen API (Server-side only - keep secret!)
+   HEYGEN_API_KEY=your_heygen_api_key_here
 
-5. (Optional) If you would like to use the OpenAI features, enter your OpenAI Api Key in the `.env` file.
+   # OpenRouter API (for multi-model access)
+   OPENROUTER_API_KEY=your_openrouter_api_key_here
 
-6. Run `npm run dev`
+   # Google AI (Optional)
+   GOOGLE_GENAI_API_KEY=your_google_ai_api_key_here
 
-### Starting sessions
+   # Base API URL
+   NEXT_PUBLIC_BASE_API_URL=https://api.heygen.com
+   ```
 
-NOTE: Make sure you have enter your token into the `.env` file and run `npm run dev`.
+4. **Start Development Server**
+   ```bash
+   pnpm dev
+   ```
 
-To start your 'session' with a Interactive Avatar, first click the 'start' button. If your HeyGen API key is entered into the Server's .env file, then you should see our demo Interactive Avatar appear.
+   Open [http://localhost:3000](http://localhost:3000) to see the application.
 
-If you want to see a different Avatar or try a different voice, you can close the session and enter the IDs and then 'start' the session again. Please see below for information on where to retrieve different Avatar and voice IDs that you can use.
+## 🎯 Usage
 
-### Which Avatars can I use with this project?
+### Starting an Avatar Session
 
-By default, there are several Public Avatars that can be used in Interactive Avatar. (AKA Interactive Avatars.) You can find the Avatar IDs for these Public Avatars by navigating to [labs.heygen.com/interactive-avatar](https://labs.heygen.com/interactive-avatar) and clicking 'Select Avatar' and copying the avatar id.
+1. **Configure Session Settings**
+   - Choose your preferred avatar
+   - Select voice settings (rate, emotion, model)
+   - Configure speech-to-text provider
+   - Set language preferences
 
-You can create your own custom Interactive Avatars at labs.heygen.com/interactive-avatar by clicking 'create interactive avatar' on the top-left of the screen.
+2. **Start Interactive Session**
+   - Click "Start" to begin the session
+   - The avatar will appear and connect via WebSocket
+   - Real-time audio and video streaming begins
 
-### Where can I read more about enterprise-level usage of the Interactive Avatar API?
+3. **Chat with Your Avatar**
+   - Use voice input or text chat
+   - Switch between different AI providers seamlessly
+   - Upload images and files for context
 
-Please read our Interactive Avatar 101 article for more information on pricing: https://help.heygen.com/en/articles/9182113-interactive-avatar-101-your-ultimate-guide
+### Knowledge Base Features
+
+- **Create Knowledge Bases** with custom content
+- **Connect External Sources** via the connector system
+- **Search and Query** your knowledge bases in real-time
+- **Incremental Sync** keeps data fresh
+
+## 🔧 API Reference
+
+### Avatar Session Management
+- `POST /api/streaming/new` - Create new avatar session
+- `POST /api/streaming/stop` - Stop active session
+- `GET /api/streaming/list` - List active sessions
+- `GET /api/streaming/history` - Session history
+
+### Chat & AI Providers
+- `POST /api/chat/send` - Send chat messages
+- `POST /api/openrouter/*` - OpenRouter model endpoints
+- `POST /api/gemini-stream` - Google Gemini streaming
+
+### Knowledge Base
+- `POST /api/knowledge-base/create` - Create new KB
+- `POST /api/knowledge-base/sync` - Sync KB data
+- `GET /api/knowledge-base/search` - Search KB content
+
+## 🚢 Deployment
+
+### Vercel (Recommended)
+```bash
+pnpm build
+# Deploy to Vercel automatically via GitHub integration
+```
+
+### Cloudflare Pages
+```bash
+pnpm cf:build
+pnpm cf:preview
+```
+
+### Docker
+```bash
+docker build -f docker/Dockerfile -t mindstream .
+docker run -p 3000:3000 mindstream
+```
+
+## 🧪 Testing
+
+```bash
+# Run test suite
+pnpm test
+
+# Run tests in watch mode
+pnpm test:watch
+
+# Type checking
+pnpm typecheck
+```
+
+## 🎨 Customization
+
+### Adding New AI Providers
+1. Create provider adapter in `lib/providers/`
+2. Add provider configuration to chat context
+3. Update UI components for provider selection
+
+### Styling
+- Modify `tailwind.config.js` for theme customization
+- Update `styles/globals.css` for global styles
+- Use CSS variables for dynamic theming
+
+## 📁 Project Structure
+
+```
+├── app/                    # Next.js App Router
+│   ├── api/               # API routes
+│   ├── components/        # React components
+│   └── lib/               # Shared utilities
+├── components/            # Reusable UI components
+├── lib/                   # Core business logic
+│   ├── providers/         # AI provider integrations
+│   ├── services/          # External service clients
+│   └── stores/            # Zustand stores
+├── public/                # Static assets
+└── types/                 # TypeScript type definitions
+```
+
+## 🤝 Contributing
+
+1. Fork the repository
+2. Create a feature branch: `git checkout -b feature/amazing-feature`
+3. Commit changes: `git commit -m 'Add amazing feature'`
+4. Push to branch: `git push origin feature/amazing-feature`
+5. Open a Pull Request
+
+## 📝 License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+## 🙏 Acknowledgments
+
+- **HeyGen** for the Streaming Avatar SDK
+- **OpenRouter** for multi-model AI access
+- **Vercel** for the excellent Next.js platform
+- **Radix UI** for accessible component primitives
+
+## 📞 Support
+
+For support and questions:
+- 📧 Email: support@techwithty.com
+- 💬 Discord: [Join our community](https://discord.gg/techwithty)
+- 🐛 Issues: [GitHub Issues](https://github.com/TechWithTy/InteractiveAvatarNextJSDemo/issues)
+
+---
+
+**Made with ❤️ by TechWithTy**
