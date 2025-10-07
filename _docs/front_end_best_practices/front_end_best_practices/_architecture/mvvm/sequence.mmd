@@ -1,0 +1,20 @@
+sequenceDiagram
+    participant U as User
+    participant V as View Component
+    participant H as Custom Hook
+    participant CT as Context Provider
+    participant Z as Zustand Store
+    participant RQ as React Query Cache
+    
+    U->>V: User Interaction
+    V->>H: Call ViewModel Method
+    H->>CT: Update Global State
+    CT->>Z: Persist State Change
+    Z-->>H: Confirm Update
+    H-->>V: Return Updated Data
+    V-->>U: UI Update
+    
+    Note over H,RQ: For async operations:
+    H->>RQ: Fetch Data
+    RQ-->>H: Return Cached/Data
+    H-->>V: Update UI

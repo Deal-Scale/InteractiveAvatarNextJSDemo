@@ -1,0 +1,22 @@
+flowchart TD
+    subgraph Client["Client Layer"]
+        View["View Layer<br/><i>React Components</i><br/>• UI Rendering<br/>• Event Handling"]
+        VM["ViewModel Layer<br/><i>Custom Hooks/Context</i><br/>• UI Logic<br/>• State Transformation"]
+    end
+    
+    subgraph Core["Core Services"]
+        Coord["Coordinator Layer<br/><i>Next Router</i><br/>• Navigation Flow<br/>• Screen Management"]
+        Model["Model Layer<br/><i>Zustand/React Query</i><br/>• Business Logic<br/>• Data Management"]
+    end
+    
+    View -->|"User Events"| VM
+    VM -->|"Transformed Data"| View
+    VM <-->|"State Sync"| Model
+    Coord -->|"Navigation"| View
+    Coord -->|"Flow Control"| VM
+    Model -->|"Data Updates"| VM
+    
+    classDef layer fill:#f9f9f9,stroke:#333,stroke-width:2px,color:#000000
+    classDef component fill:#ffffff,stroke:#666,color:#000000
+    class Client,Core layer
+    class View,VM,Coord,Model component

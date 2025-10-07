@@ -1,0 +1,28 @@
+sequenceDiagram
+    participant U as User
+    participant V as View<br/>(React Component)
+    participant C as Controller<br/>(Custom Hook)
+    participant M as Model<br/>(Zustand Store)
+    participant Q as Query<br/>(React Query)
+    participant A as API<br/>(External Service)
+
+    Note over U,A: User Interaction Flow
+    U->>+V: Triggers Action
+    V->>+C: Calls Controller Function
+    C->>+M: Updates Local State
+    M-->>-C: State Updated
+    C->>+Q: Fetches Remote Data
+    Q->>+A: Makes API Request
+    A-->>-Q: Returns Response
+    Q-->>-C: Data Cached
+    C-->>-V: Returns Result
+    V-->>-U: Updates UI
+
+    Note over U,A: Background Sync
+    loop Every 5 minutes
+        Q->>A: Periodic Refresh
+        A-->>Q: New Data
+        Q->>M: Update Cache
+        M-->>V: Trigger Re-render
+        V-->>U: Show Changes
+    end

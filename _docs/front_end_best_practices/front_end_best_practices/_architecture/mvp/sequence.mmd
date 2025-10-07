@@ -1,0 +1,18 @@
+sequenceDiagram
+    participant U as User
+    participant V as View Component
+    participant P as Presenter Hook
+    participant M as Model Store
+    
+    U->>V: Interacts with UI
+    activate V
+    V->>P: Calls presenter function
+    activate P
+    P->>M: Updates model state
+    activate M
+    M-->>P: State updated
+    deactivate M
+    P-->>V: Returns processed data
+    deactivate P
+    V-->>U: Renders updated UI
+    deactivate V

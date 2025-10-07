@@ -1,0 +1,33 @@
+flowchart TD
+    classDef view fill:#42b883,color:#000,stroke:#42b883
+    classDef presenter fill:#764abc,color:#fff,stroke:#764abc
+    classDef interactor fill:#00bcd4,color:#fff,stroke:#00bcd4
+    classDef entity fill:#ff9800,color:#000,stroke:#ff9800
+    classDef router fill:#f44336,color:#fff,stroke:#f44336
+    
+    subgraph "User Interface Layer"
+        View["View Component<br/><i>React + ShadCN</i>"]:::view
+    end
+    
+    subgraph "Presentation Layer"
+        Pres["Presenter Hook<br/><i>UI Logic & Events</i>"]:::presenter
+    end
+    
+    subgraph "Business Logic Layer"
+        Int["Interactor Service<br/><i>Data Processing</i>"]:::interactor
+    end
+    
+    subgraph "Data Layer"
+        Ent["Entity Model<br/><i>Zustand Store</i>"]:::entity
+    end
+    
+    subgraph "Navigation Layer"
+        Rout["Router<br/><i>Next.js Routes</i>"]:::router
+    end
+    
+    View -->|"UI Events"| Pres
+    Pres -->|"Format Data"| View
+    Pres -->|"Request Data"| Int
+    Int -->|"Process Data"| Ent
+    Ent -->|"State Changes"| Pres
+    Int -->|"Navigate"| Rout

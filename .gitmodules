@@ -16,3 +16,7 @@
 [submodule "app/api/openrouter"]
 	path = app/api/openrouter
 	url = https://github.com/techwithty/openrouter.git
+[submodule "scripts"]
+	path = scripts
+	url = https://github.com/TechWithTy/scripts.git
+	branch = local/updates
