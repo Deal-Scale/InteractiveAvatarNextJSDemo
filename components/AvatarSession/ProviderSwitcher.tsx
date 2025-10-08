@@ -5,6 +5,9 @@ import { useGeminiAvailability } from "./hooks/useGeminiAvailability";
 import { useHeygenAvailability } from "./hooks/useHeygenAvailability";
 import { usePollinationsAvailability } from "./hooks/usePollinationsAvailability";
 import { useOpenRouterAvailability } from "./hooks/useOpenRouterAvailability";
+import { useClaudeAvailability } from "./hooks/useClaudeAvailability";
+import { useOpenAIAAvailability } from "./hooks/useOpenAIAAvailability";
+import { useDeepSeekAvailability } from "./hooks/useDeepSeekAvailability";
 import { useEffect } from "react";
 
 export const ProviderSwitcher = () => {
@@ -30,31 +33,115 @@ export const ProviderSwitcher = () => {
 		checking: orChecking,
 		lastError: orErr,
 	} = useOpenRouterAvailability();
+	const {
+		available: claudeOk,
+		checking: claudeChecking,
+		lastError: claudeErr,
+	} = useClaudeAvailability();
+	const {
+		available: openaiOk,
+		checking: openaiChecking,
+		lastError: openaiErr,
+	} = useOpenAIAAvailability();
+	const {
+		available: deepseekOk,
+		checking: deepseekChecking,
+		lastError: deepseekErr,
+	} = useDeepSeekAvailability();
 
 	// Auto-fallback if current mode becomes unavailable. Priority: pollinations -> heygen -> gemini -> openrouter
 	useEffect(() => {
 		const tryFallback = (
-			...choices: ("pollinations" | "heygen" | "gemini" | "openrouter")[]
+			...choices: (
+				| "pollinations"
+				| "heygen"
+				| "gemini"
+				| "openrouter"
+				| "claude"
+				| "openai"
+				| "deepseek"
+			)[]
 		) => {
 			for (const c of choices) {
 				if (c === "pollinations" && pollOk) return setMode("pollinations");
 				if (c === "heygen" && heygenOk) return setMode("heygen");
 				if (c === "gemini" && geminiOk) return setMode("gemini");
 				if (c === "openrouter" && orOk) return setMode("openrouter");
+				if (c === "claude" && claudeOk) return setMode("claude");
+				if (c === "openai" && openaiOk) return setMode("openai");
+				if (c === "deepseek" && deepseekOk) return setMode("deepseek");
 			}
 		};
 
 		if (mode === "gemini" && !geminiChecking && !geminiOk) {
-			return tryFallback("pollinations", "heygen", "openrouter");
+			return tryFallback(
+				"pollinations",
+				"claude",
+				"openai",
+				"deepseek",
+				"heygen",
+				"openrouter",
+			);
 		}
 		if (mode === "heygen" && !heygenChecking && !heygenOk) {
-			return tryFallback("pollinations", "gemini", "openrouter");
+			return tryFallback(
+				"pollinations",
+				"claude",
+				"openai",
+				"deepseek",
+				"gemini",
+				"openrouter",
+			);
 		}
 		if (mode === "pollinations" && !pollChecking && !pollOk) {
-			return tryFallback("heygen", "gemini", "openrouter");
+			return tryFallback(
+				"claude",
+				"openai",
+				"deepseek",
+				"gemini",
+				"heygen",
+				"openrouter",
+			);
 		}
 		if (mode === "openrouter" && !orChecking && !orOk) {
-			return tryFallback("pollinations", "heygen", "gemini");
+			return tryFallback(
+				"pollinations",
+				"claude",
+				"openai",
+				"deepseek",
+				"heygen",
+				"gemini",
+			);
+		}
+		if (mode === "claude" && !claudeChecking && !claudeOk) {
+			return tryFallback(
+				"pollinations",
+				"openai",
+				"deepseek",
+				"gemini",
+				"openrouter",
+				"heygen",
+			);
+		}
+		if (mode === "openai" && !openaiChecking && !openaiOk) {
+			return tryFallback(
+				"pollinations",
+				"claude",
+				"deepseek",
+				"gemini",
+				"openrouter",
+				"heygen",
+			);
+		}
+		if (mode === "deepseek" && !deepseekChecking && !deepseekOk) {
+			return tryFallback(
+				"pollinations",
+				"claude",
+				"openai",
+				"gemini",
+				"openrouter",
+				"heygen",
+			);
 		}
 	}, [
 		mode,
@@ -66,6 +153,12 @@ export const ProviderSwitcher = () => {
 		pollChecking,
 		orOk,
 		orChecking,
+		claudeOk,
+		claudeChecking,
+		openaiOk,
+		openaiChecking,
+		deepseekOk,
+		deepseekChecking,
 		setMode,
 	]);
 
@@ -84,6 +177,49 @@ export const ProviderSwitcher = () => {
 						aria-disabled={!heygenOk || heygenChecking}
 					>
 						Heygen
+					</Button>
+				</span>
+				<span title={!claudeOk ? claudeErr || "Claude unavailable" : undefined}>
+					<Button
+						type="button"
+						size="sm"
+						variant={mode === "claude" ? "default" : "ghost"}
+						onClick={() => setMode("claude")}
+						aria-pressed={mode === "claude"}
+						disabled={!claudeOk || claudeChecking}
+						aria-disabled={!claudeOk || claudeChecking}
+					>
+						Claude
+					</Button>
+				</span>
+				<span title={!openaiOk ? openaiErr || "OpenAI unavailable" : undefined}>
+					<Button
+						type="button"
+						size="sm"
+						variant={mode === "openai" ? "default" : "ghost"}
+						onClick={() => setMode("openai")}
+						aria-pressed={mode === "openai"}
+						disabled={!openaiOk || openaiChecking}
+						aria-disabled={!openaiOk || openaiChecking}
+					>
+						OpenAI
+					</Button>
+				</span>
+				<span
+					title={
+						!deepseekOk ? deepseekErr || "DeepSeek unavailable" : undefined
+					}
+				>
+					<Button
+						type="button"
+						size="sm"
+						variant={mode === "deepseek" ? "default" : "ghost"}
+						onClick={() => setMode("deepseek")}
+						aria-pressed={mode === "deepseek"}
+						disabled={!deepseekOk || deepseekChecking}
+						aria-disabled={!deepseekOk || deepseekChecking}
+					>
+						DeepSeek
 					</Button>
 				</span>
 				<span

@@ -15,6 +15,7 @@ import { MessageSender, type MessageAsset } from "@/lib/types";
 import { useSendTaskMutation } from "@/lib/services/streaming/query";
 import { useChatProviderStore } from "@/lib/stores/chatProvider";
 import { getProvider } from "@/lib/chat/registry";
+import type { ProviderId } from "@/lib/chat/providers";
 
 export function useChatController(sessionState: StreamingAvatarSessionState) {
 	const { apiService } = useApiService();
@@ -78,8 +79,18 @@ export function useChatController(sessionState: StreamingAvatarSessionState) {
 			try {
 				// Provider-aware routing: Pollinations uses provider adapter; Heygen keeps current flow
 				const mode = useChatProviderStore.getState().mode;
-				if (mode === "pollinations") {
-					const provider = getProvider("pollinations");
+				const providerMode = useChatProviderStore.getState().mode as ProviderId;
+				const adapterModes: ProviderId[] = [
+					"pollinations",
+					"gemini",
+					"openrouter",
+					"claude",
+					"openai",
+					"deepseek",
+				];
+
+				if (adapterModes.includes(providerMode)) {
+					const provider = getProvider(providerMode);
 					const reply = await provider.sendMessage({
 						history: messages,
 						input: text,
