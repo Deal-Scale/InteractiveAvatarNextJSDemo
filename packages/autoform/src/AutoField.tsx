@@ -11,8 +11,11 @@ import {
 	isSensitiveString,
 	isMultilineString,
 	type FieldsConfig,
+	type FieldConfig,
 } from "./utils/utils";
 import { SensitiveInput } from "./utils/fields";
+import { determineQuestionType } from "./typeform/types";
+import { renderTypeformField } from "./typeform/renderers";
 
 export type AutoFieldProps = {
 	name: string;
@@ -29,7 +32,12 @@ export const AutoField: React.FC<AutoFieldProps> = ({
 }) => {
 	const { register, formState, setValue, getValues, watch } = form;
 
-	const cfg = (fields as any)[name] || {};
+	const directCfg = (fields as Record<string, FieldConfig>)[name];
+	const fallbackKey = name.includes(".")
+		? (name.split(".").pop() ?? name)
+		: name;
+	const fallbackCfg = (fields as Record<string, FieldConfig>)[fallbackKey];
+	const cfg = (directCfg ?? fallbackCfg ?? {}) as FieldConfig;
 	const label = cfg.label ?? name;
 	const error = (formState.errors as any)[name]?.message as string | undefined;
 
@@ -162,6 +170,22 @@ export const AutoField: React.FC<AutoFieldProps> = ({
 	}
 
 	const base = unwrapType(def);
+
+	const questionType = determineQuestionType(def, cfg, name);
+	const typeformRendered = renderTypeformField({
+		base,
+		cfg,
+		def,
+		error,
+		form,
+		label,
+		name,
+		questionType,
+	});
+
+	if (typeformRendered) {
+		return <>{typeformRendered}</>;
+	}
 
 	// Dev-only structured debug helper
 	const devLog = (
