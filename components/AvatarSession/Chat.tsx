@@ -5,9 +5,11 @@ import type React from "react";
 import { useEffect, useMemo, useRef, useState } from "react";
 
 import { ChatInput } from "./ChatInput";
+import { ChatModeTabs } from "./ChatTabs";
 import { BranchDialog } from "./BranchDialog";
 import { CompareDialog } from "./CompareDialog";
 import { useComposerStore } from "@/lib/stores/composer";
+import { useSessionStore } from "@/lib/stores/session";
 
 import { useStreamingAvatarContext } from "@/components/logic/context";
 import { useTextChat } from "@/components/logic/useTextChat";
@@ -70,8 +72,14 @@ export const Chat: React.FC<ChatProps> = ({
 	useKeyPress("ArrowDown", onArrowDown);
 
 	const { publish } = useToast();
-	const { isAvatarTalking, isVoiceChatLoading } = useStreamingAvatarContext();
+	const {
+		isAvatarTalking,
+		isVoiceChatLoading,
+		isVoiceChatActive: sessionVoiceActive,
+	} = useStreamingAvatarContext();
 	const { repeatMessage: apiRepeatMessage } = useTextChat();
+	const chatMode = useSessionStore((s) => s.chatMode);
+	const setChatMode = useSessionStore((s) => s.setChatMode);
 
 	const composerAttachments = useComposerStore((s) => s.assetAttachments);
 	const clearComposerAttachments = useComposerStore(
@@ -212,6 +220,14 @@ export const Chat: React.FC<ChatProps> = ({
 
 	return (
 		<div className="flex flex-col w-full flex-1 min-h-0 p-4">
+			<div className="mb-4">
+				<ChatModeTabs
+					isVoiceActive={sessionVoiceActive}
+					isVoiceLoading={isVoiceChatLoading}
+					value={chatMode}
+					onValueChange={setChatMode}
+				/>
+			</div>
 			<StickToBottom
 				className={cn(
 					"flex-1 min-h-0 h-full overflow-hidden text-foreground",
@@ -274,6 +290,7 @@ export const Chat: React.FC<ChatProps> = ({
 					onChoose={handleChooseComparison}
 				/>
 				<ChatInput
+					chatMode={chatMode}
 					attachments={attachments}
 					composerAttachments={composerAttachments}
 					cancelEdit={cancelEdit}
