@@ -1,13 +1,22 @@
 import { create } from "zustand";
 
-export type ChatProviderMode =
-	| "heygen"
-	| "pollinations"
-	| "gemini"
-	| "openrouter"
-	| "claude"
-	| "openai"
-	| "deepseek";
+import type { ProviderId } from "@/lib/chat/providers";
+
+const TEXT_PROVIDER_IDS: readonly ProviderId[] = [
+	"pollinations",
+	"claude",
+	"openai",
+	"deepseek",
+	"gemini",
+	"openrouter",
+];
+
+const VOICE_PROVIDER_IDS: readonly ProviderId[] = ["vapi"];
+const STREAMING_PROVIDER_IDS: readonly ProviderId[] = ["heygen"];
+
+export type TextProviderMode = (typeof TEXT_PROVIDER_IDS)[number];
+export type VoiceProviderMode = (typeof VOICE_PROVIDER_IDS)[number];
+export type StreamingProviderMode = (typeof STREAMING_PROVIDER_IDS)[number];
 
 type TextProviderMode = Exclude<ChatProviderMode, "heygen"> | "heygen";
 

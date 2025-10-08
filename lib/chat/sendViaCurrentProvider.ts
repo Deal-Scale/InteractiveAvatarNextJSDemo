@@ -50,6 +50,10 @@ async function isProviderAvailable(id: ProviderId): Promise<boolean> {
 			});
 			return res.status === 204;
 		}
+		if (id === "vapi") {
+			// Placeholder: Vapi health endpoint pending integration.
+			return true;
+		}
 		return false;
 	} catch {
 		return false;

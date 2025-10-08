@@ -22,6 +22,7 @@ import {
 	ApiServiceProvider,
 	useApiService,
 } from "@/components/logic/ApiServiceContext";
+import type { ApiService } from "@/lib/services/api";
 import { HeyGenService } from "@/lib/services/heygen";
 import { useSessionStore } from "@/lib/stores/session";
 import { MessageSender } from "@/lib/types";
@@ -181,7 +182,7 @@ function InteractiveAvatarCore() {
 }
 
 function InteractiveAvatar() {
-	const [apiService, setApiService] = useState<HeyGenService | null>(null);
+	const [apiService, setApiService] = useState<ApiService | null>(null);
 
 	return (
 		<ApiServiceProvider service={apiService} setApiService={setApiService}>

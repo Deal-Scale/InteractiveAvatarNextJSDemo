@@ -147,6 +147,15 @@ export const ProviderSwitcher = () => {
 		}
 	}, [firstAvailableVoice, setVoiceMode, voiceMode, voiceProviders]);
 
+	useEffect(() => {
+		const voiceEntry = voiceProviders.find(
+			(provider) => provider.id === voiceMode,
+		);
+		if (!voiceEntry || (!voiceEntry.available && firstAvailableVoice)) {
+			if (firstAvailableVoice) setVoiceMode(firstAvailableVoice.id);
+		}
+	}, [firstAvailableVoice, setVoiceMode, voiceMode, voiceProviders]);
+
 	return (
 		<div
 			className="mb-3 flex flex-col gap-2"
