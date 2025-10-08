@@ -1,0 +1,17 @@
+{
+	"id": "msg_basic_001",
+	"type": "message",
+	"role": "assistant",
+	"model": "claude-3-5-sonnet-20241022",
+	"stop_reason": "end_turn",
+	"usage": {
+		"input_tokens": 120,
+		"output_tokens": 142
+	},
+	"content": [
+		{
+			"type": "text",
+			"text": "InteractiveAvatarNextJSDemo is progressing through staged integration of AI providers, focusing on Anthropic coverage, developer onboarding, and observability."
+		}
+	]
+}
