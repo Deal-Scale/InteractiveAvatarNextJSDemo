@@ -14,6 +14,7 @@ export const DeepSeekAdapter: ChatProvider = {
 			id: `resp-${Date.now()}`,
 			sender: MessageSender.AVATAR,
 			content: `DeepSeek (stub): ${input}`,
+			provider: "deepseek",
 		} as Message;
 	},
 };

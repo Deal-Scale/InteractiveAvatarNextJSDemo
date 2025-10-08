@@ -67,12 +67,14 @@ export const GeminiAdapter: ChatProvider = {
 				id: `resp-${Date.now()}`,
 				sender: MessageSender.AVATAR,
 				content,
+				provider: "gemini",
 			} as Message;
 		} catch (e: unknown) {
 			return {
 				id: `resp-${Date.now()}`,
 				sender: MessageSender.AVATAR,
 				content: `Gemini error: ${(e as Error).message}`,
+				provider: "gemini",
 			} as Message;
 		}
 	},

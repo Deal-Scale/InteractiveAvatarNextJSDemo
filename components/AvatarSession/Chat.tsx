@@ -153,9 +153,9 @@ export const Chat: React.FC<ChatProps> = ({
 	const inputHeight = useInputAutoHeight(inputWrapRef);
 
 	// Determine active provider capability (voice vs. text-only)
-	const mode = useChatProviderStore((s) => s.mode);
-	const provider = getProvider(mode);
-	const supportsVoice = provider.supportsVoice;
+	const voiceMode = useChatProviderStore((s) => s.voiceMode);
+	const voiceProvider = getProvider(voiceMode);
+	const supportsVoice = voiceProvider.supportsVoice;
 
 	useEffect(() => {
 		if (!scrollRef.current) return;

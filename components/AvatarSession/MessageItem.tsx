@@ -1,4 +1,4 @@
-import { useRef, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import {
 	ClipboardCopy,
 	ThumbsUp,
@@ -40,6 +40,18 @@ import { Source, SourceContent, SourceTrigger } from "@/components/ui/source";
 import { StatBadge } from "@/components/PromptKit/StatBadge";
 import { DataCard, MetricGrid, Metric } from "@/components/ui/jsx-demo";
 import { Mermaid } from "@/components/ui/mermaid";
+
+const PROVIDER_LABELS: Record<string, string> = {
+	heygen: "Heygen",
+	pollinations: "Pollinations",
+	gemini: "Gemini",
+	openrouter: "OpenRouter",
+	claude: "Claude",
+	openai: "OpenAI",
+	deepseek: "DeepSeek",
+	mcp: "MCP",
+	"mock-openrouter": "Mock OpenRouter",
+};
 
 // Strict Markdown detection: only treat as markdown when strong cues exist
 function isStrictMarkdown(text: string | undefined | null): boolean {
@@ -121,6 +133,15 @@ export const MessageItem: React.FC<MessageItemProps> = ({
 	const hasJsx = Boolean(message.jsx && message.jsx.trim().length > 0);
 	const [isTtsLoading, setIsTtsLoading] = useState(false);
 	const audioRef = useRef<HTMLAudioElement | null>(null);
+
+	const providerBadge = useMemo(() => {
+		if (!message.provider) return null;
+		const baseLabel = PROVIDER_LABELS[message.provider] ?? message.provider;
+		const fallbackLabel = message.fallbackFrom
+			? (PROVIDER_LABELS[message.fallbackFrom] ?? message.fallbackFrom)
+			: null;
+		return { baseLabel, fallbackLabel } as const;
+	}, [message.fallbackFrom, message.provider]);
 
 	const handleSpeak = async () => {
 		if (!message?.content || typeof message.content !== "string") return;
@@ -341,6 +362,18 @@ export const MessageItem: React.FC<MessageItemProps> = ({
 									{isTalking ? "Talking…" : "Tools running"}
 								</span>
 							)}
+							{providerBadge ? (
+								<span className="ml-auto inline-flex items-center gap-1 rounded-full bg-secondary/70 px-2 py-0.5 text-[11px] font-medium text-muted-foreground">
+									<span className="uppercase tracking-wide">
+										{providerBadge.baseLabel}
+									</span>
+									{providerBadge.fallbackLabel ? (
+										<span className="text-[10px] font-normal normal-case">
+											(fallback from {providerBadge.fallbackLabel})
+										</span>
+									) : null}
+								</span>
+							) : null}
 							{message.sender === MessageSender.AVATAR && message.content ? (
 								<Button
 									aria-label={
@@ -349,7 +382,7 @@ export const MessageItem: React.FC<MessageItemProps> = ({
 									title="Speak response"
 									size="icon"
 									variant="ghost"
-									className="ml-auto"
+									className={providerBadge ? "" : "ml-auto"}
 									disabled={isTtsLoading}
 									onClick={handleSpeak}
 								>

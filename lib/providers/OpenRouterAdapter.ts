@@ -51,12 +51,14 @@ export const OpenRouterAdapter: ChatProvider = {
 				id: `resp-${Date.now()}`,
 				sender: MessageSender.AVATAR,
 				content,
+				provider: "openrouter",
 			} as Message;
 		} catch (e: unknown) {
 			return {
 				id: `resp-${Date.now()}`,
 				sender: MessageSender.AVATAR,
 				content: `OpenRouter error: ${(e as Error).message}`,
+				provider: "openrouter",
 			} as Message;
 		}
 	},

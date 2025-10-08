@@ -37,12 +37,14 @@ export const PollinationsAdapter: ChatProvider = {
 				id: `resp-${Date.now()}`,
 				sender: MessageSender.AVATAR,
 				content,
+				provider: "pollinations",
 			} as Message;
 		} catch (e: unknown) {
 			return {
 				id: `resp-${Date.now()}`,
 				sender: MessageSender.AVATAR,
 				content: `Pollinations error: ${(e as Error).message}`,
+				provider: "pollinations",
 			} as Message;
 		}
 	},

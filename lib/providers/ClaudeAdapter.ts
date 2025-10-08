@@ -14,6 +14,7 @@ export const ClaudeAdapter: ChatProvider = {
 			id: `resp-${Date.now()}`,
 			sender: MessageSender.AVATAR,
 			content: `Claude (stub): ${input}`,
+			provider: "claude",
 		} as Message;
 	},
 };
