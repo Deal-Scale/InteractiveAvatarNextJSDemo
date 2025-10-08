@@ -1,5 +1,24 @@
 import type { StartAvatarRequest } from "@heygen/streaming-avatar";
 
+interface BuildSessionConfigOptions {
+	baseConfig: StartAvatarRequest;
+	agentConfig?: any;
+	userSettings?: any;
+	overrides?: {
+		avatarId?: string | null;
+		knowledgeBaseId?: string | null;
+		language?: string | null;
+		quality?: StartAvatarRequest["quality"] | string | null;
+		voiceChatTransport?: StartAvatarRequest["voiceChatTransport"] | null;
+		sttProvider?: StartAvatarRequest["sttSettings"] extends {
+			provider?: infer P;
+		}
+			? P | null
+			: any;
+		voiceOverrides?: Partial<NonNullable<StartAvatarRequest["voice"]>> | null;
+	};
+}
+
 export function mapAgentAndSettingsToConfig(
 	base: StartAvatarRequest,
 	latestAgent: any,
@@ -40,6 +59,69 @@ export function mapAgentAndSettingsToConfig(
 			language: userSettings.language ?? finalConfig.language,
 		} as StartAvatarRequest;
 	}
+
+	return finalConfig;
+}
+
+function coerceNullable<T>(value: T | null | undefined): T | undefined {
+	if (value === null || value === undefined) return undefined;
+	if (typeof value === "string" && value.trim() === "") return undefined;
+	return value;
+}
+
+/**
+ * Builds the final session configuration by merging base defaults, persisted agent settings,
+ * optional user preferences, and any inline overrides (e.g. quick-start card selections).
+ */
+export function buildSessionConfig(
+	options: BuildSessionConfigOptions,
+): StartAvatarRequest {
+	const { baseConfig, agentConfig, userSettings, overrides } = options;
+
+	let finalConfig =
+		agentConfig || userSettings
+			? mapAgentAndSettingsToConfig(baseConfig, agentConfig, userSettings)
+			: baseConfig;
+
+	if (!overrides) {
+		return finalConfig;
+	}
+
+	const {
+		avatarId,
+		knowledgeBaseId,
+		language,
+		quality,
+		voiceChatTransport,
+		sttProvider,
+		voiceOverrides,
+	} = overrides;
+
+	finalConfig = {
+		...finalConfig,
+		avatarName: coerceNullable(avatarId) ?? finalConfig.avatarName,
+		knowledgeId: coerceNullable(knowledgeBaseId) ?? finalConfig.knowledgeId,
+		language: coerceNullable(language) ?? finalConfig.language,
+		quality:
+			quality !== undefined && quality !== null
+				? typeof quality === "string"
+					? (quality[0]?.toUpperCase() ?? "") + quality.slice(1).toLowerCase()
+					: quality
+				: finalConfig.quality,
+		voiceChatTransport: voiceChatTransport ?? finalConfig.voiceChatTransport,
+		sttSettings: sttProvider
+			? {
+					...finalConfig.sttSettings,
+					provider: sttProvider,
+				}
+			: finalConfig.sttSettings,
+		voice: voiceOverrides
+			? {
+					...finalConfig.voice,
+					...voiceOverrides,
+				}
+			: finalConfig.voice,
+	} as StartAvatarRequest;
 
 	return finalConfig;
 }

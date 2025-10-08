@@ -1,32 +1,41 @@
 "use client";
 
 import React from "react";
-import { Search } from "lucide-react";
+import { PanelLeft, Search } from "lucide-react";
 
 import { Input } from "@/components/ui/input";
 import HeaderActionsStack from "@/components/Sidebar/HeaderActionsStack";
+import { SidebarTrigger } from "@/components/ui/sidebar";
 
 type Props = {
 	onAssetsClick: () => void;
 	query: string;
 	setQuery: (v: string) => void;
+	onScrollToBookmarks?: () => void;
 };
 
 const SidebarHeaderSection: React.FC<Props> = ({
 	onAssetsClick,
 	query,
 	setQuery,
+	onScrollToBookmarks,
 }) => {
 	return (
 		<div className="flex flex-col gap-2 px-2 py-2">
 			<div className="flex flex-row items-center justify-between gap-2">
 				<div className="flex flex-row items-center gap-2 px-2">
+					<SidebarTrigger className="size-8 inline-flex items-center justify-center rounded-md hover:bg-muted">
+						<PanelLeft className="size-4" />
+					</SidebarTrigger>
 					<div className="bg-primary/10 size-8 rounded-md" />
 					<div className="text-md font-medium tracking-tight text-foreground group-data-[state=collapsed]/sidebar:hidden">
 						zola.chat
 					</div>
 				</div>
-				<HeaderActionsStack onAssetsClick={onAssetsClick} />
+				<HeaderActionsStack
+					onAssetsClick={onAssetsClick}
+					onScrollToBookmarks={onScrollToBookmarks}
+				/>
 			</div>
 
 			<div className="px-2 group-data-[state=collapsed]/sidebar:hidden">
