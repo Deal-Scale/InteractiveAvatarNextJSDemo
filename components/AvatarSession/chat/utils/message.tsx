@@ -7,6 +7,9 @@ import { exampleSource } from "../_mock_data/example-source";
 import { exampleJsxPreview } from "../_mock_data/example-jsx-preview";
 import { exampleMermaid } from "../_mock_data/example-mermaid";
 
+// Demo message IDs
+const PROMPTKIT_STATS_DEMO_ID = "demo-promptkit-stats";
+
 export interface AugmentedMessages {
 	chatMessages: MessageType[];
 	exampleMessages: MessageType[];
