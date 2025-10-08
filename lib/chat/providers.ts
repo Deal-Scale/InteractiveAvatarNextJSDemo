@@ -1,6 +1,13 @@
 import type { Message } from "@/lib/types";
 
-export type ProviderId = "heygen" | "pollinations" | "gemini" | "openrouter";
+export type ProviderId =
+	| "heygen"
+	| "pollinations"
+	| "gemini"
+	| "openrouter"
+	| "claude"
+	| "openai"
+	| "deepseek";
 
 export interface ProviderSendOptions {
 	jsonMode?: boolean;

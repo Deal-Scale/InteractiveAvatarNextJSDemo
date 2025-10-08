@@ -4,7 +4,10 @@ export type ChatProviderMode =
 	| "heygen"
 	| "pollinations"
 	| "gemini"
-	| "openrouter";
+	| "openrouter"
+	| "claude"
+	| "openai"
+	| "deepseek";
 
 interface ChatProviderState {
 	mode: ChatProviderMode;
@@ -22,7 +25,10 @@ const getInitialMode = (): ChatProviderMode => {
 	return saved === "pollinations" ||
 		saved === "heygen" ||
 		saved === "gemini" ||
-		saved === "openrouter"
+		saved === "openrouter" ||
+		saved === "claude" ||
+		saved === "openai" ||
+		saved === "deepseek"
 		? saved
 		: "pollinations";
 };

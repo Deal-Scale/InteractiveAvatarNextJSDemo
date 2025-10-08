@@ -32,6 +32,24 @@ async function isProviderAvailable(id: ProviderId): Promise<boolean> {
 			});
 			return res.status === 204;
 		}
+		if (id === "claude") {
+			const res = await fetch("/api/anthropic/health", {
+				headers: { "Cache-Control": "no-cache" },
+			});
+			return res.status === 204;
+		}
+		if (id === "openai") {
+			const res = await fetch("/api/open-ai/health", {
+				headers: { "Cache-Control": "no-cache" },
+			});
+			return res.status === 204;
+		}
+		if (id === "deepseek") {
+			const res = await fetch("/api/deep-seek/health", {
+				headers: { "Cache-Control": "no-cache" },
+			});
+			return res.status === 204;
+		}
 		return false;
 	} catch {
 		return false;
@@ -148,9 +166,15 @@ export function useSendViaCurrentProvider() {
 		// Default sensible fallback order prioritizes text providers for resilience
 		const fallback =
 			options.fallbackOrder ??
-			(["pollinations", "heygen", "gemini", "openrouter"].filter(
-				(p) => p !== mode,
-			) as ProviderId[]);
+			([
+				"pollinations",
+				"claude",
+				"openai",
+				"deepseek",
+				"gemini",
+				"openrouter",
+				"heygen",
+			].filter((p) => p !== mode) as ProviderId[]);
 		return sendViaProvider(mode as ProviderId, params, {
 			...options,
 			fallbackOrder: fallback,
