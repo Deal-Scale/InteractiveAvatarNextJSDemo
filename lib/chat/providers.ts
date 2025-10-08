@@ -7,7 +7,8 @@ export type ProviderId =
 	| "openrouter"
 	| "claude"
 	| "openai"
-	| "deepseek";
+	| "deepseek"
+	| "vapi";
 
 export interface ProviderSendOptions {
 	jsonMode?: boolean;

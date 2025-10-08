@@ -4,38 +4,54 @@ import { ApiService, TextChatService, VoiceChatService } from "./api";
 import type { MessageAsset } from "@/lib/types";
 
 export class HeyGenService implements ApiService {
+	private avatar: StreamingAvatar;
+	private speakQueue: Promise<void>;
 	textChat: TextChatService;
 	voiceChat: VoiceChatService;
 
 	constructor(avatar: StreamingAvatar) {
+		this.avatar = avatar;
+		this.speakQueue = Promise.resolve();
+
+		const enqueue = async (message: string, taskType: TaskType) => {
+			this.speakQueue = this.speakQueue
+				.catch((err) => {
+					console.error("[HeyGenService] prior speak failed", err);
+				})
+				.then(async () => {
+					await this.avatar.speak({
+						text: message,
+						taskType,
+						taskMode: TaskMode.ASYNC,
+					});
+				});
+
+			return this.speakQueue;
+		};
+
 		this.textChat = {
 			sendMessage: (message: string, _assets?: MessageAsset[]) => {
-				avatar.speak({
-					text: message,
-					taskType: TaskType.TALK,
-					taskMode: TaskMode.ASYNC,
-				});
+				void enqueue(message, TaskType.TALK);
 			},
 			sendMessageSync: async (message: string, _assets?: MessageAsset[]) => {
-				return await avatar.speak({
+				return await this.avatar.speak({
 					text: message,
 					taskType: TaskType.TALK,
 					taskMode: TaskMode.SYNC,
 				});
 			},
 			repeatMessage: (message: string) => {
-				avatar.speak({
-					text: message,
-					taskType: TaskType.REPEAT,
-					taskMode: TaskMode.ASYNC,
-				});
+				void enqueue(message, TaskType.REPEAT);
 			},
 			repeatMessageSync: async (message: string) => {
-				return await avatar.speak({
+				return await this.avatar.speak({
 					text: message,
 					taskType: TaskType.REPEAT,
 					taskMode: TaskMode.SYNC,
 				});
+			},
+			speakQueued: async (message: string) => {
+				await enqueue(message, TaskType.TALK);
 			},
 		};
 
@@ -44,16 +60,16 @@ export class HeyGenService implements ApiService {
 				isInputAudioMuted?: boolean;
 				mediaStream?: MediaStream;
 			}) => {
-				await avatar.startVoiceChat(options);
+				await this.avatar.startVoiceChat(options);
 			},
 			stop: () => {
-				avatar.closeVoiceChat();
+				this.avatar.closeVoiceChat();
 			},
 			mute: () => {
-				avatar.muteInputAudio();
+				this.avatar.muteInputAudio();
 			},
 			unmute: () => {
-				avatar.unmuteInputAudio();
+				this.avatar.unmuteInputAudio();
 			},
 		};
 	}

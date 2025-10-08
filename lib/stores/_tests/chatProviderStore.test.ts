@@ -3,21 +3,35 @@ import { useChatProviderStore } from "../chatProvider";
 
 describe("chat provider store", () => {
 	beforeEach(() => {
-		useChatProviderStore.setState({ mode: "pollinations" });
+		useChatProviderStore.setState({
+			textMode: "pollinations",
+			voiceMode: "vapi",
+			streamingMode: "heygen",
+		});
 	});
 
 	it("allows switching to claude", () => {
-		useChatProviderStore.getState().setMode("claude");
-		expect(useChatProviderStore.getState().mode).toBe("claude");
+		useChatProviderStore.getState().setTextMode("claude");
+		expect(useChatProviderStore.getState().textMode).toBe("claude");
 	});
 
 	it("allows switching to openai", () => {
-		useChatProviderStore.getState().setMode("openai");
-		expect(useChatProviderStore.getState().mode).toBe("openai");
+		useChatProviderStore.getState().setTextMode("openai");
+		expect(useChatProviderStore.getState().textMode).toBe("openai");
 	});
 
 	it("allows switching to deepseek", () => {
-		useChatProviderStore.getState().setMode("deepseek");
-		expect(useChatProviderStore.getState().mode).toBe("deepseek");
+		useChatProviderStore.getState().setTextMode("deepseek");
+		expect(useChatProviderStore.getState().textMode).toBe("deepseek");
+	});
+
+	it("allows switching voice provider", () => {
+		useChatProviderStore.getState().setVoiceMode("vapi");
+		expect(useChatProviderStore.getState().voiceMode).toBe("vapi");
+	});
+
+	it("allows switching streaming provider", () => {
+		useChatProviderStore.getState().setStreamingMode("heygen");
+		expect(useChatProviderStore.getState().streamingMode).toBe("heygen");
 	});
 });

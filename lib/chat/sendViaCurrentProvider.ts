@@ -50,6 +50,10 @@ async function isProviderAvailable(id: ProviderId): Promise<boolean> {
 			});
 			return res.status === 204;
 		}
+		if (id === "vapi") {
+			// Placeholder: Vapi health endpoint pending integration.
+			return true;
+		}
 		return false;
 	} catch {
 		return false;
@@ -158,7 +162,7 @@ export async function sendViaProvider(
 }
 
 export function useSendViaCurrentProvider() {
-	const mode = useChatProviderStore((s) => s.mode);
+	const textMode = useChatProviderStore((s) => s.textMode);
 	const send = async (
 		params: { history: Message[]; input: string },
 		options: SendOptions = {},
@@ -173,12 +177,11 @@ export function useSendViaCurrentProvider() {
 				"deepseek",
 				"gemini",
 				"openrouter",
-				"heygen",
-			].filter((p) => p !== mode) as ProviderId[]);
-		return sendViaProvider(mode as ProviderId, params, {
+			].filter((p) => p !== textMode) as ProviderId[]);
+		return sendViaProvider(textMode as ProviderId, params, {
 			...options,
 			fallbackOrder: fallback,
 		});
 	};
-	return { mode, send } as const;
+	return { mode: textMode, send } as const;
 }

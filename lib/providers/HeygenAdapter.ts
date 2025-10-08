@@ -13,6 +13,7 @@ export const HeygenAdapter: ChatProvider = {
 			id: `resp-${Date.now()}`,
 			sender: MessageSender.AVATAR,
 			content: `Heygen (stub): ${input}`,
+			provider: "heygen",
 		} as Message;
 	},
 };
