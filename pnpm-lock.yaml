@@ -188,6 +188,9 @@ importers:
       use-stick-to-bottom:
         specifier: ^1.1.1
         version: 1.1.1(react@19.1.0)
+      xai:
+        specifier: ^0.1.0
+        version: 0.1.0
       zod:
         specifier: ^4.0.17
         version: 4.0.17
@@ -4585,6 +4588,9 @@ packages:
         optional: true
       utf-8-validate:
         optional: true
+
+  xai@0.1.0:
+    resolution: {integrity: sha512-F8gZJ8AW8392pe+h1wNO2ciN0CwJmNwTKd69IMkEm2R/42o4YqLbb7UyJwI53j9rVRl+ppjOlJ5pNgbnaOF6xA==}
 
   xml-name-validator@5.0.0:
     resolution: {integrity: sha512-EvGK8EJ3DhaHfbRlETOWAS5pO9MZITeauHKJyb8wyajUfQUenkIg2MvLDTZ4T/TgIcm3HU0TFBgWWboAZ30UHg==}
@@ -9421,6 +9427,8 @@ snapshots:
   wrappy@1.0.2: {}
 
   ws@8.18.3: {}
+
+  xai@0.1.0: {}
 
   xml-name-validator@5.0.0: {}
 
