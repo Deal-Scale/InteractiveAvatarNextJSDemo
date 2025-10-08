@@ -5,7 +5,8 @@ describe("chat provider store", () => {
 	beforeEach(() => {
 		useChatProviderStore.setState({
 			textMode: "pollinations",
-			voiceMode: "heygen",
+			voiceMode: "elevenlabs",
+			streamingMode: "heygen",
 		});
 	});
 
@@ -25,7 +26,12 @@ describe("chat provider store", () => {
 	});
 
 	it("allows switching voice provider", () => {
-		useChatProviderStore.getState().setVoiceMode("heygen");
-		expect(useChatProviderStore.getState().voiceMode).toBe("heygen");
+		useChatProviderStore.getState().setVoiceMode("elevenlabs");
+		expect(useChatProviderStore.getState().voiceMode).toBe("elevenlabs");
+	});
+
+	it("allows switching streaming provider", () => {
+		useChatProviderStore.getState().setStreamingMode("heygen");
+		expect(useChatProviderStore.getState().streamingMode).toBe("heygen");
 	});
 });

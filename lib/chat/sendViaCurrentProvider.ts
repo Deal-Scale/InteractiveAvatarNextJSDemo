@@ -50,9 +50,11 @@ async function isProviderAvailable(id: ProviderId): Promise<boolean> {
 			});
 			return res.status === 204;
 		}
-		if (id === "vapi") {
-			// Placeholder: Vapi health endpoint pending integration.
-			return true;
+		if (id === "elevenlabs") {
+			const res = await fetch("/api/elevenlabs/health", {
+				headers: { "Cache-Control": "no-cache" },
+			});
+			return res.status === 204;
 		}
 		return false;
 	} catch {
@@ -177,7 +179,6 @@ export function useSendViaCurrentProvider() {
 				"deepseek",
 				"gemini",
 				"openrouter",
-				"heygen",
 			].filter((p) => p !== textMode) as ProviderId[]);
 		return sendViaProvider(textMode as ProviderId, params, {
 			...options,

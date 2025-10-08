@@ -6,7 +6,7 @@ import { OpenRouterAdapter } from "@/lib/providers/OpenRouterAdapter";
 import { ClaudeAdapter } from "@/lib/providers/ClaudeAdapter";
 import { OpenAIChatAdapter } from "@/lib/providers/OpenAIChatAdapter";
 import { DeepSeekAdapter } from "@/lib/providers/DeepSeekAdapter";
-import { VapiAdapter } from "@/lib/providers/VapiAdapter";
+import { ElevenLabsAdapter } from "@/lib/providers/ElevenLabsAdapter";
 
 const registry: Record<ProviderId, ChatProvider> = {
 	heygen: HeygenAdapter,
@@ -16,7 +16,7 @@ const registry: Record<ProviderId, ChatProvider> = {
 	claude: ClaudeAdapter,
 	openai: OpenAIChatAdapter,
 	deepseek: DeepSeekAdapter,
-	vapi: VapiAdapter,
+	elevenlabs: ElevenLabsAdapter,
 };
 
 export const getProvider = (id: ProviderId): ChatProvider => registry[id];
