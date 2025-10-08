@@ -12,8 +12,6 @@ export interface AugmentedMessages {
 	exampleMessages: MessageType[];
 }
 
-export const PROMPTKIT_STATS_DEMO_ID = "demo-jsx-1";
-
 export function buildBaseMessagesIfEmpty(
 	messages: MessageType[],
 ): MessageType[] {
@@ -262,18 +260,8 @@ npm install shiki
 	];
 	if (showExtras)
 		exampleMessages.push(mockMarkdownOnly, mockCodeOnly, mockJsxOnly);
-
-	const demoExampleIds = new Set<string>([PROMPTKIT_STATS_DEMO_ID]);
-	const demoExamples = deduped.filter((message) =>
-		demoExampleIds.has(message.id),
-	);
-	const chatMessages = deduped.filter(
-		(message) => !demoExampleIds.has(message.id),
-	);
-
-	const combinedExamples = [...exampleMessages, ...demoExamples];
 	return {
-		chatMessages,
-		exampleMessages: combinedExamples,
+		chatMessages: deduped,
+		exampleMessages,
 	};
 }
