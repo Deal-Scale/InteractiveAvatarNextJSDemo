@@ -7,6 +7,11 @@ import { exampleSource } from "../_mock_data/example-source";
 import { exampleJsxPreview } from "../_mock_data/example-jsx-preview";
 import { exampleMermaid } from "../_mock_data/example-mermaid";
 
+export interface AugmentedMessages {
+	chatMessages: MessageType[];
+	exampleMessages: MessageType[];
+}
+
 export function buildBaseMessagesIfEmpty(
 	messages: MessageType[],
 ): MessageType[] {
@@ -38,7 +43,9 @@ export function dedupeAdjacent(messages: MessageType[]): MessageType[] {
 	return out;
 }
 
-export function buildAugmentedMessages(deduped: MessageType[]): MessageType[] {
+export function buildAugmentedMessages(
+	deduped: MessageType[],
+): AugmentedMessages {
 	const showExtras =
 		(globalThis as any)?.process?.env?.NEXT_PUBLIC_SHOW_EXTRA_DEMOS === "true";
 	const contentMd = String.raw`# \`CodeBlock\` Component
@@ -242,8 +249,7 @@ npm install shiki
 		jsx: '<div class="flex items-center gap-2"><StatBadge label="Accuracy" value="98%" /><StatBadge label="Score" value="A" hint="model" /></div>',
 	};
 
-	const result: MessageType[] = [
-		...deduped,
+	const exampleMessages: MessageType[] = [
 		exampleReasoning.message,
 		exampleTools.message,
 		exampleMultiCode.message,
@@ -252,6 +258,10 @@ npm install shiki
 		exampleJsxPreview.message,
 		exampleMermaid.message,
 	];
-	if (showExtras) result.push(mockMarkdownOnly, mockCodeOnly, mockJsxOnly);
-	return result;
+	if (showExtras)
+		exampleMessages.push(mockMarkdownOnly, mockCodeOnly, mockJsxOnly);
+	return {
+		chatMessages: deduped,
+		exampleMessages,
+	};
 }
