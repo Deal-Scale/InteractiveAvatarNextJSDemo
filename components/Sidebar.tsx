@@ -55,6 +55,7 @@ const Sidebar: React.FC<SidebarProps> = ({ onSelect, apps }) => {
 	const [starterScale, setStarterScale] = React.useState<number>(1);
 	const [showGlobalForm, setShowGlobalForm] = React.useState<boolean>(true);
 	const assetsRef = useRef<HTMLDivElement | null>(null);
+	const bookmarksRef = useRef<HTMLDivElement | null>(null);
 
 	const collapse = useSidebarCollapse();
 	const conv = useConversations();
@@ -183,6 +184,13 @@ const Sidebar: React.FC<SidebarProps> = ({ onSelect, apps }) => {
 								block: "start",
 							});
 						}}
+						onScrollToBookmarks={() => {
+							collapse.setCollapsedBookmarks(() => false);
+							bookmarksRef.current?.scrollIntoView({
+								behavior: "smooth",
+								block: "start",
+							});
+						}}
 					/>
 				</SidebarHeader>
 
@@ -285,16 +293,18 @@ const Sidebar: React.FC<SidebarProps> = ({ onSelect, apps }) => {
 					/>
 
 					{/* Bookmarks (File Tree) */}
-					<BookmarksSection
-						bookmarkFolders={bookmark.bookmarkFolders}
-						bookmarkedIds={bookmark.bookmarkedIds}
-						bookmarkMeta={bookmark.bookmarkMeta}
-						collapsedBookmarks={collapse.collapsedBookmarks}
-						conversationsById={conversationsById}
-						onOpenChat={(c) => onSelect?.(c)}
-						onOpenBookmarkMove={(id) => bookmark.openBookmarkModal(id)}
-						setCollapsedBookmarks={collapse.setCollapsedBookmarks}
-					/>
+					<div ref={bookmarksRef}>
+						<BookmarksSection
+							bookmarkFolders={bookmark.bookmarkFolders}
+							bookmarkedIds={bookmark.bookmarkedIds}
+							bookmarkMeta={bookmark.bookmarkMeta}
+							collapsedBookmarks={collapse.collapsedBookmarks}
+							conversationsById={conversationsById}
+							onOpenChat={(c) => onSelect?.(c)}
+							onOpenBookmarkMove={(id) => bookmark.openBookmarkModal(id)}
+							setCollapsedBookmarks={collapse.setCollapsedBookmarks}
+						/>
+					</div>
 
 					{/* Knowledge Base (File Tree) */}
 					<KnowledgebaseSection

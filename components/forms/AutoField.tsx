@@ -13,7 +13,6 @@ import {
 	type FieldsConfig,
 } from "./utils";
 import { SensitiveInput } from "./fields";
-import { ArrayStringField } from "../external/zod-react-form-auto/src/components/autofield/components/ArrayStringField";
 
 // Dev-only: one-time console clear and reminder banner
 let __AF_DEBUG_ONCE = false;
@@ -298,17 +297,41 @@ export const AutoField: React.FC<AutoFieldProps> = ({
 			return renderSelect((cfg as any).options!, true);
 		}
 		if ((el as any)._def?.typeName === "ZodString") {
-			devLog("array:string -> chips", {
-				reason: "no options provided; using ArrayStringField",
+			devLog("array:string -> textarea", {
+				reason: "no options provided; falling back to newline textarea",
 			});
+			const current = (getValues() as any)[name] as string[] | undefined;
+			const defaultValue = Array.isArray(current) ? current.join("\n") : "";
+
 			return (
-				<ArrayStringField
-					name={name}
-					label={label}
-					error={normError}
-					placeholder={cfg.placeholder}
-					form={form as unknown as UseFormReturn<any>}
-				/>
+				<div className="flex flex-col gap-1">
+					<span className="text-sm text-muted-foreground">{label}</span>
+					<textarea
+						className="min-h-[120px] rounded-md border border-border bg-background px-3 py-2 text-foreground shadow-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary"
+						placeholder={cfg.placeholder as string | undefined}
+						defaultValue={defaultValue}
+						{...register(name as any, {
+							setValueAs: (value) => {
+								if (typeof value !== "string") {
+									return [] as string[];
+								}
+
+								return value
+									.split(/\n+/)
+									.map((part) => part.trim())
+									.filter(Boolean);
+							},
+						})}
+					/>
+					<span className="text-xs text-muted-foreground">
+						Enter one value per line.
+					</span>
+					{normError && (
+						<span className="text-xs text-red-500 dark:text-red-400">
+							{normError}
+						</span>
+					)}
+				</div>
 			);
 		}
 	}
