@@ -111,7 +111,7 @@ export const Chat: React.FC<ChatProps> = ({
 	);
 
 	// Always append demo content
-	const augmentedMessages = useMemo(
+	const { chatMessages, exampleMessages } = useMemo(
 		() => buildAugmentedMessages(dedupedMessages),
 		[dedupedMessages],
 	);
@@ -122,7 +122,7 @@ export const Chat: React.FC<ChatProps> = ({
 	// Scroll container ref + anchored state (depends on content changes)
 	const { isAtBottom, handleScroll } = useScrollAnchored(scrollRef, {
 		inputOnly,
-		depsForContentChange: [augmentedMessages],
+		depsForContentChange: [chatMessages, exampleMessages],
 	});
 
 	// Allow enabling Markdown header in chat bubbles via env flag for debugging/UX preference
@@ -154,11 +154,8 @@ export const Chat: React.FC<ChatProps> = ({
 
 	// Determine active provider capability (voice vs. text-only)
 	const voiceMode = useChatProviderStore((s) => s.voiceMode);
-	const streamingMode = useChatProviderStore((s) => s.streamingMode);
 	const voiceProvider = getProvider(voiceMode);
-	const streamingProvider = getProvider(streamingMode);
-	const supportsVoice =
-		voiceProvider.supportsVoice && streamingProvider.supportsVoice;
+	const supportsVoice = voiceProvider.supportsVoice;
 
 	useEffect(() => {
 		if (!scrollRef.current) return;
@@ -242,7 +239,8 @@ export const Chat: React.FC<ChatProps> = ({
 				>
 					<ChatContainerContent>
 						<MessageList
-							messages={augmentedMessages}
+							messages={chatMessages}
+							exampleMessages={exampleMessages}
 							isAvatarTalking={isAvatarTalking}
 							lastCopiedId={lastCopiedId}
 							voteState={voteState}

@@ -177,6 +177,7 @@ export function useSendViaCurrentProvider() {
 				"deepseek",
 				"gemini",
 				"openrouter",
+				"heygen",
 			].filter((p) => p !== textMode) as ProviderId[]);
 		return sendViaProvider(textMode as ProviderId, params, {
 			...options,

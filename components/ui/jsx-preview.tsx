@@ -73,7 +73,7 @@ export type JSXPreviewProps = {
 	jsx: string;
 	isStreaming?: boolean;
 	// Allow loose component typing to avoid React type incompatibilities across module boundaries
-	components?: Record<string, React.ComponentType<any>>;
+	components?: Record<string, React.ComponentType<unknown>>;
 } & Omit<JsxParserProps, "components" | "jsx">;
 
 function JSXPreview({
@@ -101,6 +101,10 @@ function JSXPreview({
 			/\bshowFavicon(\s*)(\/?>)/g,
 			(_m, ws: string, tail: string) => `showFavicon={true}${ws}${tail}`,
 		);
+		// Guard against trailing, not-yet-completed tags while streaming ("<Source" / "</Source")
+		out = out.replace(/<\/?[a-zA-Z][\w:-]*[^>]*$/u, (match) =>
+			match.includes(">") ? match : "",
+		);
 		return out;
 	}, [jsx, isStreaming]);
 
@@ -109,7 +113,7 @@ function JSXPreview({
 
 	const forwarded: Partial<JsxParserProps> = {
 		...(props as unknown as Partial<JsxParserProps>),
-		components: components as any,
+		components: components as unknown as JsxParserProps["components"],
 		jsx: processedJsx,
 		// Be permissive: our JSX comes from models/mock data and may include unknown tags/attrs
 		allowUnknownElements: true,

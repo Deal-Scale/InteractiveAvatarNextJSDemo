@@ -110,13 +110,9 @@ export function useChatController(sessionState: StreamingAvatarSessionState) {
 					return;
 				}
 
-				const { textMode, voiceMode, streamingMode } =
-					useChatProviderStore.getState();
+				const { textMode, voiceMode } = useChatProviderStore.getState();
 				const textProvider = getProvider(textMode as ProviderId);
 				const voiceProvider = getProvider(voiceMode as ProviderId);
-				const streamingProvider = getProvider(streamingMode as ProviderId);
-				const voiceEnabled =
-					voiceProvider.supportsVoice && streamingProvider.supportsVoice;
 
 				const operations: Array<Promise<void>> = [];
 				const history = useSessionStore.getState().messages;
@@ -135,7 +131,7 @@ export function useChatController(sessionState: StreamingAvatarSessionState) {
 							};
 							addMessage(providerMessage);
 
-							if (voiceEnabled) {
+							if (voiceProvider.supportsVoice) {
 								await speakThroughAvatar(providerMessage.content);
 							}
 						} catch (error) {
@@ -166,7 +162,7 @@ export function useChatController(sessionState: StreamingAvatarSessionState) {
 							return;
 						}
 
-						if (!voiceEnabled) return;
+						if (!voiceProvider.supportsVoice) return;
 
 						if (currentSessionId) {
 							await sendTaskMutation.mutateAsync({

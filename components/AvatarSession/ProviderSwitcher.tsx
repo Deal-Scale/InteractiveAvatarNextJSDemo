@@ -10,7 +10,6 @@ import { useOpenRouterAvailability } from "./hooks/useOpenRouterAvailability";
 import { useClaudeAvailability } from "./hooks/useClaudeAvailability";
 import { useOpenAIAAvailability } from "./hooks/useOpenAIAAvailability";
 import { useDeepSeekAvailability } from "./hooks/useDeepSeekAvailability";
-import { useVapiAvailability } from "./hooks/useVapiAvailability";
 
 type ProviderConfig = {
 	id:
@@ -20,8 +19,7 @@ type ProviderConfig = {
 		| "openrouter"
 		| "claude"
 		| "openai"
-		| "deepseek"
-		| "vapi";
+		| "deepseek";
 	label: string;
 	available: boolean;
 	checking: boolean;
@@ -93,10 +91,8 @@ const mapProvider = (
 export const ProviderSwitcher = () => {
 	const textMode = useChatProviderStore((s) => s.textMode);
 	const voiceMode = useChatProviderStore((s) => s.voiceMode);
-	const streamingMode = useChatProviderStore((s) => s.streamingMode);
 	const setTextMode = useChatProviderStore((s) => s.setTextMode);
 	const setVoiceMode = useChatProviderStore((s) => s.setVoiceMode);
-	const setStreamingMode = useChatProviderStore((s) => s.setStreamingMode);
 
 	const heygen = useHeygenAvailability();
 	const pollinations = usePollinationsAvailability();
@@ -105,7 +101,6 @@ export const ProviderSwitcher = () => {
 	const claude = useClaudeAvailability();
 	const openai = useOpenAIAAvailability();
 	const deepseek = useDeepSeekAvailability();
-	const vapi = useVapiAvailability();
 
 	const textProviders = useMemo<ProviderConfig[]>(
 		() => [
@@ -115,27 +110,19 @@ export const ProviderSwitcher = () => {
 			mapProvider("deepseek", "DeepSeek", deepseek),
 			mapProvider("gemini", "Gemini", gemini),
 			mapProvider("openrouter", "OpenRouter", openRouter),
+			mapProvider("heygen", "Heygen", heygen),
 		],
-		[pollinations, claude, openai, deepseek, gemini, openRouter],
-	);
-
-	const streamingProviders = useMemo<ProviderConfig[]>(
-		() => [mapProvider("heygen", "Heygen", heygen)],
-		[heygen],
+		[pollinations, claude, openai, deepseek, gemini, openRouter, heygen],
 	);
 
 	const voiceProviders = useMemo<ProviderConfig[]>(
-		() => [mapProvider("vapi", "Vapi", vapi)],
-		[vapi],
+		() => [mapProvider("heygen", "Heygen", heygen)],
+		[heygen],
 	);
 
 	const firstAvailableText = useMemo(
 		() => textProviders.find((p) => p.available && !p.checking),
 		[textProviders],
-	);
-	const firstAvailableStreaming = useMemo(
-		() => streamingProviders.find((p) => p.available && !p.checking),
-		[streamingProviders],
 	);
 	const firstAvailableVoice = useMemo(
 		() => voiceProviders.find((p) => p.available && !p.checking),
@@ -152,21 +139,13 @@ export const ProviderSwitcher = () => {
 	}, [firstAvailableText, setTextMode, textMode, textProviders]);
 
 	useEffect(() => {
-		const streamingEntry = streamingProviders.find(
-			(provider) => provider.id === streamingMode,
+		const voiceEntry = voiceProviders.find(
+			(provider) => provider.id === voiceMode,
 		);
-		if (
-			!streamingEntry ||
-			(!streamingEntry.available && firstAvailableStreaming)
-		) {
-			if (firstAvailableStreaming) setStreamingMode(firstAvailableStreaming.id);
+		if (!voiceEntry || (!voiceEntry.available && firstAvailableVoice)) {
+			if (firstAvailableVoice) setVoiceMode(firstAvailableVoice.id);
 		}
-	}, [
-		firstAvailableStreaming,
-		setStreamingMode,
-		streamingMode,
-		streamingProviders,
-	]);
+	}, [firstAvailableVoice, setVoiceMode, voiceMode, voiceProviders]);
 
 	useEffect(() => {
 		const voiceEntry = voiceProviders.find(
@@ -183,12 +162,6 @@ export const ProviderSwitcher = () => {
 			role="group"
 			aria-label="Provider selection"
 		>
-			<ProviderGroup
-				ariaLabel="Streaming avatar"
-				current={streamingMode}
-				onChange={setStreamingMode}
-				providers={streamingProviders}
-			/>
 			<ProviderGroup
 				ariaLabel="Voice provider"
 				current={voiceMode}
