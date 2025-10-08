@@ -191,6 +191,9 @@ importers:
       xai:
         specifier: ^0.1.0
         version: 0.1.0
+      yaml:
+        specifier: ^2.6.0
+        version: 2.6.1
       zod:
         specifier: ^4.0.17
         version: 4.0.17
