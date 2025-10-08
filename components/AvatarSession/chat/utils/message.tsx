@@ -7,9 +7,6 @@ import { exampleSource } from "../_mock_data/example-source";
 import { exampleJsxPreview } from "../_mock_data/example-jsx-preview";
 import { exampleMermaid } from "../_mock_data/example-mermaid";
 
-// Demo message IDs
-const PROMPTKIT_STATS_DEMO_ID = "demo-promptkit-stats";
-
 export interface AugmentedMessages {
 	chatMessages: MessageType[];
 	exampleMessages: MessageType[];
@@ -19,20 +16,8 @@ export function buildBaseMessagesIfEmpty(
 	messages: MessageType[],
 ): MessageType[] {
 	if (messages && messages.length > 0) return messages;
-	const demo: MessageType = {
-		id: PROMPTKIT_STATS_DEMO_ID,
-		sender: MessageSender.AVATAR,
-		content: "Here is a PromptKit-like stat rendered via JSX.",
-		jsx: '<div class="flex items-center gap-2"><StatBadge label="Tokens" value="1,234" hint="used" /><StatBadge label="Latency" value="142ms" /></div>',
-		sources: [
-			{
-				href: "#",
-				title: "PromptKit Example",
-				description: "Demo component rendered in chat via JSX.",
-			},
-		],
-	};
-	return [demo];
+	// Return empty array instead of demo message
+	return [];
 }
 
 export function dedupeAdjacent(messages: MessageType[]): MessageType[] {
@@ -248,8 +233,8 @@ npm install shiki
 	const mockJsxOnly: MessageType = {
 		id: "demo-jsx-only",
 		sender: MessageSender.AVATAR,
-		content: "Live stats rendered via JSX:",
-		jsx: '<div class="flex items-center gap-2"><StatBadge label="Accuracy" value="98%" /><StatBadge label="Score" value="A" hint="model" /></div>',
+		content: "Live stats rendered via custom PromptKit component:",
+		jsx: `<PromptKitStatsDemo variant="accuracy-score" />`,
 	};
 
 	const exampleMessages: MessageType[] = [
