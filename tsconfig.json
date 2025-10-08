@@ -29,7 +29,8 @@
 			"@/components/external/zod-react-form-auto/components/autofield/components/*": [
 				"./components/external/zod-react-form-auto/src/components/autofield/components/*"
 			]
-		}
+		},
+		"noEmit": true
 	},
 	"include": [
 		"next-env.d.ts",

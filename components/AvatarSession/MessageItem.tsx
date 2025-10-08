@@ -38,6 +38,7 @@ import { JSXPreview } from "@/components/ui/jsx-preview";
 import { Tool } from "@/components/ui/tool";
 import { Source, SourceContent, SourceTrigger } from "@/components/ui/source";
 import { StatBadge } from "@/components/PromptKit/StatBadge";
+import { PromptKitStatsDemo } from "@/components/PromptKit/PromptKitStatsDemo";
 import { DataCard, MetricGrid, Metric } from "@/components/ui/jsx-demo";
 import { Mermaid } from "@/components/ui/mermaid";
 
@@ -426,6 +427,8 @@ export const MessageItem: React.FC<MessageItemProps> = ({
 									jsx={jsxStream.displayedText}
 									components={{
 										StatBadge: StatBadge as unknown as React.ComponentType<any>,
+										PromptKitStatsDemo:
+											PromptKitStatsDemo as unknown as React.ComponentType<any>,
 										Source: Source as unknown as React.ComponentType<any>,
 										SourceTrigger:
 											SourceTrigger as unknown as React.ComponentType<any>,

@@ -29,7 +29,7 @@ const SidebarHeaderSection: React.FC<Props> = ({
 					</SidebarTrigger>
 					<div className="bg-primary/10 size-8 rounded-md" />
 					<div className="text-md font-medium tracking-tight text-foreground group-data-[state=collapsed]/sidebar:hidden">
-						zola.chat
+						Mind Stream 🧠
 					</div>
 				</div>
 				<HeaderActionsStack

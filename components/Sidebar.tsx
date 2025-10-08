@@ -199,7 +199,7 @@ const Sidebar: React.FC<SidebarProps> = ({ onSelect, apps }) => {
 					<div className="px-2 pb-2">
 						<div className="flex items-center gap-2 rounded-md border border-border bg-background px-2 py-2">
 							<span className="text-xs text-muted-foreground group-data-[state=collapsed]/sidebar:hidden">
-								Theme
+								Emotion
 							</span>
 							<ThemeEmotionSelect className="group-data-[state=collapsed]/sidebar:hidden" />
 							<div className="ml-auto">
