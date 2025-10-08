@@ -17,7 +17,7 @@ export function buildBaseMessagesIfEmpty(
 ): MessageType[] {
 	if (messages && messages.length > 0) return messages;
 	const demo: MessageType = {
-		id: "demo-jsx-1",
+		id: PROMPTKIT_STATS_DEMO_ID,
 		sender: MessageSender.AVATAR,
 		content: "Here is a PromptKit-like stat rendered via JSX.",
 		jsx: '<div class="flex items-center gap-2"><StatBadge label="Tokens" value="1,234" hint="used" /><StatBadge label="Latency" value="142ms" /></div>',
