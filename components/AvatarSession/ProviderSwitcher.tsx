@@ -5,6 +5,7 @@ import { useChatProviderStore } from "@/lib/stores/chatProvider";
 import { Button } from "@/components/ui/button";
 import { useGeminiAvailability } from "./hooks/useGeminiAvailability";
 import { useHeygenAvailability } from "./hooks/useHeygenAvailability";
+import { useElevenLabsAvailability } from "./hooks/useElevenLabsAvailability";
 import { usePollinationsAvailability } from "./hooks/usePollinationsAvailability";
 import { useOpenRouterAvailability } from "./hooks/useOpenRouterAvailability";
 import { useClaudeAvailability } from "./hooks/useClaudeAvailability";
@@ -19,7 +20,8 @@ type ProviderConfig = {
 		| "openrouter"
 		| "claude"
 		| "openai"
-		| "deepseek";
+		| "deepseek"
+		| "elevenlabs";
 	label: string;
 	available: boolean;
 	checking: boolean;
@@ -91,10 +93,13 @@ const mapProvider = (
 export const ProviderSwitcher = () => {
 	const textMode = useChatProviderStore((s) => s.textMode);
 	const voiceMode = useChatProviderStore((s) => s.voiceMode);
+	const streamingMode = useChatProviderStore((s) => s.streamingMode);
 	const setTextMode = useChatProviderStore((s) => s.setTextMode);
 	const setVoiceMode = useChatProviderStore((s) => s.setVoiceMode);
+	const setStreamingMode = useChatProviderStore((s) => s.setStreamingMode);
 
 	const heygen = useHeygenAvailability();
+	const elevenlabs = useElevenLabsAvailability();
 	const pollinations = usePollinationsAvailability();
 	const gemini = useGeminiAvailability();
 	const openRouter = useOpenRouterAvailability();
@@ -110,12 +115,16 @@ export const ProviderSwitcher = () => {
 			mapProvider("deepseek", "DeepSeek", deepseek),
 			mapProvider("gemini", "Gemini", gemini),
 			mapProvider("openrouter", "OpenRouter", openRouter),
-			mapProvider("heygen", "Heygen", heygen),
 		],
-		[pollinations, claude, openai, deepseek, gemini, openRouter, heygen],
+		[pollinations, claude, openai, deepseek, gemini, openRouter],
 	);
 
 	const voiceProviders = useMemo<ProviderConfig[]>(
+		() => [mapProvider("elevenlabs", "ElevenLabs", elevenlabs)],
+		[elevenlabs],
+	);
+
+	const streamingProviders = useMemo<ProviderConfig[]>(
 		() => [mapProvider("heygen", "Heygen", heygen)],
 		[heygen],
 	);
@@ -127,6 +136,10 @@ export const ProviderSwitcher = () => {
 	const firstAvailableVoice = useMemo(
 		() => voiceProviders.find((p) => p.available && !p.checking),
 		[voiceProviders],
+	);
+	const firstAvailableStreaming = useMemo(
+		() => streamingProviders.find((p) => p.available && !p.checking),
+		[streamingProviders],
 	);
 
 	useEffect(() => {
@@ -148,13 +161,22 @@ export const ProviderSwitcher = () => {
 	}, [firstAvailableVoice, setVoiceMode, voiceMode, voiceProviders]);
 
 	useEffect(() => {
-		const voiceEntry = voiceProviders.find(
-			(provider) => provider.id === voiceMode,
+		const streamingEntry = streamingProviders.find(
+			(provider) => provider.id === streamingMode,
 		);
-		if (!voiceEntry || (!voiceEntry.available && firstAvailableVoice)) {
-			if (firstAvailableVoice) setVoiceMode(firstAvailableVoice.id);
+		if (
+			(!streamingEntry ||
+				(!streamingEntry.available && firstAvailableStreaming)) &&
+			firstAvailableStreaming
+		) {
+			setStreamingMode(firstAvailableStreaming.id);
 		}
-	}, [firstAvailableVoice, setVoiceMode, voiceMode, voiceProviders]);
+	}, [
+		firstAvailableStreaming,
+		setStreamingMode,
+		streamingMode,
+		streamingProviders,
+	]);
 
 	return (
 		<div
@@ -167,6 +189,12 @@ export const ProviderSwitcher = () => {
 				current={voiceMode}
 				onChange={setVoiceMode}
 				providers={voiceProviders}
+			/>
+			<ProviderGroup
+				ariaLabel="Video streaming provider"
+				current={streamingMode}
+				onChange={setStreamingMode}
+				providers={streamingProviders}
 			/>
 			<ProviderGroup
 				ariaLabel="Text provider"
