@@ -84,7 +84,8 @@
 		"use-stick-to-bottom": "^1.1.1",
 		"xai": "^0.1.0",
 		"zod": "^4.0.17",
-		"zustand": "^5.0.7"
+		"zustand": "^5.0.7",
+		"yaml": "^2.6.0"
 	},
 	"devDependencies": {
 		"@biomejs/biome": "^2.2.0",
