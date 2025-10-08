@@ -1,5 +1,7 @@
 import { z } from "zod";
 
+import type { TypeformQuestionType } from "../typeform/types";
+
 export type Widget =
 	| "input"
 	| "number"
@@ -11,10 +13,18 @@ export type Widget =
 	| "date"
 	| "date-range";
 
+export type ChoiceOption = {
+	value: string;
+	label: string;
+	description?: string;
+	imageUrl?: string;
+	icon?: string;
+};
+
 export type FieldConfig = {
 	label?: string;
 	widget?: Widget;
-	options?: Array<{ value: string; label: string }>;
+	options?: ChoiceOption[];
 	min?: number;
 	max?: number;
 	step?: number;
@@ -26,6 +36,35 @@ export type FieldConfig = {
 	captionLayout?: "dropdown" | "buttons";
 	fromYear?: number;
 	toYear?: number;
+	description?: string;
+	helperText?: string;
+	questionType?: TypeformQuestionType;
+	questionSettings?: Record<string, unknown> & {
+		legalText?: string;
+		contactFields?: string[];
+		addressFields?: string[];
+		fieldLabels?: Record<string, string>;
+		phonePattern?: string;
+		ratingMax?: number;
+		ratingIcon?: string;
+		npsLabels?: string[];
+		ranking?: { enforceUnique?: boolean };
+		matrix?: {
+			rows: string[];
+			columns: string[];
+			multiSelect?: boolean;
+		};
+		pictureChoice?: boolean;
+		videoAccept?: string;
+		calendlyUrl?: string;
+		payment?: {
+			currency?: string;
+			minimum?: number;
+			maximum?: number;
+		};
+		clarifyPrompt?: string;
+		content?: string;
+	};
 };
 
 export type FieldsConfig<T> = Partial<Record<keyof T & string, FieldConfig>>;
