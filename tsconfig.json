@@ -1,12 +1,11 @@
 {
 	"compilerOptions": {
-		"target": "es5",
+		"target": "es2020",
 		"lib": ["dom", "dom.iterable", "esnext"],
 		"allowJs": true,
 		"skipLibCheck": true,
 		"strict": true,
 		"forceConsistentCasingInFileNames": true,
-		"noEmit": true,
 		"esModuleInterop": true,
 		"module": "esnext",
 		"moduleResolution": "Bundler",
@@ -22,7 +21,7 @@
 		],
 		"paths": {
 			"@/*": ["./*"],
-			"grok-sdk": ["./packages/grok-sdk/src/index.ts"],
+			"grok-sdk": ["app/api/grok/sdk/index.ts"],
 			"grok-sdk/*": ["./packages/grok-sdk/src/*"],
 			"@/components/external/zod-react-form-auto/examples/*": [
 				"./components/external/zod-react-form-auto/src/examples/*"
