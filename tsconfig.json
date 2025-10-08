@@ -22,6 +22,8 @@
 		],
 		"paths": {
 			"@/*": ["./*"],
+			"grok-sdk": ["./packages/grok-sdk/src/index.ts"],
+			"grok-sdk/*": ["./packages/grok-sdk/src/*"],
 			"@/components/external/zod-react-form-auto/examples/*": [
 				"./components/external/zod-react-form-auto/src/examples/*"
 			],

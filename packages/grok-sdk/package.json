@@ -1,0 +1,23 @@
+{
+	"name": "grok-sdk",
+	"version": "0.1.0",
+	"type": "module",
+	"main": "dist/index.cjs",
+	"module": "dist/index.js",
+	"types": "dist/index.d.ts",
+	"files": [
+		"dist"
+	],
+	"scripts": {
+		"build": "tsup",
+		"clean": "rimraf dist"
+	},
+	"dependencies": {
+		"nanoid": "^5.1.5",
+		"zod": "^4.0.17"
+	},
+	"devDependencies": {
+		"tsup": "^8.1.0",
+		"rimraf": "^6.0.1"
+	}
+}
