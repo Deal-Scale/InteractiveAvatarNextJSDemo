@@ -42,3 +42,4 @@ yarn-error.log*
 next-env.d.ts
 .idea
 app/api/gemini-vertix/_docs/service-account-key.json
+app/api/gemini-vertix/_docs/service-account-key.json
