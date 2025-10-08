@@ -19,7 +19,7 @@ importers:
         version: 1.19.0(@modelcontextprotocol/sdk@1.17.3)
       '@heygen/streaming-avatar':
         specifier: ^2.0.13
-        version: 2.0.13
+        version: 2.0.13(@types/dom-mediacapture-record@1.0.22)
       '@hookform/resolvers':
         specifier: ^5.2.1
         version: 5.2.1(react-hook-form@7.62.0(react@19.1.0))
@@ -110,6 +110,9 @@ importers:
       date-fns:
         specifier: ^4.1.0
         version: 4.1.0
+      livekit-client:
+        specifier: ^2.15.8
+        version: 2.15.8(@types/dom-mediacapture-record@1.0.22)
       lottie-react:
         specifier: ^2.4.1
         version: 2.4.1(react-dom@19.1.0(react@19.1.0))(react@19.1.0)
@@ -783,11 +786,11 @@ packages:
   '@jridgewell/trace-mapping@0.3.30':
     resolution: {integrity: sha512-GQ7Nw5G2lTu/BtHTKfXhKHok2WGetd4XYcVKGx00SjAk8GMwgJM3zr6zORiPGuOE+/vkc90KtTosSSvaCjKb2Q==}
 
-  '@livekit/mutex@1.0.0':
-    resolution: {integrity: sha512-aiUhoThBNF9UyGTxEURFzJLhhPLIVTnQiEVMjRhPnfHNKLfo2JY9xovHKIus7B78UD5hsP6DlgpmAsjrz4U0Iw==}
+  '@livekit/mutex@1.1.1':
+    resolution: {integrity: sha512-EsshAucklmpuUAfkABPxJNhzj9v2sG7JuzFDL4ML1oJQSV14sqrpTYnsaOudMAw9yOaW53NU3QQTlUQoRs4czw==}
 
-  '@livekit/protocol@1.29.4':
-    resolution: {integrity: sha512-dsqxvABHilrMA0BU5m1w8cMWSVeDjV2ZUIUDClNQZju3c30DLMfEYDHU5nmXDfaaHjNIgoRbYR7upJMozG8JJg==}
+  '@livekit/protocol@1.42.0':
+    resolution: {integrity: sha512-42sYSCay2PZrn5yHHt+O3RQpTElcTrA7bqg7iYbflUApeerA5tUCJDr8Z4abHsYHVKjqVUbkBq/TPmT3X6aYOQ==}
 
   '@mermaid-js/parser@0.6.2':
     resolution: {integrity: sha512-+PO02uGF6L6Cs0Bw8RpGhikVvMWEysfAyl27qTlroUB8jSWr1lL0Sf6zi78ZxlSnmgSY2AMMKVgghnN9jTtwkQ==}
@@ -1900,6 +1903,9 @@ packages:
 
   '@types/deep-eql@4.0.2':
     resolution: {integrity: sha512-c9h9dVVMigMPc4bwTvC5dxqtqJZwQPePsWjPlpSOnojbor6pGqdk541lfA7AqFQr5pB1BRdq0juY9db81BwyFw==}
+
+  '@types/dom-mediacapture-record@1.0.22':
+    resolution: {integrity: sha512-mUMZLK3NvwRLcAAT9qmcK+9p7tpU2FHdDsntR3YI4+GY88XrgG4XiE7u1Q2LAN2/FZOz/tdMDC3GQCR4T8nFuw==}
 
   '@types/dotenv@8.2.3':
     resolution: {integrity: sha512-g2FXjlDX/cYuc5CiQvyU/6kkbP1JtmGzh0obW50zD7OKeILVL0NSpPWLXVfqoAGQjom2/SLLx9zHq0KXvD6mbw==}
@@ -3015,6 +3021,9 @@ packages:
     resolution: {integrity: sha512-/imKNG4EbWNrVjoNC/1H5/9GFy+tqjGBHCaSsN+P2RnPqjsLmv6UD3Ej+Kj8nBWaRAwyk7kK5ZUc+OEatnTR3A==}
     hasBin: true
 
+  jose@6.1.0:
+    resolution: {integrity: sha512-TTQJyoEoKcC1lscpVDCSsVgYzUDg/0Bt3WE//WiTPK6uOCQC2KZS4MpugbMWt/zyjkopgZoXhZuCi00gLudfUA==}
+
   js-cookie@3.0.5:
     resolution: {integrity: sha512-cEiJEAEoIbWfCZYKWhVwFuvPX1gETRYPw6LlaTKoxD3s2AkXzkCjnp6h0V77ozyqj0jakteJ4YqDJT830+lVGw==}
     engines: {node: '>=14'}
@@ -3088,8 +3097,10 @@ packages:
   lines-and-columns@1.2.4:
     resolution: {integrity: sha512-7ylylesZQ/PV29jhEDl3Ufjo6ZX7gCqJr5F7PKrqc93v7fzSymt1BpwEU8nAUXs8qzzvqhbjhK5QZg6Mt/HkBg==}
 
-  livekit-client@2.7.5:
-    resolution: {integrity: sha512-sPhHYwXvG75y1LDC50dDC9k6Z49L2vc/HcMRhzhi7yBca6ofPEebpB0bmPOry4ovrnFA+a8TL1pFR2mko1/clw==}
+  livekit-client@2.15.8:
+    resolution: {integrity: sha512-M+GnlmoY+JOfGGhDov5f4V273YZ9DuWFBaPwz42fliC3TsFTzEcJoRqqE7uLtEGAnloqbLPk+sIvW/XSU4Z4/Q==}
+    peerDependencies:
+      '@types/dom-mediacapture-record': ^1
 
   local-pkg@1.1.1:
     resolution: {integrity: sha512-WunYko2W1NcdfAFpuLUoucsgULmgDBRkdxHxWQ7mK0cQqwPiy8E1enjuRBrhLtZkB5iScJ1XIPdhVEFK8aOLSg==}
@@ -4274,9 +4285,6 @@ packages:
   ts-interface-checker@0.1.13:
     resolution: {integrity: sha512-Y/arvbn+rrz3JCKl9C4kVNfTfSm2/mEp5FSz5EsZSANGPSlQrpRI5M4PKF+mJnE52jOO90PnPSc3Ur3bTQw0gA==}
 
-  tslib@2.7.0:
-    resolution: {integrity: sha512-gLXCKdN1/j47AiHiOkJN69hJmcbGTHI0ImLmbYLHykhgeN0jVGola9yVjFgzCUklsZQMW55o+dW7IXv3RCXDzA==}
-
   tslib@2.8.1:
     resolution: {integrity: sha512-oJFu94HQb+KVduSUQL7wnpmqnfmLsOA/nAh6b6EH0wCEoK0/mPeXU6c3wKDV83MkOuHPRHtSXKKU99IBazS/2w==}
 
@@ -4923,11 +4931,13 @@ snapshots:
       - supports-color
       - utf-8-validate
 
-  '@heygen/streaming-avatar@2.0.13':
+  '@heygen/streaming-avatar@2.0.13(@types/dom-mediacapture-record@1.0.22)':
     dependencies:
-      livekit-client: 2.7.5
+      livekit-client: 2.15.8(@types/dom-mediacapture-record@1.0.22)
       protobufjs: 7.4.0
       webrtc-issue-detector: 1.16.3
+    transitivePeerDependencies:
+      - '@types/dom-mediacapture-record'
 
   '@hookform/resolvers@5.2.1(react-hook-form@7.62.0(react@19.1.0))':
     dependencies:
@@ -5086,9 +5096,9 @@ snapshots:
       '@jridgewell/resolve-uri': 3.1.2
       '@jridgewell/sourcemap-codec': 1.5.0
 
-  '@livekit/mutex@1.0.0': {}
+  '@livekit/mutex@1.1.1': {}
 
-  '@livekit/protocol@1.29.4':
+  '@livekit/protocol@1.42.0':
     dependencies:
       '@bufbuild/protobuf': 1.10.0
 
@@ -6209,6 +6219,8 @@ snapshots:
       '@types/ms': 2.1.0
 
   '@types/deep-eql@4.0.2': {}
+
+  '@types/dom-mediacapture-record@1.0.22': {}
 
   '@types/dotenv@8.2.3':
     dependencies:
@@ -7397,6 +7409,8 @@ snapshots:
 
   jiti@1.21.7: {}
 
+  jose@6.1.0: {}
+
   js-cookie@3.0.5: {}
 
   js-tokens@4.0.0: {}
@@ -7484,15 +7498,17 @@ snapshots:
 
   lines-and-columns@1.2.4: {}
 
-  livekit-client@2.7.5:
+  livekit-client@2.15.8(@types/dom-mediacapture-record@1.0.22):
     dependencies:
-      '@livekit/mutex': 1.0.0
-      '@livekit/protocol': 1.29.4
+      '@livekit/mutex': 1.1.1
+      '@livekit/protocol': 1.42.0
+      '@types/dom-mediacapture-record': 1.0.22
       events: 3.3.0
+      jose: 6.1.0
       loglevel: 1.9.2
       sdp-transform: 2.15.0
       ts-debounce: 4.0.0
-      tslib: 2.7.0
+      tslib: 2.8.1
       typed-emitter: 2.1.0
       webrtc-adapter: 9.0.1
 
@@ -9108,8 +9124,6 @@ snapshots:
   ts-dedent@2.2.0: {}
 
   ts-interface-checker@0.1.13: {}
-
-  tslib@2.7.0: {}
 
   tslib@2.8.1: {}
 
