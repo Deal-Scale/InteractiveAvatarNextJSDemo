@@ -2,14 +2,13 @@
 
 import { useEffect, useState } from "react";
 import {
-	PanelLeft,
 	Settings,
 	Image as ImageIcon,
 	LayoutGrid,
+	Bookmark,
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
-import { SidebarTrigger } from "@/components/ui/sidebar";
 import { useSessionStore } from "@/lib/stores/session";
 import PlacementModal from "@/components/Sidebar/PlacementModal";
 import {
@@ -21,8 +20,10 @@ import {
 
 export default function HeaderActionsStack({
 	onAssetsClick,
+	onScrollToBookmarks,
 }: {
 	onAssetsClick?: () => void;
+	onScrollToBookmarks?: () => void;
 }) {
 	const { openConfigModal } = useSessionStore();
 	const [placementOpen, setPlacementOpen] = useState(false);
@@ -61,6 +62,14 @@ export default function HeaderActionsStack({
 				</Tooltip>
 			</TooltipProvider>
 			<Button
+				aria-label="Bookmarks"
+				className="size-8 text-foreground hover:bg-muted"
+				variant="ghost"
+				onClick={onScrollToBookmarks}
+			>
+				<Bookmark className="size-4" />
+			</Button>
+			<Button
 				aria-label="Assets"
 				className="size-8 text-foreground hover:bg-muted"
 				variant="ghost"
@@ -76,9 +85,6 @@ export default function HeaderActionsStack({
 			>
 				<Settings className="size-4" />
 			</Button>
-			<SidebarTrigger className="size-8 inline-flex items-center justify-center rounded-md hover:bg-muted">
-				<PanelLeft className="size-4" />
-			</SidebarTrigger>
 			<PlacementModal open={placementOpen} onOpenChange={setPlacementOpen} />
 		</div>
 	);
