@@ -9,38 +9,62 @@ export type ChatProviderMode =
 	| "openai"
 	| "deepseek";
 
+type TextProviderMode = Exclude<ChatProviderMode, "heygen"> | "heygen";
+
 interface ChatProviderState {
-	mode: ChatProviderMode;
-	setMode: (m: ChatProviderMode) => void;
+	textMode: TextProviderMode;
+	voiceMode: ChatProviderMode;
+	setTextMode: (mode: TextProviderMode) => void;
+	setVoiceMode: (mode: ChatProviderMode) => void;
 }
 
 // Simple localStorage persistence (no SSR impact in client-only chat)
-const STORAGE_KEY = "chat_provider_mode";
+const STORAGE_KEY_TEXT = "chat_provider_mode:text";
+const STORAGE_KEY_VOICE = "chat_provider_mode:voice";
 
-const getInitialMode = (): ChatProviderMode => {
+const isValidMode = (value: string | null): value is ChatProviderMode => {
+	return (
+		value === "pollinations" ||
+		value === "heygen" ||
+		value === "gemini" ||
+		value === "openrouter" ||
+		value === "claude" ||
+		value === "openai" ||
+		value === "deepseek"
+	);
+};
+
+const getInitialTextMode = (): TextProviderMode => {
 	if (typeof window === "undefined") return "pollinations";
-	const saved = window.localStorage.getItem(
-		STORAGE_KEY,
-	) as ChatProviderMode | null;
-	return saved === "pollinations" ||
-		saved === "heygen" ||
-		saved === "gemini" ||
-		saved === "openrouter" ||
-		saved === "claude" ||
-		saved === "openai" ||
-		saved === "deepseek"
-		? saved
-		: "pollinations";
+	const saved = window.localStorage.getItem(STORAGE_KEY_TEXT);
+	if (!isValidMode(saved)) return "pollinations";
+	return saved;
+};
+
+const getInitialVoiceMode = (): ChatProviderMode => {
+	if (typeof window === "undefined") return "heygen";
+	const saved = window.localStorage.getItem(STORAGE_KEY_VOICE);
+	if (!isValidMode(saved)) return "heygen";
+	return saved;
 };
 
 export const useChatProviderStore = create<ChatProviderState>((set) => ({
-	mode: getInitialMode(),
-	setMode: (mode) => {
+	textMode: getInitialTextMode(),
+	voiceMode: getInitialVoiceMode(),
+	setTextMode: (mode) => {
 		try {
 			if (typeof window !== "undefined") {
-				window.localStorage.setItem(STORAGE_KEY, mode);
+				window.localStorage.setItem(STORAGE_KEY_TEXT, mode);
 			}
 		} catch {}
-		set({ mode });
+		set({ textMode: mode });
+	},
+	setVoiceMode: (mode) => {
+		try {
+			if (typeof window !== "undefined") {
+				window.localStorage.setItem(STORAGE_KEY_VOICE, mode);
+			}
+		} catch {}
+		set({ voiceMode: mode });
 	},
 }));

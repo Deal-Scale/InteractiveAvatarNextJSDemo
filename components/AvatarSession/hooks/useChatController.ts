@@ -60,63 +60,124 @@ export function useChatController(sessionState: StreamingAvatarSessionState) {
 	const addAvatarMessage = (content: string) =>
 		addMessage({ id: nanoid(), content, sender: MessageSender.AVATAR });
 
-	const handleMcpCommand = useMcpCommands(addAvatarMessage);
+	const handleMcpCommand = useMcpCommands();
+
+	const speakThroughAvatar = useMemoizedFn(async (content: string) => {
+		if (!content?.trim()) return;
+
+		try {
+			if (currentSessionId) {
+				await sendTaskMutation.mutateAsync({
+					session_id: currentSessionId,
+					text: content,
+					task_mode: "async",
+					task_type: "repeat",
+				});
+			} else if (apiService?.textChat?.speakQueued) {
+				await apiService.textChat.speakQueued(content);
+			} else if (apiService) {
+				apiService.textChat.repeatMessage(content);
+			}
+		} catch (error) {
+			console.error("[Chat] speakThroughAvatar failed", error);
+		}
+	});
 
 	const handleSendMessage = useMemoizedFn(
 		async (text: string, assets?: MessageAsset[]) => {
-			if (!text.trim()) return;
+			const trimmed = text.trim();
+			if (!trimmed) return;
 
-			// Begin send sequence
 			setIsSending(true);
-			addMessage({
+
+			const userMessage = {
 				id: nanoid(),
 				content: text,
 				sender: MessageSender.CLIENT,
 				assets,
-			});
+			} as const;
+			addMessage(userMessage);
 
-			// Choose message handling path
+			const lower = trimmed.toLowerCase();
+
 			try {
-				// Provider-aware routing: Pollinations uses provider adapter; Heygen keeps current flow
-				const mode = useChatProviderStore.getState().mode;
-				const providerMode = useChatProviderStore.getState().mode as ProviderId;
-				const adapterModes: ProviderId[] = [
-					"pollinations",
-					"gemini",
-					"openrouter",
-					"claude",
-					"openai",
-					"deepseek",
-				];
-
-				if (adapterModes.includes(providerMode)) {
-					const provider = getProvider(providerMode);
-					const reply = await provider.sendMessage({
-						history: messages,
-						input: text,
-					});
-					addMessage(reply);
-				} else {
-					// Prefer server API if we have a session id; otherwise use SDK service; fallback to mock
-					if (currentSessionId) {
-						// Map to chat task by default
-						await sendTaskMutation.mutateAsync({
-							session_id: currentSessionId,
-							text,
-							task_mode: "sync",
-							task_type: "chat",
-						});
-					} else if (apiService) {
-						if (text.trim().toLowerCase().startsWith("/mcp")) {
-							await handleMcpCommand(text);
-						} else {
-							await apiService.textChat.sendMessageSync(text, assets);
-						}
-					} else if (mockChatEnabled) {
-						const reply = await mockOpenRouter(text);
-						addAvatarMessage(reply);
+				if (lower.startsWith("/mcp")) {
+					const responses = await handleMcpCommand(trimmed);
+					for (const response of responses) {
+						addMessage(response);
+						await speakThroughAvatar(response.content);
 					}
+					return;
 				}
+
+				const { textMode, voiceMode } = useChatProviderStore.getState();
+				const textProvider = getProvider(textMode as ProviderId);
+				const voiceProvider = getProvider(voiceMode as ProviderId);
+
+				const operations: Array<Promise<void>> = [];
+				const history = useSessionStore.getState().messages;
+
+				// Dispatch to selected text provider
+				operations.push(
+					(async () => {
+						try {
+							const reply = await textProvider.sendMessage({
+								history,
+								input: text,
+							});
+							const providerMessage = {
+								...reply,
+								provider: reply.provider ?? textProvider.id,
+							};
+							addMessage(providerMessage);
+
+							if (voiceProvider.supportsVoice) {
+								await speakThroughAvatar(providerMessage.content);
+							}
+						} catch (error) {
+							console.error("[Chat] provider sendMessage failed", error);
+							addMessage({
+								id: nanoid(),
+								sender: MessageSender.AVATAR,
+								content: `Error from ${textProvider.id}: ${
+									(error as Error)?.message ?? "unknown"
+								}`,
+								provider: textProvider.id,
+							});
+						}
+					})(),
+				);
+
+				// Fire voice pipeline concurrently when available or using mock fallback
+				operations.push(
+					(async () => {
+						if (mockChatEnabled) {
+							const reply = await mockOpenRouter(text);
+							addMessage({
+								id: nanoid(),
+								content: reply,
+								sender: MessageSender.AVATAR,
+								provider: "mock-openrouter",
+							});
+							return;
+						}
+
+						if (!voiceProvider.supportsVoice) return;
+
+						if (currentSessionId) {
+							await sendTaskMutation.mutateAsync({
+								session_id: currentSessionId,
+								text,
+								task_mode: "async",
+								task_type: "chat",
+							});
+						} else if (apiService) {
+							await apiService.textChat.sendMessage(text, assets);
+						}
+					})(),
+				);
+
+				await Promise.allSettled(operations);
 			} finally {
 				resetHistory();
 				setChatInput("");

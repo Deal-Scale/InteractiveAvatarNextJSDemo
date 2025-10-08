@@ -158,7 +158,7 @@ export async function sendViaProvider(
 }
 
 export function useSendViaCurrentProvider() {
-	const mode = useChatProviderStore((s) => s.mode);
+	const textMode = useChatProviderStore((s) => s.textMode);
 	const send = async (
 		params: { history: Message[]; input: string },
 		options: SendOptions = {},
@@ -174,11 +174,11 @@ export function useSendViaCurrentProvider() {
 				"gemini",
 				"openrouter",
 				"heygen",
-			].filter((p) => p !== mode) as ProviderId[]);
-		return sendViaProvider(mode as ProviderId, params, {
+			].filter((p) => p !== textMode) as ProviderId[]);
+		return sendViaProvider(textMode as ProviderId, params, {
 			...options,
 			fallbackOrder: fallback,
 		});
 	};
-	return { mode, send } as const;
+	return { mode: textMode, send } as const;
 }

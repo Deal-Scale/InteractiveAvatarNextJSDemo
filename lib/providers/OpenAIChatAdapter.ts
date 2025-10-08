@@ -47,12 +47,14 @@ export const OpenAIChatAdapter: ChatProvider = {
 				id: `resp-${Date.now()}`,
 				sender: MessageSender.AVATAR,
 				content,
+				provider: "openai",
 			} as Message;
 		} catch (error) {
 			return {
 				id: `resp-${Date.now()}`,
 				sender: MessageSender.AVATAR,
 				content: `OpenAI error: ${(error as Error).message}`,
+				provider: "openai",
 			} as Message;
 		}
 	},
