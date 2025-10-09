@@ -57,7 +57,79 @@ export function AutoForm<TSchema extends z.ZodObject<any, any>>({
 		shape = {} as any;
 	}
 
-	const keys = Object.keys(shape);
+	const resolveObjectShape = React.useCallback(
+		(obj: z.ZodTypeAny): Record<string, z.ZodTypeAny> => {
+			if (!obj) return {} as Record<string, z.ZodTypeAny>;
+			const target = unwrapType(obj) as any;
+
+			if (typeof target?._def?.shape === "function") {
+				return target._def.shape() as Record<string, z.ZodTypeAny>;
+			}
+			if (target?.shape && typeof target.shape === "object") {
+				return target.shape as Record<string, z.ZodTypeAny>;
+			}
+
+			return {} as Record<string, z.ZodTypeAny>;
+		},
+		[],
+	);
+
+	const renderShape = React.useCallback(
+		(currentShape: Record<string, z.ZodTypeAny>, prefix: string[] = []) => {
+			return Object.keys(currentShape).map((key) => {
+				const def = currentShape[key];
+				if (!def) return null;
+
+				const baseDef = unwrapType(def as unknown as z.ZodTypeAny) as any;
+				const path = [...prefix, key];
+				const name = path.join(".");
+
+				if (process.env.NODE_ENV !== "production") {
+					try {
+						console.debug("AutoForm field", name || key, {
+							raw: (def as any)?._def?.typeName,
+							base: baseDef?._def?.typeName,
+						});
+					} catch {}
+				}
+
+				if (baseDef?._def?.typeName === "ZodObject") {
+					const nestedShape = resolveObjectShape(baseDef);
+					const legendLabel = ((fields as any)?.[name]?.label ??
+						(fields as any)?.[key]?.label ??
+						key) as React.ReactNode;
+
+					return (
+						<fieldset
+							key={name || key}
+							className="space-y-2 rounded-md border border-border p-2"
+						>
+							<legend className="px-1 text-xs uppercase tracking-wide text-muted-foreground">
+								{legendLabel}
+							</legend>
+							<div className="space-y-2">{renderShape(nestedShape, path)}</div>
+						</fieldset>
+					);
+				}
+
+				return (
+					<AutoField
+						key={name || key}
+						def={def}
+						fields={fields as any}
+						form={form}
+						name={name || key}
+					/>
+				);
+			});
+		},
+		[fields, form, resolveObjectShape],
+	);
+
+	const renderedFields = React.useMemo(
+		() => renderShape(shape),
+		[renderShape, shape],
+	);
 
 	// Flatten errors into dotted paths with messages (cycle-safe and selective)
 	const flatErrors = React.useMemo(() => {
@@ -108,60 +180,7 @@ export function AutoForm<TSchema extends z.ZodObject<any, any>>({
 			className={className ?? "space-y-3"}
 			onSubmit={handleSubmit(onSubmit)}
 		>
-			{keys.map((key) => {
-				const def = shape[key];
-				const baseDef = unwrapType(def as unknown as z.ZodTypeAny) as any;
-
-				if (process.env.NODE_ENV !== "production") {
-					try {
-						console.debug("AutoForm field", key, {
-							raw: (def as any)?._def?.typeName,
-							base: baseDef?._def?.typeName,
-						});
-					} catch {}
-				}
-				// Support nested object fields by rendering their children with dotted names
-				if (baseDef?._def?.typeName === "ZodObject") {
-					const innerShape: Record<string, z.ZodTypeAny> =
-						typeof baseDef._def?.shape === "function"
-							? ((baseDef as any)._def.shape() as Record<string, z.ZodTypeAny>)
-							: ((baseDef as any).shape as Record<string, z.ZodTypeAny>);
-
-					return (
-						<fieldset key={key} className="rounded-md border border-border p-2">
-							<legend className="px-1 text-xs uppercase tracking-wide text-muted-foreground">
-								{key}
-							</legend>
-							<div className="space-y-2">
-								{Object.keys(innerShape).map((childKey) => {
-									const name = `${key}.${childKey}`;
-									const childDef = innerShape[childKey];
-
-									return (
-										<AutoField
-											key={name}
-											def={childDef}
-											fields={fields as any}
-											form={form}
-											name={name}
-										/>
-									);
-								})}
-							</div>
-						</fieldset>
-					);
-				}
-
-				return (
-					<AutoField
-						key={key}
-						def={def}
-						fields={fields as any}
-						form={form}
-						name={key}
-					/>
-				);
-			})}
+			{renderedFields}
 			{Boolean(invalidSummary?.length) && (
 				<div className="rounded-md border border-destructive/40 bg-destructive/5 p-2 text-xs">
 					<div className="mb-1 font-medium text-destructive">
