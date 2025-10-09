@@ -37,17 +37,37 @@ export type AutoFieldProps = {
 	fields?: FieldsConfig<any>;
 };
 
+const normalizePath = (raw: string): string[] => {
+	return raw
+		.replace(/\[(\d+)\]/g, ".$1")
+		.split(".")
+		.filter(Boolean);
+};
+
+const getValueAtPath = (root: unknown, segments: string[]) => {
+	let current: any = root;
+	for (const segment of segments) {
+		if (current == null) return undefined;
+		current = current[segment];
+	}
+	return current;
+};
+
 export const AutoField: React.FC<AutoFieldProps> = ({
 	name,
 	def,
 	form,
 	fields = {},
 }) => {
-	const { register, formState, setValue, getValues } = form;
+	const { register, formState, setValue, getValues, watch } = form;
 
 	const cfg = (fields as any)[name] || {};
 	const label = cfg.label ?? name;
-	const error = (formState.errors as any)[name]?.message as string | undefined;
+	const segments = React.useMemo(() => normalizePath(name), [name]);
+	const error = React.useMemo(() => {
+		const node = getValueAtPath(formState.errors, segments);
+		return (node as any)?.message as string | undefined;
+	}, [formState.errors, segments]);
 
 	// Normalize vague Zod errors like "Invalid input" to a clearer, field-specific message
 	const normError = React.useMemo(() => {
@@ -65,7 +85,8 @@ export const AutoField: React.FC<AutoFieldProps> = ({
 		multiple = false,
 	) => {
 		if (multiple) {
-			const current = (getValues() as any)[name] ?? [];
+			const rawValue = watch(name as any);
+			const current = Array.isArray(rawValue) ? rawValue : [];
 
 			return (
 				<div className="flex flex-col gap-1">
@@ -100,12 +121,14 @@ export const AutoField: React.FC<AutoFieldProps> = ({
 			);
 		}
 
+		const currentValue = watch(name as any);
+
 		return (
 			<div className="flex flex-col gap-1">
 				<span className="text-sm text-muted-foreground">{label}</span>
 				<select
 					className="rounded-md border border-border bg-background px-3 py-2 text-foreground shadow-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary"
-					defaultValue=""
+					value={(currentValue ?? "") as string}
 					{...register(name as any)}
 				>
 					<option disabled value="">
@@ -300,7 +323,7 @@ export const AutoField: React.FC<AutoFieldProps> = ({
 			devLog("array:string -> textarea", {
 				reason: "no options provided; falling back to newline textarea",
 			});
-			const current = (getValues() as any)[name] as string[] | undefined;
+			const current = getValues(name as any) as string[] | undefined;
 			const defaultValue = Array.isArray(current) ? current.join("\n") : "";
 
 			return (
@@ -339,7 +362,7 @@ export const AutoField: React.FC<AutoFieldProps> = ({
 	// Boolean
 	if ((base as any)._def?.typeName === "ZodBoolean") {
 		if ((cfg as any).widget === "select") {
-			const current = (getValues() as any)[name] as boolean | undefined;
+			const current = watch(name as any) as boolean | undefined;
 			const opts = booleanSelectOptions(
 				(cfg as any).options as Array<{ value: string; label: string }>,
 			);
