@@ -4,8 +4,6 @@ import type { Agent } from "./AgentCard";
 
 import React, { useMemo, useState } from "react";
 import { z } from "zod";
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
 
 import AgentPreview from "./AgentPreview";
 
@@ -17,12 +15,48 @@ import {
 	DialogTitle,
 } from "@/components/ui/dialog";
 import { AutoForm } from "@/components/forms/AutoForm";
+import { useZodForm } from "@/components/forms/useZodForm";
+import type { FieldsConfig } from "@/components/forms/utils";
+import {
+	languagesOptions,
+	sttProviderOptions,
+	voiceChatTransportOptions,
+	voiceEmotionOptions,
+	useAvatarOptionsQuery,
+	useVoiceOptionsQuery,
+	useMcpServerOptionsQuery,
+	useKnowledgeBaseOptionsQuery,
+} from "@/data/options";
 import { AgentConfigSchema } from "@/lib/schemas/agent";
 import {
 	Tooltip,
 	TooltipContent,
 	TooltipTrigger,
 } from "@/components/ui/tooltip";
+
+const VIDEO_RESOLUTION_OPTIONS = [
+	{ value: "720p", label: "720p" },
+	{ value: "1080p", label: "1080p" },
+];
+
+const VIDEO_BACKGROUND_OPTIONS = [
+	{ value: "transparent", label: "Transparent" },
+	{ value: "blur", label: "Blur" },
+	{ value: "none", label: "None" },
+];
+
+const RATE_MULTIPLIER_OPTIONS = [
+	{ value: "1", label: "1x" },
+	{ value: "2", label: "2x" },
+	{ value: "3", label: "3x" },
+	{ value: "4", label: "4x" },
+	{ value: "5", label: "5x" },
+];
+
+const BOOLEAN_CHOICE_OPTIONS = [
+	{ value: "true", label: "Enabled" },
+	{ value: "false", label: "Disabled" },
+];
 
 export default function AgentModal(props: {
 	mode: "view" | "edit" | "create";
@@ -81,52 +115,334 @@ export default function AgentModal(props: {
 	const isEdit = effectiveMode === "edit";
 	const isCreate = effectiveMode === "create";
 
-	// Combined schema: full AgentConfig + sidebar-only fields + create-only monetization fields
 	const AgentFormSchema = useMemo(() => {
-		const base = AgentConfigSchema as unknown as z.ZodObject<any>;
-		return base.extend({
+		const base = (AgentConfigSchema as unknown as z.ZodObject<any>).extend({
 			role: z.string().optional(),
 			avatarUrl: z.string().url().optional().or(z.literal("")).optional(),
 			description: z.string().optional(),
 			tags: z.array(z.string()).optional(),
-			// create-mode extras
+		});
+
+		if (!isCreate) {
+			return base;
+		}
+
+		return base.extend({
 			monetize: z.boolean().optional().default(false),
-			// keep as string to align with select options below
 			rateMultiplier: z.enum(["1", "2", "3", "4", "5"]).optional(),
 		});
-	}, []);
+	}, [isCreate]);
 
-	// Single form instance used for both edit and create
-	const form = useForm<z.infer<typeof AgentFormSchema>>({
-		resolver: zodResolver(AgentFormSchema),
-		mode: "onChange",
-		defaultValues: {
-			id: (working as any)?.id || "new",
-			name: working?.name || "",
-			avatarId: undefined as any,
-			role: working?.role || "",
-			avatarUrl: working?.avatarUrl || "",
-			description: working?.description || "",
-			tags: working?.tags || [],
-			monetize: false,
-			rateMultiplier: "1",
-		},
+	const defaultValues = useMemo(() => {
+		const source = (working as Record<string, unknown>) ?? {};
+		const stt = (source?.stt as Record<string, unknown> | undefined) ?? {};
+		const video = (source?.video as Record<string, unknown> | undefined) ?? {};
+		const audio = (source?.audio as Record<string, unknown> | undefined) ?? {};
+		const voice = (source?.voice as Record<string, unknown> | undefined) ?? {};
+		const elevenlabs =
+			(voice?.elevenlabs_settings as Record<string, unknown> | undefined) ?? {};
+
+		const base: Record<string, unknown> = {
+			id: (source?.id as string) ?? "new",
+			name: (source?.name as string) ?? "",
+			role: (source?.role as string) ?? "",
+			avatarId: (source?.avatarId as string) ?? "",
+			avatarUrl: (source?.avatarUrl as string) ?? "",
+			description: (source?.description as string) ?? "",
+			tags: Array.isArray(source?.tags) ? (source?.tags as string[]) : [],
+			voiceId: (source?.voiceId as string) ?? "",
+			language: (source?.language as string) ?? "",
+			model: (source?.model as string) ?? "",
+			temperature:
+				typeof source?.temperature === "number"
+					? (source?.temperature as number)
+					: 0.7,
+			quality: source?.quality ?? undefined,
+			voiceChatTransport: source?.voiceChatTransport ?? undefined,
+			stt: {
+				provider: stt?.provider ?? undefined,
+				confidenceThreshold:
+					typeof stt?.confidenceThreshold === "number"
+						? (stt?.confidenceThreshold as number)
+						: 0.6,
+			},
+			disableIdleTimeout:
+				typeof source?.disableIdleTimeout === "boolean"
+					? (source?.disableIdleTimeout as boolean)
+					: false,
+			activityIdleTimeout:
+				typeof source?.activityIdleTimeout === "number"
+					? (source?.activityIdleTimeout as number)
+					: 120,
+			video: {
+				resolution: video?.resolution ?? undefined,
+				background: video?.background ?? undefined,
+				fps: typeof video?.fps === "number" ? (video?.fps as number) : 30,
+			},
+			audio: {
+				sampleRate:
+					typeof audio?.sampleRate === "number"
+						? (audio?.sampleRate as number)
+						: 16000,
+				noiseSuppression:
+					typeof audio?.noiseSuppression === "boolean"
+						? (audio?.noiseSuppression as boolean)
+						: false,
+				echoCancellation:
+					typeof audio?.echoCancellation === "boolean"
+						? (audio?.echoCancellation as boolean)
+						: false,
+			},
+			voice: {
+				rate: typeof voice?.rate === "number" ? (voice?.rate as number) : 1,
+				emotion: voice?.emotion ?? undefined,
+				elevenlabs_settings: {
+					stability:
+						typeof elevenlabs?.stability === "number"
+							? (elevenlabs?.stability as number)
+							: 0.5,
+					similarity_boost:
+						typeof elevenlabs?.similarity_boost === "number"
+							? (elevenlabs?.similarity_boost as number)
+							: 0.5,
+					style:
+						typeof elevenlabs?.style === "number"
+							? (elevenlabs?.style as number)
+							: 0,
+					model_id: (elevenlabs?.model_id as string) ?? "",
+					use_speaker_boost:
+						typeof elevenlabs?.use_speaker_boost === "boolean"
+							? (elevenlabs?.use_speaker_boost as boolean)
+							: false,
+				},
+			},
+			knowledgeBaseId: (source?.knowledgeBaseId as string) ?? "",
+			mcpServers: Array.isArray(source?.mcpServers)
+				? (source?.mcpServers as string[])
+				: [],
+			systemPrompt: (source?.systemPrompt as string) ?? "",
+		};
+
+		if (isCreate) {
+			base.monetize = false;
+			base.rateMultiplier = "1";
+		}
+
+		return base;
+	}, [working, isCreate]);
+
+	const form = useZodForm(AgentFormSchema as unknown as z.ZodTypeAny, {
+		defaultValues: defaultValues as any,
 	});
 
 	React.useEffect(() => {
-		// Sync form defaults when switching target or mode
-		form.reset({
-			id: (working as any)?.id || "new",
-			name: working?.name || "",
-			avatarId: undefined as any,
-			role: working?.role || "",
-			avatarUrl: working?.avatarUrl || "",
-			description: working?.description || "",
-			tags: working?.tags || [],
-			monetize: false,
-			rateMultiplier: "1",
-		});
-	}, [working, form]);
+		form.reset(defaultValues as any);
+	}, [defaultValues, form]);
+
+	const { data: avatarOptions = [] } = useAvatarOptionsQuery();
+	const { data: voiceOptions = [] } = useVoiceOptionsQuery();
+	const { data: mcpServerOptions = [] } = useMcpServerOptionsQuery();
+	const { data: knowledgeBaseOptions = [] } = useKnowledgeBaseOptionsQuery();
+
+	const monetizationEnabled = isCreate
+		? Boolean(form.watch("monetize" as any))
+		: false;
+
+	const fields = useMemo(() => {
+		const base: FieldsConfig<Record<string, unknown>> & Record<string, any> = {
+			id: {
+				label: "Agent ID",
+				placeholder: isCreate ? "Generated automatically" : undefined,
+			},
+			name: { label: "Agent Name", placeholder: "Acme Support" },
+			role: { label: "Role", placeholder: "Support" },
+			avatarUrl: {
+				label: "Avatar Preview URL",
+				placeholder: "https://cdn.example.com/avatar.png",
+			},
+			avatarId: {
+				label: "HeyGen Avatar",
+				widget: "select",
+				options: avatarOptions,
+			},
+			voiceId: {
+				label: "Default Voice",
+				widget: "select",
+				options: voiceOptions,
+			},
+			language: {
+				label: "Language",
+				widget: "select",
+				options: languagesOptions,
+			},
+			model: {
+				label: "Model",
+				placeholder: "gpt-4o-mini",
+			},
+			description: {
+				label: "Description",
+				widget: "textarea",
+				rows: 4,
+				placeholder: "Short summary that appears in the sidebar",
+			},
+			tags: {
+				label: "Tags",
+				placeholder: "Enter tags, one per line",
+			},
+			temperature: {
+				label: "Temperature",
+				widget: "slider",
+				min: 0,
+				max: 2,
+				step: 0.1,
+			},
+			quality: { label: "Avatar Quality" },
+			voiceChatTransport: {
+				label: "Voice Chat Transport",
+				widget: "select",
+				options: voiceChatTransportOptions,
+			},
+			"stt.provider": {
+				label: "STT Provider",
+				widget: "select",
+				options: sttProviderOptions,
+			},
+			"stt.confidenceThreshold": {
+				label: "STT Confidence Threshold",
+				widget: "slider",
+				min: 0,
+				max: 1,
+				step: 0.05,
+			},
+			disableIdleTimeout: {
+				label: "Disable Idle Timeout",
+				widget: "select",
+				options: BOOLEAN_CHOICE_OPTIONS,
+			},
+			activityIdleTimeout: {
+				label: "Idle Timeout (sec)",
+				widget: "slider",
+				min: 30,
+				max: 3600,
+				step: 30,
+			},
+			"video.resolution": {
+				label: "Video Resolution",
+				widget: "select",
+				options: VIDEO_RESOLUTION_OPTIONS,
+			},
+			"video.background": {
+				label: "Video Background",
+				widget: "select",
+				options: VIDEO_BACKGROUND_OPTIONS,
+			},
+			"video.fps": {
+				label: "Video FPS",
+				widget: "slider",
+				min: 15,
+				max: 60,
+				step: 1,
+			},
+			"audio.sampleRate": {
+				label: "Audio Sample Rate (Hz)",
+				widget: "slider",
+				min: 16000,
+				max: 48000,
+				step: 1000,
+			},
+			"audio.noiseSuppression": {
+				label: "Noise Suppression",
+				widget: "select",
+				options: BOOLEAN_CHOICE_OPTIONS,
+			},
+			"audio.echoCancellation": {
+				label: "Echo Cancellation",
+				widget: "select",
+				options: BOOLEAN_CHOICE_OPTIONS,
+			},
+			"voice.rate": {
+				label: "Voice Rate",
+				widget: "slider",
+				min: 0.5,
+				max: 2,
+				step: 0.05,
+			},
+			"voice.emotion": {
+				label: "Voice Emotion",
+				widget: "select",
+				options: voiceEmotionOptions,
+			},
+			"voice.elevenlabs_settings.stability": {
+				label: "ElevenLabs Stability",
+				widget: "slider",
+				min: 0,
+				max: 1,
+				step: 0.05,
+			},
+			"voice.elevenlabs_settings.similarity_boost": {
+				label: "ElevenLabs Similarity Boost",
+				widget: "slider",
+				min: 0,
+				max: 1,
+				step: 0.05,
+			},
+			"voice.elevenlabs_settings.style": {
+				label: "ElevenLabs Style",
+				widget: "slider",
+				min: 0,
+				max: 1,
+				step: 0.05,
+			},
+			"voice.elevenlabs_settings.model_id": {
+				label: "ElevenLabs Model ID",
+				placeholder: "eleven_monolingual_v1",
+			},
+			"voice.elevenlabs_settings.use_speaker_boost": {
+				label: "ElevenLabs Speaker Boost",
+				widget: "select",
+				options: BOOLEAN_CHOICE_OPTIONS,
+			},
+			knowledgeBaseId: {
+				label: "Knowledge Base",
+				widget: "select",
+				options: knowledgeBaseOptions,
+			},
+			mcpServers: {
+				label: "MCP Servers",
+				widget: "select",
+				options: mcpServerOptions,
+				multiple: true,
+			},
+			systemPrompt: {
+				label: "System Prompt / KB Text",
+				widget: "textarea",
+				rows: 6,
+				placeholder:
+					"Describe your agent's behavior or paste knowledge base text...",
+			},
+		};
+
+		if (isCreate) {
+			base.monetize = { label: "Enable Monetization" };
+			base.rateMultiplier = {
+				label: "Rate Multiplier",
+				widget: "select",
+				options: RATE_MULTIPLIER_OPTIONS,
+				placeholder: monetizationEnabled
+					? undefined
+					: "Enable monetization first",
+			};
+		}
+
+		return base;
+	}, [
+		avatarOptions,
+		voiceOptions,
+		knowledgeBaseOptions,
+		mcpServerOptions,
+		monetizationEnabled,
+		isCreate,
+	]);
 
 	return (
 		<Dialog open={open} onOpenChange={onOpenChange}>
@@ -197,77 +513,52 @@ export default function AgentModal(props: {
 									</Tooltip>
 								</div>
 							)}
-							{(() => {
-								const monetize = form.watch("monetize");
-								const fields: any = {
-									name: { label: "Name" },
-									role: { label: "Role" },
-									avatarUrl: { label: "Avatar URL" },
-									description: { label: "Description", widget: "textarea" },
-									tags: { label: "Tags" },
-								};
-								if (isCreate) {
-									fields.monetize = { label: "Monetize" };
-									if (monetize) {
-										fields.rateMultiplier = {
-											label: "Multiplier",
-											widget: "select",
-											options: [
-												{ label: "1x", value: "1" },
-												{ label: "2x", value: "2" },
-												{ label: "3x", value: "3" },
-												{ label: "4x", value: "4" },
-												{ label: "5x", value: "5" },
-											],
-										};
-									}
-								}
-								return (
-									<AutoForm
-										className="space-y-3"
-										schema={AgentFormSchema}
-										form={form as any}
-										fields={fields}
-										submitLabel={isCreate ? "Create" : "Save"}
-										onSubmit={(values: z.infer<typeof AgentFormSchema>) => {
-											const name = String(values.name ?? "");
-											const role =
-												values.role != null ? String(values.role) : "";
-											const avatarUrl =
-												values.avatarUrl != null
-													? String(values.avatarUrl)
-													: "";
-											const description =
-												values.description != null
-													? String(values.description)
-													: "";
-											const tags: string[] = Array.isArray(values.tags)
-												? (values.tags as string[])
-												: typeof (values as any).tags === "string"
-													? ((values as any).tags as string)
-															.split(",")
-															.map((s: string) => s.trim())
-															.filter(Boolean)
-													: [];
+							<AutoForm
+								className="space-y-4"
+								schema={AgentFormSchema as unknown as z.ZodObject<any>}
+								form={form as any}
+								fields={fields as FieldsConfig<any>}
+								submitLabel={isCreate ? "Create" : "Save"}
+								onSubmit={(values: z.infer<typeof AgentFormSchema>) => {
+									const rawId = (values as any)?.id;
+									const id =
+										rawId && String(rawId).trim().length > 0
+											? String(rawId).trim()
+											: (working?.id ?? `new-${Date.now()}`);
+									const name = String(values.name ?? "").trim();
+									const role = values.role ? String(values.role).trim() : "";
+									const avatarUrl =
+										values.avatarUrl != null
+											? String(values.avatarUrl).trim()
+											: "";
+									const description =
+										values.description != null
+											? String(values.description).trim()
+											: "";
+									const tags: string[] = Array.isArray(values.tags)
+										? (values.tags as string[])
+												.map((tag) => String(tag).trim())
+												.filter(Boolean)
+										: typeof (values as any).tags === "string"
+											? ((values as any).tags as string)
+													.split(/,|\n/)
+													.map((s: string) => s.trim())
+													.filter(Boolean)
+											: [];
 
-											const next: Agent = {
-												id:
-													(values as any)?.id ||
-													working?.id ||
-													`new-${Date.now()}`,
-												name,
-												role,
-												avatarUrl,
-												description,
-												tags,
-												isOwnedByUser: isCreate ? true : working?.isOwnedByUser,
-											};
-											onSave?.(next);
-											onOpenChange(false);
-										}}
-									/>
-								);
-							})()}
+									const next: Agent = {
+										id,
+										name,
+										role,
+										avatarUrl,
+										description,
+										tags,
+										isOwnedByUser: isCreate ? true : working?.isOwnedByUser,
+									};
+									onSave?.(next);
+									onOpenChange(false);
+								}}
+							/>
 						</>
 					)}
 				</div>
