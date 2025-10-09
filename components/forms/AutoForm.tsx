@@ -110,18 +110,22 @@ export function AutoForm<TSchema extends z.ZodObject<any, any>>({
 		>
 			{keys.map((key) => {
 				const def = shape[key];
+				const baseDef = unwrapType(def as unknown as z.ZodTypeAny) as any;
 
 				if (process.env.NODE_ENV !== "production") {
 					try {
-						console.debug("AutoForm field", key, (def as any)?._def?.typeName);
+						console.debug("AutoForm field", key, {
+							raw: (def as any)?._def?.typeName,
+							base: baseDef?._def?.typeName,
+						});
 					} catch {}
 				}
 				// Support nested object fields by rendering their children with dotted names
-				if ((def as any)?._def?.typeName === "ZodObject") {
+				if (baseDef?._def?.typeName === "ZodObject") {
 					const innerShape: Record<string, z.ZodTypeAny> =
-						typeof (def as any)._def?.shape === "function"
-							? ((def as any)._def.shape() as Record<string, z.ZodTypeAny>)
-							: ((def as any).shape as Record<string, z.ZodTypeAny>);
+						typeof baseDef._def?.shape === "function"
+							? ((baseDef as any)._def.shape() as Record<string, z.ZodTypeAny>)
+							: ((baseDef as any).shape as Record<string, z.ZodTypeAny>);
 
 					return (
 						<fieldset key={key} className="rounded-md border border-border p-2">
