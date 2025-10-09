@@ -5,8 +5,11 @@ import React, { useMemo, useState } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 
-import { AutoForm } from "@/components/forms/AutoForm";
-import type { FieldConfig, FieldsConfig } from "@/components/forms/utils";
+import { AutoForm } from "@/components/external/zod-react-form-auto/src/AutoForm";
+import type {
+	FieldConfig,
+	FieldsConfig,
+} from "@/components/external/zod-react-form-auto/src/utils/utils";
 import { Button } from "@/components/ui/button";
 import {
 	Dialog,
@@ -387,6 +390,7 @@ export default function AgentModal(props: {
 									mcpServers: {
 										label: "MCP Servers",
 										widget: "select",
+										multiple: true,
 										options: mcpServerOptions,
 									},
 									systemPrompt: {
