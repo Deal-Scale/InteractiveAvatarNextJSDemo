@@ -2,6 +2,7 @@
 import React from "react";
 import { z } from "zod";
 import { UseFormReturn } from "react-hook-form";
+import clsx from "clsx";
 
 import {
 	unwrapType,
@@ -43,11 +44,16 @@ export const AutoField: React.FC<AutoFieldProps> = ({
 	form,
 	fields = {},
 }) => {
-	const { register, formState, setValue, getValues } = form;
+	const { register, formState, setValue, watch } = form;
 
 	const cfg = (fields as any)[name] || {};
 	const label = cfg.label ?? name;
 	const error = (formState.errors as any)[name]?.message as string | undefined;
+	const helpText =
+		typeof (cfg as any).helpText === "string"
+			? (cfg as any).helpText
+			: undefined;
+	const widget = (cfg as any).widget;
 
 	// Normalize vague Zod errors like "Invalid input" to a clearer, field-specific message
 	const normError = React.useMemo(() => {
@@ -59,21 +65,41 @@ export const AutoField: React.FC<AutoFieldProps> = ({
 		return error;
 	}, [error, label]);
 
+	const stringValue = (value: unknown) => {
+		if (value == null) return "";
+		if (typeof value === "string") return value;
+		if (typeof value === "number" || typeof value === "boolean") {
+			return String(value);
+		}
+		return "";
+	};
+
+	const renderHelpText = () =>
+		helpText ? (
+			<span className="text-xs text-muted-foreground">{helpText}</span>
+		) : null;
+
 	// Helper to render a select (single or multi)
 	const renderSelect = (
 		opts: Array<{ value: string; label: string }>,
 		multiple = false,
 	) => {
+		const registerProps = register(name as any);
+
 		if (multiple) {
-			const current = (getValues() as any)[name] ?? [];
+			const current = watch(name as any) ?? [];
 
 			return (
 				<div className="flex flex-col gap-1">
 					<span className="text-sm text-muted-foreground">{label}</span>
 					<select
 						multiple
+						name={registerProps.name}
+						ref={registerProps.ref}
+						onBlur={registerProps.onBlur}
 						className="rounded-md border border-border bg-background px-3 py-2 text-foreground shadow-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary"
-						value={current as string[]}
+						disabled={(cfg as any).disabled}
+						value={Array.isArray(current) ? current.map(stringValue) : []}
 						onChange={(e) => {
 							const selected = Array.from(e.target.selectedOptions).map(
 								(o) => o.value,
@@ -83,6 +109,13 @@ export const AutoField: React.FC<AutoFieldProps> = ({
 								shouldValidate: true,
 								shouldDirty: true,
 							});
+							registerProps.onChange?.({
+								target: {
+									name: registerProps.name,
+									value: selected,
+								},
+								type: "change",
+							} as any);
 						}}
 					>
 						{opts.map((o) => (
@@ -96,17 +129,26 @@ export const AutoField: React.FC<AutoFieldProps> = ({
 							{normError}
 						</span>
 					)}
+					{renderHelpText()}
 				</div>
 			);
 		}
+
+		const current = watch(name as any);
 
 		return (
 			<div className="flex flex-col gap-1">
 				<span className="text-sm text-muted-foreground">{label}</span>
 				<select
+					name={registerProps.name}
+					ref={registerProps.ref}
+					onBlur={registerProps.onBlur}
+					onChange={(event) => {
+						registerProps.onChange?.(event);
+					}}
+					value={stringValue(current)}
+					disabled={(cfg as any).disabled}
 					className="rounded-md border border-border bg-background px-3 py-2 text-foreground shadow-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary"
-					defaultValue=""
-					{...register(name as any)}
 				>
 					<option disabled value="">
 						Select {label}
@@ -122,6 +164,7 @@ export const AutoField: React.FC<AutoFieldProps> = ({
 						{normError}
 					</span>
 				)}
+				{renderHelpText()}
 			</div>
 		);
 	};
@@ -144,6 +187,7 @@ export const AutoField: React.FC<AutoFieldProps> = ({
 					className="min-h-24 max-h-[60vh] w-full resize-y rounded-md border border-border bg-background px-3 py-2 text-foreground shadow-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary"
 					rows={(cfg as any).rows ?? 5}
 					placeholder={(cfg as any).placeholder}
+					disabled={(cfg as any).disabled}
 					{...register(name as any)}
 				/>
 				{normError && (
@@ -151,6 +195,7 @@ export const AutoField: React.FC<AutoFieldProps> = ({
 						{normError}
 					</span>
 				)}
+				{renderHelpText()}
 			</div>
 		);
 	}
@@ -164,6 +209,7 @@ export const AutoField: React.FC<AutoFieldProps> = ({
 						{normError}
 					</span>
 				)}
+				{renderHelpText()}
 			</div>
 		);
 	}
@@ -177,6 +223,7 @@ export const AutoField: React.FC<AutoFieldProps> = ({
 					min={(cfg as any).min}
 					step={(cfg as any).step}
 					type="range"
+					disabled={(cfg as any).disabled}
 					{...register(name as any, { valueAsNumber: true })}
 				/>
 				{normError && (
@@ -184,6 +231,7 @@ export const AutoField: React.FC<AutoFieldProps> = ({
 						{normError}
 					</span>
 				)}
+				{renderHelpText()}
 			</div>
 		);
 	}
@@ -300,7 +348,7 @@ export const AutoField: React.FC<AutoFieldProps> = ({
 			devLog("array:string -> textarea", {
 				reason: "no options provided; falling back to newline textarea",
 			});
-			const current = (getValues() as any)[name] as string[] | undefined;
+			const current = watch(name as any) as string[] | undefined;
 			const defaultValue = Array.isArray(current) ? current.join("\n") : "";
 
 			return (
@@ -309,6 +357,7 @@ export const AutoField: React.FC<AutoFieldProps> = ({
 					<textarea
 						className="min-h-[120px] rounded-md border border-border bg-background px-3 py-2 text-foreground shadow-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary"
 						placeholder={cfg.placeholder as string | undefined}
+						disabled={(cfg as any).disabled}
 						defaultValue={defaultValue}
 						{...register(name as any, {
 							setValueAs: (value) => {
@@ -331,6 +380,7 @@ export const AutoField: React.FC<AutoFieldProps> = ({
 							{normError}
 						</span>
 					)}
+					{renderHelpText()}
 				</div>
 			);
 		}
@@ -338,19 +388,76 @@ export const AutoField: React.FC<AutoFieldProps> = ({
 
 	// Boolean
 	if ((base as any)._def?.typeName === "ZodBoolean") {
+		if (widget === "switch") {
+			const current = Boolean(watch(name as any));
+			const registerProps = register(name as any);
+
+			return (
+				<div className="flex flex-col gap-1">
+					<label className="flex items-center justify-between gap-3">
+						<span className="text-sm text-muted-foreground">{label}</span>
+						<span className="relative inline-flex h-6 w-11 items-center">
+							<input
+								type="checkbox"
+								name={registerProps.name}
+								ref={registerProps.ref}
+								onBlur={registerProps.onBlur}
+								onChange={(event) => {
+									registerProps.onChange?.(event);
+									setValue(name as any, event.target.checked as any, {
+										shouldValidate: true,
+										shouldDirty: true,
+									});
+								}}
+								checked={current}
+								disabled={(cfg as any).disabled}
+								className="peer sr-only"
+							/>
+							<span
+								aria-hidden="true"
+								className={clsx(
+									"h-6 w-11 rounded-full transition-colors",
+									current ? "bg-primary" : "bg-muted",
+									(cfg as any).disabled ? "opacity-60" : "opacity-100",
+								)}
+							/>
+							<span
+								aria-hidden="true"
+								className={clsx(
+									"pointer-events-none absolute left-1 top-1 h-4 w-4 rounded-full bg-background transition-transform",
+									current ? "translate-x-5" : "translate-x-0",
+								)}
+							/>
+						</span>
+					</label>
+					{normError && (
+						<span className="text-xs text-red-500 dark:text-red-400">
+							{normError}
+						</span>
+					)}
+					{renderHelpText()}
+				</div>
+			);
+		}
+
 		if ((cfg as any).widget === "select") {
-			const current = (getValues() as any)[name] as boolean | undefined;
+			const current = watch(name as any) as boolean | undefined;
 			const opts = booleanSelectOptions(
 				(cfg as any).options as Array<{ value: string; label: string }>,
 			);
 			const value = typeof current === "boolean" ? String(current) : "";
+			const registerProps = register(name as any);
 
 			return (
 				<div className="flex flex-col gap-1">
 					<span className="text-sm text-muted-foreground">{label}</span>
 					<select
+						name={registerProps.name}
+						ref={registerProps.ref}
+						onBlur={registerProps.onBlur}
 						className="rounded-md border border-border bg-background px-3 py-2 text-foreground shadow-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary"
 						value={value}
+						disabled={(cfg as any).disabled}
 						onChange={(e) => {
 							const v = e.target.value;
 							const boolVal =
@@ -360,6 +467,13 @@ export const AutoField: React.FC<AutoFieldProps> = ({
 								shouldValidate: true,
 								shouldDirty: true,
 							});
+							registerProps.onChange?.({
+								target: {
+									name: registerProps.name,
+									value: boolVal,
+								},
+								type: "change",
+							} as any);
 						}}
 					>
 						<option disabled value="">
@@ -376,6 +490,7 @@ export const AutoField: React.FC<AutoFieldProps> = ({
 							{normError}
 						</span>
 					)}
+					{renderHelpText()}
 				</div>
 			);
 		}
@@ -387,6 +502,7 @@ export const AutoField: React.FC<AutoFieldProps> = ({
 					<input
 						className="h-4 w-4 accent-primary"
 						type="checkbox"
+						disabled={(cfg as any).disabled}
 						{...register(name as any)}
 					/>
 				</label>
@@ -395,6 +511,7 @@ export const AutoField: React.FC<AutoFieldProps> = ({
 						{normError}
 					</span>
 				)}
+				{renderHelpText()}
 			</div>
 		);
 	}
@@ -411,6 +528,7 @@ export const AutoField: React.FC<AutoFieldProps> = ({
 						min={(cfg as any).min}
 						step={(cfg as any).step}
 						type="range"
+						disabled={(cfg as any).disabled}
 						{...register(name as any, { valueAsNumber: true })}
 					/>
 					{normError && (
@@ -418,6 +536,7 @@ export const AutoField: React.FC<AutoFieldProps> = ({
 							{normError}
 						</span>
 					)}
+					{renderHelpText()}
 				</div>
 			);
 		}
@@ -428,6 +547,7 @@ export const AutoField: React.FC<AutoFieldProps> = ({
 				<input
 					className="rounded-md border border-border bg-background px-3 py-2 text-foreground shadow-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary"
 					type="number"
+					disabled={(cfg as any).disabled}
 					{...register(name as any, { valueAsNumber: true })}
 				/>
 				{normError && (
@@ -435,6 +555,7 @@ export const AutoField: React.FC<AutoFieldProps> = ({
 						{normError}
 					</span>
 				)}
+				{renderHelpText()}
 			</div>
 		);
 	}
@@ -461,6 +582,7 @@ export const AutoField: React.FC<AutoFieldProps> = ({
 							{normError}
 						</span>
 					)}
+					{renderHelpText()}
 				</div>
 			);
 		}
@@ -484,6 +606,7 @@ export const AutoField: React.FC<AutoFieldProps> = ({
 								className="min-h-24 max-h-[60vh] w-full resize-y rounded-md border border-border bg-background px-3 py-2 text-foreground shadow-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary"
 								rows={(cfg as any).rows ?? 5}
 								placeholder={(cfg as any).placeholder}
+								disabled={(cfg as any).disabled}
 								{...register(name as any)}
 							/>
 						</div>
@@ -493,6 +616,7 @@ export const AutoField: React.FC<AutoFieldProps> = ({
 							{normError}
 						</span>
 					)}
+					{renderHelpText()}
 				</div>
 			);
 		}
@@ -506,6 +630,7 @@ export const AutoField: React.FC<AutoFieldProps> = ({
 					placeholder={(cfg as any).placeholder}
 					title={regexCheck?.regex ? regexCheck.regex.toString() : undefined}
 					type={isEmail ? "email" : "text"}
+					disabled={(cfg as any).disabled}
 					{...register(name as any)}
 				/>
 				{normError && (
@@ -513,6 +638,7 @@ export const AutoField: React.FC<AutoFieldProps> = ({
 						{normError}
 					</span>
 				)}
+				{renderHelpText()}
 			</div>
 		);
 	}
@@ -526,6 +652,7 @@ export const AutoField: React.FC<AutoFieldProps> = ({
 					multiple
 					className="rounded-md border border-border bg-background px-3 py-2 text-foreground file:mr-4 file:rounded file:border-0 file:bg-muted file:px-2 file:py-1 file:text-foreground focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary"
 					type="file"
+					disabled={(cfg as any).disabled}
 					{...register(name as any)}
 				/>
 				{normError && (
@@ -533,6 +660,7 @@ export const AutoField: React.FC<AutoFieldProps> = ({
 						{normError}
 					</span>
 				)}
+				{renderHelpText()}
 			</div>
 		);
 	}
@@ -562,6 +690,7 @@ export const AutoField: React.FC<AutoFieldProps> = ({
 				<input
 					className="rounded-md border border-border bg-background px-3 py-2 text-foreground shadow-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary"
 					type="text"
+					disabled={(cfg as any).disabled}
 					{...register(name as any)}
 				/>
 				{normError && (
@@ -569,6 +698,7 @@ export const AutoField: React.FC<AutoFieldProps> = ({
 						{normError}
 					</span>
 				)}
+				{renderHelpText()}
 			</div>
 		</>
 	);
