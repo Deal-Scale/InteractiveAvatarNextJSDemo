@@ -6,6 +6,7 @@ import React, { useMemo, useState } from "react";
 import { z } from "zod";
 
 import AgentPreview from "./AgentPreview";
+import { AgentMonetizationSummary } from "./AgentMonetizationSummary";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -28,6 +29,7 @@ import {
 	useKnowledgeBaseOptionsQuery,
 } from "@/data/options";
 import { AgentConfigSchema } from "@/lib/schemas/agent";
+import { getAgentUsageProfile } from "@/lib/agents/monetization";
 import {
 	Tooltip,
 	TooltipContent,
@@ -247,6 +249,26 @@ export default function AgentModal(props: {
 	const monetizationEnabled = isCreate
 		? Boolean(form.watch("monetize" as any))
 		: false;
+	const roleValue = isCreate
+		? (form.watch("role" as any) as string | undefined)
+		: undefined;
+	const multiplierValueRaw = isCreate
+		? form.watch("rateMultiplier" as any)
+		: undefined;
+	const multiplierValue = Number(multiplierValueRaw ?? 1) || 1;
+	const usageProfile = React.useMemo(
+		() => getAgentUsageProfile(roleValue),
+		[roleValue],
+	);
+	const currencyFormatter = React.useMemo(
+		() =>
+			new Intl.NumberFormat("en-US", {
+				style: "currency",
+				currency: usageProfile.currency,
+				maximumFractionDigits: 2,
+			}),
+		[usageProfile.currency],
+	);
 
 	const fields = useMemo(() => {
 		const base: FieldsConfig<Record<string, unknown>> & Record<string, any> = {
@@ -423,7 +445,14 @@ export default function AgentModal(props: {
 		};
 
 		if (isCreate) {
-			base.monetize = { label: "Enable Monetization" };
+			const baseRateText = currencyFormatter.format(usageProfile.baseAmount);
+			base.monetize = {
+				label: "Enable Monetization",
+				widget: "switch",
+				helpText: monetizationEnabled
+					? "Monetized agents become eligible for payouts."
+					: "Switch on to price this agent and enable payouts.",
+			};
 			base.rateMultiplier = {
 				label: "Rate Multiplier",
 				widget: "select",
@@ -431,6 +460,10 @@ export default function AgentModal(props: {
 				placeholder: monetizationEnabled
 					? undefined
 					: "Enable monetization first",
+				disabled: !monetizationEnabled,
+				helpText: monetizationEnabled
+					? `Applies to the ${usageProfile.label.toLowerCase()} base of ${baseRateText}.`
+					: `Current base for ${usageProfile.label.toLowerCase()}: ${baseRateText}.`,
 			};
 		}
 
@@ -442,6 +475,9 @@ export default function AgentModal(props: {
 		mcpServerOptions,
 		monetizationEnabled,
 		isCreate,
+		currencyFormatter,
+		usageProfile.baseAmount,
+		usageProfile.label,
 	]);
 
 	return (
@@ -506,8 +542,9 @@ export default function AgentModal(props: {
 										</TooltipTrigger>
 										<TooltipContent>
 											<p className="max-w-xs text-xs">
-												To monetize your agent, multiply by the current base
-												agent rate.
+												{`Base ${usageProfile.label.toLowerCase()} rate: ${currencyFormatter.format(
+													usageProfile.baseAmount,
+												)}. Multipliers scale your payout per active session.`}
 											</p>
 										</TooltipContent>
 									</Tooltip>
@@ -559,6 +596,13 @@ export default function AgentModal(props: {
 									onOpenChange(false);
 								}}
 							/>
+							{isCreate && (
+								<AgentMonetizationSummary
+									enabled={monetizationEnabled}
+									multiplier={multiplierValue}
+									profile={usageProfile}
+								/>
+							)}
 						</>
 					)}
 				</div>

@@ -7,6 +7,25 @@ import { useQuery } from "@tanstack/react-query";
 
 export type Option = { value: string; label: string };
 
+const pickFirstString = (...candidates: Array<unknown>): string | undefined => {
+	for (const candidate of candidates) {
+		if (typeof candidate === "string") {
+			const trimmed = candidate.trim();
+			if (trimmed.length > 0) return trimmed;
+		}
+	}
+	return undefined;
+};
+
+const toStringId = (value: unknown): string | undefined => {
+	if (typeof value === "string") {
+		const trimmed = value.trim();
+		return trimmed.length > 0 ? trimmed : undefined;
+	}
+	if (typeof value === "number") return String(value);
+	return undefined;
+};
+
 // Generic helpers
 export const enumToOptions = (e: Record<string, string | number>): Option[] => {
 	return Object.values(e)
@@ -55,12 +74,21 @@ export const loadAvatarOptions = async (): Promise<Option[]> => {
 			[];
 		const opts: Option[] = list
 			.map((item: any) => {
-				const id = item?.avatarId || item?.avatar_id || item?.id;
-				const name = item?.name || item?.avatarName || item?.avatar_name || id;
+				const rawId = item?.avatarId ?? item?.avatar_id ?? item?.id;
+				const id = toStringId(rawId);
+				if (!id) return undefined;
 
-				return id
-					? { value: String(id), label: String(name ?? id) }
-					: undefined;
+				const label =
+					pickFirstString(
+						item?.name,
+						item?.avatarName,
+						item?.avatar_name,
+						item?.displayName,
+						item?.display_name,
+						item?.label,
+					) ?? id;
+
+				return { value: id, label };
 			})
 			.filter(Boolean);
 
@@ -118,12 +146,21 @@ export const loadVoiceOptions = async (): Promise<Option[]> => {
 			[];
 		const opts: Option[] = list
 			.map((item: any) => {
-				const id = item?.voiceId || item?.voice_id || item?.id;
-				const name = item?.name || item?.voiceName || item?.voice_name || id;
+				const rawId = item?.voiceId ?? item?.voice_id ?? item?.id;
+				const id = toStringId(rawId);
+				if (!id) return undefined;
 
-				return id
-					? { value: String(id), label: String(name ?? id) }
-					: undefined;
+				const label =
+					pickFirstString(
+						item?.name,
+						item?.voiceName,
+						item?.voice_name,
+						item?.displayName,
+						item?.display_name,
+						item?.label,
+					) ?? id;
+
+				return { value: id, label };
 			})
 			.filter(Boolean);
 
@@ -143,12 +180,20 @@ export const loadMcpServerOptions = async (): Promise<Option[]> => {
 			[];
 		const opts: Option[] = list
 			.map((s: any) => {
-				const id = s?.id || s?.name;
-				const label = s?.description || id;
+				const rawId = s?.id ?? s?.name;
+				const id = toStringId(rawId);
+				if (!id) return undefined;
 
-				return id
-					? { value: String(id), label: String(label ?? id) }
-					: undefined;
+				const label =
+					pickFirstString(
+						s?.description,
+						s?.displayName,
+						s?.display_name,
+						s?.label,
+						s?.name,
+					) ?? id;
+
+				return { value: id, label };
 			})
 			.filter(Boolean);
 
@@ -171,12 +216,20 @@ export const loadKnowledgeBaseOptions = async (): Promise<Option[]> => {
 			[];
 		const opts: Option[] = list
 			.map((kb: any) => {
-				const id = kb?.id || kb?.knowledgeBaseId || kb?.knowledge_base_id;
-				const name = kb?.name || kb?.title || id;
+				const rawId = kb?.id ?? kb?.knowledgeBaseId ?? kb?.knowledge_base_id;
+				const id = toStringId(rawId);
+				if (!id) return undefined;
 
-				return id
-					? { value: String(id), label: String(name ?? id) }
-					: undefined;
+				const label =
+					pickFirstString(
+						kb?.name,
+						kb?.title,
+						kb?.displayName,
+						kb?.display_name,
+						kb?.label,
+					) ?? id;
+
+				return { value: id, label };
 			})
 			.filter(Boolean);
 
