@@ -90,6 +90,7 @@
 	},
 	"devDependencies": {
 		"@biomejs/biome": "^2.2.0",
+		"@testing-library/react": "^16.3.0",
 		"@types/dotenv": "^8.2.3",
 		"@types/node": "20.5.7",
 		"@types/react": "^19.0.1",
