@@ -7,11 +7,12 @@ const sdkSrc = path.resolve(rootDir, "packages/grok-sdk/src");
 
 export default defineConfig({
 	resolve: {
-		alias: {
-			"@": rootDir,
-			"grok-sdk": path.join(sdkSrc, "index.ts"),
-			"grok-sdk/": `${sdkSrc}/`,
-		},
+		alias: [
+			{ find: /^@$/, replacement: path.join(rootDir) },
+			{ find: /^@\/(.*)$/, replacement: path.join(rootDir, "$1") },
+			{ find: /^grok-sdk$/, replacement: path.join(sdkSrc, "index.ts") },
+			{ find: /^grok-sdk\/(.*)$/, replacement: path.join(sdkSrc, "$1") },
+		],
 	},
 	test: {
 		environment: "jsdom",

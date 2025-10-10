@@ -122,6 +122,10 @@ export function AutoForm<TSchema extends z.ZodObject<any, any>>({
 				}
 				// Support nested object fields by rendering their children with dotted names
 				if (baseDef?._def?.typeName === "ZodObject") {
+					const groupCfg = (fields as any)?.[key] as
+						| { label?: string }
+						| undefined;
+					const legendLabel = groupCfg?.label ?? key;
 					const innerShape: Record<string, z.ZodTypeAny> =
 						typeof baseDef._def?.shape === "function"
 							? ((baseDef as any)._def.shape() as Record<string, z.ZodTypeAny>)
@@ -130,7 +134,7 @@ export function AutoForm<TSchema extends z.ZodObject<any, any>>({
 					return (
 						<fieldset key={key} className="rounded-md border border-border p-2">
 							<legend className="px-1 text-xs uppercase tracking-wide text-muted-foreground">
-								{key}
+								{legendLabel}
 							</legend>
 							<div className="space-y-2">
 								{Object.keys(innerShape).map((childKey) => {

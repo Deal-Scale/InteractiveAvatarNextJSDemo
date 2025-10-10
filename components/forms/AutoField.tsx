@@ -38,13 +38,127 @@ export type AutoFieldProps = {
 	fields?: FieldsConfig<any>;
 };
 
+const SELECT_VALUE_KEYS = ["value", "id", "key", "name"] as const;
+
+function coerceSelectValue(raw: unknown): string | undefined {
+	if (raw == null) return undefined;
+	if (typeof raw === "string") return raw;
+	if (typeof raw === "number" || typeof raw === "boolean") {
+		return String(raw);
+	}
+	if (typeof raw === "object") {
+		for (const key of SELECT_VALUE_KEYS) {
+			const candidate = (raw as Record<string, unknown>)[key];
+			if (
+				typeof candidate === "string" ||
+				typeof candidate === "number" ||
+				typeof candidate === "boolean"
+			) {
+				const str = String(candidate);
+				if (str.length > 0) return str;
+			}
+		}
+	}
+
+	return undefined;
+}
+
+function coerceSelectArray(raw: unknown): string[] {
+	if (Array.isArray(raw)) {
+		return raw
+			.map((entry) => coerceSelectValue(entry))
+			.filter(
+				(value): value is string =>
+					typeof value === "string" && value.length > 0,
+			);
+	}
+
+	const single = coerceSelectValue(raw);
+	return single ? [single] : [];
+}
+
+function arraysShallowEqual(a: string[], b: string[]) {
+	if (a.length !== b.length) return false;
+	return a.every((value, index) => value === b[index]);
+}
+
+function useNormalizeSelectValue(
+	form: UseFormReturn<any>,
+	name: string,
+	multiple: boolean,
+	enabled: boolean,
+) {
+	React.useEffect(() => {
+		if (!enabled) return;
+
+		const current = form.getValues(name as any);
+
+		if (multiple) {
+			const normalized = coerceSelectArray(current);
+			const isStringArray =
+				Array.isArray(current) &&
+				current.every((item) => typeof item === "string");
+
+			if (
+				isStringArray &&
+				arraysShallowEqual(current as string[], normalized)
+			) {
+				return;
+			}
+
+			if (
+				normalized.length === 0 &&
+				(current == null || (Array.isArray(current) && current.length === 0))
+			) {
+				return;
+			}
+
+			form.setValue(name as any, normalized as any, {
+				shouldDirty: false,
+				shouldTouch: false,
+				shouldValidate: false,
+			});
+			return;
+		}
+
+		const normalized = coerceSelectValue(current);
+		const isPrimitive =
+			typeof current === "string" ||
+			typeof current === "number" ||
+			typeof current === "boolean";
+
+		if (normalized == null) {
+			if (current == null || current === "") {
+				return;
+			}
+
+			form.setValue(name as any, undefined, {
+				shouldDirty: false,
+				shouldTouch: false,
+				shouldValidate: false,
+			});
+			return;
+		}
+
+		if (isPrimitive && String(current) === normalized) {
+			return;
+		}
+
+		form.setValue(name as any, normalized as any, {
+			shouldDirty: false,
+			shouldTouch: false,
+			shouldValidate: false,
+		});
+	}, [enabled, form, multiple, name]);
+}
+
 export const AutoField: React.FC<AutoFieldProps> = ({
 	name,
 	def,
 	form,
 	fields = {},
 }) => {
-	const { register, formState, setValue, watch } = form;
+	const { register, formState, setValue } = form;
 
 	const cfg = (fields as any)[name] || {};
 	const label = cfg.label ?? name;
@@ -83,23 +197,23 @@ export const AutoField: React.FC<AutoFieldProps> = ({
 	const renderSelect = (
 		opts: Array<{ value: string; label: string }>,
 		multiple = false,
+		placeholderText?: string,
 	) => {
-		const registerProps = register(name as any);
+		const registration = register(name as any);
 
 		if (multiple) {
-			const current = watch(name as any) ?? [];
+			const normalized = coerceSelectArray(form.watch(name as any));
 
 			return (
 				<div className="flex flex-col gap-1">
 					<span className="text-sm text-muted-foreground">{label}</span>
 					<select
 						multiple
-						name={registerProps.name}
-						ref={registerProps.ref}
-						onBlur={registerProps.onBlur}
+						name={registration.name}
+						ref={registration.ref}
+						onBlur={registration.onBlur}
 						className="rounded-md border border-border bg-background px-3 py-2 text-foreground shadow-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary"
-						disabled={(cfg as any).disabled}
-						value={Array.isArray(current) ? current.map(stringValue) : []}
+						value={normalized}
 						onChange={(e) => {
 							const selected = Array.from(e.target.selectedOptions).map(
 								(o) => o.value,
@@ -134,24 +248,30 @@ export const AutoField: React.FC<AutoFieldProps> = ({
 			);
 		}
 
-		const current = watch(name as any);
+		const normalized = coerceSelectValue(form.watch(name as any)) ?? "";
+		const placeholder = placeholderText ?? `Select ${label}`;
 
 		return (
 			<div className="flex flex-col gap-1">
 				<span className="text-sm text-muted-foreground">{label}</span>
 				<select
-					name={registerProps.name}
-					ref={registerProps.ref}
-					onBlur={registerProps.onBlur}
-					onChange={(event) => {
-						registerProps.onChange?.(event);
-					}}
-					value={stringValue(current)}
-					disabled={(cfg as any).disabled}
+					name={registration.name}
+					ref={registration.ref}
+					onBlur={registration.onBlur}
 					className="rounded-md border border-border bg-background px-3 py-2 text-foreground shadow-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary"
+					value={normalized}
+					onChange={(e) => {
+						const next = e.target.value;
+						const payload = next === "" ? undefined : next;
+
+						setValue(name as any, payload as any, {
+							shouldValidate: true,
+							shouldDirty: true,
+						});
+					}}
 				>
 					<option disabled value="">
-						Select {label}
+						{placeholder}
 					</option>
 					{opts.map((o) => (
 						<option key={o.value} value={o.value}>
@@ -169,15 +289,134 @@ export const AutoField: React.FC<AutoFieldProps> = ({
 		);
 	};
 
-	// If the fields config explicitly requests a widget, honor it first
-	if ((cfg as any).widget === "select") {
-		const opts = ((cfg as any).options ?? []) as Array<{
+	const base = unwrapType(def);
+	const baseTypeName = (base as any)?._def?.typeName as string | undefined;
+
+	const configuredSelect = (cfg as any).widget === "select";
+	const configuredOptions = ((cfg as any).options ?? []) as Array<{
+		value: string;
+		label: string;
+	}>;
+	const configuredMultiple = Boolean((cfg as any).multiple);
+	const configuredPlaceholder = (cfg as any).placeholder as string | undefined;
+
+	const unionStringValues = React.useMemo(() => {
+		if (baseTypeName !== "ZodUnion") return null;
+		const options: z.ZodTypeAny[] = (base as any)._def?.options ?? [];
+		const stringVals: string[] = [];
+
+		for (const opt of options) {
+			if ((opt as any)?._def?.typeName === "ZodEnum") {
+				const raw = (opt as any).options;
+				const vals: unknown[] = Array.isArray(raw)
+					? raw
+					: Object.values(raw ?? {});
+
+				for (const v of vals) if (typeof v === "string") stringVals.push(v);
+			} else if ((opt as any)._def?.typeName === "ZodNativeEnum") {
+				const enumObj = (opt as any).enum as Record<string, string | number>;
+
+				for (const v of Object.values(enumObj))
+					if (typeof v === "string") stringVals.push(v);
+			} else if ((opt as any)._def?.typeName === "ZodLiteral") {
+				const litVal = (opt as any)._def?.value;
+
+				if (typeof litVal === "string") stringVals.push(litVal);
+			}
+		}
+
+		if (stringVals.length === 0) return null;
+		return Array.from(new Set(stringVals));
+	}, [base, baseTypeName]);
+
+	const arrayElement =
+		baseTypeName === "ZodArray"
+			? ((base as any)._def?.type as z.ZodTypeAny | undefined)
+			: undefined;
+	const arrayElementTypeName = (arrayElement as any)?._def?.typeName as
+		| string
+		| undefined;
+
+	const enumValues = React.useMemo(() => {
+		if (baseTypeName !== "ZodEnum") return null;
+		return enumStringValuesFromZodEnum((base as any).options);
+	}, [base, baseTypeName]);
+
+	const nativeEnumValues = React.useMemo(() => {
+		if (baseTypeName !== "ZodNativeEnum") return null;
+		const enumObj = (base as any).enum as Record<string, string | number>;
+		return Object.values(enumObj).filter(
+			(v): v is string => typeof v === "string",
+		);
+	}, [base, baseTypeName]);
+
+	const arrayEnumValues = React.useMemo(() => {
+		if (arrayElementTypeName !== "ZodEnum") return null;
+		return enumStringValuesFromZodEnum((arrayElement as any).options);
+	}, [arrayElement, arrayElementTypeName]);
+
+	const arrayNativeEnumValues = React.useMemo(() => {
+		if (arrayElementTypeName !== "ZodNativeEnum") return null;
+		const enumObj = (arrayElement as any).enum as Record<
+			string,
+			string | number
+		>;
+		return Object.values(enumObj).filter(
+			(v): v is string => typeof v === "string",
+		);
+	}, [arrayElement, arrayElementTypeName]);
+
+	const arrayStringSelectOptions = React.useMemo(() => {
+		if (arrayElementTypeName !== "ZodString") return null;
+		if (!(cfg as any).options?.length) return null;
+		return ((cfg as any).options ?? []) as Array<{
 			value: string;
 			label: string;
 		}>;
-		return (function renderConfiguredSelect() {
-			return renderSelect(opts, Boolean((cfg as any).multiple));
-		})();
+	}, [arrayElementTypeName, cfg]);
+
+	const selectNormalization = React.useMemo(
+		() => ({
+			enabled:
+				configuredSelect ||
+				Boolean(enumValues) ||
+				Boolean(nativeEnumValues) ||
+				Boolean(unionStringValues) ||
+				Boolean(arrayEnumValues) ||
+				Boolean(arrayNativeEnumValues) ||
+				Boolean(arrayStringSelectOptions),
+			multiple: configuredSelect
+				? configuredMultiple
+				: arrayEnumValues || arrayNativeEnumValues || arrayStringSelectOptions
+					? true
+					: Boolean(configuredMultiple),
+		}),
+		[
+			arrayEnumValues,
+			arrayNativeEnumValues,
+			arrayStringSelectOptions,
+			configuredMultiple,
+			configuredSelect,
+			enumValues,
+			nativeEnumValues,
+			unionStringValues,
+		],
+	);
+
+	useNormalizeSelectValue(
+		form,
+		name,
+		selectNormalization.multiple,
+		selectNormalization.enabled,
+	);
+
+	// If the fields config explicitly requests a widget, honor it first
+	if (configuredSelect) {
+		return renderSelect(
+			configuredOptions,
+			configuredMultiple,
+			configuredPlaceholder,
+		);
 	}
 	if ((cfg as any).widget === "textarea") {
 		return (
@@ -236,8 +475,6 @@ export const AutoField: React.FC<AutoFieldProps> = ({
 		);
 	}
 
-	const base = unwrapType(def);
-
 	// Dev-only structured debug helper
 	const devLog = (
 		label: string,
@@ -260,95 +497,55 @@ export const AutoField: React.FC<AutoFieldProps> = ({
 	}
 
 	// Enum
-	if ((base as any)?._def?.typeName === "ZodEnum") {
-		const values = enumStringValuesFromZodEnum((base as any).options);
-		const opts = optionsFromStrings(values);
+	if (enumValues) {
+		const opts = optionsFromStrings(enumValues);
 
-		return renderSelect(opts, Boolean((cfg as any).multiple));
+		return renderSelect(opts, configuredMultiple);
 	}
 
 	// Union of enums/strings/literals -> select
-	if ((base as any)._def?.typeName === "ZodUnion") {
-		const options: z.ZodTypeAny[] = (base as any)._def?.options ?? [];
-		const stringVals: string[] = [];
+	if (unionStringValues) {
+		const opts = unionStringValues.map((v) => ({ value: v, label: v }));
 
-		for (const opt of options) {
-			if ((opt as any)?._def?.typeName === "ZodEnum") {
-				const raw = (opt as any).options;
-				const vals: unknown[] = Array.isArray(raw)
-					? raw
-					: Object.values(raw ?? {});
-
-				for (const v of vals) if (typeof v === "string") stringVals.push(v);
-			} else if ((opt as any)._def?.typeName === "ZodNativeEnum") {
-				const enumObj = (opt as any).enum as Record<string, string | number>;
-
-				for (const v of Object.values(enumObj))
-					if (typeof v === "string") stringVals.push(v);
-			} else if ((opt as any)._def?.typeName === "ZodLiteral") {
-				const litVal = (opt as any)._def?.value;
-
-				if (typeof litVal === "string") stringVals.push(litVal);
-			}
-		}
-		if (stringVals.length) {
-			const opts = Array.from(new Set(stringVals)).map((v) => ({
-				value: v,
-				label: v,
-			}));
-
-			return renderSelect(opts, Boolean((cfg as any).multiple));
-		}
+		return renderSelect(opts, configuredMultiple);
 	}
 
 	// Native enum
-	if ((base as any)._def?.typeName === "ZodNativeEnum") {
-		const enumObj = (base as any).enum as Record<string, string | number>;
-		const values = Object.values(enumObj).filter(
-			(v): v is string => typeof v === "string",
-		);
-		const opts = optionsFromStrings(values);
+	if (nativeEnumValues) {
+		const opts = optionsFromStrings(nativeEnumValues);
 
-		return renderSelect(opts, Boolean((cfg as any).multiple));
+		return renderSelect(opts, configuredMultiple);
 	}
 
 	// Array -> multi select or textarea/chips
-	if ((base as any)._def?.typeName === "ZodArray") {
-		const el = (base as any)._def.type as z.ZodTypeAny;
+	if (baseTypeName === "ZodArray") {
+		const el = arrayElement as z.ZodTypeAny;
 		devLog("array:detected", {
 			elType: (el as any)?._def?.typeName,
 			cfgHasOptions: Boolean((cfg as any).options?.length),
 		});
 
-		if ((el as any)?._def?.typeName === "ZodEnum") {
-			const values = enumStringValuesFromZodEnum((el as any).options);
-			const opts = optionsFromStrings(values);
+		if (arrayEnumValues) {
+			const opts = optionsFromStrings(arrayEnumValues);
 			devLog("array:enum -> multi-select", { optionCount: opts.length });
 			return renderSelect(opts, true);
 		}
-		if ((el as any)._def?.typeName === "ZodNativeEnum") {
-			const enumObj = (el as any).enum as Record<string, string | number>;
-			const values = Object.values(enumObj).filter(
-				(v): v is string => typeof v === "string",
-			);
-			const opts = optionsFromStrings(values);
+		if (arrayNativeEnumValues) {
+			const opts = optionsFromStrings(arrayNativeEnumValues);
 			devLog("array:native-enum -> multi-select", { optionCount: opts.length });
 			return renderSelect(opts, true);
 		}
-		if (
-			(el as any)._def?.typeName === "ZodString" &&
-			(cfg as any).options?.length
-		) {
+		if (arrayStringSelectOptions) {
 			devLog("array:string + cfg.options -> multi-select", {
-				optionCount: (cfg as any).options.length,
+				optionCount: arrayStringSelectOptions.length,
 			});
-			return renderSelect((cfg as any).options!, true);
+			return renderSelect(arrayStringSelectOptions, true);
 		}
 		if ((el as any)._def?.typeName === "ZodString") {
 			devLog("array:string -> textarea", {
 				reason: "no options provided; falling back to newline textarea",
 			});
-			const current = watch(name as any) as string[] | undefined;
+			const current = form.watch(name as any) as string[] | undefined;
 			const defaultValue = Array.isArray(current) ? current.join("\n") : "";
 
 			return (
