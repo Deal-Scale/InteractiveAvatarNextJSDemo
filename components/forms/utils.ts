@@ -19,6 +19,7 @@ export type FieldConfig = {
 	multiple?: boolean;
 	rows?: number;
 	placeholder?: string;
+	disabled?: boolean;
 };
 
 export type FieldsConfig<T> = Partial<Record<keyof T & string, FieldConfig>>;

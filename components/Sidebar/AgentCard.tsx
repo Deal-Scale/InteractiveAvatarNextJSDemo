@@ -3,6 +3,16 @@
 import { Eye, Star, StarOff, X } from "lucide-react";
 import React from "react";
 
+export type AgentMonetizationSummary = {
+	baseRate: number;
+	usagePerMonth: number;
+	usageLabel: string;
+	multiplier: number;
+	projectedMonthly: number;
+	currency: string;
+	profileLabel: string;
+};
+
 export type Agent = {
 	id: string;
 	name: string;
@@ -11,6 +21,9 @@ export type Agent = {
 	description?: string;
 	tags?: string[];
 	isOwnedByUser?: boolean;
+	monetize?: boolean;
+	rateMultiplier?: number;
+	monetizationSummary?: AgentMonetizationSummary;
 };
 
 export default function AgentCard(props: {

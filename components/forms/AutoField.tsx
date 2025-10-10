@@ -3,6 +3,8 @@ import React from "react";
 import { z } from "zod";
 import { UseFormReturn } from "react-hook-form";
 
+import { Switch } from "@/components/ui/switch";
+
 import {
 	unwrapType,
 	enumStringValuesFromZodEnum,
@@ -43,11 +45,17 @@ export const AutoField: React.FC<AutoFieldProps> = ({
 	form,
 	fields = {},
 }) => {
-	const { register, formState, setValue, getValues } = form;
+	const { register, formState, setValue, getValues, watch } = form;
 
 	const cfg = (fields as any)[name] || {};
 	const label = cfg.label ?? name;
 	const error = (formState.errors as any)[name]?.message as string | undefined;
+
+	React.useEffect(() => {
+		if ((cfg as any).widget === "switch") {
+			register(name as any);
+		}
+	}, [cfg, name, register]);
 
 	// Normalize vague Zod errors like "Invalid input" to a clearer, field-specific message
 	const normError = React.useMemo(() => {
@@ -63,18 +71,32 @@ export const AutoField: React.FC<AutoFieldProps> = ({
 	const renderSelect = (
 		opts: Array<{ value: string; label: string }>,
 		multiple = false,
+		config: { disabled?: boolean; placeholder?: string } = {},
 	) => {
+		const placeholderText = config.placeholder ?? `Select ${label}`;
+
 		if (multiple) {
-			const current = (getValues() as any)[name] ?? [];
+			const watched = watch(name as any);
+			const rawCurrent = Array.isArray(watched)
+				? watched
+				: Array.isArray((getValues() as any)[name])
+					? ((getValues() as any)[name] as unknown[])
+					: [];
+			const normalized = rawCurrent
+				.map((value) => (typeof value === "string" ? value : String(value)))
+				.filter((value) => opts.some((opt) => opt.value === value));
 
 			return (
 				<div className="flex flex-col gap-1">
 					<span className="text-sm text-muted-foreground">{label}</span>
 					<select
 						multiple
+						aria-disabled={config.disabled ? "true" : undefined}
 						className="rounded-md border border-border bg-background px-3 py-2 text-foreground shadow-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary"
-						value={current as string[]}
+						disabled={config.disabled}
+						value={normalized as string[]}
 						onChange={(e) => {
+							if (config.disabled) return;
 							const selected = Array.from(e.target.selectedOptions).map(
 								(o) => o.value,
 							);
@@ -100,16 +122,22 @@ export const AutoField: React.FC<AutoFieldProps> = ({
 			);
 		}
 
+		const current = watch(name as any) ?? (getValues() as any)[name];
+		const defaultValue =
+			current != null && typeof current !== "object" ? String(current) : "";
+
 		return (
 			<div className="flex flex-col gap-1">
 				<span className="text-sm text-muted-foreground">{label}</span>
 				<select
+					aria-disabled={config.disabled ? "true" : undefined}
 					className="rounded-md border border-border bg-background px-3 py-2 text-foreground shadow-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary"
-					defaultValue=""
+					defaultValue={defaultValue}
+					disabled={config.disabled}
 					{...register(name as any)}
 				>
 					<option disabled value="">
-						Select {label}
+						{placeholderText}
 					</option>
 					{opts.map((o) => (
 						<option key={o.value} value={o.value}>
@@ -133,7 +161,10 @@ export const AutoField: React.FC<AutoFieldProps> = ({
 			label: string;
 		}>;
 		return (function renderConfiguredSelect() {
-			return renderSelect(opts, Boolean((cfg as any).multiple));
+			return renderSelect(opts, Boolean((cfg as any).multiple), {
+				disabled: Boolean((cfg as any).disabled),
+				placeholder: (cfg as any).placeholder,
+			});
 		})();
 	}
 	if ((cfg as any).widget === "textarea") {
@@ -142,6 +173,7 @@ export const AutoField: React.FC<AutoFieldProps> = ({
 				<span className="text-sm text-muted-foreground">{label}</span>
 				<textarea
 					className="min-h-24 max-h-[60vh] w-full resize-y rounded-md border border-border bg-background px-3 py-2 text-foreground shadow-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary"
+					disabled={Boolean((cfg as any).disabled)}
 					rows={(cfg as any).rows ?? 5}
 					placeholder={(cfg as any).placeholder}
 					{...register(name as any)}
@@ -173,6 +205,7 @@ export const AutoField: React.FC<AutoFieldProps> = ({
 				<span className="text-sm text-muted-foreground">{label}</span>
 				<input
 					className="w-full accent-primary"
+					disabled={Boolean((cfg as any).disabled)}
 					max={(cfg as any).max}
 					min={(cfg as any).min}
 					step={(cfg as any).step}
@@ -216,7 +249,10 @@ export const AutoField: React.FC<AutoFieldProps> = ({
 		const values = enumStringValuesFromZodEnum((base as any).options);
 		const opts = optionsFromStrings(values);
 
-		return renderSelect(opts, Boolean((cfg as any).multiple));
+		return renderSelect(opts, Boolean((cfg as any).multiple), {
+			disabled: Boolean((cfg as any).disabled),
+			placeholder: (cfg as any).placeholder,
+		});
 	}
 
 	// Union of enums/strings/literals -> select
@@ -249,7 +285,10 @@ export const AutoField: React.FC<AutoFieldProps> = ({
 				label: v,
 			}));
 
-			return renderSelect(opts, Boolean((cfg as any).multiple));
+			return renderSelect(opts, Boolean((cfg as any).multiple), {
+				disabled: Boolean((cfg as any).disabled),
+				placeholder: (cfg as any).placeholder,
+			});
 		}
 	}
 
@@ -261,7 +300,10 @@ export const AutoField: React.FC<AutoFieldProps> = ({
 		);
 		const opts = optionsFromStrings(values);
 
-		return renderSelect(opts, Boolean((cfg as any).multiple));
+		return renderSelect(opts, Boolean((cfg as any).multiple), {
+			disabled: Boolean((cfg as any).disabled),
+			placeholder: (cfg as any).placeholder,
+		});
 	}
 
 	// Array -> multi select or textarea/chips
@@ -276,7 +318,10 @@ export const AutoField: React.FC<AutoFieldProps> = ({
 			const values = enumStringValuesFromZodEnum((el as any).options);
 			const opts = optionsFromStrings(values);
 			devLog("array:enum -> multi-select", { optionCount: opts.length });
-			return renderSelect(opts, true);
+			return renderSelect(opts, true, {
+				disabled: Boolean((cfg as any).disabled),
+				placeholder: (cfg as any).placeholder,
+			});
 		}
 		if ((el as any)._def?.typeName === "ZodNativeEnum") {
 			const enumObj = (el as any).enum as Record<string, string | number>;
@@ -285,7 +330,10 @@ export const AutoField: React.FC<AutoFieldProps> = ({
 			);
 			const opts = optionsFromStrings(values);
 			devLog("array:native-enum -> multi-select", { optionCount: opts.length });
-			return renderSelect(opts, true);
+			return renderSelect(opts, true, {
+				disabled: Boolean((cfg as any).disabled),
+				placeholder: (cfg as any).placeholder,
+			});
 		}
 		if (
 			(el as any)._def?.typeName === "ZodString" &&
@@ -294,7 +342,10 @@ export const AutoField: React.FC<AutoFieldProps> = ({
 			devLog("array:string + cfg.options -> multi-select", {
 				optionCount: (cfg as any).options.length,
 			});
-			return renderSelect((cfg as any).options!, true);
+			return renderSelect((cfg as any).options!, true, {
+				disabled: Boolean((cfg as any).disabled),
+				placeholder: (cfg as any).placeholder,
+			});
 		}
 		if ((el as any)._def?.typeName === "ZodString") {
 			devLog("array:string -> textarea", {
@@ -308,6 +359,7 @@ export const AutoField: React.FC<AutoFieldProps> = ({
 					<span className="text-sm text-muted-foreground">{label}</span>
 					<textarea
 						className="min-h-[120px] rounded-md border border-border bg-background px-3 py-2 text-foreground shadow-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary"
+						disabled={Boolean((cfg as any).disabled)}
 						placeholder={cfg.placeholder as string | undefined}
 						defaultValue={defaultValue}
 						{...register(name as any, {
@@ -338,6 +390,38 @@ export const AutoField: React.FC<AutoFieldProps> = ({
 
 	// Boolean
 	if ((base as any)._def?.typeName === "ZodBoolean") {
+		if ((cfg as any).widget === "switch") {
+			const checked = Boolean(watch(name as any));
+
+			return (
+				<div className="flex flex-col gap-1">
+					<label
+						className="flex items-center justify-between gap-3"
+						htmlFor={`switch-${name}`}
+					>
+						<span className="text-sm text-muted-foreground">{label}</span>
+						<Switch
+							checked={checked}
+							disabled={Boolean((cfg as any).disabled)}
+							id={`switch-${name}`}
+							onCheckedChange={(next) => {
+								setValue(name as any, next, {
+									shouldValidate: true,
+									shouldDirty: true,
+									shouldTouch: true,
+								});
+							}}
+						/>
+					</label>
+					{normError && (
+						<span className="text-xs text-red-500 dark:text-red-400">
+							{normError}
+						</span>
+					)}
+				</div>
+			);
+		}
+
 		if ((cfg as any).widget === "select") {
 			const current = (getValues() as any)[name] as boolean | undefined;
 			const opts = booleanSelectOptions(
@@ -349,9 +433,12 @@ export const AutoField: React.FC<AutoFieldProps> = ({
 				<div className="flex flex-col gap-1">
 					<span className="text-sm text-muted-foreground">{label}</span>
 					<select
+						aria-disabled={(cfg as any).disabled ? "true" : undefined}
 						className="rounded-md border border-border bg-background px-3 py-2 text-foreground shadow-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary"
+						disabled={Boolean((cfg as any).disabled)}
 						value={value}
 						onChange={(e) => {
+							if ((cfg as any).disabled) return;
 							const v = e.target.value;
 							const boolVal =
 								v === "true" ? true : v === "false" ? false : undefined;
@@ -386,6 +473,7 @@ export const AutoField: React.FC<AutoFieldProps> = ({
 					<span className="text-sm text-muted-foreground">{label}</span>
 					<input
 						className="h-4 w-4 accent-primary"
+						disabled={Boolean((cfg as any).disabled)}
 						type="checkbox"
 						{...register(name as any)}
 					/>
@@ -427,6 +515,7 @@ export const AutoField: React.FC<AutoFieldProps> = ({
 				<span className="text-sm text-muted-foreground">{label}</span>
 				<input
 					className="rounded-md border border-border bg-background px-3 py-2 text-foreground shadow-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary"
+					disabled={Boolean((cfg as any).disabled)}
 					type="number"
 					{...register(name as any, { valueAsNumber: true })}
 				/>
@@ -482,6 +571,7 @@ export const AutoField: React.FC<AutoFieldProps> = ({
 						<div className="p-2">
 							<textarea
 								className="min-h-24 max-h-[60vh] w-full resize-y rounded-md border border-border bg-background px-3 py-2 text-foreground shadow-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary"
+								disabled={Boolean((cfg as any).disabled)}
 								rows={(cfg as any).rows ?? 5}
 								placeholder={(cfg as any).placeholder}
 								{...register(name as any)}
@@ -503,6 +593,7 @@ export const AutoField: React.FC<AutoFieldProps> = ({
 				<input
 					className="rounded-md border border-border bg-background px-3 py-2 text-foreground shadow-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary"
 					pattern={regexCheck?.regex ? regexCheck.regex.source : undefined}
+					disabled={Boolean((cfg as any).disabled)}
 					placeholder={(cfg as any).placeholder}
 					title={regexCheck?.regex ? regexCheck.regex.toString() : undefined}
 					type={isEmail ? "email" : "text"}
@@ -561,6 +652,7 @@ export const AutoField: React.FC<AutoFieldProps> = ({
 				<span className="text-sm text-muted-foreground">{label}</span>
 				<input
 					className="rounded-md border border-border bg-background px-3 py-2 text-foreground shadow-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary"
+					disabled={Boolean((cfg as any).disabled)}
 					type="text"
 					{...register(name as any)}
 				/>

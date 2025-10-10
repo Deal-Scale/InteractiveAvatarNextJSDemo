@@ -1,6 +1,6 @@
 "use client";
 
-import type { Agent } from "./AgentCard";
+import type { Agent, AgentMonetizationSummary } from "./AgentCard";
 
 import React, { useMemo, useState } from "react";
 import { z } from "zod";
@@ -57,6 +57,189 @@ const BOOLEAN_CHOICE_OPTIONS = [
 	{ value: "true", label: "Enabled" },
 	{ value: "false", label: "Disabled" },
 ];
+
+type MonetizationPreset = {
+	key: string;
+	title: string;
+	keywords: string[];
+	baseRate: number;
+	usagePerMonth: number;
+	usageLabel: string;
+};
+
+const MONETIZATION_PRESETS: MonetizationPreset[] = [
+	{
+		key: "support",
+		title: "Customer Support",
+		keywords: ["support", "helpdesk", "success", "customer", "service"],
+		baseRate: 0.35,
+		usagePerMonth: 240,
+		usageLabel: "support conversations",
+	},
+	{
+		key: "sales",
+		title: "Sales",
+		keywords: ["sales", "closer", "account", "seller", "revenue"],
+		baseRate: 1.5,
+		usagePerMonth: 60,
+		usageLabel: "qualified demos",
+	},
+	{
+		key: "marketing",
+		title: "Marketing",
+		keywords: ["marketing", "growth", "campaign", "content", "brand"],
+		baseRate: 0.25,
+		usagePerMonth: 320,
+		usageLabel: "campaign touchpoints",
+	},
+	{
+		key: "education",
+		title: "Education",
+		keywords: ["education", "tutor", "teacher", "coach", "training"],
+		baseRate: 0.8,
+		usagePerMonth: 90,
+		usageLabel: "student sessions",
+	},
+	{
+		key: "operations",
+		title: "Operations",
+		keywords: ["ops", "operations", "internal", "automation", "hr"],
+		baseRate: 0.3,
+		usagePerMonth: 180,
+		usageLabel: "internal requests",
+	},
+	{
+		key: "default",
+		title: "General",
+		keywords: [],
+		baseRate: 0.4,
+		usagePerMonth: 120,
+		usageLabel: "interactions",
+	},
+];
+
+const DEFAULT_MONETIZATION_PRESET =
+	MONETIZATION_PRESETS[MONETIZATION_PRESETS.length - 1];
+const DEFAULT_CURRENCY = "USD";
+
+type MonetizationSummaryResult = AgentMonetizationSummary & {
+	typeLabel: string;
+	usageDescription: string;
+	baseMonthly: number;
+	baseMonthlyFormatted: string;
+	projectedMonthlyFormatted: string;
+	baseRateFormatted: string;
+	multiplierLabel: string;
+};
+
+const formatCurrency = (value: number, currency = DEFAULT_CURRENCY) =>
+	new Intl.NumberFormat("en-US", {
+		style: "currency",
+		currency,
+		minimumFractionDigits: 2,
+	}).format(value);
+
+const detectMonetizationPreset = (
+	role?: string,
+	tags?: string[],
+): MonetizationPreset => {
+	const normalizedRole = (role ?? "").toLowerCase();
+	const normalizedTags = (tags ?? []).map((tag) => tag.toLowerCase());
+
+	for (const preset of MONETIZATION_PRESETS) {
+		if (preset.key === "default") continue;
+		if (preset.keywords.some((keyword) => normalizedRole.includes(keyword))) {
+			return preset;
+		}
+		if (
+			preset.keywords.some((keyword) =>
+				normalizedTags.some((tag) => tag.includes(keyword)),
+			)
+		) {
+			return preset;
+		}
+	}
+
+	return DEFAULT_MONETIZATION_PRESET;
+};
+
+const calculateMonetizationSummary = (options: {
+	role?: string;
+	tags?: string[];
+	multiplier?: number;
+	enabled: boolean;
+	currency?: string;
+}): MonetizationSummaryResult => {
+	const {
+		role,
+		tags,
+		multiplier = 1,
+		enabled,
+		currency = DEFAULT_CURRENCY,
+	} = options;
+	const preset = detectMonetizationPreset(role, tags);
+	const safeMultiplier =
+		Number.isFinite(multiplier) && multiplier > 0 ? multiplier : 1;
+	const appliedMultiplier = enabled ? safeMultiplier : 1;
+	const projectedMonthly = enabled
+		? preset.baseRate * preset.usagePerMonth * appliedMultiplier
+		: 0;
+	const baseMonthly = preset.baseRate * preset.usagePerMonth;
+
+	return {
+		baseRate: preset.baseRate,
+		usagePerMonth: preset.usagePerMonth,
+		usageLabel: preset.usageLabel,
+		multiplier: appliedMultiplier,
+		projectedMonthly,
+		currency,
+		profileLabel: preset.title,
+		typeLabel: preset.title,
+		usageDescription: `${preset.usagePerMonth.toLocaleString()} ${preset.usageLabel} / mo`,
+		baseMonthly,
+		baseMonthlyFormatted: formatCurrency(baseMonthly, currency),
+		projectedMonthlyFormatted: formatCurrency(projectedMonthly, currency),
+		baseRateFormatted: formatCurrency(preset.baseRate, currency),
+		multiplierLabel: `${enabled ? appliedMultiplier : 1}x`,
+	};
+};
+
+const coerceOptionValue = (value: unknown): string | undefined => {
+	if (value == null) return undefined;
+	if (typeof value === "string") return value;
+	if (typeof value === "number") return String(value);
+	if (typeof value === "object") {
+		const record = value as Record<string, unknown>;
+		const candidate =
+			record.value ?? record.id ?? record.key ?? record.slug ?? record.name;
+
+		if (typeof candidate === "string" || typeof candidate === "number") {
+			return String(candidate);
+		}
+	}
+	return undefined;
+};
+
+const coerceStringArray = (value: unknown): string[] => {
+	if (!Array.isArray(value)) return [];
+
+	return value
+		.map((entry) => {
+			if (typeof entry === "string") return entry.trim();
+			if (typeof entry === "number") return String(entry);
+			if (entry && typeof entry === "object") {
+				const record = entry as Record<string, unknown>;
+				const candidate =
+					record.value ?? record.id ?? record.key ?? record.slug ?? record.name;
+				if (typeof candidate === "string" || typeof candidate === "number") {
+					return String(candidate);
+				}
+			}
+			return null;
+		})
+		.filter((entry): entry is string => Boolean(entry && entry.trim?.()))
+		.map((entry) => entry.trim());
+};
 
 export default function AgentModal(props: {
 	mode: "view" | "edit" | "create";
@@ -146,21 +329,21 @@ export default function AgentModal(props: {
 			id: (source?.id as string) ?? "new",
 			name: (source?.name as string) ?? "",
 			role: (source?.role as string) ?? "",
-			avatarId: (source?.avatarId as string) ?? "",
+			avatarId: coerceOptionValue(source?.avatarId) ?? "",
 			avatarUrl: (source?.avatarUrl as string) ?? "",
 			description: (source?.description as string) ?? "",
-			tags: Array.isArray(source?.tags) ? (source?.tags as string[]) : [],
-			voiceId: (source?.voiceId as string) ?? "",
-			language: (source?.language as string) ?? "",
+			tags: coerceStringArray(source?.tags),
+			voiceId: coerceOptionValue(source?.voiceId) ?? "",
+			language: coerceOptionValue(source?.language) ?? "",
 			model: (source?.model as string) ?? "",
 			temperature:
 				typeof source?.temperature === "number"
 					? (source?.temperature as number)
 					: 0.7,
-			quality: source?.quality ?? undefined,
-			voiceChatTransport: source?.voiceChatTransport ?? undefined,
+			quality: coerceOptionValue(source?.quality),
+			voiceChatTransport: coerceOptionValue(source?.voiceChatTransport),
 			stt: {
-				provider: stt?.provider ?? undefined,
+				provider: coerceOptionValue(stt?.provider),
 				confidenceThreshold:
 					typeof stt?.confidenceThreshold === "number"
 						? (stt?.confidenceThreshold as number)
@@ -175,8 +358,8 @@ export default function AgentModal(props: {
 					? (source?.activityIdleTimeout as number)
 					: 120,
 			video: {
-				resolution: video?.resolution ?? undefined,
-				background: video?.background ?? undefined,
+				resolution: coerceOptionValue(video?.resolution),
+				background: coerceOptionValue(video?.background),
 				fps: typeof video?.fps === "number" ? (video?.fps as number) : 30,
 			},
 			audio: {
@@ -195,7 +378,7 @@ export default function AgentModal(props: {
 			},
 			voice: {
 				rate: typeof voice?.rate === "number" ? (voice?.rate as number) : 1,
-				emotion: voice?.emotion ?? undefined,
+				emotion: coerceOptionValue(voice?.emotion),
 				elevenlabs_settings: {
 					stability:
 						typeof elevenlabs?.stability === "number"
@@ -209,17 +392,15 @@ export default function AgentModal(props: {
 						typeof elevenlabs?.style === "number"
 							? (elevenlabs?.style as number)
 							: 0,
-					model_id: (elevenlabs?.model_id as string) ?? "",
+					model_id: coerceOptionValue(elevenlabs?.model_id) ?? "",
 					use_speaker_boost:
 						typeof elevenlabs?.use_speaker_boost === "boolean"
 							? (elevenlabs?.use_speaker_boost as boolean)
 							: false,
 				},
 			},
-			knowledgeBaseId: (source?.knowledgeBaseId as string) ?? "",
-			mcpServers: Array.isArray(source?.mcpServers)
-				? (source?.mcpServers as string[])
-				: [],
+			knowledgeBaseId: coerceOptionValue(source?.knowledgeBaseId) ?? "",
+			mcpServers: coerceStringArray(source?.mcpServers),
 			systemPrompt: (source?.systemPrompt as string) ?? "",
 		};
 
@@ -244,9 +425,69 @@ export default function AgentModal(props: {
 	const { data: mcpServerOptions = [] } = useMcpServerOptionsQuery();
 	const { data: knowledgeBaseOptions = [] } = useKnowledgeBaseOptionsQuery();
 
-	const monetizationEnabled = isCreate
-		? Boolean(form.watch("monetize" as any))
-		: false;
+	const monetizeWatch = isCreate ? form.watch("monetize" as any) : false;
+	const monetizationEnabled = isCreate ? Boolean(monetizeWatch) : false;
+	const roleWatch = form.watch("role" as any) as string | undefined;
+	const tagsWatchRaw = form.watch("tags" as any);
+	const rateMultiplierWatch = form.watch("rateMultiplier" as any) as
+		| string
+		| undefined;
+
+	const normalizedTags = React.useMemo(() => {
+		if (Array.isArray(tagsWatchRaw)) {
+			return tagsWatchRaw
+				.map((tag) =>
+					(typeof tag === "string" ? tag : String(tag ?? "")).trim(),
+				)
+				.filter(Boolean);
+		}
+		if (typeof tagsWatchRaw === "string") {
+			return tagsWatchRaw
+				.split(/,|\n/)
+				.map((tag) => tag.trim())
+				.filter(Boolean);
+		}
+		return [];
+	}, [tagsWatchRaw]);
+
+	const monetizationSummary = React.useMemo(() => {
+		const multiplierNumber = Number(rateMultiplierWatch ?? "1");
+		const safeMultiplier = Number.isFinite(multiplierNumber)
+			? multiplierNumber
+			: 1;
+
+		return calculateMonetizationSummary({
+			role: roleWatch,
+			tags: normalizedTags,
+			multiplier: safeMultiplier,
+			enabled: monetizationEnabled,
+		});
+	}, [roleWatch, normalizedTags, rateMultiplierWatch, monetizationEnabled]);
+
+	React.useEffect(() => {
+		if (!isCreate) return;
+		if (!monetizationEnabled) {
+			try {
+				form.setValue("rateMultiplier" as any, "1", {
+					shouldDirty: false,
+					shouldValidate: false,
+					shouldTouch: false,
+				});
+			} catch {}
+		}
+	}, [form, monetizationEnabled, isCreate]);
+
+	React.useEffect(() => {
+		if (!isCreate) return;
+		if (monetizationEnabled && !rateMultiplierWatch) {
+			try {
+				form.setValue("rateMultiplier" as any, "1", {
+					shouldDirty: false,
+					shouldValidate: false,
+				});
+			} catch {}
+		}
+	}, [form, monetizationEnabled, rateMultiplierWatch, isCreate]);
 
 	const fields = useMemo(() => {
 		const base: FieldsConfig<Record<string, unknown>> & Record<string, any> = {
@@ -423,7 +664,7 @@ export default function AgentModal(props: {
 		};
 
 		if (isCreate) {
-			base.monetize = { label: "Enable Monetization" };
+			base.monetize = { label: "Enable Monetization", widget: "switch" };
 			base.rateMultiplier = {
 				label: "Rate Multiplier",
 				widget: "select",
@@ -431,6 +672,7 @@ export default function AgentModal(props: {
 				placeholder: monetizationEnabled
 					? undefined
 					: "Enable monetization first",
+				disabled: !monetizationEnabled,
 			};
 		}
 
@@ -506,11 +748,64 @@ export default function AgentModal(props: {
 										</TooltipTrigger>
 										<TooltipContent>
 											<p className="max-w-xs text-xs">
-												To monetize your agent, multiply by the current base
-												agent rate.
+												To monetize your agent, multiply the base rate (
+												{monetizationSummary.baseRateFormatted}
+												per interaction) by the expected usage for their role.
 											</p>
 										</TooltipContent>
 									</Tooltip>
+								</div>
+							)}
+							{isCreate && (
+								<div className="mb-4 space-y-2 rounded-md border border-border/60 bg-muted/10 p-3 text-sm">
+									<div className="flex items-center justify-between text-xs uppercase text-muted-foreground">
+										<span>Monetization preview</span>
+										<span className="font-semibold text-foreground">
+											{monetizationSummary.typeLabel}
+										</span>
+									</div>
+									<div className="mt-2 grid gap-2 text-xs sm:grid-cols-2 sm:text-sm">
+										<div className="flex items-center justify-between gap-2">
+											<span className="text-muted-foreground">Base rate</span>
+											<span className="font-medium text-foreground">
+												{monetizationSummary.baseRateFormatted} per interaction
+											</span>
+										</div>
+										<div className="flex items-center justify-between gap-2">
+											<span className="text-muted-foreground">Avg usage</span>
+											<span className="font-medium text-foreground">
+												{monetizationSummary.usageDescription}
+											</span>
+										</div>
+										<div className="flex items-center justify-between gap-2 sm:col-span-2">
+											<span className="text-muted-foreground">
+												Base monthly
+											</span>
+											<span className="font-medium text-foreground">
+												{monetizationSummary.baseMonthlyFormatted}
+											</span>
+										</div>
+									</div>
+									<div className="rounded-md bg-background/80 p-2 text-xs sm:text-sm">
+										{monetizationEnabled ? (
+											<>
+												<div className="flex items-center justify-between font-medium text-foreground">
+													<span>Projected monthly</span>
+													<span>
+														{monetizationSummary.projectedMonthlyFormatted}
+													</span>
+												</div>
+												<p className="mt-1 text-muted-foreground">
+													{`${monetizationSummary.baseRateFormatted} × ${monetizationSummary.multiplierLabel} × ${monetizationSummary.usageDescription}`}
+												</p>
+											</>
+										) : (
+											<p className="text-muted-foreground">
+												Enable monetization to project earnings using the base
+												rate of {monetizationSummary.baseRateFormatted}.
+											</p>
+										)}
+									</div>
 								</div>
 							)}
 							<AutoForm
@@ -546,6 +841,38 @@ export default function AgentModal(props: {
 													.filter(Boolean)
 											: [];
 
+									let monetizationData: AgentMonetizationSummary | undefined;
+									let monetized = false;
+
+									if (isCreate) {
+										const monetizeFlag = Boolean((values as any).monetize);
+										const rawMultiplier = (values as any).rateMultiplier;
+										const multiplierNumber = Number(rawMultiplier ?? "1");
+										const summaryForPayload = calculateMonetizationSummary({
+											role,
+											tags,
+											multiplier: Number.isFinite(multiplierNumber)
+												? multiplierNumber
+												: 1,
+											enabled: monetizeFlag,
+										});
+										const {
+											typeLabel: _typeLabel,
+											usageDescription: _usageDescription,
+											baseMonthly: _baseMonthly,
+											baseMonthlyFormatted: _baseMonthlyFormatted,
+											projectedMonthlyFormatted: _projectedMonthlyFormatted,
+											baseRateFormatted: _baseRateFormatted,
+											multiplierLabel: _multiplierLabel,
+											...monetizationSummaryPayload
+										} = summaryForPayload;
+
+										if (monetizeFlag) {
+											monetized = true;
+											monetizationData = monetizationSummaryPayload;
+										}
+									}
+
 									const next: Agent = {
 										id,
 										name,
@@ -555,6 +882,11 @@ export default function AgentModal(props: {
 										tags,
 										isOwnedByUser: isCreate ? true : working?.isOwnedByUser,
 									};
+									if (isCreate) {
+										next.monetize = monetized;
+										next.rateMultiplier = monetizationData?.multiplier ?? 1;
+										next.monetizationSummary = monetizationData;
+									}
 									onSave?.(next);
 									onOpenChange(false);
 								}}
