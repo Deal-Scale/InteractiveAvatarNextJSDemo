@@ -28,7 +28,9 @@ export function mapAgentAndSettingsToConfig(
 		...base,
 		language: latestAgent?.language ?? base.language,
 		avatarName: latestAgent?.avatarId ?? base.avatarName,
+		// Map to both knowledgeId (SDK) and knowledge_base_id (API)
 		knowledgeId: latestAgent?.knowledgeBaseId ?? base.knowledgeId,
+		knowledge_base_id: latestAgent?.knowledgeBaseId ?? base.knowledge_base_id,
 		quality: (latestAgent as any)?.quality ?? base.quality,
 		voiceChatTransport:
 			latestAgent?.voiceChatTransport ?? base.voiceChatTransport,
@@ -97,10 +99,15 @@ export function buildSessionConfig(
 		voiceOverrides,
 	} = overrides;
 
+	const coercedKnowledgeBaseId =
+		coerceNullable(knowledgeBaseId) ?? finalConfig.knowledgeId;
+
 	finalConfig = {
 		...finalConfig,
 		avatarName: coerceNullable(avatarId) ?? finalConfig.avatarName,
-		knowledgeId: coerceNullable(knowledgeBaseId) ?? finalConfig.knowledgeId,
+		// Map to both knowledgeId (SDK) and knowledge_base_id (API)
+		knowledgeId: coercedKnowledgeBaseId,
+		knowledge_base_id: coercedKnowledgeBaseId,
 		language: coerceNullable(language) ?? finalConfig.language,
 		quality:
 			quality !== undefined && quality !== null

@@ -75,7 +75,7 @@ export const LoadingSpinnerOverlay: React.FC = () => (
 );
 
 export const AvatarVideo = forwardRef<HTMLVideoElement>((_props, ref) => {
-	const { sessionState, stopAvatar } = useStreamingAvatarSession();
+	const { sessionState, stopAvatar, stream } = useStreamingAvatarSession();
 	const { connectionQuality } = useConnectionQuality();
 	const { creditsRemaining, creditsPerMinute, setCreditsRemaining } =
 		useSessionStore();
@@ -90,8 +90,10 @@ export const AvatarVideo = forwardRef<HTMLVideoElement>((_props, ref) => {
 			sessionState,
 			"isLoaded:",
 			isLoaded,
+			"stream:",
+			stream,
 		);
-	}, [sessionState, isLoaded]);
+	}, [sessionState, isLoaded, stream]);
 
 	// Keep both local and forwarded refs in sync
 	const setVideoEl = (el: HTMLVideoElement | null) => {
@@ -102,6 +104,74 @@ export const AvatarVideo = forwardRef<HTMLVideoElement>((_props, ref) => {
 			(ref as React.MutableRefObject<HTMLVideoElement | null>).current = el;
 		}
 	};
+
+	// Set the MediaStream srcObject when stream is available
+	useEffect(() => {
+		const videoEl = videoRef.current;
+
+		console.log("[AvatarVideo] Stream effect triggered", {
+			hasVideo: !!videoEl,
+			hasStream: !!stream,
+			streamActive: stream?.active,
+			streamId: stream?.id,
+		});
+
+		if (!videoEl || !stream) {
+			console.log("[AvatarVideo] Missing video element or stream - skipping");
+			return;
+		}
+
+		const videoTracks = stream.getVideoTracks();
+		const audioTracks = stream.getAudioTracks();
+
+		console.log("[AvatarVideo] Setting srcObject with tracks:", {
+			streamId: stream.id,
+			active: stream.active,
+			totalTracks: stream.getTracks().length,
+			videoTracks: videoTracks.map((t) => ({
+				id: t.id,
+				enabled: t.enabled,
+				muted: t.muted,
+				readyState: t.readyState,
+				label: t.label,
+			})),
+			audioTracks: audioTracks.map((t) => ({
+				id: t.id,
+				enabled: t.enabled,
+				muted: t.muted,
+				readyState: t.readyState,
+				label: t.label,
+			})),
+		});
+
+		// Check if tracks are live
+		const hasLiveVideoTrack = videoTracks.some((t) => t.readyState === "live");
+		const hasLiveAudioTrack = audioTracks.some((t) => t.readyState === "live");
+
+		console.log("[AvatarVideo] Track status:", {
+			hasLiveVideoTrack,
+			hasLiveAudioTrack,
+		});
+
+		if (!hasLiveVideoTrack) {
+			console.warn(
+				"[AvatarVideo] No live video tracks! Stream might not render.",
+			);
+		}
+
+		videoEl.srcObject = stream;
+		console.log("[AvatarVideo] srcObject assigned to video element");
+
+		// Ensure playback starts
+		videoEl
+			.play()
+			.then(() => {
+				console.log("[AvatarVideo] Video playback started successfully");
+			})
+			.catch((err) => {
+				console.error("[AvatarVideo] Failed to play video:", err);
+			});
+	}, [stream]);
 
 	// Consume credits while connected
 	useEffect(() => {

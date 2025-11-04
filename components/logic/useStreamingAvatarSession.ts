@@ -68,6 +68,25 @@ export const useStreamingAvatarSession = () => {
 
 	const handleStream = useCallback(
 		({ detail }: { detail: MediaStream }) => {
+			console.log("[useStreamingAvatarSession] Stream received:", {
+				streamId: detail.id,
+				active: detail.active,
+				tracks: detail.getTracks().length,
+				videoTracks: detail.getVideoTracks().map((t) => ({
+					id: t.id,
+					kind: t.kind,
+					enabled: t.enabled,
+					muted: t.muted,
+					readyState: t.readyState,
+				})),
+				audioTracks: detail.getAudioTracks().map((t) => ({
+					id: t.id,
+					kind: t.kind,
+					enabled: t.enabled,
+					muted: t.muted,
+					readyState: t.readyState,
+				})),
+			});
 			setStream(detail);
 			setSessionState(StreamingAvatarSessionState.CONNECTED);
 		},

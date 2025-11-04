@@ -57,11 +57,13 @@ function InteractiveAvatarCore() {
 
 	const { appendMessageChunk, setCurrentSessionId } = useSessionStore();
 
-	const mediaStreamRef = useRef<HTMLVideoElement>(null!);
-
 	const startSessionV2 = useMemoizedFn(async (config: StartAvatarRequest) => {
 		try {
 			console.log("[DEBUG] Starting avatar session with config:", config);
+			console.log(
+				"[DEBUG] Knowledge Base ID:",
+				config.knowledgeId || config.knowledge_base_id || "none",
+			);
 
 			// Get access token from our API route instead of using API key directly
 			const tokenResponse = await fetch("/api/get-access-token", {
@@ -144,15 +146,6 @@ function InteractiveAvatarCore() {
 		stopSessionV2();
 	});
 
-	useEffect(() => {
-		if (mediaStream && mediaStreamRef.current) {
-			mediaStreamRef.current.srcObject = mediaStream;
-			mediaStreamRef.current.onloadedmetadata = () => {
-				mediaStreamRef.current!.play();
-			};
-		}
-	}, [mediaStream]);
-
 	const isConnecting = useMemo(
 		() => sessionState === StreamingAvatarSessionState.CONNECTING,
 		[sessionState],
@@ -170,7 +163,7 @@ function InteractiveAvatarCore() {
 			<div className="w-full h-full">
 				<AvatarSession
 					initialConfig={DEFAULT_CONFIG}
-					mediaStream={mediaStreamRef}
+					mediaStream={null}
 					sessionState={sessionState}
 					startSession={startSessionV2}
 					stopSession={stopSessionV2}
