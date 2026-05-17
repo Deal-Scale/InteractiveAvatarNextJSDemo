@@ -15,6 +15,7 @@ import { StatBadge } from "@/components/PromptKit/StatBadge";
 import { Button } from "@/components/ui/button";
 import { DataCard, Metric, MetricGrid } from "@/components/ui/jsx-demo";
 import { JSXPreview } from "@/components/ui/jsx-preview";
+import { LiveMermaidChart } from "@/components/ui/live-mermaid-chart";
 import { Mermaid } from "@/components/ui/mermaid";
 import {
 	Message,
@@ -138,6 +139,8 @@ export const MessageItem: React.FC<MessageItemProps> = ({
 			MetricGrid: MetricGrid as unknown as React.ComponentType<unknown>,
 			Metric: Metric as unknown as React.ComponentType<unknown>,
 			Mermaid: Mermaid as unknown as React.ComponentType<unknown>,
+			LiveMermaidChart:
+				LiveMermaidChart as unknown as React.ComponentType<unknown>,
 		}),
 		[],
 	);

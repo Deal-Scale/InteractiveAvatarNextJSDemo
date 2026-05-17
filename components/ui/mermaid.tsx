@@ -2,6 +2,8 @@
 
 import * as React from "react";
 import { Button } from "@/components/ui/button";
+import { useDataGridStore } from "@/lib/stores/dataGrid";
+import { useSessionStore } from "@/lib/stores/session";
 import { cn } from "@/lib/utils";
 
 export type MermaidProps = {
@@ -38,6 +40,19 @@ function hashCode(value: string): string {
 	return Math.abs(hash).toString(36);
 }
 
+function stretchInjectedSvg(target: HTMLDivElement | null) {
+	const svgElement = target?.querySelector("svg");
+	if (!(svgElement instanceof SVGSVGElement)) return;
+
+	svgElement.setAttribute("width", "100%");
+	svgElement.setAttribute("height", "100%");
+	svgElement.setAttribute("preserveAspectRatio", "xMidYMid meet");
+	svgElement.style.display = "block";
+	svgElement.style.width = "100%";
+	svgElement.style.height = "100%";
+	svgElement.style.maxWidth = "none";
+}
+
 export function Mermaid({
 	chart,
 	children,
@@ -53,6 +68,9 @@ export function Mermaid({
 	const [zoom, setZoom] = React.useState(1);
 	const [renderNonce, setRenderNonce] = React.useState(0);
 	const [menuOpen, setMenuOpen] = React.useState(false);
+	const [gridAddState, setGridAddState] = React.useState<"idle" | "added">(
+		"idle",
+	);
 	const [status, setStatus] = React.useState<
 		"idle" | "rendering" | "success" | "error"
 	>("idle");
@@ -72,6 +90,8 @@ export function Mermaid({
 	const lastRenderedCodeRef = React.useRef<string>("");
 	const lastRenderNonceRef = React.useRef(renderNonce);
 	const prevConfigRef = React.useRef(config);
+	const addMermaidChart = useDataGridStore((state) => state.addMermaidChart);
+	const setViewTab = useSessionStore((state) => state.setViewTab);
 	// Recursively flatten arbitrary children (from react-jsx-parser) into plain text
 	const childrenText = React.useMemo(() => {
 		const toText = (node: React.ReactNode): string => {
@@ -151,6 +171,7 @@ export function Mermaid({
 	React.useEffect(() => {
 		if (containerRef.current) {
 			containerRef.current.innerHTML = svg;
+			stretchInjectedSvg(containerRef.current);
 		}
 		if (modalSvgRef.current) {
 			modalSvgRef.current.innerHTML = svg;
@@ -231,6 +252,17 @@ export function Mermaid({
 			setCopyState("copied");
 			setTimeout(() => setCopyState("idle"), 1200);
 		} catch {}
+	};
+	const handleAddToGrid = () => {
+		if (onAddToGrid) {
+			onAddToGrid({ code, svg });
+		} else {
+			addMermaidChart({ code });
+		}
+
+		setViewTab("data");
+		setGridAddState("added");
+		window.setTimeout(() => setGridAddState("idle"), 1200);
 	};
 
 	const zoomIn = () => setZoom((z) => Math.min(5, +(z + 0.2).toFixed(2)));
@@ -380,18 +412,15 @@ export function Mermaid({
 						<button
 							type="button"
 							role="menuitem"
-							disabled={!onAddToGrid}
 							className={cn(
 								"block w-full cursor-pointer px-3 py-2 text-left text-xs hover:bg-accent",
-								!onAddToGrid && "opacity-50 cursor-not-allowed",
 							)}
 							onClick={() => {
-								if (!onAddToGrid) return;
 								setMenuOpen(false);
-								onAddToGrid({ code, svg });
+								handleAddToGrid();
 							}}
 						>
-							Add to Grid
+							{gridAddState === "added" ? "Added" : "Add to Grid"}
 						</button>
 					</div>
 				)}
@@ -401,12 +430,11 @@ export function Mermaid({
 
 	if (!svg) {
 		return (
-			<div className={cn("relative", className)}>
+			<div className={cn("relative flex flex-col", className)}>
 				{Toolbar}
 				<pre
 					className={cn(
-						"text-xs text-muted-foreground whitespace-pre-wrap p-2",
-						className,
+						"min-h-0 flex-1 overflow-auto p-2 text-xs whitespace-pre-wrap text-muted-foreground",
 					)}
 				>
 					{code}
@@ -416,14 +444,15 @@ export function Mermaid({
 	}
 	return (
 		<div
-			className={cn("relative", className)}
+			className={cn("relative flex flex-col", className)}
 			data-mermaid-id={`${idPrefix}-${uid}`}
 		>
 			{Toolbar}
 			<div
 				ref={containerRef}
 				className={cn(
-					"mermaid-container overflow-auto border border-border rounded-b",
+					"mermaid-container min-h-0 flex-1 overflow-auto border border-border bg-card [&_svg]:h-full [&_svg]:min-h-full [&_svg]:w-full [&_svg]:max-w-none",
+					showControls ? "rounded-b" : "rounded-md",
 				)}
 			/>
 			{open && (
