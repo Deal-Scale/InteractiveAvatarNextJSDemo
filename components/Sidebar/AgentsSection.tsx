@@ -6,7 +6,7 @@ import { ChevronRight, Plus } from "lucide-react";
 import AgentCard, { type Agent } from "./AgentCard";
 import AgentModal from "./AgentModal";
 
-import { SidebarGroup, SidebarGroupLabel } from "@/components/ui/sidebar";
+import { SidebarGroup } from "@/components/ui/sidebar";
 import { Button } from "@/components/ui/button";
 import type { GridFetcher, GridResponse } from "@/types/component-grid";
 import ComponentGrid from "@/components/ui/grid/components/ComponentGrid";
@@ -102,7 +102,9 @@ export default function AgentsSection(props: {
 					type="button"
 					onClick={() => setCollapsedAgents((v) => !v)}
 				>
-					<SidebarGroupLabel>Agents</SidebarGroupLabel>
+					<span className="px-2 pb-1 text-xs uppercase tracking-wide text-muted-foreground">
+						Agents
+					</span>
 					<ChevronRight
 						className={`size-3 transition-transform ${collapsedAgents ? "rotate-0" : "rotate-90"}`}
 					/>

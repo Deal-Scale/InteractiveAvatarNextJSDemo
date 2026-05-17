@@ -176,8 +176,8 @@ export function BottomTab({
 				(sidebarCollapsed
 					? "fixed bottom-0 left-1/2 -translate-x-1/2 "
 					: "fixed bottom-0 left-[328px] ") + // small offset past the sidebar edge
-				"z-50 select-none flex items-center gap-2 rounded-t-md border border-primary/40 bg-primary/10 text-primary px-3 py-1.5 " +
-				"shadow-md hover:bg-primary/15 backdrop-blur supports-[backdrop-filter]:bg-primary/10 " +
+				"z-[120] select-none flex items-center gap-2 rounded-t-md border border-primary bg-background text-foreground px-3 py-2 " +
+				"shadow-lg shadow-black/30 hover:bg-muted backdrop-blur supports-[backdrop-filter]:bg-background/95 " +
 				className
 			}
 			onClick={onClick}
@@ -189,8 +189,8 @@ export function BottomTab({
 			}}
 			onPointerDown={onPointerDown}
 		>
-			<span className="h-1.5 w-8 rounded-full bg-primary/50" />
-			<span className="text-xs text-primary">{label}</span>
+			<span className="h-1.5 w-8 rounded-full bg-primary" />
+			<span className="text-xs font-medium text-foreground">{label}</span>
 		</button>
 	);
 }

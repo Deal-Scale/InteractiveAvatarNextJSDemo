@@ -3,11 +3,7 @@
 import { useKeyPress } from "ahooks";
 import type React from "react";
 import { useEffect, useMemo, useRef, useState } from "react";
-
-import { ChatInput } from "./ChatInput";
-import { BranchDialog } from "./BranchDialog";
-import { CompareDialog } from "./CompareDialog";
-import { useComposerStore } from "@/lib/stores/composer";
+import { StickToBottom } from "use-stick-to-bottom";
 
 import { useStreamingAvatarContext } from "@/components/logic/context";
 import { useTextChat } from "@/components/logic/useTextChat";
@@ -18,27 +14,30 @@ import {
 } from "@/components/ui/chat-container";
 import { ScrollButton } from "@/components/ui/scroll-button";
 import { useToast } from "@/components/ui/toaster";
+import { getProvider } from "@/lib/chat/registry";
+import { useChatProviderStore } from "@/lib/stores/chatProvider";
+import { useComposerStore } from "@/lib/stores/composer";
+import type { MessageAsset, Message as MessageType } from "@/lib/types";
 import { MessageSender } from "@/lib/types";
-import type { Message as MessageType, MessageAsset } from "@/lib/types";
-import { StickToBottom } from "use-stick-to-bottom";
-import { MessageList } from "./chat/MessageList";
-import { useInputAutoHeight } from "./chat/hooks/useInputAutoHeight";
-import { useScrollAnchored } from "./chat/hooks/useScrollAnchored";
+import { cn } from "@/lib/utils";
+import { BranchDialog } from "./BranchDialog";
+import { ChatInput } from "./ChatInput";
+import { CompareDialog } from "./CompareDialog";
+import { useAttachments } from "./chat/hooks/useAttachments";
 import { useBranching } from "./chat/hooks/useBranching";
 import { useComparison } from "./chat/hooks/useComparison";
-import { useAttachments } from "./chat/hooks/useAttachments";
-import { useVotes } from "./chat/hooks/useVotes";
 import { useEditing } from "./chat/hooks/useEditing";
+import { useInputAutoHeight } from "./chat/hooks/useInputAutoHeight";
+import { useScrollAnchored } from "./chat/hooks/useScrollAnchored";
+import { useVotes } from "./chat/hooks/useVotes";
+import { MessageList } from "./chat/MessageList";
 import {
 	buildAugmentedMessages,
 	buildBaseMessagesIfEmpty,
 	dedupeAdjacent,
 } from "./chat/utils";
-import { cn } from "@/lib/utils";
 // * Provider switching & capabilities
 import { ProviderSwitcher } from "./ProviderSwitcher";
-import { useChatProviderStore } from "@/lib/stores/chatProvider";
-import { getProvider } from "@/lib/chat/registry";
 
 interface ChatProps {
 	chatInput: string;
@@ -223,7 +222,7 @@ export const Chat: React.FC<ChatProps> = ({
 		<div className="flex flex-col w-full flex-1 min-h-0 p-4">
 			<StickToBottom
 				className={cn(
-					"flex-1 min-h-0 h-full overflow-hidden text-foreground",
+					"flex flex-1 min-h-0 h-full flex-col overflow-hidden text-foreground",
 					inputOnly && "hidden",
 				)}
 			>
@@ -232,7 +231,7 @@ export const Chat: React.FC<ChatProps> = ({
 				<ChatContainerRoot
 					ref={scrollRef}
 					onScroll={handleScroll}
-					className="flex-1 min-h-0 h-full text-foreground"
+					className="flex-1 min-h-0 text-foreground"
 					style={{
 						paddingBottom: isAtBottom ? 16 : Math.max(16, inputHeight + 8),
 					}}

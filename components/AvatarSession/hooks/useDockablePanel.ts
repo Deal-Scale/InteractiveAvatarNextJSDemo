@@ -274,15 +274,6 @@ export function useDockablePanel(
 				});
 				setRightWidthFrac(next);
 			}
-		} else if (dock === "bottom" && bottomPct <= 0) {
-			const next = 15 / 100;
-			if (Math.abs((bottomHeightFrac || 0) - next) > 0.001) {
-				console.debug(
-					"[dockable] ensure visible -> bottom setBottomHeightFrac",
-					{ next },
-				);
-				setBottomHeightFrac(next);
-			}
 		}
 	}, [
 		hydrated,

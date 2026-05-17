@@ -29,7 +29,22 @@ export const PollinationsAdapter: ChatProvider = {
 			});
 			if (!res.ok) {
 				const text = await res.text();
-				throw new Error(text || `Pollinations error: ${res.status}`);
+				let message = text || `Pollinations error: ${res.status}`;
+				try {
+					const parsed = JSON.parse(text) as {
+						error?: { message?: string } | string;
+						message?: string;
+					};
+					message =
+						(typeof parsed.error === "string"
+							? parsed.error
+							: parsed.error?.message) ||
+						parsed.message ||
+						message;
+				} catch {
+					// Keep plain-text error body.
+				}
+				throw new Error(message);
 			}
 			const data = await res.json();
 			const content = data?.choices?.[0]?.message?.content ?? "";

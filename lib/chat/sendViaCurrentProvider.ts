@@ -169,18 +169,10 @@ export function useSendViaCurrentProvider() {
 		params: { history: Message[]; input: string },
 		options: SendOptions = {},
 	) => {
-		// Default sensible fallback order prioritizes text providers for resilience
-		const fallback =
-			options.fallbackOrder ??
-			([
-				"pollinations",
-				"claude",
-				"openai",
-				"deepseek",
-				"gemini",
-				"openrouter",
-			].filter((p) => p !== textMode) as ProviderId[]);
+		// Do not silently change providers; the selected provider should be explicit.
+		const fallback = options.fallbackOrder ?? [];
 		return sendViaProvider(textMode as ProviderId, params, {
+			checkAvailability: false,
 			...options,
 			fallbackOrder: fallback,
 		});

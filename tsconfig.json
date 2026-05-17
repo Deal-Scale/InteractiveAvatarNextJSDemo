@@ -12,6 +12,7 @@
 		"resolveJsonModule": true,
 		"isolatedModules": true,
 		"jsx": "preserve",
+		"types": ["node", "react", "react-dom", "vitest/globals"],
 		"incremental": true,
 		"baseUrl": ".",
 		"plugins": [

@@ -84,10 +84,12 @@ export function Sidebar({ children, className = "" }: SidebarProps) {
 			{!open && (
 				<button
 					aria-label="Open sidebar"
-					className="fixed left-0 top-1/2 -translate-y-1/2 z-40 h-16 w-3 rounded-r border border-primary/40 bg-primary/10 hover:bg-primary/15 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary backdrop-blur supports-[backdrop-filter]:bg-primary/10"
+					className="fixed left-0 top-1/2 -translate-y-1/2 z-[120] flex h-20 w-6 items-center justify-center rounded-r border border-primary bg-background text-foreground shadow-lg shadow-black/30 hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary backdrop-blur supports-[backdrop-filter]:bg-background/95"
 					type="button"
 					onClick={() => setOpen(true)}
-				/>
+				>
+					<span className="h-10 w-1.5 rounded-full bg-primary" />
+				</button>
 			)}
 			<div className="flex h-full flex-col gap-4 py-4 max-h-full overflow-y-auto px-2 pb-20 group-data-[state=collapsed]/sidebar:hidden">
 				{children}
@@ -122,9 +124,9 @@ export function SidebarGroup({ children }: { children: React.ReactNode }) {
 
 export function SidebarGroupLabel({ children }: { children: React.ReactNode }) {
 	return (
-		<div className="px-2 pb-1 text-xs uppercase tracking-wide text-muted-foreground">
+		<span className="block px-2 pb-1 text-xs uppercase tracking-wide text-muted-foreground">
 			{children}
-		</div>
+		</span>
 	);
 }
 

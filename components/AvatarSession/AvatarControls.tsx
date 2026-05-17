@@ -20,6 +20,7 @@ import {
 	useStopSessionMutation,
 	useKeepAliveMutation,
 } from "@/lib/services/streaming/query";
+import { usePlacementStore } from "@/lib/stores/placement";
 
 interface AvatarControlsProps {
 	stopSession: () => void;
@@ -36,6 +37,8 @@ export const AvatarControls: React.FC<AvatarControlsProps> = ({
 		setControlsMinimized,
 		currentSessionId,
 	} = useSessionStore();
+	const setSidebarCollapsed = usePlacementStore((s) => s.setSidebarCollapsed);
+	const setBottomHeightFrac = usePlacementStore((s) => s.setBottomHeightFrac);
 	const { sessionState } = useStreamingAvatarContext();
 
 	const interruptApi = useInterruptTaskMutation();
@@ -70,9 +73,15 @@ export const AvatarControls: React.FC<AvatarControlsProps> = ({
 
 	// Provide CSS var for Tailwind arbitrary opacity value
 	const rampStyle = { "--ui-opacity": uiOpacity } as React.CSSProperties;
+	const showAlternateView = (tab: "brain" | "data" | "actions") => {
+		setViewTab(tab);
+		setSidebarCollapsed(true);
+		setBottomHeightFrac(0);
+		setControlsMinimized(true);
+	};
 
 	return (
-		<div className="absolute inset-0 pointer-events-none z-20">
+		<div className="absolute inset-0 pointer-events-none z-[90]">
 			{/* Keep-Alive button top-left when connected */}
 			{sessionState === StreamingAvatarSessionState.CONNECTED && (
 				<div className="absolute top-3 left-3 pointer-events-auto">
@@ -94,13 +103,14 @@ export const AvatarControls: React.FC<AvatarControlsProps> = ({
 					type="button"
 					aria-label="Show controls"
 					className={
-						"fixed top-0 left-1/2 -translate-x-1/2 z-40 select-none pointer-events-auto " +
-						"flex items-center gap-2 rounded-b-md border border-primary/40 bg-primary/10 px-3 py-1.5 text-primary " +
-						"hover:bg-primary/15"
+						"fixed top-0 left-1/2 -translate-x-1/2 z-[100] select-none pointer-events-auto " +
+						"flex items-center gap-2 rounded-b-md border border-primary bg-background px-3 py-2 text-foreground " +
+						"shadow-lg shadow-black/30 hover:bg-muted"
 					}
 					onClick={() => setControlsMinimized(false)}
 				>
-					<span className="h-1.5 w-8 rounded-full bg-primary/50" />
+					<span className="h-1.5 w-8 rounded-full bg-primary" />
+					<span className="text-xs font-medium">Controls</span>
 				</button>
 			)}
 			{/* Floating controls in the top-center over the video */}
@@ -181,7 +191,7 @@ export const AvatarControls: React.FC<AvatarControlsProps> = ({
 									: "!bg-muted !text-foreground"
 							}`}
 							title="Brain"
-							onClick={() => setViewTab("brain")}
+							onClick={() => showAlternateView("brain")}
 						>
 							<Brain className="h-4 w-4" />
 						</Button>
@@ -192,7 +202,7 @@ export const AvatarControls: React.FC<AvatarControlsProps> = ({
 									: "!bg-muted !text-foreground"
 							}`}
 							title="Data"
-							onClick={() => setViewTab("data")}
+							onClick={() => showAlternateView("data")}
 						>
 							<Database className="h-4 w-4" />
 						</Button>
@@ -203,7 +213,7 @@ export const AvatarControls: React.FC<AvatarControlsProps> = ({
 									: "!bg-muted !text-foreground"
 							}`}
 							title="Actions"
-							onClick={() => setViewTab("actions")}
+							onClick={() => showAlternateView("actions")}
 						>
 							<LayoutDashboard className="h-4 w-4" />
 						</Button>

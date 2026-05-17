@@ -1,16 +1,15 @@
 "use client";
 import { useEffect, useMemo } from "react";
-
-import { useChatProviderStore } from "@/lib/stores/chatProvider";
 import { Button } from "@/components/ui/button";
+import { useChatProviderStore } from "@/lib/stores/chatProvider";
+import { useClaudeAvailability } from "./hooks/useClaudeAvailability";
+import { useDeepSeekAvailability } from "./hooks/useDeepSeekAvailability";
+import { useElevenLabsAvailability } from "./hooks/useElevenLabsAvailability";
 import { useGeminiAvailability } from "./hooks/useGeminiAvailability";
 import { useHeygenAvailability } from "./hooks/useHeygenAvailability";
-import { useElevenLabsAvailability } from "./hooks/useElevenLabsAvailability";
-import { usePollinationsAvailability } from "./hooks/usePollinationsAvailability";
-import { useOpenRouterAvailability } from "./hooks/useOpenRouterAvailability";
-import { useClaudeAvailability } from "./hooks/useClaudeAvailability";
 import { useOpenAIAAvailability } from "./hooks/useOpenAIAAvailability";
-import { useDeepSeekAvailability } from "./hooks/useDeepSeekAvailability";
+import { useOpenRouterAvailability } from "./hooks/useOpenRouterAvailability";
+import { usePollinationsAvailability } from "./hooks/usePollinationsAvailability";
 
 type ProviderConfig = {
 	id:
@@ -33,6 +32,7 @@ interface GroupProps {
 	current: string;
 	onChange: (id: ProviderConfig["id"]) => void;
 	providers: ProviderConfig[];
+	allowUnavailableSelection?: boolean;
 }
 
 const ProviderGroup = ({
@@ -40,12 +40,13 @@ const ProviderGroup = ({
 	current,
 	onChange,
 	providers,
+	allowUnavailableSelection = false,
 }: GroupProps) => {
 	return (
-		<div className="flex items-center gap-2" aria-label={ariaLabel}>
-			<span className="text-xs text-muted-foreground whitespace-nowrap">
+		<fieldset className="flex items-center gap-2">
+			<legend className="text-xs text-muted-foreground whitespace-nowrap">
 				{ariaLabel}
-			</span>
+			</legend>
 			<div className="flex overflow-hidden rounded-md border border-input">
 				{providers.map((provider) => (
 					<span
@@ -62,15 +63,21 @@ const ProviderGroup = ({
 							variant={current === provider.id ? "default" : "ghost"}
 							onClick={() => onChange(provider.id)}
 							aria-pressed={current === provider.id}
-							disabled={!provider.available || provider.checking}
-							aria-disabled={!provider.available || provider.checking}
+							disabled={
+								!allowUnavailableSelection &&
+								(!provider.available || provider.checking)
+							}
+							aria-disabled={
+								!allowUnavailableSelection &&
+								(!provider.available || provider.checking)
+							}
 						>
 							{provider.label}
 						</Button>
 					</span>
 				))}
 			</div>
-		</div>
+		</fieldset>
 	);
 };
 
@@ -146,7 +153,7 @@ export const ProviderSwitcher = () => {
 		const textEntry = textProviders.find(
 			(provider) => provider.id === textMode,
 		);
-		if (!textEntry || (!textEntry.available && firstAvailableText)) {
+		if (!textEntry && firstAvailableText) {
 			if (firstAvailableText) setTextMode(firstAvailableText.id);
 		}
 	}, [firstAvailableText, setTextMode, textMode, textProviders]);
@@ -179,11 +186,11 @@ export const ProviderSwitcher = () => {
 	]);
 
 	return (
-		<div
+		<fieldset
 			className="mb-3 flex flex-col gap-2"
-			role="group"
 			aria-label="Provider selection"
 		>
+			<legend className="sr-only">Provider selection</legend>
 			<ProviderGroup
 				ariaLabel="Voice provider"
 				current={voiceMode}
@@ -198,10 +205,11 @@ export const ProviderSwitcher = () => {
 			/>
 			<ProviderGroup
 				ariaLabel="Text provider"
+				allowUnavailableSelection
 				current={textMode}
 				onChange={setTextMode}
 				providers={textProviders}
 			/>
-		</div>
+		</fieldset>
 	);
 };

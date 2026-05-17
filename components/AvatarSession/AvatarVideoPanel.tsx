@@ -1,18 +1,57 @@
-import { Brain, Database, LayoutDashboard } from "lucide-react";
+import dynamic from "next/dynamic";
 import type React from "react";
 import { useEffect, useMemo, useState } from "react";
-
-import { StreamingAvatarSessionState } from "../logic/context";
-
-import { AvatarVideo } from "./AvatarVideo";
-import { UserVideo } from "./UserVideo";
-import { AvatarControls } from "./AvatarControls";
+import { useAvatarOptions } from "@/components/AvatarConfig/hooks/useAvatarOptions";
+import { SessionQuickStartCard } from "@/components/AvatarSession/SessionQuickStartCard";
+import { defaultGraphData } from "@/components/data-viewer";
+import { RetroGrid } from "@/components/magicui/retro-grid";
 
 import { useAgentStore } from "@/lib/stores/agent";
 import { useSessionStore } from "@/lib/stores/session";
-import { RetroGrid } from "@/components/magicui/retro-grid";
-import { useAvatarOptions } from "@/components/AvatarConfig/hooks/useAvatarOptions";
-import { SessionQuickStartCard } from "@/components/AvatarSession/SessionQuickStartCard";
+import { StreamingAvatarSessionState } from "../logic/context";
+import { AvatarControls } from "./AvatarControls";
+import { AvatarVideo } from "./AvatarVideo";
+import { UserVideo } from "./UserVideo";
+
+const BrainGraphViewer = dynamic(
+	() =>
+		import("@/components/three-graph-viewer").then(
+			(module) => module.ThreeGraphViewer,
+		),
+	{
+		ssr: false,
+		loading: () => (
+			<div className="flex h-full w-full items-center justify-center text-sm text-muted-foreground">
+				Loading graph...
+			</div>
+		),
+	},
+);
+
+const DataViewerPanel = dynamic(
+	() => import("@/components/data-viewer").then((module) => module.DataViewer),
+	{
+		ssr: false,
+		loading: () => (
+			<div className="flex h-full w-full items-center justify-center text-sm text-muted-foreground">
+				Loading data...
+			</div>
+		),
+	},
+);
+
+const KanbanActionsPanel = dynamic(
+	() =>
+		import("@/components/kanban").then((module) => module.ActionsKanbanPanel),
+	{
+		ssr: false,
+		loading: () => (
+			<div className="flex h-full w-full items-center justify-center text-sm text-muted-foreground">
+				Loading actions...
+			</div>
+		),
+	},
+);
 
 export function AvatarVideoPanel({
 	mediaStream,
@@ -46,6 +85,7 @@ export function AvatarVideoPanel({
 	const selectedAvatarId =
 		selectedAvatar === "CUSTOM" ? customAvatarId.trim() : selectedAvatar;
 	const { avatarOptions, customIdValid } = useAvatarOptions(selectedAvatarId);
+	const [highlightGraphNodes, setHighlightGraphNodes] = useState(false);
 
 	const handleAvatarSelection = (value: string) => {
 		setSelectedAvatar(value);
@@ -157,25 +197,29 @@ export function AvatarVideoPanel({
 							/>
 						</div>
 					)
+				) : viewTab === "brain" ? (
+					<div className="absolute inset-0 z-0 bg-background">
+						<BrainGraphViewer
+							graphData={defaultGraphData}
+							isHighlightActive={highlightGraphNodes}
+							nodesToHighlight={["root"]}
+							onHighlightToggle={() =>
+								setHighlightGraphNodes((current) => !current)
+							}
+							loadingFallback={
+								<div className="flex h-full w-full items-center justify-center text-sm text-muted-foreground">
+									Loading graph...
+								</div>
+							}
+						/>
+					</div>
+				) : viewTab === "data" ? (
+					<div className="absolute inset-0 z-0 bg-background">
+						<DataViewerPanel />
+					</div>
 				) : (
-					<div className="absolute inset-0 flex items-center justify-center bg-gradient-to-b from-muted to-background">
-						<div className="text-center text-foreground">
-							<div className="mb-3 flex items-center justify-center">
-								{viewTab === "brain" && (
-									<Brain className="h-8 w-8 text-primary" />
-								)}
-								{viewTab === "data" && (
-									<Database className="h-8 w-8 text-accent-foreground" />
-								)}
-								{viewTab === "actions" && (
-									<LayoutDashboard className="h-8 w-8 text-secondary-foreground" />
-								)}
-							</div>
-							<div className="text-lg font-medium capitalize">{viewTab}</div>
-							<div className="text-sm text-muted-foreground">
-								Alternate view panel
-							</div>
-						</div>
+					<div className="absolute inset-0 z-0 bg-background">
+						<KanbanActionsPanel />
 					</div>
 				)}
 
