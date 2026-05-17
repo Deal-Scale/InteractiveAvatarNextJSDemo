@@ -1,14 +1,13 @@
 import type { StartAvatarRequest } from "@heygen/streaming-avatar";
-import type { AgentConfig } from "@/lib/schemas/agent";
-import type { UserSettings, AppGlobalSettings } from "@/lib/schemas/global";
-import type { Message } from "@/lib/types";
-
-import { persist, createJSONStorage } from "zustand/middleware";
 import { create } from "zustand";
-
-import type { MessageSender } from "@/lib/types";
+import { createJSONStorage, persist } from "zustand/middleware";
+import type { AgentConfig } from "@/lib/schemas/agent";
+import type { AppGlobalSettings, UserSettings } from "@/lib/schemas/global";
+import type { Message, MessageSender } from "@/lib/types";
 
 export type ChatMode = "voice" | "text";
+export type ChatExperience = "basic" | "advanced" | "avatar";
+export type ChatSettingsTab = "text" | "voice" | "avatar";
 
 export type ConfigModalTab = "session" | "global" | "user" | "agent";
 
@@ -20,11 +19,19 @@ interface SessionState {
 	configModalTab: ConfigModalTab;
 	setConfigModalTab: (tab: ConfigModalTab) => void;
 
+	isChatSettingsOpen: boolean;
+	openChatSettings: (tab?: ChatSettingsTab) => void;
+	closeChatSettings: () => void;
+	chatSettingsTab: ChatSettingsTab;
+	setChatSettingsTab: (tab: ChatSettingsTab) => void;
+
 	config: StartAvatarRequest | null;
 	setConfig: (config: StartAvatarRequest) => void;
 
 	chatMode: ChatMode;
 	setChatMode: (mode: ChatMode) => void;
+	chatExperience: ChatExperience;
+	setChatExperience: (mode: ChatExperience) => void;
 
 	messages: Message[];
 	addMessage: (message: Message) => void;
@@ -64,7 +71,7 @@ interface SessionState {
 export const useSessionStore = create<SessionState>()(
 	persist(
 		(set) => ({
-			isConfigModalOpen: true, // Open modal by default
+			isConfigModalOpen: false,
 			openConfigModal: (tab = "session") =>
 				set({
 					isConfigModalOpen: true,
@@ -75,11 +82,24 @@ export const useSessionStore = create<SessionState>()(
 			configModalTab: "session",
 			setConfigModalTab: (tab) => set({ configModalTab: tab }),
 
+			isChatSettingsOpen: false,
+			openChatSettings: (tab) =>
+				set((state) => ({
+					isChatSettingsOpen: true,
+					chatSettingsTab:
+						tab ?? (state.chatExperience === "avatar" ? "avatar" : "text"),
+				})),
+			closeChatSettings: () => set({ isChatSettingsOpen: false }),
+			chatSettingsTab: "text",
+			setChatSettingsTab: (tab) => set({ chatSettingsTab: tab }),
+
 			config: null,
 			setConfig: (config) => set({ config }),
 
 			chatMode: "text",
 			setChatMode: (mode) => set({ chatMode: mode }),
+			chatExperience: "basic",
+			setChatExperience: (mode) => set({ chatExperience: mode }),
 
 			messages: [],
 			addMessage: (message) =>
@@ -143,11 +163,27 @@ export const useSessionStore = create<SessionState>()(
 		}),
 		{
 			name: "session-store",
+			version: 2,
 			storage: createJSONStorage(() => localStorage),
+			migrate: (persistedState) => {
+				if (!persistedState || typeof persistedState !== "object") {
+					return persistedState;
+				}
+
+				return {
+					...persistedState,
+					isConfigModalOpen: false,
+					isChatSettingsOpen: false,
+					chatExperience: "basic",
+					chatSettingsTab: "text",
+					viewTab: "video",
+				};
+			},
 			// Only persist what's useful across reloads
 			partialize: (state) => ({
 				messages: state.messages,
 				chatMode: state.chatMode,
+				chatExperience: state.chatExperience,
 				creditsRemaining: state.creditsRemaining,
 				creditsPerMinute: state.creditsPerMinute,
 				viewTab: state.viewTab,

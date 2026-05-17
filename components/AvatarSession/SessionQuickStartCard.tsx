@@ -1,3 +1,4 @@
+import { useId } from "react";
 import type { AvatarOption } from "@/components/AvatarConfig/hooks/useAvatarOptions";
 import { Input } from "@/components/Input";
 import { BorderBeam } from "@/components/magicui/border-beam";
@@ -23,7 +24,6 @@ import {
 	TooltipProvider,
 	TooltipTrigger,
 } from "@/components/ui/tooltip";
-import { useId } from "react";
 
 interface SessionQuickStartCardProps {
 	avatarOptions: AvatarOption[];
@@ -71,6 +71,7 @@ export function SessionQuickStartCard({
 	const isStartDisabled =
 		isConnecting ||
 		!finalAvatarId ||
+		!finalKnowledgeId ||
 		(selectedAvatar === "CUSTOM" &&
 			(!customAvatarId.trim() || !customIdValid)) ||
 		(finalKnowledgeId && !kbIdValid);
@@ -156,25 +157,29 @@ export function SessionQuickStartCard({
 								className="text-sm text-muted-foreground"
 								htmlFor={kbInputId}
 							>
-								Knowledge Base ID (optional)
+								Context ID
 							</label>
 							<Input
 								id={kbInputId}
-								placeholder="Enter knowledge base ID (if any)"
+								placeholder="Enter migrated LiveAvatar context_id"
 								value={knowledgeBaseId}
 								onChange={onKnowledgeBaseChange}
 							/>
 							{knowledgeBaseId ? (
 								kbIdValid ? (
 									<div className="text-primary text-xs">
-										Knowledge Base ID format looks good
+										Context ID format looks good
 									</div>
 								) : (
 									<div className="text-destructive text-xs">
-										Invalid Knowledge Base ID format
+										Invalid Context ID format
 									</div>
 								)
-							) : null}
+							) : (
+								<div className="text-muted-foreground text-xs">
+									LiveAvatar requires a context_id for embedded sessions.
+								</div>
+							)}
 						</div>
 					</div>
 				</div>
@@ -208,7 +213,7 @@ export function SessionQuickStartCard({
 								<TooltipContent side="top">
 									{isConnecting
 										? "Connecting to avatar..."
-										: "Set up your agent and settings first"}
+										: "Set an avatar and LiveAvatar context_id first"}
 								</TooltipContent>
 							</Tooltip>
 						</TooltipProvider>

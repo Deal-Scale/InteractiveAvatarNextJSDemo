@@ -1,21 +1,17 @@
-import { useEffect, useMemo, useState } from "react";
 import { useMemoizedFn } from "ahooks";
 import { nanoid } from "nanoid";
-
-import { mockOpenRouter } from "../utils/mock";
-import { StreamingAvatarSessionState } from "../../logic/context";
-
-import { useMcpCommands } from "./useMcpCommands";
-
+import { useEffect, useMemo, useState } from "react";
 import { useApiService } from "@/components/logic/ApiServiceContext";
-import { useVoiceChat } from "@/components/logic/useVoiceChat";
 import { useMessageHistory } from "@/components/logic/useMessageHistory";
-import { useSessionStore } from "@/lib/stores/session";
-import { MessageSender, type MessageAsset } from "@/lib/types";
+import { useVoiceChat } from "@/components/logic/useVoiceChat";
+import type { ProviderId } from "@/lib/chat/providers";
+import { getProvider } from "@/lib/chat/registry";
 import { useSendTaskMutation } from "@/lib/services/streaming/query";
 import { useChatProviderStore } from "@/lib/stores/chatProvider";
-import { getProvider } from "@/lib/chat/registry";
-import type { ProviderId } from "@/lib/chat/providers";
+import { useSessionStore } from "@/lib/stores/session";
+import { type MessageAsset, MessageSender } from "@/lib/types";
+import { StreamingAvatarSessionState } from "../../logic/context";
+import { useMcpCommands } from "./useMcpCommands";
 
 export function useChatController(sessionState: StreamingAvatarSessionState) {
 	const { apiService } = useApiService();
@@ -111,6 +107,7 @@ export function useChatController(sessionState: StreamingAvatarSessionState) {
 				}
 
 				const { textMode, voiceMode } = useChatProviderStore.getState();
+				const { textSettings, voiceSettings } = useChatProviderStore.getState();
 				const textProvider = getProvider(textMode as ProviderId);
 				const voiceProvider = getProvider(voiceMode as ProviderId);
 
@@ -124,6 +121,13 @@ export function useChatController(sessionState: StreamingAvatarSessionState) {
 							const reply = await textProvider.sendMessage({
 								history,
 								input: text,
+								options: {
+									jsonMode: textSettings.jsonMode,
+									systemPrompt: textSettings.systemPrompt.trim() || undefined,
+									seed: textSettings.seed.trim()
+										? Number(textSettings.seed)
+										: undefined,
+								},
 							});
 							const providerMessage = {
 								...reply,
@@ -131,7 +135,7 @@ export function useChatController(sessionState: StreamingAvatarSessionState) {
 							};
 							addMessage(providerMessage);
 
-							if (voiceProvider.supportsVoice) {
+							if (voiceProvider.supportsVoice && voiceSettings.autoSpeak) {
 								await speakThroughAvatar(providerMessage.content);
 							}
 						} catch (error) {
@@ -148,21 +152,12 @@ export function useChatController(sessionState: StreamingAvatarSessionState) {
 					})(),
 				);
 
-				// Fire voice pipeline concurrently when available or using mock fallback
+				// Fire voice pipeline concurrently when available.
 				operations.push(
 					(async () => {
-						if (mockChatEnabled) {
-							const reply = await mockOpenRouter(text);
-							addMessage({
-								id: nanoid(),
-								content: reply,
-								sender: MessageSender.AVATAR,
-								provider: "mock-openrouter",
-							});
+						if (!voiceProvider.supportsVoice || !voiceSettings.voiceEnabled) {
 							return;
 						}
-
-						if (!voiceProvider.supportsVoice) return;
 
 						if (currentSessionId) {
 							await sendTaskMutation.mutateAsync({

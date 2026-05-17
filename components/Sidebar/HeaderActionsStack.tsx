@@ -1,22 +1,22 @@
 "use client";
 
-import { useEffect, useState } from "react";
 import {
-	Settings,
+	Bookmark,
 	Image as ImageIcon,
 	LayoutGrid,
-	Bookmark,
+	Settings,
 } from "lucide-react";
+import { useEffect, useState } from "react";
 
-import { Button } from "@/components/ui/button";
-import { useSessionStore } from "@/lib/stores/session";
 import PlacementModal from "@/components/Sidebar/PlacementModal";
+import { Button } from "@/components/ui/button";
 import {
 	Tooltip,
 	TooltipContent,
 	TooltipProvider,
 	TooltipTrigger,
 } from "@/components/ui/tooltip";
+import { useSessionStore } from "@/lib/stores/session";
 
 export default function HeaderActionsStack({
 	onAssetsClick,
@@ -25,14 +25,12 @@ export default function HeaderActionsStack({
 	onAssetsClick?: () => void;
 	onScrollToBookmarks?: () => void;
 }) {
-	const { openConfigModal } = useSessionStore();
+	const { openChatSettings } = useSessionStore();
 	const [placementOpen, setPlacementOpen] = useState(false);
-
-	// SSR-safe window alias
-	const w = typeof window !== "undefined" ? window : undefined;
 
 	// Alt+P global shortcut to open Placement
 	useEffect(() => {
+		const w = typeof window !== "undefined" ? window : undefined;
 		const handler = (e: KeyboardEvent) => {
 			if (e.altKey && (e.key === "p" || e.key === "P")) {
 				e.preventDefault();
@@ -78,10 +76,10 @@ export default function HeaderActionsStack({
 				<ImageIcon className="size-4" />
 			</Button>
 			<Button
-				aria-label="Avatar settings"
+				aria-label="Chat settings"
 				className="size-8 text-foreground hover:bg-muted"
 				variant="ghost"
-				onClick={() => openConfigModal()}
+				onClick={() => openChatSettings()}
 			>
 				<Settings className="size-4" />
 			</Button>

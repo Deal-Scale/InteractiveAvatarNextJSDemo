@@ -1,20 +1,20 @@
 "use client";
 
-import type React from "react";
-import { useEffect, useRef, useState } from "react";
 import { ChevronDown } from "lucide-react";
-import { MessageItem } from "../MessageItem";
-import { exampleReasoning } from "./_mock_data/example-reasoning";
-import { type Message as MessageType, MessageSender } from "@/lib/types";
-import { Message, MessageAvatar } from "@/components/ui/message";
-import { Loader } from "@/components/ui/loader";
+import type React from "react";
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import {
 	Collapsible,
 	CollapsibleContent,
 	CollapsibleTrigger,
 } from "@/components/ui/collapsible";
+import { Loader } from "@/components/ui/loader";
+import { Message, MessageAvatar } from "@/components/ui/message";
+import { MessageSender, type Message as MessageType } from "@/lib/types";
 import { cn } from "@/lib/utils";
+import { MessageItem } from "../MessageItem";
+import { exampleReasoning } from "./_mock_data/example-reasoning";
 
 interface MessageListProps {
 	messages: MessageType[];
@@ -29,47 +29,6 @@ interface MessageListProps {
 	onRetry: (id: string) => void;
 	onCompare: (content: string, id: string) => void;
 	showMarkdownHeaderInBubbles?: boolean;
-}
-
-// Lazy rendering wrapper for MessageItem using IntersectionObserver
-interface LazyProps {
-	children: React.ReactNode;
-	observeRootMargin?: string; // e.g., '200px'
-}
-
-function LazyMessageItem({ children, observeRootMargin = "0px" }: LazyProps) {
-	const ref = useRef<HTMLDivElement | null>(null);
-	const [visible, setVisible] = useState(false);
-
-	useEffect(() => {
-		const node = ref.current;
-		if (!node) return;
-
-		if (typeof IntersectionObserver === "undefined") {
-			setVisible(true);
-			return;
-		}
-
-		const obs = new IntersectionObserver(
-			(entries) => {
-				const entry = entries[0];
-				if (entry.isIntersecting) {
-					setVisible(true);
-					obs.disconnect();
-				}
-			},
-			{ root: null, rootMargin: observeRootMargin, threshold: 0.01 },
-		);
-
-		obs.observe(node);
-		return () => obs.disconnect();
-	}, [observeRootMargin]);
-
-	return (
-		<div ref={ref} className="w-full">
-			{visible ? children : <div aria-hidden className="h-8" />}
-		</div>
-	);
 }
 
 export const MessageList: React.FC<MessageListProps> = ({
@@ -92,7 +51,7 @@ export const MessageList: React.FC<MessageListProps> = ({
 	return (
 		<>
 			{messages.map((message) => (
-				<LazyMessageItem key={message.id} observeRootMargin="200px">
+				<div key={message.id} className="w-full">
 					<MessageItem
 						handleCopy={handleCopy}
 						handleEditToInput={handleEditToInput}
@@ -121,7 +80,7 @@ export const MessageList: React.FC<MessageListProps> = ({
 						streamSpeed={28}
 						voteState={voteState}
 					/>
-				</LazyMessageItem>
+				</div>
 			))}
 			{hasExamples && (
 				<div className="mt-6 w-full">
@@ -153,10 +112,7 @@ export const MessageList: React.FC<MessageListProps> = ({
 						</div>
 						<CollapsibleContent className="mt-4 space-y-4 data-[state=closed]:animate-out data-[state=open]:animate-in data-[state=open]:fade-in-0 data-[state=closed]:fade-out-0 data-[state=open]:slide-in-from-top-1/2 data-[state=closed]:slide-out-to-top-1/2">
 							{exampleMessages.map((message) => (
-								<LazyMessageItem
-									key={`example-${message.id}`}
-									observeRootMargin="200px"
-								>
+								<div key={`example-${message.id}`} className="w-full">
 									<MessageItem
 										handleCopy={handleCopy}
 										handleEditToInput={handleEditToInput}
@@ -183,7 +139,7 @@ export const MessageList: React.FC<MessageListProps> = ({
 										streamSpeed={28}
 										voteState={voteState}
 									/>
-								</LazyMessageItem>
+								</div>
 							))}
 						</CollapsibleContent>
 					</Collapsible>

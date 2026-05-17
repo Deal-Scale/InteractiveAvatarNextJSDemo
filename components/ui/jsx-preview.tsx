@@ -1,6 +1,5 @@
-import type { TProps as JsxParserProps } from "react-jsx-parser";
-
 import * as React from "react";
+import type { TProps as JsxParserProps } from "react-jsx-parser";
 import JsxParser from "react-jsx-parser";
 
 function matchJsxTag(code: string) {

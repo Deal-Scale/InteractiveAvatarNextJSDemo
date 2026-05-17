@@ -1,8 +1,8 @@
 "use client";
 
 import * as React from "react";
-import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 
 export type MermaidProps = {
 	chart?: string;
@@ -13,6 +13,30 @@ export type MermaidProps = {
 	showControls?: boolean; // copy + expand
 	onAddToGrid?: (payload: { code: string; svg?: string }) => void;
 };
+
+function normalizeMermaidCode(value: string): string {
+	const lines = value.replaceAll("\r\n", "\n").split("\n");
+	while (lines.length > 0 && lines[0].trim() === "") lines.shift();
+	while (lines.length > 0 && lines[lines.length - 1].trim() === "") lines.pop();
+
+	const indents = lines
+		.filter((line) => line.trim().length > 0)
+		.map((line) => line.match(/^\s*/)?.[0].length ?? 0);
+	const minIndent = indents.length > 0 ? Math.min(...indents) : 0;
+
+	return lines
+		.map((line) => line.slice(minIndent))
+		.join("\n")
+		.trim();
+}
+
+function hashCode(value: string): string {
+	let hash = 0;
+	for (let index = 0; index < value.length; index += 1) {
+		hash = Math.imul(31, hash) + value.charCodeAt(index);
+	}
+	return Math.abs(hash).toString(36);
+}
 
 export function Mermaid({
 	chart,
@@ -34,6 +58,7 @@ export function Mermaid({
 	>("idle");
 	const menuRef = React.useRef<HTMLDivElement | null>(null);
 	const containerRef = React.useRef<HTMLDivElement | null>(null);
+	const modalViewportRef = React.useRef<HTMLDivElement | null>(null);
 	const modalSvgRef = React.useRef<HTMLDivElement | null>(null);
 	const overlayRef = React.useRef<HTMLDivElement | null>(null);
 	const [pan, setPan] = React.useState<{ x: number; y: number }>({
@@ -98,11 +123,11 @@ export function Mermaid({
 	const code = React.useMemo(() => {
 		const raw = String(chart ?? childrenText ?? "");
 		// Normalize newlines and decode HTML entities (JSX escaping)
-		const normalized = raw.replaceAll("\r\n", "\n");
-		return decodeHtml(normalized).trim();
+		return normalizeMermaidCode(decodeHtml(raw));
 	}, [chart, childrenText, decodeHtml]);
 
 	const stableCode = React.useDeferredValue(code);
+	const codeHash = React.useMemo(() => hashCode(stableCode), [stableCode]);
 
 	// Close quick actions menu on outside click or Escape
 	React.useEffect(() => {
@@ -132,6 +157,11 @@ export function Mermaid({
 		}
 	}, [svg]);
 	React.useEffect(() => {
+		if (open && modalSvgRef.current) {
+			modalSvgRef.current.innerHTML = svg;
+		}
+	}, [open, svg]);
+	React.useEffect(() => {
 		if (open) {
 			overlayRef.current?.focus();
 		}
@@ -158,14 +188,6 @@ export function Mermaid({
 
 		async function run() {
 			if (!stableCode) return;
-			if (process.env.NODE_ENV !== "production") {
-				// Log the first 120 chars for visibility
-				console.debug("[Mermaid] rendering", {
-					id: `${idPrefix}-${uid}-${runId}`,
-					codePreview: stableCode.slice(0, 120),
-					length: stableCode.length,
-				});
-			}
 			const mermaid = (await import("mermaid")).default;
 			const baseConfig = {
 				startOnLoad: false,
@@ -174,27 +196,18 @@ export function Mermaid({
 			};
 			if (!initializedRef.current || prevConfigRef.current !== config) {
 				mermaid.initialize(baseConfig);
-				if (process.env.NODE_ENV !== "production") {
-					console.debug("[Mermaid] initialized", { securityLevel: "loose" });
-				}
 				initializedRef.current = true;
 				prevConfigRef.current = config;
 			}
 			try {
 				const { svg: renderedSvg } = await mermaid.render(
-					`${idPrefix}-${uid}-${runId}`,
+					`${idPrefix}-${codeHash}-${renderNonce}`,
 					stableCode,
 				);
 				if (!cancelled && latestRenderRef.current === runId) {
 					setSvg(renderedSvg);
 					lastRenderedCodeRef.current = stableCode;
 					setStatus("success");
-				}
-				if (process.env.NODE_ENV !== "production") {
-					console.debug("[Mermaid] render success", {
-						id: `${idPrefix}-${uid}-${runId}`,
-						svgLength: renderedSvg?.length ?? 0,
-					});
 				}
 			} catch (err) {
 				if (!cancelled && latestRenderRef.current === runId) {
@@ -204,16 +217,13 @@ export function Mermaid({
 					setStatus("error");
 					lastRenderedCodeRef.current = "";
 				}
-				if (process.env.NODE_ENV !== "production") {
-					console.error("[Mermaid] render error", err);
-				}
 			}
 		}
 		run();
 		return () => {
 			cancelled = true;
 		};
-	}, [stableCode, idPrefix, config, uid, renderNonce]);
+	}, [stableCode, idPrefix, config, renderNonce, codeHash]);
 
 	const handleCopy = async () => {
 		try {
@@ -229,23 +239,47 @@ export function Mermaid({
 		setZoom(1);
 		setPan({ x: 0, y: 0 });
 	};
-	const fitWidth = React.useCallback(() => {
-		// best-effort: try to fit SVG to modal width
-		const wrapper = document.getElementById(`mermaid-modal-${idPrefix}-${uid}`);
-		const svgEl = wrapper?.querySelector("svg");
+	const fitToViewport = React.useCallback(() => {
+		const wrapper = modalViewportRef.current;
+		const svgEl = modalSvgRef.current?.querySelector("svg");
 		if (!wrapper || !svgEl) return;
+
 		const w =
 			(svgEl as SVGSVGElement).viewBox?.baseVal?.width ||
 			(svgEl as SVGSVGElement).width?.baseVal?.value ||
 			svgEl.clientWidth ||
 			0;
-		if (!w) return;
-		const containerW = wrapper.clientWidth - 24; // padding
-		if (containerW > 0 && w > 0) {
-			setZoom(Math.max(0.2, Math.min(5, +(containerW / w).toFixed(2))));
-			setPan({ x: 0, y: 0 });
-		}
-	}, [idPrefix, uid]);
+		const h =
+			(svgEl as SVGSVGElement).viewBox?.baseVal?.height ||
+			(svgEl as SVGSVGElement).height?.baseVal?.value ||
+			svgEl.clientHeight ||
+			0;
+		if (!w || !h) return;
+
+		const containerW = Math.max(0, wrapper.clientWidth - 32);
+		const containerH = Math.max(0, wrapper.clientHeight - 32);
+		if (!containerW || !containerH) return;
+
+		const nextZoom = Math.max(
+			0.1,
+			Math.min(5, +Math.min(containerW / w, containerH / h, 1).toFixed(2)),
+		);
+		const renderedW = w * nextZoom;
+		const renderedH = h * nextZoom;
+
+		setZoom(nextZoom);
+		setPan({
+			x: Math.max(16, (wrapper.clientWidth - renderedW) / 2),
+			y: Math.max(16, (wrapper.clientHeight - renderedH) / 2),
+		});
+	}, []);
+
+	React.useEffect(() => {
+		if (!open || !svg) return;
+		const frame = window.requestAnimationFrame(fitToViewport);
+
+		return () => window.cancelAnimationFrame(frame);
+	}, [fitToViewport, open, svg]);
 
 	if (!code) return null;
 	const Toolbar = showControls ? (
@@ -317,7 +351,7 @@ export function Mermaid({
 							className="block w-full cursor-pointer px-3 py-2 text-left text-xs hover:bg-accent"
 							onClick={() => {
 								setMenuOpen(false);
-								setZoom(1);
+								setPan({ x: 0, y: 0 });
 								setOpen(true);
 							}}
 						>
@@ -472,8 +506,8 @@ export function Mermaid({
 									size="sm"
 									type="button"
 									variant="ghost"
-									onClick={fitWidth}
-									aria-label="Fit width"
+									onClick={fitToViewport}
+									aria-label="Fit diagram"
 								>
 									Fit
 								</Button>
@@ -490,10 +524,12 @@ export function Mermaid({
 						{
 							<div
 								id={`mermaid-modal-${idPrefix}-${uid}`}
+								ref={modalViewportRef}
 								role="application"
 								aria-label="Interactive Mermaid diagram"
-								className="relative max-h-[80vh] max-w-[86vw] overflow-hidden border border-border rounded bg-card cursor-grab"
+								className="relative h-[calc(90vh-4.5rem)] w-[calc(90vw-1.5rem)] overflow-auto border border-border rounded bg-card cursor-grab"
 								onWheel={(e) => {
+									if (!e.ctrlKey && !e.metaKey) return;
 									e.preventDefault();
 									const delta = e.deltaY > 0 ? -0.2 : 0.2;
 									setZoom((z) =>
@@ -533,7 +569,7 @@ export function Mermaid({
 										transform: `translate(${pan.x}px, ${pan.y}px) scale(${zoom})`,
 										transformOrigin: "top left",
 									}}
-									className="inline-block select-none"
+									className="inline-block min-h-full min-w-full select-none"
 								/>
 							</div>
 						}

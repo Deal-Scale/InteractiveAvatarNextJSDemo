@@ -1,24 +1,21 @@
 "use client";
 
+import type { StartAvatarRequest } from "@heygen/streaming-avatar";
 import { useCallback, useEffect, useRef, useState } from "react";
-
-import { ChatPanel } from "./AvatarSession/ChatPanel";
-import { useDockablePanel } from "./AvatarSession/hooks/useDockablePanel";
-import { useChatController } from "./AvatarSession/hooks/useChatController";
-import { useChatPanelProps } from "./AvatarSession/hooks/useChatPanelProps";
-import { useStartMockChat } from "./AvatarSession/hooks/useStartMockChat";
-import { AvatarVideoPanel } from "./AvatarSession/AvatarVideoPanel";
-import { StreamingAvatarSessionState } from "./logic/context";
-
 import { buildSessionConfig } from "@/components/modals/session/utils";
 import type { AgentConfig } from "@/lib/schemas/agent";
-import type { StartAvatarRequest } from "@heygen/streaming-avatar";
 import { useAgentStore } from "@/lib/stores/agent";
-import { useSettingsStore } from "@/lib/stores/settings";
-import { useSessionStore } from "@/lib/stores/session";
 import { usePlacementStore } from "@/lib/stores/placement";
-import { cn } from "@/lib/utils";
-import { safeWindow } from "@/lib/utils";
+import { useSessionStore } from "@/lib/stores/session";
+import { useSettingsStore } from "@/lib/stores/settings";
+import { cn, safeWindow } from "@/lib/utils";
+import { AvatarVideoPanel } from "./AvatarSession/AvatarVideoPanel";
+import { ChatPanel } from "./AvatarSession/ChatPanel";
+import { useChatController } from "./AvatarSession/hooks/useChatController";
+import { useChatPanelProps } from "./AvatarSession/hooks/useChatPanelProps";
+import { useDockablePanel } from "./AvatarSession/hooks/useDockablePanel";
+import { useStartMockChat } from "./AvatarSession/hooks/useStartMockChat";
+import { StreamingAvatarSessionState } from "./logic/context";
 
 //
 
@@ -28,6 +25,7 @@ interface AvatarSessionProps {
 	stopSession: () => void;
 	startSession: (config: StartAvatarRequest) => Promise<void> | void;
 	initialConfig: StartAvatarRequest;
+	liveAvatarEmbedUrl?: string | null;
 }
 
 export function AvatarSession({
@@ -36,13 +34,22 @@ export function AvatarSession({
 	sessionState,
 	startSession,
 	initialConfig,
+	liveAvatarEmbedUrl,
 }: AvatarSessionProps) {
 	const [mounted, setMounted] = useState(false);
 	useEffect(() => setMounted(true), []);
 	const messages = useSessionStore((state) => state.messages);
 	const setConfig = useSessionStore((state) => state.setConfig);
+	const chatExperience = useSessionStore((state) => state.chatExperience);
 	const { currentAgent, setLastStarted, markClean } = useAgentStore();
 	const userSettings = useSettingsStore((state) => state.userSettings);
+	const setDockMode = usePlacementStore((state) => state.setDockMode);
+	const setBottomHeightFrac = usePlacementStore(
+		(state) => state.setBottomHeightFrac,
+	);
+	const setSidebarCollapsed = usePlacementStore(
+		(state) => state.setSidebarCollapsed,
+	);
 
 	// Refs for dockable panel root and panel
 	const panelRef = useRef<HTMLDivElement | null>(null);
@@ -79,6 +86,45 @@ export function AvatarSession({
 		handleArrowDown,
 		enableMockChatUi,
 	} = useChatController(sessionState);
+
+	const initializedChatModeRef = useRef<string | null>(null);
+	useEffect(() => {
+		if (sessionState === StreamingAvatarSessionState.CONNECTED) {
+			return;
+		}
+
+		if (chatExperience === "basic") {
+			enableMockChatUi();
+			setDockMode("bottom");
+			if (initializedChatModeRef.current !== "basic") {
+				setBottomHeightFrac(1);
+				setSidebarCollapsed(false);
+				if (!expanded) {
+					toggleExpand();
+				}
+			}
+		}
+
+		if (chatExperience === "advanced") {
+			enableMockChatUi();
+			setDockMode("bottom");
+			if (initializedChatModeRef.current !== "advanced") {
+				setBottomHeightFrac(0.35);
+				setSidebarCollapsed(true);
+			}
+		}
+
+		initializedChatModeRef.current = chatExperience;
+	}, [
+		chatExperience,
+		enableMockChatUi,
+		expanded,
+		sessionState,
+		setBottomHeightFrac,
+		setDockMode,
+		setSidebarCollapsed,
+		toggleExpand,
+	]);
 
 	// Start mock chat and open UI in bottom expanded mode
 	const startMockChat = useStartMockChat({
@@ -180,6 +226,7 @@ export function AvatarSession({
 
 	const avatarVideoPanel = (
 		<AvatarVideoPanel
+			liveAvatarEmbedUrl={liveAvatarEmbedUrl}
 			mediaStream={mediaStream}
 			sessionState={sessionState}
 			stopSession={stopSession}
@@ -249,9 +296,9 @@ export function AvatarSession({
 				>
 					<ChatPanel dock={dock} expanded={expanded} {...chatPanelProps} />
 					{/* Resize handle (bottom-right corner) - larger, always on top */}
-					<div
+					<button
+						type="button"
 						className="absolute bottom-1 right-1 z-[70] w-6 h-6 cursor-nwse-resize rounded-md border-2 border-border bg-muted-foreground/40 shadow-sm hover:bg-muted-foreground/60 hover:border-foreground/90 pointer-events-auto select-none"
-						role="button"
 						aria-label="Resize chat"
 						style={{
 							backgroundImage:

@@ -1,22 +1,21 @@
-import { useMemo, useRef, useState } from "react";
 import {
 	ClipboardCopy,
-	ThumbsUp,
-	ThumbsDown,
-	Pencil,
-	Paperclip,
-	RotateCcw,
 	GitBranch,
+	Paperclip,
+	Pencil,
+	RotateCcw,
 	SplitSquareHorizontal,
+	ThumbsDown,
+	ThumbsUp,
 	Volume2,
 } from "lucide-react";
-
-import {
-	Message as MessageType,
-	MessageSender,
-	type MessageAsset,
-} from "@/lib/types";
+import { useMemo, useRef, useState } from "react";
+import { PromptKitStatsDemo } from "@/components/PromptKit/PromptKitStatsDemo";
+import { StatBadge } from "@/components/PromptKit/StatBadge";
 import { Button } from "@/components/ui/button";
+import { DataCard, Metric, MetricGrid } from "@/components/ui/jsx-demo";
+import { JSXPreview } from "@/components/ui/jsx-preview";
+import { Mermaid } from "@/components/ui/mermaid";
 import {
 	Message,
 	MessageAction,
@@ -25,22 +24,21 @@ import {
 	MessageContent,
 } from "@/components/ui/message";
 import {
-	ResponseStream,
-	type Mode as ResponseStreamMode,
-} from "@/components/ui/response-stream";
-import { useTextStream } from "@/components/ui/response-stream";
-import {
 	Reasoning,
 	ReasoningContent,
 	ReasoningTrigger,
 } from "@/components/ui/reasoning";
-import { JSXPreview } from "@/components/ui/jsx-preview";
-import { Tool } from "@/components/ui/tool";
+import {
+	type Mode as ResponseStreamMode,
+	useTextStream,
+} from "@/components/ui/response-stream";
 import { Source, SourceContent, SourceTrigger } from "@/components/ui/source";
-import { StatBadge } from "@/components/PromptKit/StatBadge";
-import { PromptKitStatsDemo } from "@/components/PromptKit/PromptKitStatsDemo";
-import { DataCard, MetricGrid, Metric } from "@/components/ui/jsx-demo";
-import { Mermaid } from "@/components/ui/mermaid";
+import { Tool } from "@/components/ui/tool";
+import {
+	type MessageAsset,
+	MessageSender,
+	type Message as MessageType,
+} from "@/lib/types";
 
 const PROVIDER_LABELS: Record<string, string> = {
 	heygen: "Heygen",
@@ -66,21 +64,6 @@ function isStrictMarkdown(text: string | undefined | null): boolean {
 	);
 	if (hasTableRow && hasTableSep) return true; // proper table
 	return false;
-}
-
-// For debugging: which strong signal matched
-function markdownStrongReason(
-	text: string | undefined | null,
-): "fence" | "table" | null {
-	if (!text) return null;
-	const str = String(text);
-	if (/```|~~~/.test(str)) return "fence";
-	const hasTableRow = /^\s*\|.+\|\s*$/m.test(str);
-	const hasTableSep = /^\s*\|?\s*:?-{3,}:?\s*(\|\s*:?-{3,}:?\s*)+\|?\s*$/m.test(
-		str,
-	);
-	if (hasTableRow && hasTableSep) return "table";
-	return null;
 }
 
 interface MessageItemProps {
@@ -143,6 +126,21 @@ export const MessageItem: React.FC<MessageItemProps> = ({
 			: null;
 		return { baseLabel, fallbackLabel } as const;
 	}, [message.fallbackFrom, message.provider]);
+	const jsxPreviewComponents = useMemo(
+		() => ({
+			StatBadge: StatBadge as unknown as React.ComponentType<unknown>,
+			PromptKitStatsDemo:
+				PromptKitStatsDemo as unknown as React.ComponentType<unknown>,
+			Source: Source as unknown as React.ComponentType<unknown>,
+			SourceTrigger: SourceTrigger as unknown as React.ComponentType<unknown>,
+			SourceContent: SourceContent as unknown as React.ComponentType<unknown>,
+			DataCard: DataCard as unknown as React.ComponentType<unknown>,
+			MetricGrid: MetricGrid as unknown as React.ComponentType<unknown>,
+			Metric: Metric as unknown as React.ComponentType<unknown>,
+			Mermaid: Mermaid as unknown as React.ComponentType<unknown>,
+		}),
+		[],
+	);
 
 	const handleSpeak = async () => {
 		if (!message?.content || typeof message.content !== "string") return;
@@ -249,33 +247,22 @@ export const MessageItem: React.FC<MessageItemProps> = ({
 
 	// If we have JSX, stream it using the same text streaming hook used by ResponseStream.
 	const jsxStream = useTextStream({
-		textStream: message.jsx ?? "",
+		textStream: isStreaming ? (message.jsx ?? "") : "",
 		mode: streamMode,
 		speed: streamSpeed,
 		fadeDuration,
 		segmentDelay,
 		characterChunkSize,
 	});
+	const previewJsx =
+		isStreaming && message.jsx ? jsxStream.displayedText : (message.jsx ?? "");
+	const previewIsStreaming = Boolean(isStreaming && !jsxStream.isComplete);
 
-	// Show header ONLY when content is strict markdown (env flag no longer forces it on)
-	const showMdHeader = Boolean(isStrictMarkdown(message.content));
-
-	// Dev-only logging to inspect detection behavior
-	if (process.env.NODE_ENV !== "production") {
-		try {
-			const preview = (message.content || "").slice(0, 80);
-			// eslint-disable-next-line no-console
-			console.debug("[MessageItem] markdown-detect", {
-				id: message.id,
-				sender: message.sender,
-				isStrictMarkdown: isStrictMarkdown(message.content),
-				reason: markdownStrongReason(message.content),
-				showMdHeader,
-				hasJsx,
-				preview,
-			});
-		} catch {}
-	}
+	const renderMarkdown = message.sender === MessageSender.AVATAR;
+	// Show header only when requested or when content has a strong block signal.
+	const showMdHeader = Boolean(
+		avatarMarkdownShowHeader || isStrictMarkdown(message.content),
+	);
 
 	const renderAssets = (assets?: MessageAsset[]) => {
 		if (!assets || assets.length === 0) return null;
@@ -414,7 +401,7 @@ export const MessageItem: React.FC<MessageItemProps> = ({
 							<div className="w-full">
 								{message.content && (
 									<MessageContent
-										markdown={isStrictMarkdown(message.content)}
+										markdown={renderMarkdown}
 										showHeader={showMdHeader}
 										headerLabel={avatarMarkdownHeaderLabel}
 										className="mb-2 bg-muted"
@@ -423,29 +410,15 @@ export const MessageItem: React.FC<MessageItemProps> = ({
 									</MessageContent>
 								)}
 								<JSXPreview
-									isStreaming={Boolean(isStreaming && !jsxStream.isComplete)}
-									jsx={jsxStream.displayedText}
-									components={{
-										StatBadge: StatBadge as unknown as React.ComponentType<any>,
-										PromptKitStatsDemo:
-											PromptKitStatsDemo as unknown as React.ComponentType<any>,
-										Source: Source as unknown as React.ComponentType<any>,
-										SourceTrigger:
-											SourceTrigger as unknown as React.ComponentType<any>,
-										SourceContent:
-											SourceContent as unknown as React.ComponentType<any>,
-										DataCard: DataCard as unknown as React.ComponentType<any>,
-										MetricGrid:
-											MetricGrid as unknown as React.ComponentType<any>,
-										Metric: Metric as unknown as React.ComponentType<any>,
-										Mermaid: Mermaid as unknown as React.ComponentType<any>,
-									}}
+									isStreaming={previewIsStreaming}
+									jsx={previewJsx}
+									components={jsxPreviewComponents}
 								/>
 							</div>
 						) : (
 							// Render markdown for avatar messages (tables, code fences, etc.)
 							<MessageContent
-								markdown={isStrictMarkdown(message.content)}
+								markdown={renderMarkdown}
 								showHeader={showMdHeader}
 								headerLabel={avatarMarkdownHeaderLabel}
 								className="bg-muted"

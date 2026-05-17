@@ -1,6 +1,10 @@
 import { beforeEach, describe, expect, it } from "vitest";
 
-import { useSessionStore, type ConfigModalTab } from "../session";
+import {
+	type ChatSettingsTab,
+	type ConfigModalTab,
+	useSessionStore,
+} from "../session";
 
 describe("useSessionStore config modal controls", () => {
 	beforeEach(() => {
@@ -10,6 +14,9 @@ describe("useSessionStore config modal controls", () => {
 		persist?.clearStorage?.();
 		useSessionStore.setState((state) => ({
 			...state,
+			chatExperience: "basic",
+			chatSettingsTab: "text",
+			isChatSettingsOpen: false,
 			isConfigModalOpen: false,
 			configModalTab: "session",
 		}));
@@ -35,5 +42,13 @@ describe("useSessionStore config modal controls", () => {
 
 		const state = useSessionStore.getState();
 		expect(state.configModalTab).toBe<ConfigModalTab>("global");
+	});
+
+	it("opens chat settings on the requested tab", () => {
+		useSessionStore.getState().openChatSettings("voice");
+
+		const state = useSessionStore.getState();
+		expect(state.isChatSettingsOpen).toBe(true);
+		expect(state.chatSettingsTab).toBe<ChatSettingsTab>("voice");
 	});
 });

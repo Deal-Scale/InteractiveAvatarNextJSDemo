@@ -1,3 +1,4 @@
+import type { StartAvatarRequest } from "@heygen/streaming-avatar";
 import { NextResponse } from "next/server";
 import {
 	getLiveAvatarErrorMessage,
@@ -6,32 +7,22 @@ import {
 	liveAvatarHeaders,
 	missingLiveAvatarKeyResponse,
 	parseLiveAvatarResponse,
+	toLiveAvatarEmbedRequest,
 } from "@/lib/server/liveavatar";
 
-export async function GET(req: Request) {
+export async function POST(req: Request) {
 	if (!LIVEAVATAR_API_KEY) {
 		return missingLiveAvatarKeyResponse();
 	}
 
 	try {
-		const incoming = new URL(req.url);
-		const url = new URL(`${LIVEAVATAR_BASE}/v1/sessions`);
-		url.searchParams.set("type", "historic");
+		const body = (await req.json()) as StartAvatarRequest;
+		const payload = toLiveAvatarEmbedRequest(body);
 
-		for (const key of [
-			"page",
-			"page_size",
-			"avatar_id",
-			"embed_id",
-			"context_id",
-		]) {
-			const value = incoming.searchParams.get(key);
-			if (value) url.searchParams.set(key, value);
-		}
-
-		const res = await fetch(url, {
-			method: "GET",
+		const res = await fetch(`${LIVEAVATAR_BASE}/v2/embeddings`, {
+			method: "POST",
 			headers: liveAvatarHeaders(),
+			body: JSON.stringify(payload),
 			cache: "no-store",
 		});
 		const data = await parseLiveAvatarResponse(res);
@@ -41,7 +32,7 @@ export async function GET(req: Request) {
 				{
 					error: getLiveAvatarErrorMessage(
 						data,
-						"Failed to fetch LiveAvatar history",
+						"Failed to create LiveAvatar embed",
 					),
 					upstream: data,
 				},
@@ -50,8 +41,9 @@ export async function GET(req: Request) {
 		}
 
 		return NextResponse.json(data, { status: 200 });
-	} catch (err: unknown) {
-		const message = err instanceof Error ? err.message : "Unknown error";
+	} catch (error) {
+		const message = error instanceof Error ? error.message : "Unknown error";
+
 		return NextResponse.json({ error: message }, { status: 500 });
 	}
 }

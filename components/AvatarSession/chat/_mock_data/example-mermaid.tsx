@@ -4,10 +4,7 @@ export const exampleMermaid: { message: Message } = {
 	message: {
 		id: "demo-mermaid-1",
 		sender: MessageSender.AVATAR,
-		content: `# Mermaid diagrams
-
-Rendered via <Mermaid> inside JSXPreview.
-`,
+		content: `# Mermaid diagrams`,
 		jsx: `<div class="flex flex-col gap-6">
   <div>
     <div class="mb-2 text-sm font-medium text-muted-foreground">Flowchart</div>

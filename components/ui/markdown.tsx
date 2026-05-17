@@ -1,12 +1,11 @@
-import { memo, useId } from "react";
 import * as React from "react";
-import ReactMarkdown, { Components } from "react-markdown";
+import { memo, useId } from "react";
+import ReactMarkdown, { type Components } from "react-markdown";
 import remarkBreaks from "remark-breaks";
 import remarkGfm from "remark-gfm";
-
-import { CodeBlock, CodeBlockCode } from "./code-block";
-
 import { cn } from "@/lib/utils";
+import { CodeBlock, CodeBlockCode } from "./code-block";
+import { Mermaid } from "./mermaid";
 
 export type MarkdownProps = React.HTMLAttributes<HTMLDivElement> & {
 	children: string;
@@ -29,9 +28,10 @@ function parseFenceMeta(meta?: string): Record<string, string> {
 	if (!meta) return out;
 	// matches key="value" pairs
 	const regex = /(\w+)="([^"]*)"/g;
-	let m: RegExpExecArray | null;
-	while ((m = regex.exec(meta)) !== null) {
-		out[m[1]] = m[2];
+	let match = regex.exec(meta);
+	while (match !== null) {
+		out[match[1]] = match[2];
+		match = regex.exec(meta);
 	}
 	return out;
 }
@@ -45,7 +45,7 @@ const INITIAL_COMPONENTS: Partial<Components> = {
 				await navigator.clipboard.writeText(codeStr);
 				setCopied(true);
 				window.setTimeout(() => setCopied(false), 1500);
-			} catch (e) {
+			} catch {
 				// noop
 			}
 		}, [codeStr]);
@@ -59,7 +59,7 @@ const INITIAL_COMPONENTS: Partial<Components> = {
 					setCopied(true);
 					window.setTimeout(() => setCopied(false), 1500);
 				}
-			} catch (e) {
+			} catch {
 				// user cancelled or unsupported
 			}
 		}, [codeStr]);
@@ -84,9 +84,14 @@ const INITIAL_COMPONENTS: Partial<Components> = {
 		}
 
 		const language = extractLanguage(className);
-		const meta = (props as any)?.node?.meta as string | undefined;
+		const codeNode = props.node as { meta?: string } | undefined;
+		const meta = codeNode?.meta;
 		const metaMap = parseFenceMeta(meta);
 		const themeOverride = metaMap.theme;
+
+		if (language.toLowerCase() === "mermaid") {
+			return <Mermaid chart={codeStr} />;
+		}
 
 		return (
 			<CodeBlock className={className}>
@@ -138,33 +143,10 @@ function MarkdownComponent({
 			await navigator.clipboard.writeText(children);
 			setCopied(true);
 			window.setTimeout(() => setCopied(false), 1200);
-		} catch (e) {
+		} catch {
 			// noop
 		}
 	}, [children]);
-	React.useEffect(() => {
-		if (typeof window === "undefined") return;
-		const preview =
-			typeof children === "string" ? children.slice(0, 80) : "[non-string]";
-		const invoker = (rest as any)?.["data-invoker"] ?? "(unknown)";
-		// Only log in dev to avoid noise
-		if (process.env.NODE_ENV !== "production") {
-			// eslint-disable-next-line no-console
-			console.debug("[Markdown] render", {
-				id: blockId,
-				invoker,
-				showHeader,
-				headerLabel,
-				preview,
-			});
-			if (!showHeader) {
-				// eslint-disable-next-line no-console
-				console.debug(
-					"[Markdown] header hidden: showHeader is false. If this should be visible, pass showHeader or render Markdown directly.",
-				);
-			}
-		}
-	}, [blockId, children, headerLabel, showHeader]);
 
 	return (
 		<div className={className} id={blockId} {...rest}>

@@ -1,3 +1,4 @@
+import { MessageSquareIcon, Settings2Icon, XIcon } from "lucide-react";
 import dynamic from "next/dynamic";
 import type React from "react";
 import { useEffect, useMemo, useState } from "react";
@@ -5,8 +6,10 @@ import { useAvatarOptions } from "@/components/AvatarConfig/hooks/useAvatarOptio
 import { SessionQuickStartCard } from "@/components/AvatarSession/SessionQuickStartCard";
 import { defaultGraphData } from "@/components/data-viewer";
 import { RetroGrid } from "@/components/magicui/retro-grid";
+import { Button } from "@/components/ui/button";
 
 import { useAgentStore } from "@/lib/stores/agent";
+import { usePlacementStore } from "@/lib/stores/placement";
 import { useSessionStore } from "@/lib/stores/session";
 import { StreamingAvatarSessionState } from "../logic/context";
 import { AvatarControls } from "./AvatarControls";
@@ -60,8 +63,10 @@ export function AvatarVideoPanel({
 	sessionState,
 	onStartSession,
 	onStartWithoutAvatar,
+	liveAvatarEmbedUrl,
 }: {
 	mediaStream: React.RefObject<HTMLVideoElement | null>;
+	liveAvatarEmbedUrl?: string | null;
 	userVideoStream: MediaStream | null;
 	stopSession: () => void;
 	sessionState: StreamingAvatarSessionState;
@@ -71,8 +76,13 @@ export function AvatarVideoPanel({
 	}) => void;
 	onStartWithoutAvatar?: () => void;
 }) {
-	const { viewTab } = useSessionStore();
+	const { chatExperience, openChatSettings, setViewTab, viewTab } =
+		useSessionStore();
 	const { currentAgent, updateAgent } = useAgentStore();
+	const setDockMode = usePlacementStore((state) => state.setDockMode);
+	const setBottomHeightFrac = usePlacementStore(
+		(state) => state.setBottomHeightFrac,
+	);
 	const [selectedAvatar, setSelectedAvatar] = useState<string>(
 		currentAgent?.avatarId ?? "",
 	);
@@ -153,6 +163,14 @@ export function AvatarVideoPanel({
 	}, [knowledgeBaseId]);
 
 	const isConnecting = sessionState === StreamingAvatarSessionState.CONNECTING;
+	const showAvatarSetup =
+		chatExperience === "avatar" ||
+		sessionState === StreamingAvatarSessionState.CONNECTED;
+
+	const openChatPanel = () => {
+		setDockMode("bottom");
+		setBottomHeightFrac(chatExperience === "basic" ? 1 : 0.5);
+	};
 
 	return (
 		<div className="group relative w-full h-full bg-background overflow-hidden">
@@ -178,9 +196,40 @@ export function AvatarVideoPanel({
 			<div className="relative z-10 h-full">
 				{viewTab === "video" ? (
 					sessionState === StreamingAvatarSessionState.CONNECTED ? (
-						<AvatarVideo ref={mediaStream} />
-					) : (
+						liveAvatarEmbedUrl ? (
+							<div className="absolute inset-0 bg-black">
+								<Button
+									size="icon"
+									type="button"
+									variant="secondary"
+									title="Stop avatar"
+									className="absolute right-4 top-4 z-20"
+									onClick={stopSession}
+								>
+									<XIcon className="h-4 w-4" />
+								</Button>
+								<iframe
+									allow="microphone; camera; autoplay; fullscreen"
+									className="h-full w-full border-0"
+									src={liveAvatarEmbedUrl}
+									title="LiveAvatar session"
+								/>
+							</div>
+						) : (
+							<AvatarVideo ref={mediaStream} />
+						)
+					) : showAvatarSetup ? (
 						<div className="absolute inset-0 flex items-center justify-center">
+							<Button
+								size="icon"
+								type="button"
+								variant="secondary"
+								title="Chat settings"
+								className="absolute right-4 top-4 z-20"
+								onClick={() => openChatSettings("avatar")}
+							>
+								<Settings2Icon className="h-4 w-4" />
+							</Button>
 							<SessionQuickStartCard
 								avatarOptions={avatarOptions}
 								customAvatarId={customAvatarId}
@@ -195,6 +244,72 @@ export function AvatarVideoPanel({
 								onStartWithoutAvatar={onStartWithoutAvatar}
 								selectedAvatar={selectedAvatar}
 							/>
+						</div>
+					) : (
+						<div className="absolute inset-0 flex items-center justify-center px-4">
+							<div className="w-full max-w-md rounded-lg border border-border bg-card/80 p-4 text-card-foreground shadow-lg backdrop-blur">
+								<div className="mb-4 flex items-start justify-between gap-3">
+									<div>
+										<div className="text-lg font-semibold">
+											{chatExperience === "advanced"
+												? "Advanced Chat"
+												: "Basic Chat"}
+										</div>
+										<div className="mt-1 text-sm text-muted-foreground">
+											{chatExperience === "advanced"
+												? "Use chat with panels and workspace tools."
+												: "Use chat without starting an avatar session."}
+										</div>
+									</div>
+									<Button
+										size="icon"
+										type="button"
+										variant="ghost"
+										title="Chat settings"
+										onClick={() => openChatSettings("text")}
+									>
+										<Settings2Icon className="h-4 w-4" />
+									</Button>
+								</div>
+								<div className="flex flex-wrap gap-2">
+									<Button type="button" onClick={openChatPanel}>
+										<MessageSquareIcon className="mr-2 h-4 w-4" />
+										Open Chat
+									</Button>
+									<Button
+										type="button"
+										variant="outline"
+										onClick={() => openChatSettings("text")}
+									>
+										Settings
+									</Button>
+									{chatExperience === "advanced" && (
+										<>
+											<Button
+												type="button"
+												variant="secondary"
+												onClick={() => setViewTab("brain")}
+											>
+												Brain
+											</Button>
+											<Button
+												type="button"
+												variant="secondary"
+												onClick={() => setViewTab("data")}
+											>
+												Data
+											</Button>
+											<Button
+												type="button"
+												variant="secondary"
+												onClick={() => setViewTab("actions")}
+											>
+												Actions
+											</Button>
+										</>
+									)}
+								</div>
+							</div>
 						</div>
 					)
 				) : viewTab === "brain" ? (

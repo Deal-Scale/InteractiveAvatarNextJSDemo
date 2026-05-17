@@ -1,45 +1,41 @@
 "use client";
 
-import type { SidebarProps } from "@/components/Sidebar/types";
-
-import React, { useMemo, useRef } from "react";
-import { Plus as PlusIcon, Bookmark } from "lucide-react";
+import { Bookmark, Plus as PlusIcon } from "lucide-react";
 import { useRouter } from "next/navigation";
-
+import React, { useMemo, useRef } from "react";
+import AddKnowledgeBaseModal from "@/components/KnowledgeBase/AddKnowledgeBaseModal";
+import ActiveSessionsSection from "@/components/Sidebar/ActiveSessionsSection";
+import AgentsSection from "@/components/Sidebar/AgentsSection";
+import ApplicationsStarter from "@/components/Sidebar/ApplicationsStarter";
+import AssetsSection from "@/components/Sidebar/AssetsSection";
+import BookmarkModal from "@/components/Sidebar/BookmarkModal";
+import BookmarksSection from "@/components/Sidebar/BookmarksSection";
+import useBookmarkModal from "@/components/Sidebar/hooks/useBookmarkModal";
+import useConversations from "@/components/Sidebar/hooks/useConversations";
+import useSidebarCollapse from "@/components/Sidebar/hooks/useSidebarCollapse";
+import KnowledgebaseSection from "@/components/Sidebar/KnowledgebaseSection";
+import MessagesSection from "@/components/Sidebar/MessagesSection";
+import SessionsHistorySection from "@/components/Sidebar/SessionsHistorySection";
+import SidebarHeaderSection from "@/components/Sidebar/SidebarHeaderSection";
+import type { SidebarProps } from "@/components/Sidebar/types";
 import { Button } from "@/components/ui/button";
-import { useSessionStore } from "@/lib/stores/session";
-import { useAgentStore } from "@/lib/stores/agent";
-import { useSettingsStore } from "@/lib/stores/settings";
 import {
-	Sidebar as UISidebar,
 	SidebarContent,
 	SidebarHeader,
 	SidebarProvider,
-	SidebarFooter,
+	Sidebar as UISidebar,
 } from "@/components/ui/sidebar";
-import { ThemeToggle } from "@/components/ui/theme-toggle";
 import ThemeEmotionSelect from "@/components/ui/theme-emotion-select";
-import CollapsedEdgeTrigger from "@/components/Sidebar/CollapsedEdgeTrigger";
-import ApplicationsStarter from "@/components/Sidebar/ApplicationsStarter";
-import AssetsSection from "@/components/Sidebar/AssetsSection";
-import AgentsSection from "@/components/Sidebar/AgentsSection";
-import BookmarkModal from "@/components/Sidebar/BookmarkModal";
-import BookmarksSection from "@/components/Sidebar/BookmarksSection";
-import KnowledgebaseSection from "@/components/Sidebar/KnowledgebaseSection";
-import useSidebarCollapse from "@/components/Sidebar/hooks/useSidebarCollapse";
-import useConversations from "@/components/Sidebar/hooks/useConversations";
-import useBookmarkModal from "@/components/Sidebar/hooks/useBookmarkModal";
-import SidebarHeaderSection from "@/components/Sidebar/SidebarHeaderSection";
-import MessagesSection from "@/components/Sidebar/MessagesSection";
-import { useComposerStore } from "@/lib/stores/composer";
-import ActiveSessionsSection from "@/components/Sidebar/ActiveSessionsSection";
-import SessionsHistorySection from "@/components/Sidebar/SessionsHistorySection";
-import AddKnowledgeBaseModal from "@/components/KnowledgeBase/AddKnowledgeBaseModal";
+import { ThemeToggle } from "@/components/ui/theme-toggle";
 import {
 	useConnectKBSource,
 	useScheduleKBSync,
 	useTestKBConnection,
 } from "@/lib/query/mutations";
+import { useAgentStore } from "@/lib/stores/agent";
+import { useComposerStore } from "@/lib/stores/composer";
+import { useSessionStore } from "@/lib/stores/session";
+import { useSettingsStore } from "@/lib/stores/settings";
 
 // types, utils, and subcomponents are imported from components/Sidebar/*
 
@@ -49,6 +45,7 @@ const Sidebar: React.FC<SidebarProps> = ({ onSelect, apps }) => {
 	const router = useRouter();
 	const { agentSettings } = useSessionStore();
 	const openConfigModal = useSessionStore((s) => s.openConfigModal);
+	const openChatSettings = useSessionStore((s) => s.openChatSettings);
 	const { currentAgent, updateAgent } = useAgentStore();
 	const { globalSettings, setGlobalSettings, clearGlobalSettings } =
 		useSettingsStore();
@@ -212,8 +209,7 @@ const Sidebar: React.FC<SidebarProps> = ({ onSelect, apps }) => {
 							className="mb-3 flex w-full items-center gap-2 group-data-[state=collapsed]/sidebar:justify-center bg-background text-foreground border border-border hover:bg-muted"
 							variant="outline"
 							onClick={() => {
-								// Open the AvatarConfig modal to start a new streaming session
-								openConfigModal();
+								openChatSettings("text");
 							}}
 						>
 							<PlusIcon className="size-4" />

@@ -1,41 +1,39 @@
 import { NextResponse } from "next/server";
+import {
+	LIVEAVATAR_API_KEY,
+	LIVEAVATAR_BASE,
+	liveAvatarHeaders,
+	missingLiveAvatarKeyResponse,
+	parseLiveAvatarResponse,
+} from "@/lib/server/liveavatar";
 
-const HEYGEN_BASE =
-	process.env.NEXT_PUBLIC_BASE_API_URL || "https://api.heygen.com";
-
-// Strong health check for Heygen:
-// 1) Require HEYGEN_API_KEY
-// 2) Perform an authenticated request to /v1/streaming.list
 export async function GET() {
-	const HEYGEN_API_KEY = process.env.HEYGEN_API_KEY;
-	if (!HEYGEN_API_KEY) {
-		return NextResponse.json(
-			{ error: "Missing HEYGEN_API_KEY" },
-			{ status: 500 },
-		);
+	if (!LIVEAVATAR_API_KEY) {
+		return missingLiveAvatarKeyResponse();
 	}
 
 	try {
-		const res = await fetch(`${HEYGEN_BASE}/v1/streaming.list`, {
+		const res = await fetch(`${LIVEAVATAR_BASE}/v1/users/credits`, {
 			method: "GET",
-			headers: {
-				"Content-Type": "application/json",
-				"x-api-key": HEYGEN_API_KEY,
-			},
+			headers: liveAvatarHeaders(),
+			cache: "no-store",
 		});
+		const data = await parseLiveAvatarResponse(res);
 
-		const text = await res.text().catch(() => "");
 		if (!res.ok) {
 			return NextResponse.json(
 				{
-					error: `Heygen health failed: ${res.status}`,
-					body: text.slice(0, 300),
+					error: `LiveAvatar health failed: ${res.status}`,
+					upstream: data,
 				},
 				{ status: 502 },
 			);
 		}
 
-		return NextResponse.json({ status: "healthy" }, { status: 200 });
+		return NextResponse.json(
+			{ provider: "liveavatar", status: "healthy", upstream: data },
+			{ status: 200 },
+		);
 	} catch (e) {
 		return NextResponse.json({ error: (e as Error).message }, { status: 502 });
 	}

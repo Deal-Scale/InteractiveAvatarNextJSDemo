@@ -1,34 +1,43 @@
 import { NextResponse } from "next/server";
-
-const HEYGEN_BASE =
-	process.env.NEXT_PUBLIC_BASE_API_URL || "https://api.heygen.com";
-const HEYGEN_API_KEY = process.env.HEYGEN_API_KEY;
+import {
+	getLiveAvatarErrorMessage,
+	LIVEAVATAR_API_KEY,
+	LIVEAVATAR_BASE,
+	liveAvatarHeaders,
+	missingLiveAvatarKeyResponse,
+	parseLiveAvatarResponse,
+} from "@/lib/server/liveavatar";
 
 export async function POST(req: Request) {
-	if (!HEYGEN_API_KEY) {
-		return NextResponse.json(
-			{ error: "Missing HEYGEN_API_KEY" },
-			{ status: 500 },
-		);
+	if (!LIVEAVATAR_API_KEY) {
+		return missingLiveAvatarKeyResponse();
 	}
 
 	try {
-		const body = await req.json();
-		const res = await fetch(`${HEYGEN_BASE}/v1/streaming.stop`, {
+		const body = await req.json().catch(() => ({}));
+		const res = await fetch(`${LIVEAVATAR_BASE}/v1/sessions/stop`, {
 			method: "POST",
-			headers: {
-				"Content-Type": "application/json",
-				"x-api-key": HEYGEN_API_KEY,
-			},
-			body: JSON.stringify(body ?? {}),
+			headers: liveAvatarHeaders(),
+			body: JSON.stringify({
+				reason: "USER_CLOSED",
+				...(body ?? {}),
+			}),
 		});
-		const data = await res.json();
+		const data = await parseLiveAvatarResponse(res);
+
 		if (!res.ok) {
 			return NextResponse.json(
-				{ error: data?.message || "Failed to stop session" },
+				{
+					error: getLiveAvatarErrorMessage(
+						data,
+						"Failed to stop LiveAvatar session",
+					),
+					upstream: data,
+				},
 				{ status: res.status },
 			);
 		}
+
 		return NextResponse.json(data, { status: 200 });
 	} catch (err: unknown) {
 		const message = err instanceof Error ? err.message : "Unknown error";

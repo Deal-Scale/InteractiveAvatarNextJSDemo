@@ -1,37 +1,33 @@
 import type { StartAvatarRequest } from "@heygen/streaming-avatar";
-import type { UserSettings, AppGlobalSettings } from "@/lib/schemas/global";
-import type { ConfigModalTab } from "@/lib/stores/session";
-
 import { useEffect, useRef, useState } from "react";
-import { z } from "zod";
-
-import { TabsHeader } from "../modals/session/Tabs";
-import { SessionTab } from "../modals/session/SessionTab";
-import { UserSettingsTab } from "../modals/session/UserSettingsTab";
-import { GlobalSettingsTab } from "../modals/session/GlobalSettingsTab";
+import type { z } from "zod";
+import { useZodForm } from "@/components/forms/useZodForm";
+import { languagesOptions } from "@/data/options";
+import { AgentConfigSchema } from "@/lib/schemas/agent";
+import type { AppGlobalSettings, UserSettings } from "@/lib/schemas/global";
+import {
+	AppGlobalSettingsSchema,
+	UserSettingsSchema,
+} from "@/lib/schemas/global";
+import { useAgentStore } from "@/lib/stores/agent";
+import type { ConfigModalTab } from "@/lib/stores/session";
+import { useSessionStore } from "@/lib/stores/session";
+import { useSettingsStore } from "@/lib/stores/settings";
+import { useThemeStore } from "@/lib/stores/theme";
 import { AgentSettingsTab } from "../modals/session/AgentSettingsTab";
+import { GlobalSettingsTab } from "../modals/session/GlobalSettingsTab";
+import { SessionConfigHeader } from "../modals/session/Header";
 import { useDynamicOptions } from "../modals/session/hooks";
 import { PublishAgentModal } from "../modals/session/PublishAgentModal";
+import { SessionTab } from "../modals/session/SessionTab";
+import { TabsHeader } from "../modals/session/Tabs";
+import { UserSettingsTab } from "../modals/session/UserSettingsTab";
 import {
 	applyUserSettingsToConfig,
 	buildSessionConfig,
 	initFormsFromStorage,
 } from "../modals/session/utils";
-import { SessionConfigHeader } from "../modals/session/Header";
-
 import { Dialog, DialogContent } from "./dialog";
-
-import { useZodForm } from "@/components/forms/useZodForm";
-import { useSessionStore } from "@/lib/stores/session";
-import { useSettingsStore } from "@/lib/stores/settings";
-import { useAgentStore } from "@/lib/stores/agent";
-import { useThemeStore } from "@/lib/stores/theme";
-import { AgentConfigSchema } from "@/lib/schemas/agent";
-import {
-	UserSettingsSchema,
-	AppGlobalSettingsSchema,
-} from "@/lib/schemas/global";
-import { languagesOptions } from "@/data/options";
 
 interface SessionConfigModalProps {
 	isConnecting: boolean;
@@ -232,14 +228,14 @@ export function SessionConfigModal({
 				if (!open) closeConfigModal();
 			}}
 		>
-			<DialogContent className="w-[96vw] md:w-[92vw] max-w-[1280px] p-0 bg-card text-foreground flex flex-col max-h-[90vh]">
+			<DialogContent className="w-[96vw] md:w-[92vw] max-w-[1280px] min-w-0 overflow-x-hidden p-0 bg-card text-foreground flex flex-col max-h-[90vh]">
 				<SessionConfigHeader />
 
 				{/* Tabs Header */}
 				<TabsHeader activeTab={activeTab} setActiveTab={handleTabChange} />
 
 				{/* Tabs Content */}
-				<div className="flex-1 overflow-y-auto p-4 md:p-6">
+				<div className="min-w-0 flex-1 overflow-y-auto overflow-x-hidden p-4 md:p-6">
 					{activeTab === "session" && (
 						<SessionTab
 							config={config}
