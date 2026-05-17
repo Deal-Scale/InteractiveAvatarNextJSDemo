@@ -30,6 +30,11 @@ export interface OpenAIClientConfig {
 	};
 }
 
+type RequestDefaults = {
+	readonly headers: Record<string, string>;
+	readonly query: Record<string, unknown>;
+};
+
 export interface OperationCallOptions {
 	readonly pathParams?: Record<string, unknown>;
 	readonly query?: Record<string, unknown>;
@@ -45,9 +50,7 @@ export class OpenAIClient {
 		string,
 		import("../modules/module-factory").OperationModule
 	> | null = null;
-	private readonly requestDefaults: Required<
-		OpenAIClientConfig["requestDefaults"]
-	>;
+	private readonly requestDefaults: RequestDefaults;
 
 	constructor(config: OpenAIClientConfig) {
 		if (!config.apiKey) {

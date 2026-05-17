@@ -1,8 +1,8 @@
 import { describe, expect, it, vi } from "vitest";
 
 import { createMediaClient } from "@/app/api/grok/sdk/media";
-import { HttpClient } from "grok-sdk/http";
 import { createApiKeyProvider } from "@/app/api/grok/sdk/auth";
+import { HttpClient } from "@/app/api/grok/sdk/http";
 
 const mockFetch = vi.fn();
 

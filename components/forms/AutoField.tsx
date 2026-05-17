@@ -158,7 +158,7 @@ export const AutoField: React.FC<AutoFieldProps> = ({
 	form,
 	fields = {},
 }) => {
-	const { register, formState, setValue } = form;
+	const { register, formState, setValue, watch } = form;
 
 	const cfg = (fields as any)[name] || {};
 	const label = cfg.label ?? name;
@@ -223,9 +223,9 @@ export const AutoField: React.FC<AutoFieldProps> = ({
 								shouldValidate: true,
 								shouldDirty: true,
 							});
-							registerProps.onChange?.({
+							registration.onChange?.({
 								target: {
-									name: registerProps.name,
+									name: registration.name,
 									value: selected,
 								},
 								type: "change",

@@ -95,7 +95,7 @@ describe("AutoField widgets", () => {
 	});
 
 	it("updates boolean switch widgets", async () => {
-		const def = { _def: { typeName: "ZodBoolean" } } as z.ZodTypeAny;
+		const def = z.boolean();
 		let formRef: UseFormReturn<{ monetize: boolean }> | undefined;
 
 		const Harness: React.FC = () => {

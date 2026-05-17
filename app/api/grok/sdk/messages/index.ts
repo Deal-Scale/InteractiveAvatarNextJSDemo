@@ -3,7 +3,7 @@ import { z } from "zod";
 const ToolCallSchema = z.object({
 	id: z.string(),
 	name: z.string(),
-	arguments: z.record(z.unknown()),
+	arguments: z.record(z.string(), z.unknown()),
 });
 
 export const ModelMessageSchema = z.object({

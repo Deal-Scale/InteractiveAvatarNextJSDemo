@@ -169,7 +169,7 @@ export function Mermaid({
 			const mermaid = (await import("mermaid")).default;
 			const baseConfig = {
 				startOnLoad: false,
-				securityLevel: "loose",
+				securityLevel: "loose" as const,
 				...config,
 			};
 			if (!initializedRef.current || prevConfigRef.current !== config) {

@@ -45,9 +45,9 @@ const DEFAULT_CONFIG: StartAvatarRequest = {
 };
 
 function InteractiveAvatarCore() {
+	const avatarVideoRef = useRef<HTMLVideoElement>(null);
 	const {
 		sessionState,
-		stream: mediaStream,
 		startAvatar: startSession,
 		stopAvatar: stopSession,
 		initAvatar,
@@ -60,10 +60,7 @@ function InteractiveAvatarCore() {
 	const startSessionV2 = useMemoizedFn(async (config: StartAvatarRequest) => {
 		try {
 			console.log("[DEBUG] Starting avatar session with config:", config);
-			console.log(
-				"[DEBUG] Knowledge Base ID:",
-				config.knowledgeId || config.knowledge_base_id || "none",
-			);
+			console.log("[DEBUG] Knowledge Base ID:", config.knowledgeId || "none");
 
 			// Get access token from our API route instead of using API key directly
 			const tokenResponse = await fetch("/api/get-access-token", {
@@ -163,7 +160,7 @@ function InteractiveAvatarCore() {
 			<div className="w-full h-full">
 				<AvatarSession
 					initialConfig={DEFAULT_CONFIG}
-					mediaStream={null}
+					mediaStream={avatarVideoRef}
 					sessionState={sessionState}
 					startSession={startSessionV2}
 					stopSession={stopSessionV2}

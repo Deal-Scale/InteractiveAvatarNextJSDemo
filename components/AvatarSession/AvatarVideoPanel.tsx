@@ -61,7 +61,7 @@ export function AvatarVideoPanel({
 	onStartSession,
 	onStartWithoutAvatar,
 }: {
-	mediaStream: React.RefObject<HTMLVideoElement>;
+	mediaStream: React.RefObject<HTMLVideoElement | null>;
 	userVideoStream: MediaStream | null;
 	stopSession: () => void;
 	sessionState: StreamingAvatarSessionState;

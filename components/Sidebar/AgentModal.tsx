@@ -233,7 +233,7 @@ export default function AgentModal(props: {
 		return base;
 	}, [working, isCreate]);
 
-	const form = useZodForm(AgentFormSchema as unknown as z.ZodTypeAny, {
+	const form = useZodForm(AgentFormSchema, {
 		defaultValues: defaultValues as any,
 	});
 

@@ -1,5 +1,3 @@
-import { URLSearchParams } from "node:url";
-
 import type { HttpMethod } from "./operation-registry";
 import { isPlainObject } from "./utils";
 

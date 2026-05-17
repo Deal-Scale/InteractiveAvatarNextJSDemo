@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 
-import { HttpClient, HttpError } from "grok-sdk/http";
 import { createApiKeyProvider } from "@/app/api/grok/sdk/auth";
+import { HttpClient, HttpError } from "@/app/api/grok/sdk/http";
 
 const mockFetch = vi.fn();
 

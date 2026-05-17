@@ -9,7 +9,7 @@ export interface EmbeddingsClientOptions {
 	readonly httpClient: HttpClient;
 }
 
-export interface EmbedManyOptions extends EmbeddingRequest {
+export interface EmbedManyOptions extends Omit<EmbeddingRequest, "input"> {
 	readonly inputs: string[];
 	readonly concurrency?: number;
 }

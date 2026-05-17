@@ -45,8 +45,8 @@ export function createTextClient(options: TextClientOptions) {
 			});
 
 			for await (const chunk of parseEventStream<TextChunk>(response)) {
-				if (chunk.text) {
-					yield chunk;
+				if (chunk.data.text) {
+					yield chunk.data;
 				}
 			}
 		},
@@ -85,9 +85,9 @@ export function createTextClient(options: TextClientOptions) {
 			for await (const chunk of parseEventStream<ObjectChunk<TResult>>(
 				response,
 			)) {
-				if (chunk.object) {
+				if (chunk.data.object) {
 					yield {
-						object: request.schema.parse(chunk.object) as TResult,
+						object: request.schema.parse(chunk.data.object) as TResult,
 					};
 				}
 			}

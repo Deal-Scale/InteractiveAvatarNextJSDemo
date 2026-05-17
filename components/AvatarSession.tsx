@@ -23,7 +23,7 @@ import { safeWindow } from "@/lib/utils";
 //
 
 interface AvatarSessionProps {
-	mediaStream: React.RefObject<HTMLVideoElement>;
+	mediaStream: React.RefObject<HTMLVideoElement | null>;
 	sessionState: StreamingAvatarSessionState;
 	stopSession: () => void;
 	startSession: (config: StartAvatarRequest) => Promise<void> | void;

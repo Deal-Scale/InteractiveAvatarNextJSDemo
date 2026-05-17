@@ -6,24 +6,20 @@ import { useForm, type UseFormReturn } from "react-hook-form";
 
 import { AutoForm } from "../AutoForm";
 
-vi.mock(
-	"@/components/ui/tooltip",
-	() => ({
-		Tooltip: ({ children }: { children: React.ReactNode }) => (
-			<div data-testid="tooltip">{children}</div>
-		),
-		TooltipTrigger: ({ children }: { children: React.ReactNode }) => (
-			<>{children}</>
-		),
-		TooltipContent: ({ children }: { children: React.ReactNode }) => (
-			<div data-testid="tooltip-content">{children}</div>
-		),
-		TooltipProvider: ({ children }: { children: React.ReactNode }) => (
-			<>{children}</>
-		),
-	}),
-	{ virtual: true },
-);
+vi.mock("@/components/ui/tooltip", () => ({
+	Tooltip: ({ children }: { children: React.ReactNode }) => (
+		<div data-testid="tooltip">{children}</div>
+	),
+	TooltipTrigger: ({ children }: { children: React.ReactNode }) => (
+		<>{children}</>
+	),
+	TooltipContent: ({ children }: { children: React.ReactNode }) => (
+		<div data-testid="tooltip-content">{children}</div>
+	),
+	TooltipProvider: ({ children }: { children: React.ReactNode }) => (
+		<>{children}</>
+	),
+}));
 
 describe("AutoForm", () => {
 	it("flattens nested field errors into a normalized summary", async () => {
