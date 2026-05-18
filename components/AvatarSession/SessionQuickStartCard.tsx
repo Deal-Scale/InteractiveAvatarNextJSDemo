@@ -24,21 +24,30 @@ import {
 	TooltipProvider,
 	TooltipTrigger,
 } from "@/components/ui/tooltip";
+import type { Option } from "@/data/options";
 
 interface SessionQuickStartCardProps {
 	avatarOptions: AvatarOption[];
+	contextOptions?: Option[];
+	voiceOptions?: Option[];
+	isLoadingAvatarOptions?: boolean;
+	isLoadingContextOptions?: boolean;
+	isLoadingVoiceOptions?: boolean;
 	selectedAvatar: string;
+	selectedVoiceId?: string;
 	customAvatarId: string;
 	knowledgeBaseId: string;
 	kbIdValid: boolean;
 	customIdValid: boolean;
 	isConnecting: boolean;
 	onSelectAvatar: (value: string) => void;
+	onSelectVoice?: (value: string) => void;
 	onCustomAvatarChange: (value: string) => void;
 	onKnowledgeBaseChange: (value: string) => void;
 	onStartSession: (options: {
 		avatarId?: string;
 		knowledgeBaseId?: string;
+		voiceId?: string;
 	}) => void;
 	onStartWithoutAvatar?: () => void;
 }
@@ -50,36 +59,48 @@ interface SessionQuickStartCardProps {
  */
 export function SessionQuickStartCard({
 	avatarOptions,
+	contextOptions = [],
+	voiceOptions = [],
+	isLoadingAvatarOptions = false,
+	isLoadingContextOptions = false,
+	isLoadingVoiceOptions = false,
 	selectedAvatar,
+	selectedVoiceId,
 	customAvatarId,
 	knowledgeBaseId,
 	kbIdValid,
 	customIdValid,
 	isConnecting,
 	onSelectAvatar,
+	onSelectVoice,
 	onCustomAvatarChange,
 	onKnowledgeBaseChange,
 	onStartSession,
 	onStartWithoutAvatar,
 }: SessionQuickStartCardProps) {
 	const avatarSelectId = useId();
+	const voiceSelectId = useId();
+	const contextSelectId = useId();
 	const kbInputId = useId();
 
 	const finalAvatarId =
 		selectedAvatar === "CUSTOM" ? customAvatarId.trim() : selectedAvatar;
 	const finalKnowledgeId = knowledgeBaseId.trim() || undefined;
-	const isStartDisabled =
-		isConnecting ||
-		!finalAvatarId ||
-		!finalKnowledgeId ||
-		(selectedAvatar === "CUSTOM" &&
-			(!customAvatarId.trim() || !customIdValid)) ||
-		(finalKnowledgeId && !kbIdValid);
+	const hasAvatar = Boolean(finalAvatarId);
+	const hasContextId = Boolean(finalKnowledgeId);
+	const isAvatarValid =
+		hasAvatar &&
+		(selectedAvatar !== "CUSTOM" ||
+			(Boolean(customAvatarId.trim()) && customIdValid));
+	const isContextValid = hasContextId && kbIdValid;
+	const isStartDisabled = isConnecting || !isAvatarValid || !isContextValid;
+	const canStartTextChat = Boolean(onStartWithoutAvatar) && !isConnecting;
 
 	const triggerStart = () => {
 		onStartSession({
 			avatarId: finalAvatarId,
 			knowledgeBaseId: finalKnowledgeId,
+			voiceId: selectedVoiceId?.trim() || undefined,
 		});
 	};
 
@@ -95,10 +116,13 @@ export function SessionQuickStartCard({
 				<div className="grid gap-4">
 					<div className="flex flex-col gap-2">
 						<label
-							className="text-sm text-muted-foreground"
+							className="flex items-center justify-between gap-2 text-sm text-muted-foreground"
 							htmlFor={avatarSelectId}
 						>
-							Avatar
+							<span>Avatar</span>
+							<span className="rounded-full border border-destructive/30 bg-destructive/10 px-2 py-0.5 text-[10px] font-medium uppercase tracking-wide text-destructive">
+								Required
+							</span>
 						</label>
 						<Select value={selectedAvatar} onValueChange={onSelectAvatar}>
 							<SelectTrigger
@@ -124,29 +148,45 @@ export function SessionQuickStartCard({
 										{opt.name}
 									</SelectItem>
 								))}
-								<SelectItem
-									className="cursor-pointer text-foreground focus:bg-accent data-[highlighted]:bg-accent"
-									value="CUSTOM"
-								>
-									Custom Avatar ID
-								</SelectItem>
+								{avatarOptions.length === 0 && (
+									<div className="px-3 py-2 text-xs text-muted-foreground">
+										{isLoadingAvatarOptions
+											? "Loading LiveAvatar avatars..."
+											: "No LiveAvatar avatars returned"}
+									</div>
+								)}
+								{avatarOptions.length === 0 && (
+									<SelectItem
+										className="cursor-pointer text-foreground focus:bg-accent data-[highlighted]:bg-accent"
+										value="CUSTOM"
+									>
+										Paste Avatar UUID
+									</SelectItem>
+								)}
 							</SelectContent>
 						</Select>
+						{avatarOptions.length === 0 && !isLoadingAvatarOptions ? (
+							<div className="text-xs text-muted-foreground">
+								Your LiveAvatar API key did not return avatar options. Paste a
+								LiveAvatar avatar UUID below or confirm the key has access to
+								published avatars.
+							</div>
+						) : null}
 						{selectedAvatar === "CUSTOM" && (
 							<div className="mt-2">
 								<Input
-									placeholder="Enter custom agent ID"
+									placeholder="Enter LiveAvatar avatar_id"
 									value={customAvatarId}
 									onChange={onCustomAvatarChange}
 								/>
 								{customAvatarId ? (
 									customIdValid ? (
 										<div className="text-primary text-xs mt-1">
-											Agent ID found
+											Avatar UUID format looks good
 										</div>
 									) : (
 										<div className="text-destructive text-xs mt-1">
-											Agent ID not found in available avatars
+											LiveAvatar avatar_id must be a UUID
 										</div>
 									)
 								) : null}
@@ -154,14 +194,116 @@ export function SessionQuickStartCard({
 						)}
 						<div className="mt-3 flex flex-col gap-2">
 							<label
-								className="text-sm text-muted-foreground"
-								htmlFor={kbInputId}
+								className="flex items-center justify-between gap-2 text-sm text-muted-foreground"
+								htmlFor={voiceSelectId}
 							>
-								Context ID
+								<span>Voice</span>
+								<span className="rounded-full border border-border bg-muted/60 px-2 py-0.5 text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
+									Optional
+								</span>
 							</label>
+							<Select
+								value={selectedVoiceId || "__DEFAULT__"}
+								onValueChange={(value) => {
+									onSelectVoice?.(value === "__DEFAULT__" ? "" : value);
+								}}
+							>
+								<SelectTrigger
+									id={voiceSelectId}
+									className="bg-popover/90 border-border text-popover-foreground hover:bg-popover focus:ring-2 focus:ring-ring/50"
+								>
+									<SelectValue placeholder="Use default voice" />
+								</SelectTrigger>
+								<SelectContent
+									align="start"
+									avoidCollisions={false}
+									className="z-50 bg-popover/95 text-popover-foreground border border-border shadow-xl backdrop-blur"
+									position="popper"
+									side="bottom"
+									sideOffset={4}
+								>
+									<SelectItem
+										className="cursor-pointer text-foreground focus:bg-accent data-[highlighted]:bg-accent"
+										value="__DEFAULT__"
+									>
+										Use avatar default voice
+									</SelectItem>
+									{voiceOptions.map((option) => (
+										<SelectItem
+											key={option.value}
+											className="cursor-pointer text-foreground focus:bg-accent data-[highlighted]:bg-accent data-[state=checked]:bg-accent"
+											value={option.value}
+										>
+											{option.label}
+										</SelectItem>
+									))}
+									{voiceOptions.length === 0 && (
+										<div className="px-3 py-2 text-xs text-muted-foreground">
+											{isLoadingVoiceOptions
+												? "Loading LiveAvatar voices..."
+												: "No LiveAvatar voices returned"}
+										</div>
+									)}
+								</SelectContent>
+							</Select>
+						</div>
+						<div className="mt-3 flex flex-col gap-2">
+							<label
+								className="flex items-center justify-between gap-2 text-sm text-muted-foreground"
+								htmlFor={contextSelectId}
+							>
+								<span>Knowledge Base / Context</span>
+								<span className="rounded-full border border-destructive/30 bg-destructive/10 px-2 py-0.5 text-[10px] font-medium uppercase tracking-wide text-destructive">
+									Required
+								</span>
+							</label>
+							<Select
+								value={knowledgeBaseId || "__NONE__"}
+								onValueChange={(value) => {
+									onKnowledgeBaseChange(value === "__NONE__" ? "" : value);
+								}}
+							>
+								<SelectTrigger
+									id={contextSelectId}
+									className="bg-popover/90 border-border text-popover-foreground hover:bg-popover focus:ring-2 focus:ring-ring/50"
+								>
+									<SelectValue placeholder="Use default context" />
+								</SelectTrigger>
+								<SelectContent
+									align="start"
+									avoidCollisions={false}
+									className="z-50 bg-popover/95 text-popover-foreground border border-border shadow-xl backdrop-blur"
+									position="popper"
+									side="bottom"
+									sideOffset={4}
+								>
+									<SelectItem
+										className="cursor-pointer text-foreground focus:bg-accent data-[highlighted]:bg-accent"
+										value="__NONE__"
+									>
+										Select a context
+									</SelectItem>
+									{contextOptions.map((option) => (
+										<SelectItem
+											key={option.value}
+											className="cursor-pointer text-foreground focus:bg-accent data-[highlighted]:bg-accent data-[state=checked]:bg-accent"
+											value={option.value}
+										>
+											{option.label}
+										</SelectItem>
+									))}
+									{contextOptions.length === 0 && (
+										<div className="px-3 py-2 text-xs text-muted-foreground">
+											{isLoadingContextOptions
+												? "Loading LiveAvatar contexts..."
+												: "No LiveAvatar contexts returned"}
+										</div>
+									)}
+								</SelectContent>
+							</Select>
 							<Input
 								id={kbInputId}
-								placeholder="Enter migrated LiveAvatar context_id"
+								placeholder="Or paste LiveAvatar context_id"
 								value={knowledgeBaseId}
 								onChange={onKnowledgeBaseChange}
 							/>
@@ -172,14 +314,41 @@ export function SessionQuickStartCard({
 									</div>
 								) : (
 									<div className="text-destructive text-xs">
-										Invalid Context ID format
+										LiveAvatar context_id must be a UUID
 									</div>
 								)
 							) : (
 								<div className="text-muted-foreground text-xs">
-									LiveAvatar requires a context_id for embedded sessions.
+									LiveAvatar embed sessions require a context_id.
 								</div>
 							)}
+						</div>
+						<div className="mt-3 rounded-md border border-border bg-muted/30 p-3 text-xs">
+							<div className="mb-2 font-medium text-foreground">
+								Required before Start Session
+							</div>
+							<div className="grid gap-1.5 text-muted-foreground">
+								<div className="flex items-center justify-between gap-3">
+									<span>Avatar selected</span>
+									<span
+										className={
+											isAvatarValid ? "text-primary" : "text-destructive"
+										}
+									>
+										{isAvatarValid ? "Ready" : "Required"}
+									</span>
+								</div>
+								<div className="flex items-center justify-between gap-3">
+									<span>LiveAvatar context_id</span>
+									<span
+										className={
+											isContextValid ? "text-primary" : "text-destructive"
+										}
+									>
+										{isContextValid ? "Ready" : "Required"}
+									</span>
+								</div>
+							</div>
 						</div>
 					</div>
 				</div>
@@ -187,11 +356,12 @@ export function SessionQuickStartCard({
 			<CardFooter className="flex justify-between gap-2">
 				<Button
 					className="border-border bg-background/70 text-foreground hover:bg-muted"
+					disabled={!canStartTextChat}
 					size="sm"
 					variant="outline"
 					onClick={onStartWithoutAvatar}
 				>
-					Start without avatar
+					Start Text Chat
 				</Button>
 				<div className="relative inline-flex overflow-hidden rounded-md">
 					{isStartDisabled ? (
@@ -213,7 +383,7 @@ export function SessionQuickStartCard({
 								<TooltipContent side="top">
 									{isConnecting
 										? "Connecting to avatar..."
-										: "Set an avatar and LiveAvatar context_id first"}
+										: "Select a LiveAvatar UUID avatar and context_id first."}
 								</TooltipContent>
 							</Tooltip>
 						</TooltipProvider>

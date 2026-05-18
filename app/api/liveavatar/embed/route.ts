@@ -1,6 +1,7 @@
 import type { StartAvatarRequest } from "@heygen/streaming-avatar";
 import { NextResponse } from "next/server";
 import {
+	getLiveAvatarAuthErrorMessage,
 	getLiveAvatarErrorMessage,
 	LIVEAVATAR_API_KEY,
 	LIVEAVATAR_BASE,
@@ -28,12 +29,16 @@ export async function POST(req: Request) {
 		const data = await parseLiveAvatarResponse(res);
 
 		if (!res.ok) {
+			const isAuthError = res.status === 401 || res.status === 403;
+
 			return NextResponse.json(
 				{
-					error: getLiveAvatarErrorMessage(
-						data,
-						"Failed to create LiveAvatar embed",
-					),
+					error: isAuthError
+						? getLiveAvatarAuthErrorMessage(data)
+						: getLiveAvatarErrorMessage(
+								data,
+								"Failed to create LiveAvatar embed",
+							),
 					upstream: data,
 				},
 				{ status: res.status },

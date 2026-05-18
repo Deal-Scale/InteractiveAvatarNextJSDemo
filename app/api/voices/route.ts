@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import {
+	getLiveAvatarAuthErrorMessage,
 	getLiveAvatarErrorMessage,
 	LIVEAVATAR_API_KEY,
 	LIVEAVATAR_BASE,
@@ -15,33 +16,47 @@ export async function GET() {
 	}
 
 	try {
-		const res = await fetch(`${LIVEAVATAR_BASE}/v1/voices`, {
-			method: "GET",
-			headers: liveAvatarHeaders(),
-			cache: "no-store",
-		});
-		const data = await parseLiveAvatarResponse(res);
+		const [userRes, publicRes] = await Promise.all([
+			fetch(`${LIVEAVATAR_BASE}/v1/voices`, {
+				method: "GET",
+				headers: liveAvatarHeaders(),
+				cache: "no-store",
+			}),
+			fetch(`${LIVEAVATAR_BASE}/v1/voices/public`, {
+				method: "GET",
+				cache: "no-store",
+			}),
+		]);
+		const userData = await parseLiveAvatarResponse(userRes);
+		const publicData = await parseLiveAvatarResponse(publicRes);
 
-		if (!res.ok) {
+		if (!userRes.ok && !publicRes.ok) {
+			const isAuthError =
+				userRes.status === 401 ||
+				userRes.status === 403 ||
+				publicRes.status === 401 ||
+				publicRes.status === 403;
+
 			return NextResponse.json(
 				{
-					error: getLiveAvatarErrorMessage(
-						data,
-						"Failed to fetch LiveAvatar voices",
-					),
-					upstream: data,
+					error: isAuthError
+						? getLiveAvatarAuthErrorMessage(userData)
+						: getLiveAvatarErrorMessage(
+								userData,
+								"Failed to fetch LiveAvatar voices",
+							),
+					upstream: { user: userData, public: publicData },
 				},
-				{ status: res.status },
+				{ status: userRes.status },
 			);
 		}
 
 		return NextResponse.json(
 			{
-				...((data && typeof data === "object" ? data : {}) as Record<
-					string,
-					unknown
-				>),
-				data: normalizeLiveAvatarList(data),
+				data: [
+					...(userRes.ok ? normalizeLiveAvatarList(userData) : []),
+					...(publicRes.ok ? normalizeLiveAvatarList(publicData) : []),
+				],
 			},
 			{ status: 200 },
 		);

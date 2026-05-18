@@ -101,19 +101,19 @@ export const loadAvatarOptions = async (): Promise<Option[]> => {
 // Preferred React Query hooks for options (non-breaking additions)
 export function useAvatarOptionsQuery() {
 	return useQuery({
-		queryKey: ["avatars", "options"],
+		queryKey: ["liveavatar", "avatars", "options"],
 		queryFn: loadAvatarOptions,
 		staleTime: 5 * 60_000,
-		initialData: [],
+		placeholderData: [],
 	});
 }
 
 export function useVoiceOptionsQuery() {
 	return useQuery({
-		queryKey: ["voices", "options"],
+		queryKey: ["liveavatar", "voices", "options"],
 		queryFn: loadVoiceOptions,
 		staleTime: 5 * 60_000,
-		initialData: [],
+		placeholderData: [],
 	});
 }
 
@@ -128,10 +128,10 @@ export function useMcpServerOptionsQuery() {
 
 export function useKnowledgeBaseOptionsQuery() {
 	return useQuery({
-		queryKey: ["knowledge-bases", "options"],
+		queryKey: ["liveavatar", "knowledge-bases", "options"],
 		queryFn: loadKnowledgeBaseOptions,
 		staleTime: 5 * 60_000,
-		initialData: [],
+		placeholderData: [],
 	});
 }
 
@@ -216,7 +216,12 @@ export const loadKnowledgeBaseOptions = async (): Promise<Option[]> => {
 			[];
 		const opts: Option[] = list
 			.map((kb: any) => {
-				const rawId = kb?.id ?? kb?.knowledgeBaseId ?? kb?.knowledge_base_id;
+				const rawId =
+					kb?.context_id ??
+					kb?.contextId ??
+					kb?.id ??
+					kb?.knowledgeBaseId ??
+					kb?.knowledge_base_id;
 				const id = toStringId(rawId);
 				if (!id) return undefined;
 
@@ -224,6 +229,8 @@ export const loadKnowledgeBaseOptions = async (): Promise<Option[]> => {
 					pickFirstString(
 						kb?.name,
 						kb?.title,
+						kb?.context_name,
+						kb?.contextName,
 						kb?.displayName,
 						kb?.display_name,
 						kb?.label,

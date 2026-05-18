@@ -177,12 +177,19 @@ export function AvatarSession({
 	 * persisted agent and user preferences.
 	 */
 	const startFromVideoPanel = useCallback(
-		async (options?: { avatarId?: string; knowledgeBaseId?: string }) => {
+		async (options?: {
+			avatarId?: string;
+			knowledgeBaseId?: string;
+			voiceId?: string;
+		}) => {
 			try {
 				const overrides = options
 					? {
 							avatarId: options.avatarId,
 							knowledgeBaseId: options.knowledgeBaseId,
+							voiceOverrides: options.voiceId
+								? { voiceId: options.voiceId }
+								: undefined,
 						}
 					: undefined;
 
@@ -202,6 +209,7 @@ export function AvatarSession({
 						...(overrides?.knowledgeBaseId !== undefined
 							? { knowledgeBaseId: overrides.knowledgeBaseId ?? undefined }
 							: {}),
+						...(options?.voiceId ? { voiceId: options.voiceId } : {}),
 					} as AgentConfig;
 
 					setLastStarted(nextAgent);
@@ -268,8 +276,8 @@ export function AvatarSession({
 			{/* Video panel stays mounted */}
 			<div
 				className={cn(
-					"relative bg-background overflow-hidden",
-					!isFloating && (isRight ? "flex-1" : "flex-1"),
+					"relative min-h-0 bg-background overflow-hidden",
+					!isFloating && (isRight ? "h-full flex-1" : "flex-1 basis-0"),
 					isFloating && "w-full h-full",
 				)}
 				style={!isFloating ? undefined : {}}

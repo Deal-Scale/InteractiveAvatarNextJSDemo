@@ -6,8 +6,7 @@ export const LIVEAVATAR_BASE =
 	process.env.NEXT_PUBLIC_LIVEAVATAR_BASE_API_URL ||
 	"https://api.liveavatar.com";
 
-export const LIVEAVATAR_API_KEY =
-	process.env.LIVEAVATAR_API_KEY || process.env.HEYGEN_API_KEY;
+export const LIVEAVATAR_API_KEY = process.env.LIVEAVATAR_API_KEY;
 
 type LiveAvatarErrorBody = {
 	error?: { message?: string };
@@ -51,7 +50,7 @@ export function missingLiveAvatarKeyResponse() {
 	return NextResponse.json(
 		{
 			error:
-				"Missing LIVEAVATAR_API_KEY. Create one at app.liveavatar.com/developers and set LIVEAVATAR_API_KEY in your environment.",
+				"Missing LIVEAVATAR_API_KEY. The legacy HEYGEN_API_KEY is not valid for LiveAvatar. Create a LiveAvatar developer API key at app.liveavatar.com/developers and set LIVEAVATAR_API_KEY in your environment.",
 		},
 		{ status: 500 },
 	);
@@ -88,6 +87,15 @@ export function getLiveAvatarErrorMessage(data: unknown, fallback: string) {
 	return body.error?.message || body.message || body.detail || fallback;
 }
 
+export function getLiveAvatarAuthErrorMessage(data: unknown) {
+	const message = getLiveAvatarErrorMessage(
+		data,
+		"LiveAvatar rejected the configured API key.",
+	);
+
+	return `${message} Confirm LIVEAVATAR_API_KEY is a LiveAvatar developer API key from app.liveavatar.com/developers, not the legacy HeyGen API key, then restart pnpm run dev.`;
+}
+
 export function normalizeLiveAvatarList(data: unknown) {
 	if (!data || typeof data !== "object") return [];
 
@@ -99,7 +107,14 @@ export function normalizeLiveAvatarList(data: unknown) {
 
 	const payloadObject = payload as Record<string, unknown>;
 
-	for (const key of ["items", "avatars", "voices", "contexts", "data"]) {
+	for (const key of [
+		"results",
+		"items",
+		"avatars",
+		"voices",
+		"contexts",
+		"data",
+	]) {
 		const value = payloadObject[key];
 		if (Array.isArray(value)) return value;
 	}
@@ -174,7 +189,7 @@ export function toLiveAvatarEmbedRequest(
 
 	if (!contextId) {
 		throw new Error(
-			"LiveAvatar embeds require a Context ID. Use the Knowledge Base ID field for the migrated LiveAvatar context_id.",
+			"LiveAvatar embed sessions require a context_id. Select a context or paste a LiveAvatar context UUID.",
 		);
 	}
 

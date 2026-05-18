@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import {
+	getLiveAvatarAuthErrorMessage,
 	getLiveAvatarErrorMessage,
 	LIVEAVATAR_API_KEY,
 	LIVEAVATAR_BASE,
@@ -48,7 +49,6 @@ export async function GET() {
 			}),
 			fetch(`${LIVEAVATAR_BASE}/v1/avatars/public`, {
 				method: "GET",
-				headers: liveAvatarHeaders(),
 				cache: "no-store",
 			}),
 		]);
@@ -57,12 +57,20 @@ export async function GET() {
 		const publicData = await parseLiveAvatarResponse(publicRes);
 
 		if (!userRes.ok && !publicRes.ok) {
+			const isAuthError =
+				userRes.status === 401 ||
+				userRes.status === 403 ||
+				publicRes.status === 401 ||
+				publicRes.status === 403;
+
 			return NextResponse.json(
 				{
-					error: getLiveAvatarErrorMessage(
-						userData,
-						"Failed to fetch LiveAvatar avatars",
-					),
+					error: isAuthError
+						? getLiveAvatarAuthErrorMessage(userData)
+						: getLiveAvatarErrorMessage(
+								userData,
+								"Failed to fetch LiveAvatar avatars",
+							),
 					upstream: { user: userData, public: publicData },
 				},
 				{ status: userRes.status },

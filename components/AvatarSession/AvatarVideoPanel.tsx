@@ -2,12 +2,16 @@ import { MessageSquareIcon, Settings2Icon, XIcon } from "lucide-react";
 import dynamic from "next/dynamic";
 import type React from "react";
 import { useEffect, useMemo, useState } from "react";
-import { useAvatarOptions } from "@/components/AvatarConfig/hooks/useAvatarOptions";
 import { SessionQuickStartCard } from "@/components/AvatarSession/SessionQuickStartCard";
 import { defaultGraphData } from "@/components/data-viewer";
 import { RetroGrid } from "@/components/magicui/retro-grid";
 import { Button } from "@/components/ui/button";
 
+import {
+	useAvatarOptionsQuery,
+	useKnowledgeBaseOptionsQuery,
+	useVoiceOptionsQuery,
+} from "@/data/options";
 import { useAgentStore } from "@/lib/stores/agent";
 import { usePlacementStore } from "@/lib/stores/placement";
 import { useSessionStore } from "@/lib/stores/session";
@@ -56,6 +60,9 @@ const KanbanActionsPanel = dynamic(
 	},
 );
 
+const UUID_PATTERN =
+	/^(urn:uuid:)?[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/;
+
 export function AvatarVideoPanel({
 	mediaStream,
 	userVideoStream,
@@ -73,6 +80,7 @@ export function AvatarVideoPanel({
 	onStartSession?: (options: {
 		avatarId?: string;
 		knowledgeBaseId?: string;
+		voiceId?: string;
 	}) => void;
 	onStartWithoutAvatar?: () => void;
 }) {
@@ -92,9 +100,26 @@ export function AvatarVideoPanel({
 	const [knowledgeBaseId, setKnowledgeBaseId] = useState<string>(
 		currentAgent?.knowledgeBaseId ?? "",
 	);
+	const [selectedVoiceId, setSelectedVoiceId] = useState<string>(
+		currentAgent?.voiceId ?? "",
+	);
+	const { data: avatarOptionItems = [], isFetching: isLoadingAvatarOptions } =
+		useAvatarOptionsQuery();
+	const { data: voiceOptions = [], isFetching: isLoadingVoiceOptions } =
+		useVoiceOptionsQuery();
+	const { data: contextOptions = [], isFetching: isLoadingContextOptions } =
+		useKnowledgeBaseOptionsQuery();
+	const avatarOptions = useMemo(
+		() =>
+			avatarOptionItems.map((option) => ({
+				avatar_id: option.value,
+				name: option.label,
+			})),
+		[avatarOptionItems],
+	);
 	const selectedAvatarId =
 		selectedAvatar === "CUSTOM" ? customAvatarId.trim() : selectedAvatar;
-	const { avatarOptions, customIdValid } = useAvatarOptions(selectedAvatarId);
+	const customIdValid = UUID_PATTERN.test(selectedAvatarId);
 	const [highlightGraphNodes, setHighlightGraphNodes] = useState(false);
 
 	const handleAvatarSelection = (value: string) => {
@@ -120,17 +145,27 @@ export function AvatarVideoPanel({
 		updateAgent({ knowledgeBaseId: value.trim() || undefined });
 	};
 
+	const handleVoiceSelection = (value: string) => {
+		setSelectedVoiceId(value);
+		updateAgent({ voiceId: value.trim() || undefined });
+	};
+
 	const forwardStartSession = (payload: {
 		avatarId?: string;
 		knowledgeBaseId?: string;
+		voiceId?: string;
 	}) => {
 		onStartSession?.(payload);
 	};
 
 	useEffect(() => {
 		if (!currentAgent?.avatarId) {
-			setSelectedAvatar("");
+			const firstAvatar = avatarOptions[0]?.avatar_id ?? "";
+			setSelectedAvatar(firstAvatar);
 			setCustomAvatarId("");
+			if (firstAvatar) {
+				updateAgent({ avatarId: firstAvatar });
+			}
 			return;
 		}
 
@@ -142,24 +177,38 @@ export function AvatarVideoPanel({
 			setSelectedAvatar(currentAgent.avatarId);
 			setCustomAvatarId("");
 		} else {
-			setSelectedAvatar("CUSTOM");
-			setCustomAvatarId(currentAgent.avatarId);
+			const firstAvatar = avatarOptions[0]?.avatar_id ?? "";
+			setSelectedAvatar(firstAvatar);
+			setCustomAvatarId("");
+			if (firstAvatar) {
+				updateAgent({ avatarId: firstAvatar });
+			}
 		}
-	}, [avatarOptions, currentAgent?.avatarId]);
+	}, [avatarOptions, currentAgent?.avatarId, updateAgent]);
 
 	useEffect(() => {
-		setKnowledgeBaseId(currentAgent?.knowledgeBaseId ?? "");
-	}, [currentAgent?.knowledgeBaseId]);
+		const firstContext = contextOptions[0]?.value ?? "";
+		const nextContext = currentAgent?.knowledgeBaseId || firstContext;
+		setKnowledgeBaseId(nextContext);
+		if (!currentAgent?.knowledgeBaseId && firstContext) {
+			updateAgent({ knowledgeBaseId: firstContext });
+		}
+	}, [contextOptions, currentAgent?.knowledgeBaseId, updateAgent]);
 
-	// Simple client-side check for Knowledge Base ID. If provided, must match a minimal pattern.
-	// Accept UUID-like or alphanumeric with dashes/underscores of length >= 10.
+	useEffect(() => {
+		const firstVoice = voiceOptions[0]?.value ?? "";
+		const nextVoice = currentAgent?.voiceId || firstVoice;
+		setSelectedVoiceId(nextVoice);
+		if (!currentAgent?.voiceId && firstVoice) {
+			updateAgent({ voiceId: firstVoice });
+		}
+	}, [currentAgent?.voiceId, updateAgent, voiceOptions]);
+
+	// LiveAvatar /v2/embeddings validates context_id as a UUID.
 	const kbIdValid = useMemo(() => {
 		const value = knowledgeBaseId.trim();
-		if (!value) return true; // optional
-		const uuidLike = /^[0-9a-fA-F-]{10,}$/;
-		const generic = /^[A-Za-z0-9_-]{10,}$/;
-
-		return uuidLike.test(value) || generic.test(value);
+		if (!value) return false;
+		return UUID_PATTERN.test(value);
 	}, [knowledgeBaseId]);
 
 	const isConnecting = sessionState === StreamingAvatarSessionState.CONNECTING;
@@ -197,7 +246,7 @@ export function AvatarVideoPanel({
 				{viewTab === "video" ? (
 					sessionState === StreamingAvatarSessionState.CONNECTED ? (
 						liveAvatarEmbedUrl ? (
-							<div className="absolute inset-0 bg-black">
+							<div className="absolute inset-0 min-h-0 bg-black">
 								<Button
 									size="icon"
 									type="button"
@@ -210,8 +259,11 @@ export function AvatarVideoPanel({
 								</Button>
 								<iframe
 									allow="microphone; camera; autoplay; fullscreen"
-									className="h-full w-full border-0"
+									className="absolute left-1/2 top-0 block h-full min-w-full -translate-x-1/2 border-0"
 									src={liveAvatarEmbedUrl}
+									style={{
+										width: "max(100%, calc(100dvh * 16 / 9))",
+									}}
 									title="LiveAvatar session"
 								/>
 							</div>
@@ -232,17 +284,24 @@ export function AvatarVideoPanel({
 							</Button>
 							<SessionQuickStartCard
 								avatarOptions={avatarOptions}
+								contextOptions={contextOptions}
 								customAvatarId={customAvatarId}
 								customIdValid={customIdValid}
+								isLoadingAvatarOptions={isLoadingAvatarOptions}
+								isLoadingContextOptions={isLoadingContextOptions}
+								isLoadingVoiceOptions={isLoadingVoiceOptions}
 								isConnecting={isConnecting}
 								knowledgeBaseId={knowledgeBaseId}
 								kbIdValid={kbIdValid}
 								onCustomAvatarChange={handleCustomAvatarChange}
 								onKnowledgeBaseChange={handleKnowledgeBaseChange}
 								onSelectAvatar={handleAvatarSelection}
+								onSelectVoice={handleVoiceSelection}
 								onStartSession={forwardStartSession}
 								onStartWithoutAvatar={onStartWithoutAvatar}
 								selectedAvatar={selectedAvatar}
+								selectedVoiceId={selectedVoiceId}
+								voiceOptions={voiceOptions}
 							/>
 						</div>
 					) : (
