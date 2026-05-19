@@ -21,7 +21,7 @@ const USAGE_PROFILES: UsageProfileConfig[] = [
 		id: "general",
 		label: "General Purpose Agent",
 		description:
-			"Balanced assistants for onboarding, lightweight research, or concierge flows.",
+			"Generate monthly income by creating and deploying a custom business agent",
 		baseAmount: 25,
 		currency: "USD",
 		usageStates: [

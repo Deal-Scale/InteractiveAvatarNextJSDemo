@@ -31,7 +31,28 @@ export type AssetsState = {
 export const useAssetsStore = create<AssetsState>()(
 	persist(
 		(set, _get) => ({
-			assets: [],
+			assets: [
+				{
+					id: "asset-1",
+					name: "Demo Image",
+					thumbnailUrl: "/demo.png",
+					url: "/demo.png",
+					mimeType: "image/png",
+				},
+				{
+					id: "asset-2",
+					name: "Spec Sheet.pdf",
+					url: "/demo.png",
+					mimeType: "application/pdf",
+				},
+				{
+					id: "asset-3",
+					name: "Scene Background.jpg",
+					thumbnailUrl: "/demo.png",
+					url: "/demo.png",
+					mimeType: "image/jpeg",
+				},
+			],
 			uploads: [],
 
 			addAssets: (items) => set((s) => ({ assets: [...items, ...s.assets] })),

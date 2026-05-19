@@ -1,11 +1,8 @@
 "use client";
 
-import React from "react";
-import clsx from "clsx";
-
 import {
-	calculateMonetizedRate,
 	type AgentUsageProfile,
+	calculateMonetizedRate,
 } from "@/lib/agents/monetization";
 
 const formatCurrency = (value: number, currency: string) =>
@@ -26,21 +23,16 @@ export function AgentMonetizationSummary({
 	profile,
 	multiplier,
 }: AgentMonetizationSummaryProps) {
-	const { baseAmount, currency, description, label, usageStates } = profile;
-	const effectiveMultiplier = enabled ? multiplier : 1;
-	const totalRate = calculateMonetizedRate(baseAmount, effectiveMultiplier);
+	if (!enabled) return null;
 
-	const summaryNote = enabled
-		? `${formatCurrency(baseAmount, currency)} base × ${effectiveMultiplier.toFixed(2)}x`
-		: `${formatCurrency(baseAmount, currency)} base rate`;
+	const { baseAmount, currency, description, label, usageStates } = profile;
+	const totalRate = calculateMonetizedRate(baseAmount, multiplier);
+	const summaryNote = `${formatCurrency(baseAmount, currency)} base x ${multiplier.toFixed(2)}x`;
 
 	return (
 		<section
 			aria-label="Monetization summary"
-			className={clsx(
-				"mt-4 space-y-3 rounded-md border border-border p-3 text-sm transition-opacity",
-				enabled ? "opacity-100" : "opacity-75",
-			)}
+			className="mt-4 space-y-3 rounded-md border border-border p-3 text-sm"
 		>
 			<header className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
 				<div>
@@ -69,13 +61,6 @@ export function AgentMonetizationSummary({
 					</div>
 				))}
 			</dl>
-
-			{!enabled && (
-				<p className="text-xs text-muted-foreground">
-					Toggle monetization to apply your multiplier and publish this pricing
-					guidance.
-				</p>
-			)}
 		</section>
 	);
 }

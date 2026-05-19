@@ -38,10 +38,21 @@ export function mapAgentAndSettingsToConfig(
 		},
 		voice: {
 			...base.voice,
-			voiceId: latestAgent?.voiceId ?? base.voice?.voiceId,
-			rate: latestAgent?.voice?.rate ?? base.voice?.rate,
-			emotion: (latestAgent?.voice?.emotion as any) ?? base.voice?.emotion,
+			voiceId:
+				latestAgent?.videoVoiceId ??
+				latestAgent?.voiceId ??
+				base.voice?.voiceId,
+			rate:
+				latestAgent?.videoVoice?.rate ??
+				latestAgent?.voice?.rate ??
+				base.voice?.rate,
+			emotion:
+				(latestAgent?.videoVoice?.emotion as any) ??
+				(latestAgent?.voice?.emotion as any) ??
+				base.voice?.emotion,
 			model:
+				(latestAgent?.videoVoice as any)?.model ??
+				(latestAgent?.videoVoice?.elevenlabs_settings?.model_id as any) ??
 				(latestAgent?.voice as any)?.model ??
 				(latestAgent?.voice?.elevenlabs_settings?.model_id as any) ??
 				base.voice?.model,

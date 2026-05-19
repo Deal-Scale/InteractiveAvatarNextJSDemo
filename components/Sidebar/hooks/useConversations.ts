@@ -1,22 +1,64 @@
 "use client";
 
+import { useEffect, useMemo, useState } from "react";
+
 import type {
 	Conversation,
 	ConversationGroup,
 } from "@/components/Sidebar/types";
-
-import { useEffect, useMemo, useState } from "react";
-
 import {
+	fetchConversations,
 	loadFromCache,
 	saveToCache,
-	fetchConversations,
 } from "@/components/Sidebar/utils/cache";
 
-export default function useConversations() {
-	const [groups, setGroups] = useState<ConversationGroup[] | null>(() =>
-		loadFromCache(),
+const DAY_MS = 24 * 60 * 60 * 1000;
+const CHAT_GROUPS = [
+	"Today",
+	"Yesterday",
+	"Last 7 days",
+	"Last month",
+	"More than a month ago",
+] as const;
+
+function getChatPeriod(timestamp: number, now = Date.now()) {
+	const age = now - timestamp;
+
+	if (age < DAY_MS) return "Today";
+	if (age < 2 * DAY_MS) return "Yesterday";
+	if (age < 7 * DAY_MS) return "Last 7 days";
+	if (age < 30 * DAY_MS) return "Last month";
+	return "More than a month ago";
+}
+
+function normalizeConversationGroups(
+	groups: ConversationGroup[],
+): ConversationGroup[] {
+	const now = Date.now();
+	const byPeriod = new Map<string, Conversation[]>(
+		CHAT_GROUPS.map((period) => [period, []]),
 	);
+
+	for (const conversation of groups.flatMap((g) => g.conversations)) {
+		const period = getChatPeriod(conversation.timestamp, now);
+
+		byPeriod.get(period)?.push(conversation);
+	}
+
+	return CHAT_GROUPS.map((period) => ({
+		period,
+		conversations: (byPeriod.get(period) ?? []).sort(
+			(a, b) => b.timestamp - a.timestamp,
+		),
+	})).filter((group) => group.conversations.length > 0);
+}
+
+export default function useConversations() {
+	const [groups, setGroups] = useState<ConversationGroup[] | null>(() => {
+		const cached = loadFromCache();
+
+		return cached ? normalizeConversationGroups(cached) : null;
+	});
 	const [loading, setLoading] = useState<boolean>(!groups);
 	const [query, setQuery] = useState("");
 	const [selectionMode, setSelectionMode] = useState<boolean>(false);
@@ -53,8 +95,10 @@ export default function useConversations() {
 		if (!groups) {
 			fetchConversations().then((data) => {
 				if (!mounted) return;
-				setGroups(data);
-				saveToCache(data);
+				const normalized = normalizeConversationGroups(data);
+
+				setGroups(normalized);
+				saveToCache(normalized);
 				setLoading(false);
 			});
 		}

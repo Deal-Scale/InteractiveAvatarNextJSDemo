@@ -13,10 +13,14 @@ import BookmarksSection from "@/components/Sidebar/BookmarksSection";
 import useBookmarkModal from "@/components/Sidebar/hooks/useBookmarkModal";
 import useConversations from "@/components/Sidebar/hooks/useConversations";
 import useSidebarCollapse from "@/components/Sidebar/hooks/useSidebarCollapse";
-import KnowledgebaseSection from "@/components/Sidebar/KnowledgebaseSection";
+import KnowledgebaseSection, {
+	type KnowledgeFolder,
+} from "@/components/Sidebar/KnowledgebaseSection";
 import MessagesSection from "@/components/Sidebar/MessagesSection";
 import SessionsHistorySection from "@/components/Sidebar/SessionsHistorySection";
 import SidebarHeaderSection from "@/components/Sidebar/SidebarHeaderSection";
+import ToolConnectionModal from "@/components/Sidebar/ToolConnectionModal";
+import ToolsSection from "@/components/Sidebar/ToolsSection";
 import type { SidebarProps } from "@/components/Sidebar/types";
 import { Button } from "@/components/ui/button";
 import {
@@ -33,6 +37,7 @@ import {
 	useTestKBConnection,
 } from "@/lib/query/mutations";
 import { useAgentStore } from "@/lib/stores/agent";
+import { useAssetsStore } from "@/lib/stores/assets";
 import { useComposerStore } from "@/lib/stores/composer";
 import { useSessionStore } from "@/lib/stores/session";
 import { useSettingsStore } from "@/lib/stores/settings";
@@ -44,6 +49,9 @@ const SKELETON_IDS = ["s1", "s2", "s3", "s4", "s5", "s6"] as const;
 const Sidebar: React.FC<SidebarProps> = ({ onSelect, apps }) => {
 	const router = useRouter();
 	const { agentSettings } = useSessionStore();
+	const currentSessionId = useSessionStore((s) => s.currentSessionId);
+	const chatExperience = useSessionStore((s) => s.chatExperience);
+	const messages = useSessionStore((s) => s.messages);
 	const openConfigModal = useSessionStore((s) => s.openConfigModal);
 	const openChatSettings = useSessionStore((s) => s.openChatSettings);
 	const { currentAgent, updateAgent } = useAgentStore();
@@ -61,34 +69,46 @@ const Sidebar: React.FC<SidebarProps> = ({ onSelect, apps }) => {
 
 	// collapse and archived persistence moved into hooks
 
-	// Placeholder assets (in state so delete works)
-	const [assets, setAssets] = React.useState([
-		{
-			id: "asset-1",
-			name: "Demo Image",
-			thumbnailUrl: "/demo.png",
-			url: "/demo.png",
-			mimeType: "image/png",
-		},
-		{
-			id: "asset-2",
-			name: "Spec Sheet.pdf",
-			url: "/demo.png", // placeholder; replace with real file URL
-			mimeType: "application/pdf",
-		},
-		{
-			id: "asset-3",
-			name: "Scene Background.jpg",
-			thumbnailUrl: "/demo.png",
-			url: "/demo.png",
-			mimeType: "image/jpeg",
-		},
-	] as any[]);
+	const storeAssets = useAssetsStore((s) => s.assets);
+	const removeAsset = useAssetsStore((s) => s.removeAsset);
 
 	const agents = useMemo(() => {
 		const base = [
-			{ id: "agent-1", name: "Sales Assistant", isOwnedByUser: true },
-			{ id: "agent-2", name: "Support Bot", isOwnedByUser: false },
+			{
+				id: "agent-1",
+				name: "Sales Assistant",
+				role: "Revenue",
+				description:
+					"Qualifies leads, drafts outreach, and coordinates follow-up tasks through MCP actions.",
+				abilities: ["crm.search", "mail.send", "task.plan"],
+				modalities: ["chat", "voice", "video"],
+				promptStarter: "Find warm leads and draft a short follow-up sequence.",
+				isOwnedByUser: true,
+			},
+			{
+				id: "agent-2",
+				name: "Support Bot",
+				role: "Customer Success",
+				description:
+					"Answers product questions, searches knowledge bases, and escalates unresolved issues.",
+				abilities: ["kb.search", "ticket.create", "toast.publish"],
+				modalities: ["chat", "voice"],
+				promptStarter:
+					"Summarize this customer issue and suggest the next support step.",
+				isOwnedByUser: false,
+			},
+			{
+				id: "agent-3",
+				name: "Content Analyst",
+				role: "Research",
+				description:
+					"Reviews messages, extracts structured insights, and turns findings into dashboard-ready notes.",
+				abilities: ["mcp.resources", "chart.add", "summary.write"],
+				modalities: ["chat"],
+				promptStarter:
+					"Analyze the latest chat and create a dashboard insight.",
+				isOwnedByUser: false,
+			},
 		];
 
 		if (agentSettings?.id) {
@@ -96,6 +116,12 @@ const Sidebar: React.FC<SidebarProps> = ({ onSelect, apps }) => {
 				{
 					id: agentSettings.id,
 					name: agentSettings.name || "Configured Agent",
+					role: "Configured",
+					description:
+						"Current saved agent configuration with the selected avatar, voice, knowledge base, and MCP settings.",
+					abilities: ["session.start", "kb.use", "mcp.tools"],
+					modalities: ["chat", "voice", "video"],
+					promptStarter: "Start from my current agent settings.",
 					isOwnedByUser: true,
 				},
 				...base,
@@ -108,6 +134,25 @@ const Sidebar: React.FC<SidebarProps> = ({ onSelect, apps }) => {
 	const addAssetAttachment = useComposerStore((s) => s.addAssetAttachment);
 
 	const totalCount = conv.totalCount;
+	const currentBookmarkId = currentSessionId
+		? `live-session-${currentSessionId}`
+		: "current-chat-session";
+	const currentSessionConversation = useMemo(() => {
+		const lastMessage = messages[messages.length - 1]?.content;
+		const title =
+			currentSessionId || messages.length > 0
+				? chatExperience === "avatar"
+					? "Current LiveAvatar Session"
+					: "Current Chat"
+				: "Current Session";
+
+		return {
+			id: currentBookmarkId,
+			title,
+			lastMessage: lastMessage || "Live session and current messages",
+			timestamp: Date.now(),
+		};
+	}, [chatExperience, currentBookmarkId, currentSessionId, messages]);
 
 	// Local collapse state for streaming sections
 	const [collapsedActiveSessions, setCollapsedActiveSessions] =
@@ -117,6 +162,42 @@ const Sidebar: React.FC<SidebarProps> = ({ onSelect, apps }) => {
 
 	// Knowledge Base modal state and hooks
 	const [kbModalOpen, setKbModalOpen] = React.useState(false);
+	const [kbModalToolsOpen, setKbModalToolsOpen] = React.useState(false);
+	const [toolModalOpen, setToolModalOpen] = React.useState(false);
+	const [toolModalConnector, setToolModalConnector] = React.useState<
+		string | undefined
+	>(undefined);
+	const kbFolders = useSessionStore((s) => s.kbFolders);
+	const setKbFolders = useSessionStore((s) => s.setKbFolders);
+	const kbItemFolders = useSessionStore((s) => s.kbItemFolders);
+	const setKbItemFolders = useSessionStore((s) => s.setKbItemFolders);
+	const createdKnowledgeItems = useSessionStore((s) => s.createdKnowledgeItems);
+	const setCreatedKnowledgeItems = useSessionStore(
+		(s) => s.setCreatedKnowledgeItems,
+	);
+
+	// Register window events to trigger modals from slash commands
+	React.useEffect(() => {
+		const handleOpenAddKB = () => {
+			setKbModalToolsOpen(false);
+			setKbModalOpen(true);
+		};
+		const handleOpenConnectTool = (e: Event) => {
+			const customEvent = e as CustomEvent;
+			setToolModalConnector(customEvent.detail?.connectorKey);
+			setToolModalOpen(true);
+		};
+		window.addEventListener("open-add-kb-modal", handleOpenAddKB);
+		window.addEventListener("open-connect-tool-modal", handleOpenConnectTool);
+		return () => {
+			window.removeEventListener("open-add-kb-modal", handleOpenAddKB);
+			window.removeEventListener(
+				"open-connect-tool-modal",
+				handleOpenConnectTool,
+			);
+		};
+	}, []);
+
 	const testKB = useTestKBConnection();
 	const connectKB = useConnectKBSource({
 		onSuccess: async (kb) => {
@@ -127,6 +208,51 @@ const Sidebar: React.FC<SidebarProps> = ({ onSelect, apps }) => {
 		},
 	});
 	const scheduleSync = useScheduleKBSync();
+
+	function createKnowledgeFolder(name: string, parentId?: string) {
+		const folder: KnowledgeFolder = {
+			id: `kb-folder-${Date.now()}-${Math.random().toString(36).slice(2)}`,
+			name,
+			parentId,
+		};
+		setKbFolders((prev) => [...prev, folder]);
+		return folder;
+	}
+
+	function moveKnowledgeFolder(id: string, parentId?: string) {
+		setKbFolders((prev) =>
+			prev.map((folder) =>
+				folder.id === id ? { ...folder, parentId } : folder,
+			),
+		);
+	}
+
+	function deleteKnowledgeFolder(id: string) {
+		const descendants = new Set<string>([id]);
+		let changed = true;
+		while (changed) {
+			changed = false;
+			for (const folder of kbFolders) {
+				if (folder.parentId && descendants.has(folder.parentId)) {
+					if (!descendants.has(folder.id)) {
+						descendants.add(folder.id);
+						changed = true;
+					}
+				}
+			}
+		}
+
+		setKbFolders((prev) =>
+			prev.filter((folder) => !descendants.has(folder.id)),
+		);
+		setKbItemFolders((prev) => {
+			const next = { ...prev };
+			for (const [itemId, folderId] of Object.entries(next)) {
+				if (folderId && descendants.has(folderId)) next[itemId] = undefined;
+			}
+			return next;
+		});
+	}
 
 	// SSR-safe window alias
 	const w = typeof window !== "undefined" ? window : undefined;
@@ -144,8 +270,9 @@ const Sidebar: React.FC<SidebarProps> = ({ onSelect, apps }) => {
 				}
 			}
 		}
+		map[currentSessionConversation.id] = currentSessionConversation;
 		return map;
-	}, [conv.groups]);
+	}, [conv.groups, currentSessionConversation]);
 
 	// Placeholder knowledge base tree (folders/files). Replace with real data.
 	const knowledgeTree = useMemo(
@@ -163,8 +290,17 @@ const Sidebar: React.FC<SidebarProps> = ({ onSelect, apps }) => {
 				name: "FAQ",
 				children: [{ id: "kb-general", name: "General" }],
 			},
+			...(createdKnowledgeItems.length
+				? [
+						{
+							id: "kb-created",
+							name: "Added Knowledge",
+							children: createdKnowledgeItems,
+						},
+					]
+				: []),
 		],
-		[],
+		[createdKnowledgeItems],
 	);
 
 	return (
@@ -220,33 +356,14 @@ const Sidebar: React.FC<SidebarProps> = ({ onSelect, apps }) => {
 						<Button
 							className="mb-3 flex w-full items-center gap-2 group-data-[state=collapsed]/sidebar:justify-center bg-background text-foreground border border-border hover:bg-muted"
 							variant="outline"
-							onClick={() => router.push("/bookmarks")}
+							onClick={() => bookmark.openBookmarkModal(currentBookmarkId)}
 						>
 							<Bookmark className="size-4" />
 							<span className="group-data-[state=collapsed]/sidebar:hidden">
-								Bookmarks
+								Bookmark
 							</span>
 						</Button>
 					</div>
-
-					{/* Applications Starter */}
-					<ApplicationsStarter
-						apps={apps}
-						clearGlobalSettings={clearGlobalSettings}
-						collapsedStarter={collapse.collapsedStarter}
-						currentAgent={currentAgent}
-						globalSettings={globalSettings}
-						setCollapsedStarter={collapse.setCollapsedStarter}
-						setGlobalSettings={setGlobalSettings}
-						setShowGlobalForm={setShowGlobalForm}
-						setStarterScale={(n) => setStarterScale(n)}
-						showGlobalForm={showGlobalForm}
-						starterScale={starterScale}
-						updateAgent={updateAgent}
-						onOpenAgentSettings={() => openConfigModal("agent")}
-						onOpenGlobalSettings={() => openConfigModal("global")}
-						onOpenUserSettings={() => openConfigModal("user")}
-					/>
 
 					{conv.loading && (
 						<div className="px-2">
@@ -257,86 +374,7 @@ const Sidebar: React.FC<SidebarProps> = ({ onSelect, apps }) => {
 						</div>
 					)}
 
-					{/* Assets */}
-					<AssetsSection
-						assets={assets as any}
-						assetsRef={assetsRef}
-						collapsedAssets={collapse.collapsedAssets}
-						onDelete={(id) =>
-							setAssets((prev) => prev.filter((a: any) => a.id !== id))
-						}
-						onAttach={(asset) =>
-							addAssetAttachment({
-								id: asset.id,
-								name: asset.name,
-								url: asset.url,
-								thumbnailUrl: asset.thumbnailUrl,
-								mimeType: (asset as any).mimeType,
-							})
-						}
-						setCollapsedAssets={collapse.setCollapsedAssets}
-					/>
-
-					{/* Agents */}
-					<AgentsSection
-						agents={agents as any}
-						collapsedAgents={collapse.collapsedAgents}
-						setCollapsedAgents={collapse.setCollapsedAgents}
-						onEdit={(a) => {
-							// Map sidebar Agent fields to AgentConfig partial
-							updateAgent({ name: a.name });
-						}}
-					/>
-
-					{/* Bookmarks (File Tree) */}
-					<div ref={bookmarksRef}>
-						<BookmarksSection
-							bookmarkFolders={bookmark.bookmarkFolders}
-							bookmarkedIds={bookmark.bookmarkedIds}
-							bookmarkMeta={bookmark.bookmarkMeta}
-							collapsedBookmarks={collapse.collapsedBookmarks}
-							conversationsById={conversationsById}
-							onOpenChat={(c) => onSelect?.(c)}
-							onOpenBookmarkMove={(id) => bookmark.openBookmarkModal(id)}
-							setCollapsedBookmarks={collapse.setCollapsedBookmarks}
-						/>
-					</div>
-
-					{/* Knowledge Base (File Tree) */}
-					<KnowledgebaseSection
-						collapsedKnowledge={collapse.collapsedKnowledge}
-						setCollapsedKnowledge={collapse.setCollapsedKnowledge}
-						tree={knowledgeTree as any}
-						onOpenItem={(id) => {
-							// TODO: implement real navigation when KB is integrated
-							console.debug("Open KB item", id);
-						}}
-						onMoveItem={(id) => {
-							// TODO: implement real KB move modal/flow
-							console.debug("KB: move item", id);
-						}}
-						onOpenMarkdown={() => {
-							// Navigate to a markdown viewer route (replace with your implementation)
-							router.push("/knowledge/markdown");
-						}}
-						onStartApiSync={() => {
-							// Trigger OAuth flow for API sync (replace with your real auth)
-							console.debug("KB OAuth: begin auth flow");
-						}}
-						onOpenAddKB={() => setKbModalOpen(true)}
-					/>
-
-					{/* Streaming sections */}
-					<ActiveSessionsSection
-						collapsed={collapsedActiveSessions}
-						setCollapsed={setCollapsedActiveSessions}
-					/>
-					<SessionsHistorySection
-						collapsed={collapsedSessionsHistory}
-						setCollapsed={setCollapsedSessionsHistory}
-					/>
-
-					{/* Messages Section (threads grouped under their own dropdown) */}
+					{/* Messages Section */}
 					{!conv.loading && conv.filteredGroups && (
 						<MessagesSection
 							archivedCount={conv.archivedList.length}
@@ -359,6 +397,117 @@ const Sidebar: React.FC<SidebarProps> = ({ onSelect, apps }) => {
 							visibleConversationIds={conv.visibleConversationIds}
 						/>
 					)}
+
+					{/* Bookmarks (File Tree) */}
+					<div ref={bookmarksRef}>
+						<BookmarksSection
+							bookmarkFolders={bookmark.bookmarkFolders}
+							bookmarkedIds={bookmark.bookmarkedIds}
+							bookmarkMeta={bookmark.bookmarkMeta}
+							collapsedBookmarks={collapse.collapsedBookmarks}
+							conversationsById={conversationsById}
+							onOpenChat={(c) => onSelect?.(c)}
+							onOpenBookmarkMove={(id) => bookmark.openBookmarkModal(id)}
+							onDeleteBookmark={(id) => bookmark.deleteBookmark(id)}
+							onMoveBookmarkFolder={(id, parentId) =>
+								bookmark.moveFolder(id, parentId)
+							}
+							onDeleteBookmarkFolder={(id) => bookmark.deleteFolder(id)}
+							setCollapsedBookmarks={collapse.setCollapsedBookmarks}
+						/>
+					</div>
+
+					{/* Assets */}
+					<AssetsSection
+						assets={storeAssets as any}
+						assetsRef={assetsRef}
+						collapsedAssets={collapse.collapsedAssets}
+						onDelete={(id) => removeAsset(id)}
+						onAttach={(asset) =>
+							addAssetAttachment({
+								id: asset.id,
+								name: asset.name,
+								url: asset.url,
+								thumbnailUrl: asset.thumbnailUrl,
+								mimeType: (asset as any).mimeType,
+							})
+						}
+						setCollapsedAssets={collapse.setCollapsedAssets}
+					/>
+
+					{/* Knowledge Base (File Tree) */}
+					<KnowledgebaseSection
+						collapsedKnowledge={collapse.collapsedKnowledge}
+						setCollapsedKnowledge={collapse.setCollapsedKnowledge}
+						tree={knowledgeTree as any}
+						folders={kbFolders}
+						itemFolders={kbItemFolders}
+						onCreateFolder={createKnowledgeFolder}
+						onMoveFolder={moveKnowledgeFolder}
+						onDeleteFolder={deleteKnowledgeFolder}
+						onMoveKnowledgeItem={(id, folderId) =>
+							setKbItemFolders((prev) => ({ ...prev, [id]: folderId }))
+						}
+						onOpenItem={(id) => {
+							// TODO: implement real navigation when KB is integrated
+							console.debug("Open KB item", id);
+						}}
+						onMoveItem={(id) => {
+							// TODO: implement real KB move modal/flow
+							console.debug("KB: move item", id);
+						}}
+						onOpenMarkdown={() => {
+							// Navigate to a markdown viewer route (replace with your implementation)
+							router.push("/knowledge/markdown");
+						}}
+						onStartApiSync={() => {
+							// Trigger OAuth flow for API sync (replace with your real auth)
+							console.debug("KB OAuth: begin auth flow");
+						}}
+						onOpenAddKB={() => {
+							setKbModalToolsOpen(false);
+							setKbModalOpen(true);
+						}}
+					/>
+
+					{/* Tools */}
+					<ToolsSection
+						collapsedTools={collapse.collapsedTools}
+						setCollapsedTools={collapse.setCollapsedTools}
+						onOpenTools={(connectorKey) => {
+							setToolModalConnector(connectorKey);
+							setToolModalOpen(true);
+						}}
+					/>
+
+					{/* Agents */}
+					<AgentsSection
+						agents={agents as any}
+						collapsedAgents={collapse.collapsedAgents}
+						setCollapsedAgents={collapse.setCollapsedAgents}
+						onEdit={(a) => {
+							updateAgent(a);
+						}}
+					/>
+
+					{/* Streaming sections */}
+					<ActiveSessionsSection
+						collapsed={collapsedActiveSessions}
+						setCollapsed={setCollapsedActiveSessions}
+					/>
+
+					{/* Applications Starter */}
+					<ApplicationsStarter
+						apps={apps}
+						collapsedStarter={collapse.collapsedStarter}
+						setCollapsedStarter={collapse.setCollapsedStarter}
+						onOpenGlobalSettings={() => openConfigModal("global")}
+					/>
+
+					<SessionsHistorySection
+						collapsed={collapsedSessionsHistory}
+						setCollapsed={setCollapsedSessionsHistory}
+					/>
 				</SidebarContent>
 			</UISidebar>
 
@@ -368,6 +517,8 @@ const Sidebar: React.FC<SidebarProps> = ({ onSelect, apps }) => {
 				bookmarkedIds={bookmark.bookmarkedIds}
 				bookmarkTargetId={bookmark.bookmarkTargetId}
 				bookmarkFolders={bookmark.bookmarkFolders}
+				draftTitle={bookmark.draftTitle}
+				setDraftTitle={bookmark.setDraftTitle}
 				draftFolderId={bookmark.draftFolderId}
 				setDraftFolderId={bookmark.setDraftFolderId}
 				draftNewFolder={bookmark.draftNewFolder}
@@ -382,9 +533,22 @@ const Sidebar: React.FC<SidebarProps> = ({ onSelect, apps }) => {
 			{/* Knowledge Base Add Modal */}
 			<AddKnowledgeBaseModal
 				open={kbModalOpen}
-				onOpenChange={setKbModalOpen}
-				onCreated={() => {
-					// No-op; mutations already invalidate caches via hooks
+				onOpenChange={(open) => {
+					setKbModalOpen(open);
+					if (!open) setKbModalToolsOpen(false);
+				}}
+				initialToolsOpen={kbModalToolsOpen}
+				folders={kbFolders}
+				onCreateFolder={createKnowledgeFolder}
+				onCreated={(kb) => {
+					setCreatedKnowledgeItems((prev) =>
+						prev.some((item) => item.id === kb.id)
+							? prev
+							: [...prev, { id: kb.id, name: kb.name }],
+					);
+					if (kb.folderId) {
+						setKbItemFolders((prev) => ({ ...prev, [kb.id]: kb.folderId }));
+					}
 				}}
 				onTestConnection={async (connectorKey, cfg) => {
 					const res = await testKB.mutateAsync({ connectorKey, config: cfg });
@@ -434,6 +598,64 @@ const Sidebar: React.FC<SidebarProps> = ({ onSelect, apps }) => {
 						return { ok: true, code };
 					} catch (e) {
 						console.error("OAuth start failed", e);
+						return { ok: false };
+					}
+				}}
+			/>
+
+			{/* Tool Connector Modal */}
+			<ToolConnectionModal
+				open={toolModalOpen}
+				onOpenChange={(open) => {
+					setToolModalOpen(open);
+					if (!open) setToolModalConnector(undefined);
+				}}
+				initialConnectorKey={toolModalConnector}
+				onTestConnection={async (connectorKey, cfg) => {
+					const res = await testKB.mutateAsync({ connectorKey, config: cfg });
+					return res;
+				}}
+				onConnect={async (connectorKey, cfg) => {
+					const kb = await connectKB.mutateAsync({ connectorKey, config: cfg });
+					return { id: kb.id, name: kb.name };
+				}}
+				onStartOAuth={async (connectorKey, authUrl, scopes) => {
+					try {
+						const state = Math.random().toString(36).slice(2);
+						const url = new URL(authUrl);
+						if (scopes && scopes.length) {
+							url.searchParams.set("scope", scopes.join(" "));
+						}
+						url.searchParams.set("state", state);
+						const popup = w?.open(
+							url.toString(),
+							"tool-oauth",
+							"width=480,height=720",
+						);
+						if (!popup) return { ok: false };
+						const code: string | undefined = await new Promise((resolve) => {
+							const listener = (e: MessageEvent) => {
+								if (
+									typeof e.data === "object" &&
+									e.data &&
+									(e.data as any).type === "kb-oauth-callback" &&
+									(e.data as any).state === state
+								) {
+									w?.removeEventListener("message", listener);
+									resolve((e.data as any).code as string | undefined);
+								}
+							};
+							w?.addEventListener("message", listener);
+							const timer = w?.setInterval(() => {
+								if (popup.closed) {
+									if (timer) w?.clearInterval(timer);
+									w?.removeEventListener("message", listener);
+									resolve(undefined);
+								}
+							}, 500);
+						});
+						return code ? { ok: true, code } : { ok: false };
+					} catch {
 						return { ok: false };
 					}
 				}}

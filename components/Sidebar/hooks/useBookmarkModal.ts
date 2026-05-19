@@ -14,10 +14,13 @@ export default function useBookmarkModal() {
 		setBookmarkMeta: setBmMeta,
 		clearBookmarkMeta: clearBmMeta,
 		upsertFolder,
+		moveFolder,
+		deleteFolder,
 	} = useBookmarkStore();
 
 	const [bookmarkModalOpen, setBookmarkModalOpen] = useState<boolean>(false);
 	const [bookmarkTargetId, setBookmarkTargetId] = useState<string | null>(null);
+	const [draftTitle, setDraftTitle] = useState<string>("");
 	const [draftFolderId, setDraftFolderId] = useState<string>("");
 	const [draftNewFolder, setDraftNewFolder] = useState<string>("");
 	const [draftTags, setDraftTags] = useState<string>("");
@@ -26,6 +29,7 @@ export default function useBookmarkModal() {
 		setBookmarkTargetId(id);
 		const existing = bookmarkMeta[id];
 
+		setDraftTitle(existing?.title ?? "");
 		setDraftFolderId(existing?.folderId ?? "");
 		setDraftNewFolder("");
 		setDraftTags((existing?.tags ?? []).join(", "));
@@ -48,7 +52,11 @@ export default function useBookmarkModal() {
 
 		const id = bookmarkTargetId; // narrowed by the early return above
 		addBm(id);
-		setBmMeta(id, { folderId: folderId || undefined, tags });
+		setBmMeta(id, {
+			folderId: folderId || undefined,
+			tags,
+			title: draftTitle.trim() || undefined,
+		});
 		setBookmarkModalOpen(false);
 	};
 
@@ -57,6 +65,14 @@ export default function useBookmarkModal() {
 		removeBm(bookmarkTargetId);
 		clearBmMeta(bookmarkTargetId);
 		setBookmarkModalOpen(false);
+	};
+
+	const deleteBookmark = (id: string) => {
+		removeBm(id);
+		clearBmMeta(id);
+		if (bookmarkTargetId === id) {
+			setBookmarkModalOpen(false);
+		}
 	};
 
 	return {
@@ -68,12 +84,14 @@ export default function useBookmarkModal() {
 		// modal state
 		bookmarkModalOpen,
 		bookmarkTargetId,
+		draftTitle,
 		draftFolderId,
 		draftNewFolder,
 		draftTags,
 
 		// setters
 		setBookmarkModalOpen,
+		setDraftTitle,
 		setDraftFolderId,
 		setDraftNewFolder,
 		setDraftTags,
@@ -83,5 +101,8 @@ export default function useBookmarkModal() {
 		close,
 		saveBookmark,
 		handleRemoveBookmark,
+		deleteBookmark,
+		moveFolder,
+		deleteFolder,
 	} as const;
 }

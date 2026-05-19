@@ -1,4 +1,5 @@
-import { useId } from "react";
+import { Pause, Play } from "lucide-react";
+import { useId, useRef, useState } from "react";
 import type { AvatarOption } from "@/components/AvatarConfig/hooks/useAvatarOptions";
 import { Input } from "@/components/Input";
 import { BorderBeam } from "@/components/magicui/border-beam";
@@ -82,6 +83,10 @@ export function SessionQuickStartCard({
 	const voiceSelectId = useId();
 	const contextSelectId = useId();
 	const kbInputId = useId();
+	const voicePreviewRef = useRef<HTMLAudioElement | null>(null);
+	const [playingVoicePreview, setPlayingVoicePreview] = useState<string | null>(
+		null,
+	);
 
 	const finalAvatarId =
 		selectedAvatar === "CUSTOM" ? customAvatarId.trim() : selectedAvatar;
@@ -95,6 +100,39 @@ export function SessionQuickStartCard({
 	const isContextValid = hasContextId && kbIdValid;
 	const isStartDisabled = isConnecting || !isAvatarValid || !isContextValid;
 	const canStartTextChat = Boolean(onStartWithoutAvatar) && !isConnecting;
+	const selectedVoiceOption = voiceOptions.find(
+		(option) => option.value === selectedVoiceId,
+	);
+	const selectedVoicePreviewUrl = selectedVoiceOption?.previewUrl;
+	const isVoicePreviewPlaying =
+		Boolean(selectedVoicePreviewUrl) && playingVoicePreview === selectedVoiceId;
+
+	const stopVoicePreview = () => {
+		voicePreviewRef.current?.pause();
+		voicePreviewRef.current = null;
+		setPlayingVoicePreview(null);
+	};
+
+	const toggleVoicePreview = async () => {
+		if (!selectedVoiceId || !selectedVoicePreviewUrl) return;
+
+		if (isVoicePreviewPlaying) {
+			stopVoicePreview();
+			return;
+		}
+
+		stopVoicePreview();
+		const audio = new Audio(selectedVoicePreviewUrl);
+		voicePreviewRef.current = audio;
+		audio.onended = () => setPlayingVoicePreview(null);
+		audio.onerror = () => setPlayingVoicePreview(null);
+		setPlayingVoicePreview(selectedVoiceId);
+		try {
+			await audio.play();
+		} catch {
+			setPlayingVoicePreview(null);
+		}
+	};
 
 	const triggerStart = () => {
 		onStartSession({
@@ -202,50 +240,77 @@ export function SessionQuickStartCard({
 									Optional
 								</span>
 							</label>
-							<Select
-								value={selectedVoiceId || "__DEFAULT__"}
-								onValueChange={(value) => {
-									onSelectVoice?.(value === "__DEFAULT__" ? "" : value);
-								}}
-							>
-								<SelectTrigger
-									id={voiceSelectId}
-									className="bg-popover/90 border-border text-popover-foreground hover:bg-popover focus:ring-2 focus:ring-ring/50"
+							<div className="flex gap-2">
+								<Select
+									value={selectedVoiceId || "__DEFAULT__"}
+									onValueChange={(value) => {
+										stopVoicePreview();
+										onSelectVoice?.(value === "__DEFAULT__" ? "" : value);
+									}}
 								>
-									<SelectValue placeholder="Use default voice" />
-								</SelectTrigger>
-								<SelectContent
-									align="start"
-									avoidCollisions={false}
-									className="z-50 bg-popover/95 text-popover-foreground border border-border shadow-xl backdrop-blur"
-									position="popper"
-									side="bottom"
-									sideOffset={4}
-								>
-									<SelectItem
-										className="cursor-pointer text-foreground focus:bg-accent data-[highlighted]:bg-accent"
-										value="__DEFAULT__"
+									<SelectTrigger
+										id={voiceSelectId}
+										className="bg-popover/90 border-border text-popover-foreground hover:bg-popover focus:ring-2 focus:ring-ring/50"
 									>
-										Use avatar default voice
-									</SelectItem>
-									{voiceOptions.map((option) => (
+										<SelectValue placeholder="Use default voice" />
+									</SelectTrigger>
+									<SelectContent
+										align="start"
+										avoidCollisions={false}
+										className="z-50 bg-popover/95 text-popover-foreground border border-border shadow-xl backdrop-blur"
+										position="popper"
+										side="bottom"
+										sideOffset={4}
+									>
 										<SelectItem
-											key={option.value}
-											className="cursor-pointer text-foreground focus:bg-accent data-[highlighted]:bg-accent data-[state=checked]:bg-accent"
-											value={option.value}
+											className="cursor-pointer text-foreground focus:bg-accent data-[highlighted]:bg-accent"
+											value="__DEFAULT__"
 										>
-											{option.label}
+											Use avatar default voice
 										</SelectItem>
-									))}
-									{voiceOptions.length === 0 && (
-										<div className="px-3 py-2 text-xs text-muted-foreground">
-											{isLoadingVoiceOptions
-												? "Loading LiveAvatar voices..."
-												: "No LiveAvatar voices returned"}
-										</div>
+										{voiceOptions.map((option) => (
+											<SelectItem
+												key={option.value}
+												className="cursor-pointer text-foreground focus:bg-accent data-[highlighted]:bg-accent data-[state=checked]:bg-accent"
+												value={option.value}
+											>
+												{option.label}
+											</SelectItem>
+										))}
+										{voiceOptions.length === 0 && (
+											<div className="px-3 py-2 text-xs text-muted-foreground">
+												{isLoadingVoiceOptions
+													? "Loading LiveAvatar voices..."
+													: "No LiveAvatar voices returned"}
+											</div>
+										)}
+									</SelectContent>
+								</Select>
+								<Button
+									aria-label={
+										isVoicePreviewPlaying
+											? "Pause voice preview"
+											: "Play voice preview"
+									}
+									className="h-10 w-10 shrink-0 border-border bg-background/70 p-0 text-foreground hover:bg-muted"
+									disabled={!selectedVoicePreviewUrl}
+									size="icon"
+									type="button"
+									variant="outline"
+									onClick={toggleVoicePreview}
+								>
+									{isVoicePreviewPlaying ? (
+										<Pause className="h-4 w-4" aria-hidden="true" />
+									) : (
+										<Play className="h-4 w-4" aria-hidden="true" />
 									)}
-								</SelectContent>
-							</Select>
+								</Button>
+							</div>
+							{selectedVoiceId && !selectedVoicePreviewUrl ? (
+								<div className="text-xs text-muted-foreground">
+									No preview audio returned for this voice.
+								</div>
+							) : null}
 						</div>
 						<div className="mt-3 flex flex-col gap-2">
 							<label

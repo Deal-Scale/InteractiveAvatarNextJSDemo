@@ -1,15 +1,26 @@
 "use client";
 
 import { Eye, Star, StarOff, X } from "lucide-react";
-import React from "react";
+import {
+	Tooltip,
+	TooltipContent,
+	TooltipProvider,
+	TooltipTrigger,
+} from "@/components/ui/tooltip";
+import type { AgentConfig } from "@/lib/schemas/agent";
 
-export type Agent = {
+export type Agent = Partial<AgentConfig> & {
 	id: string;
 	name: string;
 	avatarUrl?: string;
 	role?: string;
 	description?: string;
 	tags?: string[];
+	abilities?: string[];
+	modalities?: Array<"video" | "chat" | "voice">;
+	sessionType?: "text" | "voice" | "video" | "all";
+	interactionModes?: Array<"text" | "voice" | "video">;
+	promptStarter?: string;
 	isOwnedByUser?: boolean;
 };
 
@@ -19,13 +30,32 @@ export default function AgentCard(props: {
 	onFavorite?: (id: string, next: boolean) => void;
 	onDelete?: (id: string) => void;
 	isFavorite?: boolean;
+	visibleAbilityCount?: number;
 }) {
-	const { agent, onOpen, onFavorite, onDelete, isFavorite } = props;
-	const { id, name, avatarUrl, role, isOwnedByUser } = agent;
+	const {
+		agent,
+		onOpen,
+		onFavorite,
+		onDelete,
+		isFavorite,
+		visibleAbilityCount = 3,
+	} = props;
+	const {
+		id,
+		name,
+		avatarUrl,
+		role,
+		description,
+		abilities = [],
+		modalities = [],
+		promptStarter,
+		isOwnedByUser,
+	} = agent;
+	const visibleAbilities = abilities.slice(0, visibleAbilityCount);
 
 	return (
 		<div
-			className="group relative flex flex-col overflow-hidden rounded-md border border-border bg-background"
+			className="group relative flex h-full min-h-0 flex-col overflow-hidden rounded-md border border-border bg-background"
 			title={name}
 		>
 			{/* Actions */}
@@ -77,12 +107,12 @@ export default function AgentCard(props: {
 			{/* Clickable content */}
 			<button
 				aria-label={`Open ${name}`}
-				className="text-left"
+				className="flex h-full min-h-0 flex-col text-left"
 				onClick={() => onOpen?.(agent)}
 				type="button"
 			>
 				{/* Media */}
-				<div className="flex aspect-video items-center justify-center bg-muted/40">
+				<div className="flex h-14 shrink-0 items-center justify-center bg-muted/40 sm:h-16">
 					{avatarUrl ? (
 						<img
 							alt={name}
@@ -97,17 +127,79 @@ export default function AgentCard(props: {
 				</div>
 
 				{/* Footer */}
-				<div className="flex items-center gap-1 px-2 py-1 text-xs">
-					<span className="truncate font-medium" title={name}>
-						{name}
-					</span>
-					{role && (
-						<span
-							className="ml-auto truncate text-muted-foreground"
-							title={role}
-						>
-							{role}
+				<div className="min-h-0 flex-1 space-y-1 px-2 py-2 text-xs">
+					<div className="flex items-center gap-1">
+						<span className="truncate font-medium" title={name}>
+							{name}
 						</span>
+						{role && (
+							<span
+								className="ml-auto truncate text-muted-foreground"
+								title={role}
+							>
+								{role}
+							</span>
+						)}
+					</div>
+					{description && (
+						<p className="line-clamp-1 text-[0.7rem] leading-snug text-muted-foreground">
+							{description}
+						</p>
+					)}
+					{abilities.length > 0 && (
+						<TooltipProvider delayDuration={200}>
+							<Tooltip>
+								<TooltipTrigger asChild>
+									<div className="flex flex-wrap gap-1 overflow-visible">
+										{visibleAbilities.map((ability) => (
+											<span
+												key={ability}
+												className="max-w-full truncate rounded border border-violet-400/30 bg-violet-500/10 px-1.5 py-0.5 text-[0.62rem] leading-tight text-violet-700 dark:text-violet-300"
+											>
+												{ability}
+											</span>
+										))}
+									</div>
+								</TooltipTrigger>
+								<TooltipContent
+									side="right"
+									align="start"
+									className="z-[10000] max-w-64 text-xs"
+								>
+									<div className="font-medium">MCP abilities</div>
+									<div className="mt-1 flex flex-wrap gap-1">
+										{abilities.map((ability) => (
+											<span
+												key={ability}
+												className="rounded border border-border bg-muted px-1.5 py-0.5"
+											>
+												{ability}
+											</span>
+										))}
+									</div>
+								</TooltipContent>
+							</Tooltip>
+						</TooltipProvider>
+					)}
+					{modalities.length > 0 && (
+						<div className="flex flex-wrap gap-1">
+							{modalities.map((modality) => (
+								<span
+									key={modality}
+									className="truncate rounded border border-emerald-400/30 bg-emerald-500/10 px-1.5 py-0.5 text-[0.62rem] uppercase leading-tight text-emerald-700 dark:text-emerald-300"
+								>
+									{modality}
+								</span>
+							))}
+						</div>
+					)}
+					{promptStarter && (
+						<div
+							className="truncate rounded bg-muted px-1.5 py-1 text-[0.68rem] text-muted-foreground"
+							title={promptStarter}
+						>
+							{promptStarter}
+						</div>
 					)}
 				</div>
 			</button>

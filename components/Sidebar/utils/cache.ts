@@ -1,6 +1,6 @@
 import type { ConversationGroup } from "../types";
 
-const CACHE_KEY = "conversations.cache.v1";
+const CACHE_KEY = "conversations.cache.v2";
 const CACHE_TTL_MS = 1000 * 60 * 5; // 5 minutes
 
 export function loadFromCache(): ConversationGroup[] | null {
@@ -116,6 +116,25 @@ export async function fetchConversations(): Promise<ConversationGroup[]> {
 					lastMessage:
 						"All the development environments are now configured consistently.",
 					timestamp: Date.now() - 15 * 24 * 60 * 60 * 1000,
+				},
+			],
+		},
+		{
+			period: "More than a month ago",
+			conversations: [
+				{
+					id: "o1",
+					title: "Launch retrospective",
+					lastMessage:
+						"We captured the follow-up actions and owners from the first launch review.",
+					timestamp: Date.now() - 45 * 24 * 60 * 60 * 1000,
+				},
+				{
+					id: "o2",
+					title: "Legacy integration notes",
+					lastMessage:
+						"The older webhook flow still needs a migration checklist before removal.",
+					timestamp: Date.now() - 68 * 24 * 60 * 60 * 1000,
 				},
 			],
 		},

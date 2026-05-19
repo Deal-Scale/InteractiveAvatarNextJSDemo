@@ -1,6 +1,7 @@
 "use client";
 
-import React, { createContext, useContext } from "react";
+import type React from "react";
+import { createContext, useContext } from "react";
 
 import { usePlacementStore } from "@/lib/stores/placement";
 
@@ -122,9 +123,17 @@ export function SidebarGroup({ children }: { children: React.ReactNode }) {
 	return <div className="px-2 py-2">{children}</div>;
 }
 
-export function SidebarGroupLabel({ children }: { children: React.ReactNode }) {
+export function SidebarGroupLabel({
+	children,
+	className = "",
+}: {
+	children: React.ReactNode;
+	className?: string;
+}) {
 	return (
-		<span className="block px-2 pb-1 text-xs uppercase tracking-wide text-muted-foreground">
+		<span
+			className={`inline-flex items-center rounded-md border border-border/70 bg-muted/45 px-2 py-1 text-xs font-semibold uppercase tracking-wide text-muted-foreground ${className}`}
+		>
 			{children}
 		</span>
 	);

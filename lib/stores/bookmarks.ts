@@ -1,8 +1,12 @@
 import { create } from "zustand";
-import { persist, createJSONStorage } from "zustand/middleware";
+import { createJSONStorage, persist } from "zustand/middleware";
 
-export type BookmarkFolder = { id: string; name: string };
-export type BookmarkMeta = { folderId?: string; tags?: string[] };
+export type BookmarkFolder = { id: string; name: string; parentId?: string };
+export type BookmarkMeta = {
+	folderId?: string;
+	tags?: string[];
+	title?: string;
+};
 
 export type BookmarkState = {
 	bookmarkedIds: Set<string>;
@@ -17,6 +21,7 @@ export type BookmarkState = {
 	clearBookmarkMeta: (id: string) => void;
 	upsertFolder: (name: string) => string; // returns id
 	renameFolder: (id: string, name: string) => void;
+	moveFolder: (id: string, parentId?: string) => void;
 	deleteFolder: (id: string) => void;
 	reset: () => void;
 };
@@ -76,16 +81,60 @@ export const useBookmarkStore = create<BookmarkState>()(
 				set((state) => ({
 					folders: state.folders.map((f) => (f.id === id ? { ...f, name } : f)),
 				})),
+			moveFolder: (id, parentId) =>
+				set((state) => {
+					const descendantIds = new Set<string>();
+					const collectDescendants = (folderId: string) => {
+						for (const folder of state.folders) {
+							if (folder.parentId === folderId) {
+								descendantIds.add(folder.id);
+								collectDescendants(folder.id);
+							}
+						}
+					};
+
+					collectDescendants(id);
+					const nextParentId =
+						parentId && parentId !== id && !descendantIds.has(parentId)
+							? parentId
+							: undefined;
+
+					return {
+						folders: state.folders.map((f) =>
+							f.id === id ? { ...f, parentId: nextParentId } : f,
+						),
+					};
+				}),
 			deleteFolder: (id) =>
-				set((state) => ({
-					folders: state.folders.filter((f) => f.id !== id),
-					meta: Object.fromEntries(
-						Object.entries(state.meta).map(([k, v]) => [
-							k,
-							{ ...v, folderId: v.folderId === id ? undefined : v.folderId },
-						]),
-					),
-				})),
+				set((state) => {
+					const deletedIds = new Set<string>([id]);
+					const collectDescendants = (folderId: string) => {
+						for (const folder of state.folders) {
+							if (folder.parentId === folderId && !deletedIds.has(folder.id)) {
+								deletedIds.add(folder.id);
+								collectDescendants(folder.id);
+							}
+						}
+					};
+
+					collectDescendants(id);
+
+					return {
+						folders: state.folders.filter((f) => !deletedIds.has(f.id)),
+						meta: Object.fromEntries(
+							Object.entries(state.meta).map(([k, v]) => [
+								k,
+								{
+									...v,
+									folderId:
+										v.folderId && deletedIds.has(v.folderId)
+											? undefined
+											: v.folderId,
+								},
+							]),
+						),
+					};
+				}),
 			reset: () => set(initialState),
 		}),
 		{

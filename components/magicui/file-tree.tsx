@@ -206,6 +206,7 @@ interface FolderComponentProps
 type FolderProps = {
 	expandedItems?: string[];
 	element: string;
+	action?: React.ReactNode;
 	isSelectable?: boolean;
 	isSelect?: boolean;
 	value: string;
@@ -219,6 +220,7 @@ const Folder = forwardRef<
 		{
 			className,
 			element,
+			action,
 			value,
 			isSelectable = true,
 			isSelect,
@@ -243,24 +245,27 @@ const Folder = forwardRef<
 				value={value}
 				className="relative h-full overflow-hidden"
 			>
-				<AccordionPrimitive.Trigger
-					className={cn(
-						`flex w-full min-w-0 items-center gap-1 rounded-md text-sm`,
-						className,
-						{
-							"bg-muted rounded-md": isSelect && isSelectable,
-							"cursor-pointer": isSelectable,
-							"cursor-not-allowed opacity-50": !isSelectable,
-						},
-					)}
-					disabled={!isSelectable}
-					onClick={() => handleExpand(value)}
-				>
-					{expandedItems?.includes(value)
-						? (openIcon ?? <FolderOpenIcon className="size-4" />)
-						: (closeIcon ?? <FolderIcon className="size-4" />)}
-					<span className="min-w-0 flex-1 truncate">{element}</span>
-				</AccordionPrimitive.Trigger>
+				<div className="flex w-full min-w-0 items-center gap-1">
+					<AccordionPrimitive.Trigger
+						className={cn(
+							`flex min-w-0 flex-1 items-center gap-1 rounded-md text-sm`,
+							className,
+							{
+								"bg-muted rounded-md": isSelect && isSelectable,
+								"cursor-pointer": isSelectable,
+								"cursor-not-allowed opacity-50": !isSelectable,
+							},
+						)}
+						disabled={!isSelectable}
+						onClick={() => handleExpand(value)}
+					>
+						{expandedItems?.includes(value)
+							? (openIcon ?? <FolderOpenIcon className="size-4" />)
+							: (closeIcon ?? <FolderIcon className="size-4" />)}
+						<span className="min-w-0 flex-1 truncate">{element}</span>
+					</AccordionPrimitive.Trigger>
+					{action}
+				</div>
 				<AccordionPrimitive.Content className="relative h-full overflow-hidden text-sm data-[state=closed]:animate-accordion-up data-[state=open]:animate-accordion-down">
 					{element && indicator && <TreeIndicator aria-hidden="true" />}
 					<AccordionPrimitive.Root

@@ -1,18 +1,21 @@
 "use client";
 
-import { ChevronRight, Plus } from "lucide-react";
+import {
+	ChevronLeft,
+	ChevronRight,
+	LayoutGrid,
+	List,
+	Plus,
+} from "lucide-react";
 import React, { useEffect, useMemo, useRef, useState } from "react";
 
-import { SidebarGroup, SidebarGroupLabel } from "@/components/ui/sidebar";
-import { Button } from "@/components/ui/button";
-import { useAssetsStore } from "@/lib/stores/assets";
-import { useToast } from "@/components/ui/toaster";
 import AssetCard, { type Asset } from "@/components/Sidebar/assets/AssetCard";
-import UploadsList from "@/components/Sidebar/assets/UploadsList";
 import PreviewDialog from "@/components/Sidebar/assets/PreviewDialog";
-import type { GridFetcher, GridResponse } from "@/types/component-grid";
-import ComponentGrid from "@/components/ui/grid/components/ComponentGrid";
-import type { GridItemRendererProps } from "@/components/ui/grid/types";
+import UploadsList from "@/components/Sidebar/assets/UploadsList";
+import { Button } from "@/components/ui/button";
+import { SidebarGroup, SidebarGroupLabel } from "@/components/ui/sidebar";
+import { useToast } from "@/components/ui/toaster";
+import { useAssetsStore } from "@/lib/stores/assets";
 
 export default function AssetsSection(props: {
 	assets: {
@@ -52,6 +55,10 @@ export default function AssetsSection(props: {
 	const { publish } = useToast();
 	const notifiedErrors = useRef<Set<string>>(new Set());
 	const [previewId, setPreviewId] = useState<string | null>(null);
+	const [search, setSearch] = useState("");
+	const [selectedCategory, setSelectedCategory] = useState("all");
+	const [layout, setLayout] = useState<"comfortable" | "dense">("dense");
+	const [page, setPage] = useState(1);
 
 	const mergedAssets = useMemo(() => {
 		const seen = new Set<string>();
@@ -105,49 +112,44 @@ export default function AssetsSection(props: {
 		return Array.from(set);
 	}, [mergedAssets]);
 
-	// Local fetcher with search across name, mimeType, and extension; category filter matches primary mime or extension
-	const fetchAssets: GridFetcher<Asset> = async ({
-		page,
-		pageSize,
-		search,
-		categories: cats,
+	const getAssetExt = (a: {
+		name: string;
+		url?: string;
+		thumbnailUrl?: string;
 	}) => {
-		const q = (search || "").trim().toLowerCase();
-		const getExt = (a: {
-			name: string;
-			url?: string;
-			thumbnailUrl?: string;
-		}) => {
-			const src = a.url || a.thumbnailUrl || a.name;
-			const m = /(\.([a-z0-9]+)(?:$|\?))/i.exec(src);
-			return (m?.[2] || "").toLowerCase();
-		};
-		const primaryType = (a: { mimeType?: string }) =>
-			a.mimeType && a.mimeType.includes("/") ? a.mimeType.split("/")[0] : "";
+		const src = a.url || a.thumbnailUrl || a.name;
+		const m = /(\.([a-z0-9]+)(?:$|\?))/i.exec(src);
+		return (m?.[2] || "").toLowerCase();
+	};
 
-		const filtered = mergedAssets.filter((a) => {
+	const getPrimaryType = (a: { mimeType?: string }) =>
+		a.mimeType && a.mimeType.includes("/") ? a.mimeType.split("/")[0] : "";
+
+	const filteredAssets = useMemo(() => {
+		const q = search.trim().toLowerCase();
+		return mergedAssets.filter((a) => {
 			const nameHit = !q || a.name.toLowerCase().includes(q);
 			const mimeHit = !q || (a.mimeType || "").toLowerCase().includes(q);
 			const extHit =
-				!q || getExt(a).includes(q.replace(/^ext:/, "").replace(/^\./, ""));
+				!q ||
+				getAssetExt(a).includes(q.replace(/^ext:/, "").replace(/^\./, ""));
 			const matchesSearch = nameHit || mimeHit || extHit;
-			const cat = primaryType(a) || getExt(a);
-			const matchesCats =
-				!cats || cats.length === 0 || (cat && cats.includes(cat));
-			return matchesSearch && matchesCats;
+			const cat = getPrimaryType(a) || getAssetExt(a);
+			const matchesCategory =
+				selectedCategory === "all" || cat === selectedCategory;
+			return matchesSearch && matchesCategory;
 		});
+	}, [mergedAssets, search, selectedCategory]);
 
-		const start = (page - 1) * pageSize;
-		const end = start + pageSize;
-		const items = filtered.slice(start, end);
-		const resp: GridResponse<(typeof items)[number]> = {
-			items,
-			total: filtered.length,
-			page,
-			pageSize,
-		};
-		return new Promise((resolve) => setTimeout(() => resolve(resp), 50));
-	};
+	const pageSize = layout === "dense" ? 8 : 4;
+	const pageCount = Math.max(1, Math.ceil(filteredAssets.length / pageSize));
+	const safePage = Math.min(page, pageCount);
+	const pagedAssets = useMemo(() => {
+		const start = (safePage - 1) * pageSize;
+		return filteredAssets.slice(start, start + pageSize);
+	}, [filteredAssets, pageSize, safePage]);
+
+	const resetPage = () => setPage(1);
 
 	// Surface upload errors as toasts (deduplicated per temp upload id)
 	useEffect(() => {
@@ -180,7 +182,9 @@ export default function AssetsSection(props: {
 				type="button"
 				onClick={() => setCollapsedAssets((v) => !v)}
 			>
-				<SidebarGroupLabel>Assets</SidebarGroupLabel>
+				<SidebarGroupLabel className="border-cyan-400/35 bg-cyan-500/10 text-cyan-700 dark:text-cyan-300">
+					Assets
+				</SidebarGroupLabel>
 				<ChevronRight
 					className={`size-3 transition-transform ${collapsedAssets ? "rotate-0" : "rotate-90"}`}
 				/>
@@ -200,6 +204,30 @@ export default function AssetsSection(props: {
 							<Plus className="mr-1 size-3" />
 							Add New
 						</Button>
+						<div className="ml-auto flex rounded-md border border-border bg-background p-0.5">
+							<button
+								type="button"
+								aria-label="Comfortable asset layout"
+								className={`rounded px-1.5 py-1 text-xs ${layout === "comfortable" ? "bg-muted text-foreground" : "text-muted-foreground"}`}
+								onClick={() => {
+									setLayout("comfortable");
+									resetPage();
+								}}
+							>
+								<List className="size-3.5" />
+							</button>
+							<button
+								type="button"
+								aria-label="Dense asset layout"
+								className={`rounded px-1.5 py-1 text-xs ${layout === "dense" ? "bg-muted text-foreground" : "text-muted-foreground"}`}
+								onClick={() => {
+									setLayout("dense");
+									resetPage();
+								}}
+							>
+								<LayoutGrid className="size-3.5" />
+							</button>
+						</div>
 						<input
 							ref={fileInputRef}
 							type="file"
@@ -219,23 +247,90 @@ export default function AssetsSection(props: {
 
 					{uploads.length > 0 && <UploadsList uploads={uploads as any} />}
 
-					<ComponentGrid<Asset>
-						fetcher={fetchAssets}
-						ItemComponent={({ item }: GridItemRendererProps<Asset>) => (
-							<AssetCard
-								asset={item}
-								onDelete={onDelete}
-								onAttach={onAttach}
-								onPreview={(id) => setPreviewId(id)}
-							/>
-						)}
-						categories={categories}
-						pageSize={12}
-						mode="infinite"
-						columns={2}
-						queryKeyBase={["sidebar", "assets"]}
-						className="[&_[role=grid]]:grid-cols-2 sm:[&_[role=grid]]:grid-cols-3"
-					/>
+					<div className="mb-2 space-y-2">
+						<input
+							aria-label="Search assets"
+							className="w-full rounded-md border border-border bg-background px-2 py-1.5 text-xs text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary"
+							placeholder="Search assets..."
+							value={search}
+							onChange={(event) => {
+								setSearch(event.target.value);
+								resetPage();
+							}}
+						/>
+						{categories.length > 0 ? (
+							<select
+								aria-label="Filter assets by type"
+								className="w-full rounded-md border border-border bg-background px-2 py-1.5 text-xs text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
+								value={selectedCategory}
+								onChange={(event) => {
+									setSelectedCategory(event.target.value);
+									resetPage();
+								}}
+							>
+								<option value="all">All types</option>
+								{categories.map((category) => (
+									<option key={category} value={category}>
+										{category}
+									</option>
+								))}
+							</select>
+						) : null}
+					</div>
+
+					{pagedAssets.length > 0 ? (
+						<div
+							className={
+								layout === "dense"
+									? "grid grid-cols-2 gap-2"
+									: "grid grid-cols-1 gap-2"
+							}
+						>
+							{pagedAssets.map((asset) => (
+								<div
+									key={asset.id}
+									className={
+										layout === "dense" ? "h-36 min-w-0" : "h-48 min-w-0"
+									}
+								>
+									<AssetCard
+										asset={asset}
+										onDelete={onDelete}
+										onAttach={onAttach}
+										onPreview={(id) => setPreviewId(id)}
+									/>
+								</div>
+							))}
+						</div>
+					) : (
+						<div className="rounded-md border border-dashed border-border px-2 py-4 text-center text-xs text-muted-foreground">
+							No assets found
+						</div>
+					)}
+
+					<div className="mt-2 flex items-center justify-between gap-2 text-xs text-muted-foreground">
+						<button
+							type="button"
+							className="inline-flex items-center gap-1 rounded-md border border-border bg-background px-2 py-1 hover:bg-muted disabled:cursor-not-allowed disabled:opacity-50"
+							disabled={safePage <= 1}
+							onClick={() => setPage((value) => Math.max(1, value - 1))}
+						>
+							<ChevronLeft className="size-3" />
+							Prev
+						</button>
+						<span>
+							Page {safePage} / {pageCount}
+						</span>
+						<button
+							type="button"
+							className="inline-flex items-center gap-1 rounded-md border border-border bg-background px-2 py-1 hover:bg-muted disabled:cursor-not-allowed disabled:opacity-50"
+							disabled={safePage >= pageCount}
+							onClick={() => setPage((value) => Math.min(pageCount, value + 1))}
+						>
+							Next
+							<ChevronRight className="size-3" />
+						</button>
+					</div>
 				</div>
 			)}
 

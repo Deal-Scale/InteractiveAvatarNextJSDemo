@@ -14,12 +14,8 @@ import type { ConfigModalTab } from "@/lib/stores/session";
 import { useSessionStore } from "@/lib/stores/session";
 import { useSettingsStore } from "@/lib/stores/settings";
 import { useThemeStore } from "@/lib/stores/theme";
-import { AgentSettingsTab } from "../modals/session/AgentSettingsTab";
 import { GlobalSettingsTab } from "../modals/session/GlobalSettingsTab";
 import { SessionConfigHeader } from "../modals/session/Header";
-import { useDynamicOptions } from "../modals/session/hooks";
-import { PublishAgentModal } from "../modals/session/PublishAgentModal";
-import { SessionTab } from "../modals/session/SessionTab";
 import { TabsHeader } from "../modals/session/Tabs";
 import { UserSettingsTab } from "../modals/session/UserSettingsTab";
 import {
@@ -54,13 +50,6 @@ export function SessionConfigModal({
 		useAgentStore();
 	const [config, setConfig] = useState<StartAvatarRequest>(initialConfig);
 	const [activeTab, setActiveTab] = useState<ConfigModalTab>(configModalTab);
-	const [isPublishOpen, setPublishOpen] = useState(false);
-	const {
-		avatarOptions,
-		voiceOptions,
-		mcpServerOptions,
-		knowledgeBaseOptions,
-	} = useDynamicOptions();
 
 	useEffect(() => {
 		setConfig(initialConfig);
@@ -132,6 +121,7 @@ export function SessionConfigModal({
 			id: "",
 			name: "",
 			avatarId: "",
+			sessionType: "all",
 		} as z.infer<typeof AgentConfigSchema>,
 		mode: "onChange",
 	});
@@ -183,19 +173,6 @@ export function SessionConfigModal({
 		}
 	};
 
-	const saveAgentSettings = (values: z.infer<typeof AgentConfigSchema>) => {
-		try {
-			if (typeof window !== "undefined") {
-				localStorage.setItem("agentSettings", JSON.stringify(values));
-			}
-			// Sync to dedicated agent store as current editable config
-			setAgent(values as any);
-			console.log("Agent settings saved:", values);
-		} catch (e) {
-			console.warn("Failed to persist agent settings", e);
-		}
-	};
-
 	// Load saved settings once (guarded) while declaring full deps for correctness
 	const didInitRef = useRef(false);
 	useEffect(() => {
@@ -236,15 +213,6 @@ export function SessionConfigModal({
 
 				{/* Tabs Content */}
 				<div className="min-w-0 flex-1 overflow-y-auto overflow-x-hidden p-4 md:p-6">
-					{activeTab === "session" && (
-						<SessionTab
-							config={config}
-							isConnecting={isConnecting}
-							onConfigChange={setConfig}
-							onStart={handleStartSession}
-						/>
-					)}
-
 					{activeTab === "user" && (
 						<UserSettingsTab
 							form={userForm as any}
@@ -261,33 +229,7 @@ export function SessionConfigModal({
 							onSubmit={saveGlobalSettings as any}
 						/>
 					)}
-
-					{activeTab === "agent" && (
-						<AgentSettingsTab
-							avatarOptions={avatarOptions}
-							form={agentForm as any}
-							knowledgeBaseOptions={knowledgeBaseOptions}
-							languagesOptions={languagesOptions}
-							mcpServerOptions={mcpServerOptions}
-							schema={AgentConfigSchema as any}
-							voiceOptions={voiceOptions}
-							onPublish={() => setPublishOpen(true)}
-							onSubmit={saveAgentSettings as any}
-						/>
-					)}
 				</div>
-				<PublishAgentModal
-					open={isPublishOpen}
-					onOpenChange={setPublishOpen}
-					onSubmit={(values) => {
-						try {
-							// Placeholder: integrate with your publish API or persistence
-							console.log("Publishing agent with public metadata:", values);
-						} finally {
-							setPublishOpen(false);
-						}
-					}}
-				/>
 			</DialogContent>
 		</Dialog>
 	);

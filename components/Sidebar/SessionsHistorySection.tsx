@@ -3,8 +3,8 @@
 import { ChevronRight } from "lucide-react";
 import { useMemo } from "react";
 
-import { useSessionsHistoryQuery } from "@/lib/services/streaming/query";
 import { SidebarGroup, SidebarGroupLabel } from "@/components/ui/sidebar";
+import { useSessionsHistoryQuery } from "@/lib/services/streaming/query";
 import { useSessionStore } from "@/lib/stores/session";
 
 export default function SessionsHistorySection(props: {
@@ -26,7 +26,9 @@ export default function SessionsHistorySection(props: {
 				onClick={() => setCollapsed((v) => !v)}
 				className="flex w-full items-center justify-between px-2 py-1 text-left rounded-md hover:bg-muted"
 			>
-				<SidebarGroupLabel>Sessions History</SidebarGroupLabel>
+				<SidebarGroupLabel className="border-slate-400/35 bg-slate-500/10 text-slate-700 dark:text-slate-300">
+					Sessions History
+				</SidebarGroupLabel>
 				<div className="flex items-center gap-2 text-xs text-muted-foreground">
 					{!isLoading && !isError ? <span>{total}</span> : null}
 					<ChevronRight

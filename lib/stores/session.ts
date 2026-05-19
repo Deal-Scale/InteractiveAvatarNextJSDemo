@@ -9,7 +9,9 @@ export type ChatMode = "voice" | "text";
 export type ChatExperience = "basic" | "advanced" | "avatar";
 export type ChatSettingsTab = "text" | "voice" | "avatar";
 
-export type ConfigModalTab = "session" | "global" | "user" | "agent";
+export type ConfigModalTab = "global" | "user";
+
+export type KnowledgeFolder = { id: string; name: string; parentId?: string };
 
 interface SessionState {
 	isConfigModalOpen: boolean;
@@ -66,20 +68,44 @@ interface SessionState {
 	setGlobalSettings: (s: AppGlobalSettings) => void;
 	agentSettings?: AgentConfig;
 	setAgentSettings: (s: AgentConfig) => void;
+
+	// Shared Knowledge Base States
+	kbFolders: KnowledgeFolder[];
+	setKbFolders: (
+		folders:
+			| KnowledgeFolder[]
+			| ((prev: KnowledgeFolder[]) => KnowledgeFolder[]),
+	) => void;
+	kbItemFolders: Record<string, string | undefined>;
+	setKbItemFolders: (
+		itemFolders:
+			| Record<string, string | undefined>
+			| ((
+					prev: Record<string, string | undefined>,
+			  ) => Record<string, string | undefined>),
+	) => void;
+	createdKnowledgeItems: Array<{ id: string; name: string }>;
+	setCreatedKnowledgeItems: (
+		items:
+			| Array<{ id: string; name: string }>
+			| ((
+					prev: Array<{ id: string; name: string }>,
+			  ) => Array<{ id: string; name: string }>),
+	) => void;
 }
 
 export const useSessionStore = create<SessionState>()(
 	persist(
 		(set) => ({
 			isConfigModalOpen: false,
-			openConfigModal: (tab = "session") =>
+			openConfigModal: (tab = "global") =>
 				set({
 					isConfigModalOpen: true,
 					configModalTab: tab,
 				}),
 			closeConfigModal: () => set({ isConfigModalOpen: false }),
 
-			configModalTab: "session",
+			configModalTab: "global",
 			setConfigModalTab: (tab) => set({ configModalTab: tab }),
 
 			isChatSettingsOpen: false,
@@ -160,6 +186,30 @@ export const useSessionStore = create<SessionState>()(
 			setGlobalSettings: (s) => set({ globalSettings: s }),
 			agentSettings: undefined,
 			setAgentSettings: (s) => set({ agentSettings: s }),
+
+			// Shared Knowledge Base States
+			kbFolders: [],
+			setKbFolders: (folders) =>
+				set((state) => ({
+					kbFolders:
+						typeof folders === "function" ? folders(state.kbFolders) : folders,
+				})),
+			kbItemFolders: {},
+			setKbItemFolders: (itemFolders) =>
+				set((state) => ({
+					kbItemFolders:
+						typeof itemFolders === "function"
+							? itemFolders(state.kbItemFolders)
+							: itemFolders,
+				})),
+			createdKnowledgeItems: [],
+			setCreatedKnowledgeItems: (items) =>
+				set((state) => ({
+					createdKnowledgeItems:
+						typeof items === "function"
+							? items(state.createdKnowledgeItems)
+							: items,
+				})),
 		}),
 		{
 			name: "session-store",
@@ -193,6 +243,9 @@ export const useSessionStore = create<SessionState>()(
 				agentSettings: state.agentSettings,
 				currentSessionId: state.currentSessionId,
 				configModalTab: state.configModalTab,
+				kbFolders: state.kbFolders,
+				kbItemFolders: state.kbItemFolders,
+				createdKnowledgeItems: state.createdKnowledgeItems,
 			}),
 		},
 	),

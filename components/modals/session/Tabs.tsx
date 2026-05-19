@@ -11,10 +11,8 @@ interface TabsHeaderProps {
 
 export function TabsHeader({ activeTab, setActiveTab }: TabsHeaderProps) {
 	const tabs: { key: TabKey; label: string }[] = [
-		{ key: "session", label: "Session" },
 		{ key: "global", label: "Global Settings" },
 		{ key: "user", label: "User Settings" },
-		{ key: "agent", label: "Agent" },
 	];
 
 	return (

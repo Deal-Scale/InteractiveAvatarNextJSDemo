@@ -8,13 +8,136 @@ import {
 	XCircle,
 } from "lucide-react";
 import type React from "react";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { SlashCommandPalette } from "@/components/AvatarSession/chat/SlashCommandPalette";
 import { defaultCommands } from "@/data/commands";
 import type { Command } from "@/types/commands";
 import { getTextareaAnchorRect } from "@/lib/utils/caret";
 import type { ComposerAsset } from "@/lib/stores/composer";
 import { useComposerStore } from "@/lib/stores/composer";
+import { useAssetsStore } from "@/lib/stores/assets";
+import { useAgentStore } from "@/lib/stores/agent";
+import { KB_CONNECTORS } from "@/components/KnowledgeBase/connectors";
+import { useSessionStore, type KnowledgeFolder } from "@/lib/stores/session";
+
+function buildKbCommands(
+	folders: KnowledgeFolder[],
+	itemFolders: Record<string, string | undefined>,
+	createdItems: Array<{ id: string; name: string }>,
+	onAddKb: () => void,
+): Command[] {
+	const rootItems: Command[] = [
+		{
+			id: "action-add-kb",
+			label: "+ Add Knowledge Base",
+			icon: "➕",
+			description: "Configure a new knowledge source",
+			action: onAddKb,
+		},
+	];
+
+	// Static categories and guides
+	const staticItems: Command[] = [
+		{
+			id: "kb-guides",
+			label: "Guides",
+			icon: "📁",
+			description: "Folder",
+			children: [
+				{
+					id: "kb-getting-started",
+					label: "Getting Started",
+					icon: "📄",
+					description: "Guide",
+					insertText: "[KB: Getting Started]",
+				},
+				{
+					id: "kb-integrations",
+					label: "Integrations",
+					icon: "📄",
+					description: "Guide",
+					insertText: "[KB: Integrations]",
+				},
+			],
+		},
+		{
+			id: "kb-faq",
+			label: "FAQ",
+			icon: "📁",
+			description: "Folder",
+			children: [
+				{
+					id: "kb-general",
+					label: "General FAQ",
+					icon: "📄",
+					description: "FAQ",
+					insertText: "[KB: General FAQ]",
+				},
+			],
+		},
+	];
+	rootItems.push(...staticItems);
+
+	// Map folder ID to list of command children
+	const childrenMap: Record<string, Command[]> = {};
+	for (const f of folders) {
+		childrenMap[f.id] = [];
+	}
+
+	// Add items to their folders or root
+	const rootUserItems: Command[] = [];
+	for (const item of createdItems) {
+		const folderId = itemFolders[item.id];
+		const cmd: Command = {
+			id: item.id,
+			label: item.name,
+			icon: "📄",
+			description: "Added Knowledge",
+			insertText: `[KB: ${item.name}]`,
+		};
+		if (folderId && childrenMap[folderId]) {
+			childrenMap[folderId].push(cmd);
+		} else {
+			rootUserItems.push(cmd);
+		}
+	}
+
+	// Add subfolders to their parent folders or root
+	const rootUserFolders: Command[] = [];
+	const folderCommandMap: Record<string, Command> = {};
+	for (const f of folders) {
+		folderCommandMap[f.id] = {
+			id: f.id,
+			label: f.name,
+			icon: "📁",
+			description: "Folder",
+			children: childrenMap[f.id],
+		};
+	}
+
+	for (const f of folders) {
+		const cmd = folderCommandMap[f.id];
+		if (f.parentId && folderCommandMap[f.parentId]) {
+			const parentCmd = folderCommandMap[f.parentId];
+			parentCmd.children = parentCmd.children || [];
+			parentCmd.children.push(cmd);
+		} else {
+			rootUserFolders.push(cmd);
+		}
+	}
+
+	if (rootUserFolders.length > 0 || rootUserItems.length > 0) {
+		rootItems.push({
+			id: "kb-added-root",
+			label: "Added Knowledge",
+			icon: "📁",
+			description: "Folder",
+			children: [...rootUserFolders, ...rootUserItems],
+		});
+	}
+
+	return rootItems;
+}
 
 import { PromptSuggestions } from "./PromptSuggestions";
 
@@ -75,6 +198,194 @@ export const ChatInput: React.FC<ChatInputProps> = ({
 	inputRef,
 }) => {
 	const addAssetAttachment = useComposerStore((s) => s.addAssetAttachment);
+	const storeAssets = useAssetsStore((s) => s.assets);
+	const {
+		agentSettings,
+		kbFolders,
+		kbItemFolders,
+		createdKnowledgeItems,
+		openChatSettings,
+	} = useSessionStore();
+
+	const agents = useMemo(() => {
+		const base = [
+			{
+				id: "agent-1",
+				name: "Sales Assistant",
+				role: "Revenue",
+				description:
+					"Qualifies leads, drafts outreach, and coordinates follow-up tasks through MCP actions.",
+				icon: "🤖",
+			},
+			{
+				id: "agent-2",
+				name: "Support Bot",
+				role: "Customer Success",
+				description:
+					"Answers product questions, searches knowledge bases, and escalates unresolved issues.",
+				icon: "💬",
+			},
+			{
+				id: "agent-3",
+				name: "Content Analyst",
+				role: "Research",
+				description:
+					"Reviews messages, extracts structured insights, and turns findings into dashboard-ready notes.",
+				icon: "📊",
+			},
+		];
+
+		if (agentSettings?.id) {
+			return [
+				{
+					id: agentSettings.id,
+					name: agentSettings.name || "Configured Agent",
+					role: "Configured",
+					description:
+						"Current saved agent configuration with the selected avatar, voice, knowledge base, and MCP settings.",
+					icon: "⚙️",
+				},
+				...base,
+			];
+		}
+		return base;
+	}, [agentSettings]);
+
+	const allCommands = useMemo(() => {
+		const kbCommands = buildKbCommands(
+			kbFolders,
+			kbItemFolders,
+			createdKnowledgeItems,
+			() => window.dispatchEvent(new CustomEvent("open-add-kb-modal")),
+		);
+
+		const agentCommands: Command[] = [
+			{
+				id: "action-create-agent",
+				label: "+ Create Agent",
+				icon: "➕",
+				description: "Configure a new agent",
+				action: () => openChatSettings("avatar"),
+			},
+			...agents.map((a) => ({
+				id: a.id,
+				label: a.name,
+				icon: a.icon || "🤖",
+				description: a.role || "Agent",
+				action: () => {
+					useAgentStore.getState().setAgent(a as any);
+				},
+				insertText: `@${a.name} `,
+			})),
+		];
+
+		const toolCommands: Command[] = [
+			{
+				id: "action-connect-tool",
+				label: "+ Connect Tool",
+				icon: "➕",
+				description: "Connect a new MCP tool",
+				action: () => {
+					window.dispatchEvent(new CustomEvent("open-connect-tool-modal"));
+				},
+			},
+			...KB_CONNECTORS.map((connector) => ({
+				id: `tool-${connector.key}`,
+				label: connector.name,
+				icon: "🛠️",
+				description: connector.description,
+				action: () => {
+					window.dispatchEvent(
+						new CustomEvent("open-connect-tool-modal", {
+							detail: { connectorKey: connector.key },
+						}),
+					);
+				},
+				insertText: `[Tool: ${connector.name}]`,
+			})),
+		];
+
+		const assetCommands: Command[] = [
+			{
+				id: "action-upload-asset",
+				label: "+ Upload Asset",
+				icon: "➕",
+				description: "Upload a file to assets",
+				action: () => {
+					const fileInput = document.querySelector(
+						'input[type="file"]',
+					) as HTMLInputElement;
+					fileInput?.click();
+				},
+			},
+			...storeAssets.map((asset) => ({
+				id: asset.id,
+				label: asset.name,
+				icon: asset.mimeType?.startsWith("image/") ? "🖼️" : "📄",
+				description: asset.mimeType || "File",
+				action: () => {
+					addAssetAttachment({
+						id: asset.id,
+						name: asset.name,
+						url: asset.url,
+						thumbnailUrl: asset.thumbnailUrl,
+						mimeType: asset.mimeType,
+					});
+				},
+				insertText: `[Asset: ${asset.name}]`,
+			})),
+		];
+
+		return [
+			{
+				id: "submenu-agents",
+				label: "Agents ▸",
+				icon: "🤖",
+				description: "Manage and select agents",
+				children: agentCommands,
+			},
+			{
+				id: "submenu-kb",
+				label: "Knowledge Base ▸",
+				icon: "📚",
+				description: "Browse knowledge items",
+				children: kbCommands,
+			},
+			{
+				id: "submenu-tools",
+				label: "Tools ▸",
+				icon: "🛠️",
+				description: "Connect and configure tools",
+				children: toolCommands,
+			},
+			{
+				id: "submenu-assets",
+				label: "Assets ▸",
+				icon: "📎",
+				description: "Upload and attach assets",
+				children: assetCommands,
+			},
+			...defaultCommands.map((cmd) => {
+				if (cmd.id === "start-voice") {
+					return { ...cmd, disabled: isVoiceChatActive };
+				}
+				if (cmd.id === "stop-voice") {
+					return { ...cmd, disabled: !isVoiceChatActive };
+				}
+				return cmd;
+			}),
+		];
+	}, [
+		kbFolders,
+		kbItemFolders,
+		createdKnowledgeItems,
+		openChatSettings,
+		agents,
+		storeAssets,
+		addAssetAttachment,
+		isVoiceChatActive,
+	]);
+
 	// Visual affordance for sidebar asset drag-over
 	const [assetDragCounter, setAssetDragCounter] = useState(0);
 	const isAssetDragging = assetDragCounter > 0;
@@ -476,7 +787,7 @@ export const ChatInput: React.FC<ChatInputProps> = ({
 							// Handle navigation when palette is open
 							if (slashOpen) {
 								e.preventDefault();
-								const rootFiltered = defaultCommands.filter((cmd) => {
+								const rootFiltered = allCommands.filter((cmd) => {
 									const q = slashQuery.toLowerCase();
 									if (!q) return true;
 									const pool = [cmd.label, ...(cmd.keywords || [])].map((s) =>
@@ -527,9 +838,11 @@ export const ChatInput: React.FC<ChatInputProps> = ({
 										return;
 									}
 									case "ArrowRight": {
-										if (usingSubmenu) return; // no deeper nesting
-										const item = currentItems[highlightedIndex];
-										if (item?.children) {
+										const activeIdx = usingSubmenu
+											? highlightedSubIndex
+											: highlightedIndex;
+										const item = currentItems[activeIdx];
+										if (item?.children && item.children.length > 0) {
 											setMenuStack((st) => [...st, item.children!]);
 											setHighlightedSubIndex(0);
 										}
@@ -548,6 +861,11 @@ export const ChatInput: React.FC<ChatInputProps> = ({
 											: highlightedIndex;
 										const item = currentItems[activeIndex];
 										if (!item) return;
+										if (item.disabled) return;
+										if (item.id === "back-button") {
+											item.action?.();
+											return;
+										}
 										if (item.children) {
 											setMenuStack((st) => [...st, item.children!]);
 											setHighlightedSubIndex(0);
@@ -601,7 +919,7 @@ export const ChatInput: React.FC<ChatInputProps> = ({
 					{slashOpen && textareaRef.current
 						? (() => {
 								const anchorRect = getTextareaAnchorRect(textareaRef.current!);
-								const rootFiltered = defaultCommands.filter((cmd) => {
+								const rootFiltered = allCommands.filter((cmd) => {
 									const q = slashQuery.toLowerCase();
 									if (!q) return true;
 									const pool = [cmd.label, ...(cmd.keywords || [])].map((s) =>
@@ -613,26 +931,46 @@ export const ChatInput: React.FC<ChatInputProps> = ({
 									menuStack.length > 0
 										? menuStack[menuStack.length - 1]
 										: undefined;
+								let displaySubmenuItems = submenuItems;
+								if (submenuItems && menuStack.length > 1) {
+									displaySubmenuItems = [
+										{
+											id: "back-button",
+											label: "↩ Back",
+											icon: "📁",
+											description: "Go to parent folder",
+											action: () => {
+												setMenuStack((st) => st.slice(0, -1));
+												setHighlightedSubIndex(0);
+											},
+										},
+										...submenuItems,
+									];
+								}
 								return (
 									<SlashCommandPalette
 										anchorRect={anchorRect}
 										items={rootFiltered}
-										submenuItems={submenuItems}
+										submenuItems={displaySubmenuItems}
 										highlightedIndex={Math.min(
 											highlightedIndex,
 											Math.max(0, rootFiltered.length - 1),
 										)}
 										highlightedSubIndex={
-											submenuItems
+											displaySubmenuItems
 												? Math.min(
 														highlightedSubIndex,
-														Math.max(0, submenuItems.length - 1),
+														Math.max(0, displaySubmenuItems.length - 1),
 													)
 												: 0
 										}
 										onHighlight={setHighlightedIndex}
 										onHighlightSub={setHighlightedSubIndex}
 										onSelect={(cmd) => {
+											if (cmd.id === "back-button") {
+												cmd.action?.();
+												return;
+											}
 											if (cmd.children) {
 												setMenuStack((st) => [...st, cmd.children!]);
 												setHighlightedSubIndex(0);

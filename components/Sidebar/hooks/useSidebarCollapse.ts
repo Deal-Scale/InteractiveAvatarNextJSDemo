@@ -9,6 +9,7 @@ export default function useSidebarCollapse() {
 	const [collapsedAgents, setCollapsedAgents] = useState<boolean>(true);
 	const [collapsedBookmarks, setCollapsedBookmarks] = useState<boolean>(true);
 	const [collapsedKnowledge, setCollapsedKnowledge] = useState<boolean>(true);
+	const [collapsedTools, setCollapsedTools] = useState<boolean>(true);
 	const [collapsedMessages, setCollapsedMessages] = useState<boolean>(false);
 	const [collapsedGroups, setCollapsedGroups] = useState<Set<string>>(
 		new Set(),
@@ -31,6 +32,7 @@ export default function useSidebarCollapse() {
 					agents?: boolean;
 					bookmarks?: boolean;
 					knowledge?: boolean;
+					tools?: boolean;
 					messages?: boolean;
 					groups?: string[];
 				};
@@ -43,6 +45,7 @@ export default function useSidebarCollapse() {
 					setCollapsedBookmarks(data.bookmarks);
 				if (typeof data.knowledge === "boolean")
 					setCollapsedKnowledge(data.knowledge);
+				if (typeof data.tools === "boolean") setCollapsedTools(data.tools);
 				if (typeof data.messages === "boolean")
 					setCollapsedMessages(data.messages);
 				if (Array.isArray(data.groups))
@@ -63,6 +66,7 @@ export default function useSidebarCollapse() {
 					agents: collapsedAgents,
 					bookmarks: collapsedBookmarks,
 					knowledge: collapsedKnowledge,
+					tools: collapsedTools,
 					messages: collapsedMessages,
 					groups: Array.from(collapsedGroups),
 				}),
@@ -74,6 +78,7 @@ export default function useSidebarCollapse() {
 		collapsedAgents,
 		collapsedBookmarks,
 		collapsedKnowledge,
+		collapsedTools,
 		collapsedMessages,
 		collapsedGroups,
 	]);
@@ -89,6 +94,8 @@ export default function useSidebarCollapse() {
 		setCollapsedBookmarks,
 		collapsedKnowledge,
 		setCollapsedKnowledge,
+		collapsedTools,
+		setCollapsedTools,
 		collapsedMessages,
 		setCollapsedMessages,
 		collapsedGroups,

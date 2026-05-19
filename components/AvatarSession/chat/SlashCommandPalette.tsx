@@ -31,6 +31,35 @@ export const SlashCommandPalette: React.FC<SlashCommandPaletteProps> = ({
 	onOpenSubmenu,
 	onBack,
 }) => {
+	const rootContainerRef = React.useRef<HTMLDivElement | null>(null);
+	const subContainerRef = React.useRef<HTMLDivElement | null>(null);
+
+	React.useEffect(() => {
+		if (!rootContainerRef.current) return;
+		const selectedEl = rootContainerRef.current.querySelector(
+			'[aria-selected="true"]',
+		);
+		if (selectedEl) {
+			selectedEl.scrollIntoView({
+				block: "nearest",
+				behavior: "auto",
+			});
+		}
+	}, [highlightedIndex]);
+
+	React.useEffect(() => {
+		if (!subContainerRef.current) return;
+		const selectedEl = subContainerRef.current.querySelector(
+			'[aria-selected="true"]',
+		);
+		if (selectedEl) {
+			selectedEl.scrollIntoView({
+				block: "nearest",
+				behavior: "auto",
+			});
+		}
+	}, [highlightedSubIndex, submenuItems]);
+
 	return (
 		<div
 			role="listbox"
@@ -49,6 +78,7 @@ export const SlashCommandPalette: React.FC<SlashCommandPaletteProps> = ({
 		>
 			{/* Root column */}
 			<div
+				ref={rootContainerRef}
 				className="w-64 max-h-72 overflow-auto p-1"
 				onMouseLeave={() => {
 					// When pointer leaves the root list, collapse submenu
@@ -67,11 +97,14 @@ export const SlashCommandPalette: React.FC<SlashCommandPaletteProps> = ({
 							aria-selected={idx === highlightedIndex}
 							className={cn(
 								"flex cursor-pointer items-center justify-between rounded-sm px-2 py-1.5 text-sm",
-								idx === highlightedIndex
-									? "bg-accent text-accent-foreground"
-									: "hover:bg-accent hover:text-accent-foreground",
+								item.disabled
+									? "opacity-40 cursor-not-allowed text-muted-foreground"
+									: idx === highlightedIndex
+										? "bg-accent text-accent-foreground"
+										: "hover:bg-accent hover:text-accent-foreground",
 							)}
 							onMouseEnter={() => {
+								if (item.disabled) return;
 								onHighlight(idx);
 								// Open submenu if present; otherwise close any existing submenu
 								if (item.children && item.children.length > 0) {
@@ -84,7 +117,9 @@ export const SlashCommandPalette: React.FC<SlashCommandPaletteProps> = ({
 								// prevent textarea blur
 								e.preventDefault();
 							}}
-							onClick={() => onSelect(item)}
+							onClick={() => {
+								if (!item.disabled) onSelect(item);
+							}}
 							title={[item.keywords?.join(", ") || "", item.description || ""]
 								.filter(Boolean)
 								.join(" · ")}
@@ -114,7 +149,10 @@ export const SlashCommandPalette: React.FC<SlashCommandPaletteProps> = ({
 
 			{/* Submenu column (optional) */}
 			{submenuItems && submenuItems.length > 0 ? (
-				<div className="w-64 max-h-72 overflow-auto border-l p-1">
+				<div
+					ref={subContainerRef}
+					className="w-64 max-h-72 overflow-auto border-l p-1"
+				>
 					{submenuItems.map((item, idx) => (
 						<div
 							key={item.id}
@@ -122,13 +160,20 @@ export const SlashCommandPalette: React.FC<SlashCommandPaletteProps> = ({
 							aria-selected={idx === highlightedSubIndex}
 							className={cn(
 								"flex cursor-pointer items-center justify-between rounded-sm px-2 py-1.5 text-sm",
-								idx === highlightedSubIndex
-									? "bg-accent text-accent-foreground"
-									: "hover:bg-accent hover:text-accent-foreground",
+								item.disabled
+									? "opacity-40 cursor-not-allowed text-muted-foreground"
+									: idx === highlightedSubIndex
+										? "bg-accent text-accent-foreground"
+										: "hover:bg-accent hover:text-accent-foreground",
 							)}
-							onMouseEnter={() => onHighlightSub?.(idx)}
+							onMouseEnter={() => {
+								if (item.disabled) return;
+								onHighlightSub?.(idx);
+							}}
 							onMouseDown={(e) => e.preventDefault()}
-							onClick={() => onSelect(item)}
+							onClick={() => {
+								if (!item.disabled) onSelect(item);
+							}}
 							title={[item.keywords?.join(", ") || "", item.description || ""]
 								.filter(Boolean)
 								.join(" · ")}

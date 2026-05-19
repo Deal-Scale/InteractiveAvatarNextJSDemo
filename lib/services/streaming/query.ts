@@ -20,7 +20,17 @@ export type ActiveSessionsResponse = {
 		session_id: string;
 		status: string; // new | connecting | connected
 		created_at: number;
+		updated_at?: number;
+		duration?: number;
+		source?: string;
+		mode?: string;
+		is_sandbox?: boolean;
+		credits_consumed?: number;
+		avatar_id?: string;
+		context_id?: string;
+		embed_id?: string;
 	}>;
+	source?: "liveavatar" | "mock";
 };
 
 export type SessionsHistoryResponse = {
