@@ -54,7 +54,7 @@ const Sidebar: React.FC<SidebarProps> = ({ onSelect, apps }) => {
 	const messages = useSessionStore((s) => s.messages);
 	const openConfigModal = useSessionStore((s) => s.openConfigModal);
 	const openChatSettings = useSessionStore((s) => s.openChatSettings);
-	const { currentAgent, updateAgent } = useAgentStore();
+	const { currentAgent, updateAgent, toggleStarredAgent } = useAgentStore();
 	const { globalSettings, setGlobalSettings, clearGlobalSettings } =
 		useSettingsStore();
 	const [starterScale, setStarterScale] = React.useState<number>(1);
@@ -182,21 +182,102 @@ const Sidebar: React.FC<SidebarProps> = ({ onSelect, apps }) => {
 			setKbModalToolsOpen(false);
 			setKbModalOpen(true);
 		};
+		const handleCloseAddKB = () => {
+			setKbModalToolsOpen(false);
+			setKbModalOpen(false);
+		};
+		const handleOpenBookmarkModal = () => {
+			openBookmarkModal(currentBookmarkId);
+		};
+		const handleCloseBookmarkModal = () => {
+			bookmark.close();
+		};
 		const handleOpenConnectTool = (e: Event) => {
 			const customEvent = e as CustomEvent;
 			setToolModalConnector(customEvent.detail?.connectorKey);
 			setToolModalOpen(true);
 		};
+		const handleCloseConnectTool = () => {
+			setToolModalConnector(undefined);
+			setToolModalOpen(false);
+		};
 		window.addEventListener("open-add-kb-modal", handleOpenAddKB);
+		window.addEventListener("tour-close-kb-modal", handleCloseAddKB);
+		window.addEventListener(
+			"tour-open-bookmark-modal",
+			handleOpenBookmarkModal,
+		);
+		window.addEventListener(
+			"tour-close-bookmark-modal",
+			handleCloseBookmarkModal,
+		);
 		window.addEventListener("open-connect-tool-modal", handleOpenConnectTool);
+		window.addEventListener("tour-close-tool-modal", handleCloseConnectTool);
 		return () => {
 			window.removeEventListener("open-add-kb-modal", handleOpenAddKB);
+			window.removeEventListener("tour-close-kb-modal", handleCloseAddKB);
+			window.removeEventListener(
+				"tour-open-bookmark-modal",
+				handleOpenBookmarkModal,
+			);
+			window.removeEventListener(
+				"tour-close-bookmark-modal",
+				handleCloseBookmarkModal,
+			);
 			window.removeEventListener(
 				"open-connect-tool-modal",
 				handleOpenConnectTool,
 			);
+			window.removeEventListener(
+				"tour-close-tool-modal",
+				handleCloseConnectTool,
+			);
 		};
-	}, []);
+	}, [bookmark.close, currentBookmarkId, openBookmarkModal]);
+
+	React.useEffect(() => {
+		const handleOpenTourSection = (event: Event) => {
+			const section = (event as CustomEvent).detail?.section as
+				| string
+				| undefined;
+
+			switch (section) {
+				case "active-sessions":
+					setCollapsedActiveSessions(() => false);
+					break;
+				case "agents":
+					collapse.setCollapsedAgents(false);
+					break;
+				case "assets":
+					collapse.setCollapsedAssets(false);
+					break;
+				case "bookmarks":
+					collapse.setCollapsedBookmarks(false);
+					break;
+				case "chats":
+					collapse.setCollapsedMessages(false);
+					break;
+				case "knowledge-base":
+					collapse.setCollapsedKnowledge(false);
+					break;
+				case "tools":
+					collapse.setCollapsedTools(false);
+					break;
+				case "session-history":
+					setCollapsedSessionsHistory(() => false);
+					break;
+				default:
+					break;
+			}
+		};
+
+		window.addEventListener("tour-open-sidebar-section", handleOpenTourSection);
+		return () =>
+			window.removeEventListener(
+				"tour-open-sidebar-section",
+				handleOpenTourSection,
+			);
+	}, [collapse]);
 
 	const testKB = useTestKBConnection();
 	const connectKB = useConnectKBSource({
@@ -242,14 +323,38 @@ const Sidebar: React.FC<SidebarProps> = ({ onSelect, apps }) => {
 			}
 		}
 
+		// Find items contained in these folders
+		const itemsToDelete = new Set<string>();
+		for (const [itemId, folderId] of Object.entries(kbItemFolders)) {
+			if (folderId && descendants.has(folderId)) {
+				itemsToDelete.add(itemId);
+			}
+		}
+
 		setKbFolders((prev) =>
 			prev.filter((folder) => !descendants.has(folder.id)),
 		);
+		setCreatedKnowledgeItems((prev) =>
+			prev.filter((item) => !itemsToDelete.has(item.id)),
+		);
 		setKbItemFolders((prev) => {
 			const next = { ...prev };
-			for (const [itemId, folderId] of Object.entries(next)) {
-				if (folderId && descendants.has(folderId)) next[itemId] = undefined;
+			for (const folderId of Array.from(descendants)) {
+				for (const [itemId, fId] of Object.entries(next)) {
+					if (fId === folderId) {
+						delete next[itemId];
+					}
+				}
 			}
+			return next;
+		});
+	}
+
+	function deleteKnowledgeItem(id: string) {
+		setCreatedKnowledgeItems((prev) => prev.filter((item) => item.id !== id));
+		setKbItemFolders((prev) => {
+			const next = { ...prev };
+			delete next[id];
 			return next;
 		});
 	}
@@ -305,7 +410,7 @@ const Sidebar: React.FC<SidebarProps> = ({ onSelect, apps }) => {
 
 	return (
 		<SidebarProvider>
-			<UISidebar className="bg-background text-foreground">
+			<UISidebar className="bg-background text-foreground" data-tour="sidebar">
 				<SidebarHeader>
 					<SidebarHeaderSection
 						query={conv.query}
@@ -343,6 +448,7 @@ const Sidebar: React.FC<SidebarProps> = ({ onSelect, apps }) => {
 					<div className="px-2">
 						<Button
 							className="mb-3 flex w-full items-center gap-2 group-data-[state=collapsed]/sidebar:justify-center bg-background text-foreground border border-border hover:bg-muted"
+							data-tour="new-chat"
 							variant="outline"
 							onClick={() => {
 								openChatSettings("text");
@@ -355,6 +461,7 @@ const Sidebar: React.FC<SidebarProps> = ({ onSelect, apps }) => {
 						</Button>
 						<Button
 							className="mb-3 flex w-full items-center gap-2 group-data-[state=collapsed]/sidebar:justify-center bg-background text-foreground border border-border hover:bg-muted"
+							data-tour="bookmark-current"
 							variant="outline"
 							onClick={() => bookmark.openBookmarkModal(currentBookmarkId)}
 						>
@@ -375,31 +482,33 @@ const Sidebar: React.FC<SidebarProps> = ({ onSelect, apps }) => {
 					)}
 
 					{/* Messages Section */}
-					{!conv.loading && conv.filteredGroups && (
-						<MessagesSection
-							archivedCount={conv.archivedList.length}
-							archivedIds={conv.archivedIds}
-							bookmarkedIds={bookmark.bookmarkedIds}
-							collapsedGroups={collapse.collapsedGroups}
-							collapsedMessages={collapse.collapsedMessages}
-							clearSelection={conv.clearSelection}
-							groups={conv.filteredGroups}
-							onSelect={onSelect}
-							openBookmarkModal={openBookmarkModal}
-							selectedIds={conv.selectedIds}
-							selectionMode={conv.selectionMode}
-							setCollapsedGroups={collapse.setCollapsedGroups}
-							setCollapsedMessages={collapse.setCollapsedMessages}
-							setSelectedIds={conv.setSelectedIds}
-							setSelectionMode={conv.setSelectionMode}
-							toggleSelect={conv.toggleSelect}
-							totalCount={totalCount}
-							visibleConversationIds={conv.visibleConversationIds}
-						/>
-					)}
+					<div data-tour="chats-section">
+						{!conv.loading && conv.filteredGroups && (
+							<MessagesSection
+								archivedCount={conv.archivedList.length}
+								archivedIds={conv.archivedIds}
+								bookmarkedIds={bookmark.bookmarkedIds}
+								collapsedGroups={collapse.collapsedGroups}
+								collapsedMessages={collapse.collapsedMessages}
+								clearSelection={conv.clearSelection}
+								groups={conv.filteredGroups}
+								onSelect={onSelect}
+								openBookmarkModal={openBookmarkModal}
+								selectedIds={conv.selectedIds}
+								selectionMode={conv.selectionMode}
+								setCollapsedGroups={collapse.setCollapsedGroups}
+								setCollapsedMessages={collapse.setCollapsedMessages}
+								setSelectedIds={conv.setSelectedIds}
+								setSelectionMode={conv.setSelectionMode}
+								toggleSelect={conv.toggleSelect}
+								totalCount={totalCount}
+								visibleConversationIds={conv.visibleConversationIds}
+							/>
+						)}
+					</div>
 
 					{/* Bookmarks (File Tree) */}
-					<div ref={bookmarksRef}>
+					<div ref={bookmarksRef} data-tour="bookmarks">
 						<BookmarksSection
 							bookmarkFolders={bookmark.bookmarkFolders}
 							bookmarkedIds={bookmark.bookmarkedIds}
@@ -418,83 +527,87 @@ const Sidebar: React.FC<SidebarProps> = ({ onSelect, apps }) => {
 					</div>
 
 					{/* Assets */}
-					<AssetsSection
-						assets={storeAssets as any}
-						assetsRef={assetsRef}
-						collapsedAssets={collapse.collapsedAssets}
-						onDelete={(id) => removeAsset(id)}
-						onAttach={(asset) =>
-							addAssetAttachment({
-								id: asset.id,
-								name: asset.name,
-								url: asset.url,
-								thumbnailUrl: asset.thumbnailUrl,
-								mimeType: (asset as any).mimeType,
-							})
-						}
-						setCollapsedAssets={collapse.setCollapsedAssets}
-					/>
+					<div data-tour="assets">
+						<AssetsSection
+							assets={storeAssets as any}
+							assetsRef={assetsRef}
+							collapsedAssets={collapse.collapsedAssets}
+							onDelete={(id) => removeAsset(id)}
+							onAttach={(asset) =>
+								addAssetAttachment({
+									id: asset.id,
+									name: asset.name,
+									url: asset.url,
+									thumbnailUrl: asset.thumbnailUrl,
+									mimeType: (asset as any).mimeType,
+								})
+							}
+							setCollapsedAssets={collapse.setCollapsedAssets}
+						/>
+					</div>
 
 					{/* Knowledge Base (File Tree) */}
-					<KnowledgebaseSection
-						collapsedKnowledge={collapse.collapsedKnowledge}
-						setCollapsedKnowledge={collapse.setCollapsedKnowledge}
-						tree={knowledgeTree as any}
-						folders={kbFolders}
-						itemFolders={kbItemFolders}
-						onCreateFolder={createKnowledgeFolder}
-						onMoveFolder={moveKnowledgeFolder}
-						onDeleteFolder={deleteKnowledgeFolder}
-						onMoveKnowledgeItem={(id, folderId) =>
-							setKbItemFolders((prev) => ({ ...prev, [id]: folderId }))
-						}
-						onOpenItem={(id) => {
-							// TODO: implement real navigation when KB is integrated
-							console.debug("Open KB item", id);
-						}}
-						onMoveItem={(id) => {
-							// TODO: implement real KB move modal/flow
-							console.debug("KB: move item", id);
-						}}
-						onOpenMarkdown={() => {
-							// Navigate to a markdown viewer route (replace with your implementation)
-							router.push("/knowledge/markdown");
-						}}
-						onStartApiSync={() => {
-							// Trigger OAuth flow for API sync (replace with your real auth)
-							console.debug("KB OAuth: begin auth flow");
-						}}
-						onOpenAddKB={() => {
-							setKbModalToolsOpen(false);
-							setKbModalOpen(true);
-						}}
-					/>
+					<div data-tour="knowledge-base">
+						<KnowledgebaseSection
+							collapsedKnowledge={collapse.collapsedKnowledge}
+							setCollapsedKnowledge={collapse.setCollapsedKnowledge}
+							tree={knowledgeTree as any}
+							folders={kbFolders}
+							itemFolders={kbItemFolders}
+							onCreateFolder={createKnowledgeFolder}
+							onMoveFolder={moveKnowledgeFolder}
+							onDeleteFolder={deleteKnowledgeFolder}
+							onDeleteKnowledgeItem={deleteKnowledgeItem}
+							onMoveKnowledgeItem={(id, folderId) =>
+								setKbItemFolders((prev) => ({ ...prev, [id]: folderId }))
+							}
+							onOpenItem={(id) => {
+								// TODO: implement real navigation when KB is integrated
+								console.debug("Open KB item", id);
+							}}
+							onMoveItem={(id) => {
+								// TODO: implement real KB move modal/flow
+								console.debug("KB: move item", id);
+							}}
+							onOpenMarkdown={() => {
+								// Navigate to a markdown viewer route (replace with your implementation)
+								router.push("/knowledge/markdown");
+							}}
+							onStartApiSync={() => {
+								// Trigger OAuth flow for API sync (replace with your real auth)
+								console.debug("KB OAuth: begin auth flow");
+							}}
+							onOpenAddKB={() => {
+								setKbModalToolsOpen(false);
+								setKbModalOpen(true);
+							}}
+						/>
+					</div>
 
 					{/* Tools */}
-					<ToolsSection
-						collapsedTools={collapse.collapsedTools}
-						setCollapsedTools={collapse.setCollapsedTools}
-						onOpenTools={(connectorKey) => {
-							setToolModalConnector(connectorKey);
-							setToolModalOpen(true);
-						}}
-					/>
+					<div data-tour="tools">
+						<ToolsSection
+							collapsedTools={collapse.collapsedTools}
+							setCollapsedTools={collapse.setCollapsedTools}
+							onOpenTools={(connectorKey) => {
+								setToolModalConnector(connectorKey);
+								setToolModalOpen(true);
+							}}
+						/>
+					</div>
 
 					{/* Agents */}
-					<AgentsSection
-						agents={agents as any}
-						collapsedAgents={collapse.collapsedAgents}
-						setCollapsedAgents={collapse.setCollapsedAgents}
-						onEdit={(a) => {
-							updateAgent(a);
-						}}
-					/>
-
-					{/* Streaming sections */}
-					<ActiveSessionsSection
-						collapsed={collapsedActiveSessions}
-						setCollapsed={setCollapsedActiveSessions}
-					/>
+					<div data-tour="agents">
+						<AgentsSection
+							agents={agents as any}
+							collapsedAgents={collapse.collapsedAgents}
+							setCollapsedAgents={collapse.setCollapsedAgents}
+							onFavorite={(id) => toggleStarredAgent(id)}
+							onEdit={(a) => {
+								updateAgent(a);
+							}}
+						/>
+					</div>
 
 					{/* Applications Starter */}
 					<ApplicationsStarter
@@ -504,10 +617,20 @@ const Sidebar: React.FC<SidebarProps> = ({ onSelect, apps }) => {
 						onOpenGlobalSettings={() => openConfigModal("global")}
 					/>
 
-					<SessionsHistorySection
-						collapsed={collapsedSessionsHistory}
-						setCollapsed={setCollapsedSessionsHistory}
-					/>
+					{/* Streaming sections */}
+					<div data-tour="active-sessions">
+						<ActiveSessionsSection
+							collapsed={collapsedActiveSessions}
+							setCollapsed={setCollapsedActiveSessions}
+						/>
+					</div>
+
+					<div data-tour="session-history">
+						<SessionsHistorySection
+							collapsed={collapsedSessionsHistory}
+							setCollapsed={setCollapsedSessionsHistory}
+						/>
+					</div>
 				</SidebarContent>
 			</UISidebar>
 

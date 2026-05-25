@@ -18,6 +18,13 @@ import {
 import { Input } from "@/components/ui/input";
 
 const PAGE_SIZE = 6;
+type ToolCategoryFilter = "all" | "oauth" | "apiKey";
+
+type ConnectedTool = {
+	id: string;
+	name: string;
+	connectedAt: number;
+};
 
 export default function ToolConnectionModal(props: {
 	open: boolean;
@@ -47,6 +54,7 @@ export default function ToolConnectionModal(props: {
 	} = props;
 	const [query, setQuery] = useState("");
 	const [page, setPage] = useState(1);
+	const [category, setCategory] = useState<ToolCategoryFilter>("all");
 	const [selectedConnector, setSelectedConnector] = useState<string | null>(
 		null,
 	);
@@ -54,18 +62,33 @@ export default function ToolConnectionModal(props: {
 	const [testing, setTesting] = useState(false);
 	const [connecting, setConnecting] = useState(false);
 	const [status, setStatus] = useState<string | null>(null);
+	const [connectedTools, setConnectedTools] = useState<
+		Record<string, ConnectedTool | undefined>
+	>({});
 
 	const filteredTools = useMemo(() => {
 		const needle = query.trim().toLowerCase();
-		if (!needle) return KB_CONNECTORS;
-
-		return KB_CONNECTORS.filter(
-			(connector) =>
+		return KB_CONNECTORS.filter((connector) => {
+			if (category !== "all" && connector.auth.type !== category) return false;
+			if (!needle) return true;
+			return (
 				connector.name.toLowerCase().includes(needle) ||
 				connector.description.toLowerCase().includes(needle) ||
-				connector.key.toLowerCase().includes(needle),
-		);
-	}, [query]);
+				connector.key.toLowerCase().includes(needle)
+			);
+		});
+	}, [category, query]);
+
+	const categoryFilters: Array<{ value: ToolCategoryFilter; label: string }> = [
+		{ value: "all", label: "All" },
+		{ value: "oauth", label: "OAuth" },
+		{ value: "apiKey", label: "API Key" },
+	];
+
+	function updateCategory(nextCategory: ToolCategoryFilter) {
+		setCategory(nextCategory);
+		setPage(1);
+	}
 	const pageCount = Math.max(1, Math.ceil(filteredTools.length / PAGE_SIZE));
 	const visibleTools = filteredTools.slice(
 		(page - 1) * PAGE_SIZE,
@@ -77,6 +100,9 @@ export default function ToolConnectionModal(props: {
 			null,
 		[selectedConnector],
 	);
+	const selectedConnection = selectedConnector
+		? connectedTools[selectedConnector]
+		: undefined;
 
 	useEffect(() => {
 		if (!open) return;
@@ -84,6 +110,7 @@ export default function ToolConnectionModal(props: {
 		setConfig({});
 		setStatus(null);
 		setQuery("");
+		setCategory("all");
 		setPage(1);
 	}, [initialConnectorKey, open]);
 
@@ -117,11 +144,29 @@ export default function ToolConnectionModal(props: {
 					id: `tool_${Date.now()}`,
 					name: selectedMeta?.name ?? "Connected tool",
 				}));
+			setConnectedTools((prev) => ({
+				...prev,
+				[selectedConnector]: {
+					id: result.id,
+					name: result.name,
+					connectedAt: Date.now(),
+				},
+			}));
 			setStatus(`Connected ${result.name}`);
-			onOpenChange(false);
 		} finally {
 			setConnecting(false);
 		}
+	}
+
+	function handleDisconnect() {
+		if (!selectedConnector || !selectedMeta) return;
+		setConnectedTools((prev) => {
+			const next = { ...prev };
+			delete next[selectedConnector];
+			return next;
+		});
+		setConfig({});
+		setStatus(`Disconnected ${selectedMeta.name}`);
 	}
 
 	async function handleOAuthStart(connector: KBConnector) {
@@ -146,17 +191,28 @@ export default function ToolConnectionModal(props: {
 					id: `tool_${Date.now()}`,
 					name: connector.name,
 				}));
+			setConnectedTools((prev) => ({
+				...prev,
+				[connector.key]: {
+					id: connected.id,
+					name: connected.name,
+					connectedAt: Date.now(),
+				},
+			}));
 			setStatus(`Connected ${connected.name}`);
-			onOpenChange(false);
 		} finally {
 			setConnecting(false);
 		}
 	}
 
 	return (
-		<Dialog open={open} onOpenChange={onOpenChange}>
-			<DialogContent className="w-[96vw] max-w-[96vw] bg-card text-foreground sm:max-w-2xl max-h-[86dvh]">
-				<DialogHeader>
+		<Dialog modal={false} open={open} onOpenChange={onOpenChange}>
+			<DialogContent
+				className="w-[96vw] max-w-[96vw] bg-card text-foreground sm:max-w-2xl max-h-[86dvh]"
+				data-tour="tool-connect-modal"
+				onInteractOutside={(event) => event.preventDefault()}
+			>
+				<DialogHeader className="pr-10">
 					<DialogTitle>Connect Tool</DialogTitle>
 					<DialogDescription>
 						Search, select, and configure an external tool connection.
@@ -177,37 +233,62 @@ export default function ToolConnectionModal(props: {
 						/>
 					</div>
 
-					<div className="grid gap-2 sm:grid-cols-2">
-						{visibleTools.map((connector) => (
-							<button
-								key={connector.key}
+					<div className="flex flex-wrap gap-2">
+						{categoryFilters.map((filter) => (
+							<Button
+								key={filter.value}
 								type="button"
-								className={`rounded-md border p-3 text-left hover:bg-accent ${
-									selectedConnector === connector.key
-										? "border-sky-400 bg-sky-500/10 ring-1 ring-sky-400"
-										: "border-input bg-background"
-								}`}
-								onClick={() => {
-									setSelectedConnector(connector.key);
-									setConfig({});
-									setStatus(null);
-								}}
+								variant={category === filter.value ? "default" : "outline"}
+								size="sm"
+								onClick={() => updateCategory(filter.value)}
 							>
-								<div className="flex items-start justify-between gap-2">
-									<div className="min-w-0">
-										<div className="truncate text-sm font-medium">
-											{connector.name}
+								{filter.label}
+							</Button>
+						))}
+					</div>
+
+					<div className="grid gap-2 sm:grid-cols-2">
+						{visibleTools.map((connector) => {
+							const connection = connectedTools[connector.key];
+
+							return (
+								<button
+									key={connector.key}
+									type="button"
+									className={`rounded-md border p-3 text-left hover:bg-accent ${
+										selectedConnector === connector.key
+											? "border-sky-400 bg-sky-500/10 ring-1 ring-sky-400"
+											: "border-input bg-background"
+									}`}
+									onClick={() => {
+										setSelectedConnector(connector.key);
+										setConfig({});
+										setStatus(null);
+									}}
+								>
+									<div className="flex items-start justify-between gap-2">
+										<div className="min-w-0">
+											<div className="truncate text-sm font-medium">
+												{connector.name}
+											</div>
+											<div className="line-clamp-2 text-xs text-muted-foreground">
+												{connector.description}
+											</div>
 										</div>
-										<div className="line-clamp-2 text-xs text-muted-foreground">
-											{connector.description}
+										<div className="flex shrink-0 flex-col items-end gap-1">
+											<span className="rounded border border-border bg-card px-1.5 py-0.5 text-[0.62rem] uppercase leading-none text-muted-foreground">
+												{connector.auth.type === "oauth" ? "OAuth" : "Key"}
+											</span>
+											{connection && (
+												<span className="rounded border border-emerald-400/40 bg-emerald-500/10 px-1.5 py-0.5 text-[0.62rem] uppercase leading-none text-emerald-700 dark:text-emerald-300">
+													Connected
+												</span>
+											)}
 										</div>
 									</div>
-									<span className="shrink-0 rounded border border-border bg-card px-1.5 py-0.5 text-[0.62rem] uppercase leading-none text-muted-foreground">
-										{connector.auth.type === "oauth" ? "OAuth" : "Key"}
-									</span>
-								</div>
-							</button>
-						))}
+								</button>
+							);
+						})}
 					</div>
 
 					<div className="flex items-center justify-between text-xs text-muted-foreground">
@@ -241,11 +322,20 @@ export default function ToolConnectionModal(props: {
 					{selectedMeta && (
 						<div className="grid gap-3 rounded-md border border-sky-400/25 bg-sky-500/5 p-3">
 							<div>
-								<div className="text-sm font-medium">
-									Configure {selectedMeta.name}
+								<div className="flex flex-wrap items-center gap-2">
+									<div className="text-sm font-medium">
+										Configure {selectedMeta.name}
+									</div>
+									{selectedConnection && (
+										<span className="rounded border border-emerald-400/40 bg-emerald-500/10 px-1.5 py-0.5 text-[0.68rem] uppercase leading-none text-emerald-700 dark:text-emerald-300">
+											Connected
+										</span>
+									)}
 								</div>
 								<div className="text-xs text-muted-foreground">
-									{selectedMeta.description}
+									{selectedConnection
+										? `Connected as ${selectedConnection.name}`
+										: selectedMeta.description}
 								</div>
 							</div>
 
@@ -284,29 +374,59 @@ export default function ToolConnectionModal(props: {
 											</span>
 										)}
 										<div className="grow" />
+										{selectedConnection && (
+											<Button
+												type="button"
+												variant="outline"
+												className="border-red-300 text-red-600 hover:bg-red-50 dark:border-red-900/60 dark:text-red-400 dark:hover:bg-red-950/30"
+												onClick={handleDisconnect}
+											>
+												Disconnect
+											</Button>
+										)}
 										<Button
 											type="button"
 											disabled={connecting}
 											onClick={handleConnect}
 										>
-											{connecting ? "Connecting..." : "Connect"}
+											{connecting
+												? "Connecting..."
+												: selectedConnection
+													? "Reconnect"
+													: "Connect"}
 										</Button>
 									</div>
 								</>
 							) : (
 								<div className="flex items-center justify-between gap-3">
 									<div className="text-xs text-muted-foreground">
-										OAuth via {new URL(selectedMeta.auth.authUrl).hostname}
+										{selectedConnection
+											? `Connected as ${selectedConnection.name}`
+											: `OAuth via ${new URL(selectedMeta.auth.authUrl).hostname}`}
 									</div>
-									<Button
-										type="button"
-										disabled={connecting}
-										onClick={() => handleOAuthStart(selectedMeta)}
-									>
-										{connecting
-											? "Connecting..."
-											: `Connect ${selectedMeta.name}`}
-									</Button>
+									<div className="flex items-center gap-2">
+										{selectedConnection && (
+											<Button
+												type="button"
+												variant="outline"
+												className="border-red-300 text-red-600 hover:bg-red-50 dark:border-red-900/60 dark:text-red-400 dark:hover:bg-red-950/30"
+												onClick={handleDisconnect}
+											>
+												Disconnect
+											</Button>
+										)}
+										<Button
+											type="button"
+											disabled={connecting}
+											onClick={() => handleOAuthStart(selectedMeta)}
+										>
+											{connecting
+												? "Connecting..."
+												: selectedConnection
+													? `Reconnect ${selectedMeta.name}`
+													: `Connect ${selectedMeta.name}`}
+										</Button>
+									</div>
 								</div>
 							)}
 						</div>

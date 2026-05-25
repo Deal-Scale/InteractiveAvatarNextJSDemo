@@ -1,8 +1,14 @@
 "use client";
 
-import { RotateCcw, SlidersHorizontal, Trash2 } from "lucide-react";
+import { Plus, RotateCcw, SlidersHorizontal, Trash2, X } from "lucide-react";
+import type { Ref } from "react";
 import { useCallback, useEffect, useMemo, useState } from "react";
-import type { Layout, LayoutItem, ResponsiveLayouts } from "react-grid-layout";
+import type {
+	Layout,
+	LayoutItem,
+	ResizeHandleAxis,
+	ResponsiveLayouts,
+} from "react-grid-layout";
 import { Responsive, useContainerWidth } from "react-grid-layout";
 
 import { LiveMermaidChart } from "@/components/ui/live-mermaid-chart";
@@ -19,6 +25,7 @@ export interface DataViewerProps {
 }
 
 const STORAGE_KEY = "data-viewer-chart-layouts";
+const HIDDEN_BUILTINS_STORAGE_KEY = "data-viewer-hidden-builtins";
 const GRID_COLS = { lg: 12, md: 10, sm: 6, xs: 4, xxs: 2 };
 const GRID_BREAKPOINTS = { lg: 1200, md: 996, sm: 768, xs: 480, xxs: 0 };
 const GRID_MARGIN: [number, number] = [16, 16];
@@ -31,6 +38,19 @@ type ChartItem = {
 	kind: ChartItemKind;
 	content: React.ReactNode;
 };
+
+const TOUR_MERMAID_CHART = `flowchart LR
+    A[Chat insight] --> B{Add to Data?}
+    B -->|Yes| C[Dashboard card]
+    B -->|Resize| D[Custom layout]
+    C --> E[Shareable view]
+    D --> E`;
+
+const builtinCharts = [
+	{ id: "platforms", title: "Platforms", content: <PlatformList /> },
+	{ id: "traffic", title: "Traffic", content: <TrafficList /> },
+	{ id: "audience", title: "Audience", content: <TargetAudienceList /> },
+] as const;
 
 const defaultLayouts: ChartLayouts = {
 	lg: [
@@ -71,6 +91,28 @@ const saveLayouts = (layouts: ChartLayouts) => {
 		window.localStorage.setItem(STORAGE_KEY, JSON.stringify(layouts));
 	} catch {
 		// Persistence is best-effort; the grid still works without storage.
+	}
+};
+
+const getInitialHiddenBuiltins = () => {
+	if (typeof window === "undefined") return [] as string[];
+
+	try {
+		const saved = window.localStorage.getItem(HIDDEN_BUILTINS_STORAGE_KEY);
+		return saved ? (JSON.parse(saved) as string[]) : [];
+	} catch {
+		return [];
+	}
+};
+
+const saveHiddenBuiltins = (ids: string[]) => {
+	try {
+		window.localStorage.setItem(
+			HIDDEN_BUILTINS_STORAGE_KEY,
+			JSON.stringify(ids),
+		);
+	} catch {
+		// Best-effort only.
 	}
 };
 
@@ -144,15 +186,6 @@ const ensureLayoutsForItems = (
 	let changed = false;
 	const nextLayouts: ChartLayouts = { ...currentLayouts };
 	const itemIds = items.map((item) => item.id);
-	const shouldRegenerateLayouts = breakpoints.some((breakpoint) => {
-		const current = currentLayouts[breakpoint] ?? [];
-		const currentIds = new Set(current.map((item) => item.i));
-		const currentOrder = current.map((item) => item.i).join("|");
-		const desiredOrder = itemIds.join("|");
-		return (
-			itemIds.some((id) => !currentIds.has(id)) || currentOrder !== desiredOrder
-		);
-	});
 
 	for (const breakpoint of breakpoints) {
 		const current = currentLayouts[breakpoint] ?? [];
@@ -160,12 +193,17 @@ const ensureLayoutsForItems = (
 		const next = items.map((item, index) => {
 			const id = item.id;
 			const existing = currentById.get(id);
-			if (existing && !shouldRegenerateLayouts) return existing;
+			if (existing) return existing;
 			changed = true;
 			return getLayoutForItem(id, breakpoint, index, item.kind);
 		});
 
-		if (next.length !== current.length) changed = true;
+		if (
+			next.length !== current.length ||
+			current.some((layoutItem) => !itemIds.includes(layoutItem.i))
+		) {
+			changed = true;
+		}
 		nextLayouts[breakpoint] = next;
 	}
 
@@ -226,7 +264,11 @@ function MermaidGridCard({
 export function DataViewer({ initialNodeTree }: DataViewerProps) {
 	const [layouts, setLayouts] = useState<ChartLayouts>(getInitialLayouts);
 	const [editable, setEditable] = useState(false);
+	const [hiddenBuiltinIds, setHiddenBuiltinIds] = useState<string[]>(
+		getInitialHiddenBuiltins,
+	);
 	const mermaidCharts = useDataGridStore((state) => state.mermaidCharts);
+	const addMermaidChart = useDataGridStore((state) => state.addMermaidChart);
 	const removeMermaidChart = useDataGridStore(
 		(state) => state.removeMermaidChart,
 	);
@@ -242,9 +284,48 @@ export function DataViewer({ initialNodeTree }: DataViewerProps) {
 		[editable],
 	);
 	const resizeConfig = useMemo(
-		() => ({ enabled: editable, handles: ["se"] as const }),
+		() => ({
+			enabled: editable,
+			handles: ["se"] as const,
+			handleComponent: (_axis: ResizeHandleAxis, ref: Ref<HTMLElement>) => (
+				<span
+					ref={ref}
+					aria-label="Resize chart"
+					className="react-resizable-handle react-resizable-handle-se h-5 w-5 rounded-sm border border-primary bg-primary/30 shadow-sm"
+					role="button"
+					tabIndex={-1}
+				/>
+			),
+		}),
 		[editable],
 	);
+	const hiddenBuiltinSet = useMemo(
+		() => new Set(hiddenBuiltinIds),
+		[hiddenBuiltinIds],
+	);
+	const hiddenBuiltins = useMemo(
+		() => builtinCharts.filter((chart) => hiddenBuiltinSet.has(chart.id)),
+		[hiddenBuiltinSet],
+	);
+	const setHiddenBuiltins = useCallback((ids: string[]) => {
+		setHiddenBuiltinIds(ids);
+		saveHiddenBuiltins(ids);
+	}, []);
+	const removeBuiltinChart = useCallback(
+		(id: string) => {
+			setHiddenBuiltins(Array.from(new Set([...hiddenBuiltinIds, id])));
+		},
+		[hiddenBuiltinIds, setHiddenBuiltins],
+	);
+	const restoreBuiltinChart = useCallback(
+		(id: string) => {
+			setHiddenBuiltins(hiddenBuiltinIds.filter((hiddenId) => hiddenId !== id));
+		},
+		[hiddenBuiltinIds, setHiddenBuiltins],
+	);
+	const restoreAllBuiltinCharts = useCallback(() => {
+		setHiddenBuiltins([]);
+	}, [setHiddenBuiltins]);
 	const chartItems = useMemo<ChartItem[]>(
 		() => [
 			...mermaidCharts.map((chart) => ({
@@ -260,11 +341,15 @@ export function DataViewer({ initialNodeTree }: DataViewerProps) {
 					/>
 				),
 			})),
-			{ id: "platforms", kind: "builtin", content: <PlatformList /> },
-			{ id: "traffic", kind: "builtin", content: <TrafficList /> },
-			{ id: "audience", kind: "builtin", content: <TargetAudienceList /> },
+			...builtinCharts
+				.filter((chart) => !hiddenBuiltinSet.has(chart.id))
+				.map((chart) => ({
+					id: chart.id,
+					kind: "builtin" as const,
+					content: chart.content,
+				})),
 		],
-		[mermaidCharts, removeMermaidChart],
+		[hiddenBuiltinSet, mermaidCharts, removeMermaidChart],
 	);
 	const chartLayoutItems = useMemo(
 		() => chartItems.map((item) => ({ id: item.id, kind: item.kind })),
@@ -278,6 +363,63 @@ export function DataViewer({ initialNodeTree }: DataViewerProps) {
 			return next;
 		});
 	}, [chartLayoutItems]);
+
+	useEffect(() => {
+		const enableLayout = () => {
+			setEditable(true);
+			window.requestAnimationFrame(() => setEditable(true));
+		};
+		const addTourMermaidChart = () => {
+			const existing = useDataGridStore
+				.getState()
+				.mermaidCharts.some((chart) => chart.title === "Tour Mermaid Flow");
+			if (!existing) {
+				addMermaidChart({
+					code: TOUR_MERMAID_CHART,
+					title: "Tour Mermaid Flow",
+				});
+			}
+		};
+		const showBuiltinRestore = () => {
+			setHiddenBuiltins(["platforms"]);
+		};
+		window.addEventListener("tour-enable-data-layout", enableLayout);
+		window.addEventListener("tour-add-data-mermaid-chart", addTourMermaidChart);
+		window.addEventListener(
+			"tour-show-data-restore-control",
+			showBuiltinRestore,
+		);
+		return () => {
+			window.removeEventListener("tour-enable-data-layout", enableLayout);
+			window.removeEventListener(
+				"tour-add-data-mermaid-chart",
+				addTourMermaidChart,
+			);
+			window.removeEventListener(
+				"tour-show-data-restore-control",
+				showBuiltinRestore,
+			);
+		};
+	}, [addMermaidChart, setHiddenBuiltins]);
+
+	useEffect(() => {
+		if (!editable || typeof window === "undefined") return;
+		const frame = window.requestAnimationFrame(() => {
+			const handles = Array.from(
+				document.querySelectorAll<HTMLElement>(
+					".react-grid-item .react-resizable-handle-se",
+				),
+			);
+			handles.forEach((handle, index) => {
+				if (index === 0) {
+					handle.dataset.tour = "data-grid-resize-handle";
+				} else {
+					handle.removeAttribute("data-tour");
+				}
+			});
+		});
+		return () => window.cancelAnimationFrame(frame);
+	}, [editable, chartItems.length]);
 
 	const resetLayouts = () => {
 		const next = ensureLayoutsForItems({}, chartLayoutItems);
@@ -299,7 +441,36 @@ export function DataViewer({ initialNodeTree }: DataViewerProps) {
 		<DataViewerProvider initialNodeTree={initialNodeTree}>
 			<div className="h-full w-full overflow-y-auto bg-background px-4 pb-4 pt-16 text-foreground">
 				<div ref={containerRef} className="mx-auto w-full max-w-6xl">
-					<div className="mb-3 flex items-center justify-end gap-2">
+					<div
+						className="mb-3 flex items-center justify-end gap-2"
+						data-tour="data-grid-layout-controls"
+					>
+						{hiddenBuiltins.length > 0 && (
+							<div
+								className="mr-auto flex flex-wrap items-center gap-2 text-xs"
+								data-tour="data-grid-restore-builtin"
+							>
+								<span className="text-muted-foreground">Hidden:</span>
+								{hiddenBuiltins.map((chart) => (
+									<button
+										key={chart.id}
+										type="button"
+										className="inline-flex h-8 items-center gap-1 rounded-md border border-border bg-card px-2 text-card-foreground shadow-sm hover:bg-muted"
+										onClick={() => restoreBuiltinChart(chart.id)}
+									>
+										<Plus className="h-3.5 w-3.5" />
+										{chart.title}
+									</button>
+								))}
+								<button
+									type="button"
+									className="inline-flex h-8 items-center rounded-md border border-border bg-card px-2 text-card-foreground shadow-sm hover:bg-muted"
+									onClick={restoreAllBuiltinCharts}
+								>
+									Restore all
+								</button>
+							</div>
+						)}
 						<button
 							type="button"
 							className={`inline-flex h-9 items-center gap-2 rounded-md border px-3 text-sm shadow-sm ${
@@ -336,7 +507,18 @@ export function DataViewer({ initialNodeTree }: DataViewerProps) {
 							onLayoutChange={handleLayoutChange}
 						>
 							{chartItems.map((item) => (
-								<div key={item.id} className="min-h-0 overflow-hidden">
+								<div key={item.id} className="relative min-h-0 overflow-hidden">
+									{item.kind === "builtin" && (
+										<button
+											type="button"
+											className="absolute right-2 top-2 z-10 inline-flex h-7 w-7 items-center justify-center rounded-md border border-border bg-card/90 text-muted-foreground shadow-sm backdrop-blur hover:bg-muted hover:text-foreground"
+											aria-label={`Remove ${item.id} chart`}
+											data-tour="data-grid-remove-builtin"
+											onClick={() => removeBuiltinChart(item.id)}
+										>
+											<X className="h-4 w-4" />
+										</button>
+									)}
 									{item.content}
 								</div>
 							))}

@@ -1,24 +1,24 @@
 import {
+	Check,
 	MicIcon,
 	MicOffIcon,
-	SendIcon,
 	Paperclip,
+	SendIcon,
 	X,
-	Check,
 	XCircle,
 } from "lucide-react";
 import type React from "react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { SlashCommandPalette } from "@/components/AvatarSession/chat/SlashCommandPalette";
+import { KB_CONNECTORS } from "@/components/KnowledgeBase/connectors";
 import { defaultCommands } from "@/data/commands";
-import type { Command } from "@/types/commands";
-import { getTextareaAnchorRect } from "@/lib/utils/caret";
+import { useAgentStore } from "@/lib/stores/agent";
+import { useAssetsStore } from "@/lib/stores/assets";
 import type { ComposerAsset } from "@/lib/stores/composer";
 import { useComposerStore } from "@/lib/stores/composer";
-import { useAssetsStore } from "@/lib/stores/assets";
-import { useAgentStore } from "@/lib/stores/agent";
-import { KB_CONNECTORS } from "@/components/KnowledgeBase/connectors";
-import { useSessionStore, type KnowledgeFolder } from "@/lib/stores/session";
+import { type KnowledgeFolder, useSessionStore } from "@/lib/stores/session";
+import { getTextareaAnchorRect } from "@/lib/utils/caret";
+import type { Command } from "@/types/commands";
 
 function buildKbCommands(
 	folders: KnowledgeFolder[],
@@ -139,22 +139,21 @@ function buildKbCommands(
 	return rootItems;
 }
 
-import { PromptSuggestions } from "./PromptSuggestions";
-
 import { Button } from "@/components/ui/button";
+import {
+	FileUpload,
+	FileUploadContent,
+	FileUploadTrigger,
+} from "@/components/ui/file-upload";
+import { Loader } from "@/components/ui/loader";
 import {
 	PromptInput,
 	PromptInputAction,
 	PromptInputActions,
 	PromptInputTextarea,
 } from "@/components/ui/prompt-input";
-import { Loader } from "@/components/ui/loader";
 import { cn } from "@/lib/utils";
-import {
-	FileUpload,
-	FileUploadContent,
-	FileUploadTrigger,
-} from "@/components/ui/file-upload";
+import { PromptSuggestions } from "./PromptSuggestions";
 
 interface ChatInputProps {
 	chatInput: string;
@@ -401,6 +400,7 @@ export const ChatInput: React.FC<ChatInputProps> = ({
 	const [highlightedIndex, setHighlightedIndex] = useState(0);
 	const [menuStack, setMenuStack] = useState<Command[][]>([]);
 	const [highlightedSubIndex, setHighlightedSubIndex] = useState(0);
+	const tourSlashMenuOpenRef = useRef(false);
 
 	// Open the slash command palette programmatically for accessibility
 	const openSlashPalette = () => {
@@ -427,6 +427,41 @@ export const ChatInput: React.FC<ChatInputProps> = ({
 		requestAnimationFrame(() => t.focus());
 	};
 
+	useEffect(() => {
+		const handleTourOpenSlashMenu = () => {
+			tourSlashMenuOpenRef.current = true;
+			openSlashPalette();
+		};
+		const handleTourCloseSlashMenu = () => {
+			tourSlashMenuOpenRef.current = false;
+			setSlashOpen(false);
+			setSlashStart(null);
+			setSlashQuery("");
+			setMenuStack([]);
+			setHighlightedIndex(0);
+			setHighlightedSubIndex(0);
+		};
+
+		window.addEventListener(
+			"tour-open-slash-command-menu",
+			handleTourOpenSlashMenu,
+		);
+		window.addEventListener(
+			"tour-close-slash-command-menu",
+			handleTourCloseSlashMenu,
+		);
+		return () => {
+			window.removeEventListener(
+				"tour-open-slash-command-menu",
+				handleTourOpenSlashMenu,
+			);
+			window.removeEventListener(
+				"tour-close-slash-command-menu",
+				handleTourCloseSlashMenu,
+			);
+		};
+	}, [openSlashPalette]);
+
 	// Show the left "/" button only when the input is truly empty (0 chars)
 	const isInputEmpty = (chatInput ?? "").length === 0;
 
@@ -441,6 +476,7 @@ export const ChatInput: React.FC<ChatInputProps> = ({
 				<Button
 					aria-label="Open commands"
 					aria-keyshortcuts="Alt+/"
+					data-tour="slash-command-item"
 					size="icon"
 					variant="secondary"
 					type="button"
@@ -636,6 +672,7 @@ export const ChatInput: React.FC<ChatInputProps> = ({
 		const t = textareaRef?.current;
 		if (!t) return;
 		const onBlur = () => {
+			if (tourSlashMenuOpenRef.current) return;
 			if (slashOpen) {
 				setSlashOpen(false);
 				setSlashStart(null);
@@ -741,6 +778,7 @@ export const ChatInput: React.FC<ChatInputProps> = ({
 					"w-full mt-4",
 					isAssetDragging && "ring-2 ring-primary/50 rounded-lg",
 				)}
+				data-tour="chat-input"
 				disabled={false}
 				maxHeight={320}
 				value={chatInput}

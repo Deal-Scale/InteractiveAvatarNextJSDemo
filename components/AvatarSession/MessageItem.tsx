@@ -370,6 +370,7 @@ export const MessageItem: React.FC<MessageItemProps> = ({
 									aria-label={
 										isTtsLoading ? "Generating audio…" : "Speak response"
 									}
+									data-tour="message-speak"
 									title="Speak response"
 									size="icon"
 									variant="ghost"
@@ -467,13 +468,18 @@ export const MessageItem: React.FC<MessageItemProps> = ({
 				)}
 				{message.sender !== MessageSender.AVATAR &&
 					renderAssets(message.assets)}
-				<MessageActions role="toolbar" aria-label="Message quick actions">
+				<MessageActions
+					role="toolbar"
+					aria-label="Message quick actions"
+					data-tour="message-actions"
+				>
 					{message.sender === MessageSender.AVATAR ? (
 						<>
 							<MessageAction tooltip={"Retry (regenerate)"}>
 								<Button
 									aria-label="Retry"
 									aria-keyshortcuts="R"
+									data-tour="message-restream"
 									size="icon"
 									variant={onRetry ? "secondary" : "ghost"}
 									className="focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
@@ -486,26 +492,29 @@ export const MessageItem: React.FC<MessageItemProps> = ({
 									<RotateCcw className="h-4 w-4" />
 								</Button>
 							</MessageAction>
-							<MessageAction tooltip={"Compare outputs"}>
-								<Button
-									aria-label="Compare outputs"
-									aria-keyshortcuts="O"
-									size="icon"
-									variant={onCompare ? "secondary" : "ghost"}
-									className="focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
-									onClick={() =>
-										onCompare
-											? onCompare(message.content, message.id)
-											: handleEditToInput(message.content, message.id)
-									}
-								>
-									<SplitSquareHorizontal className="h-4 w-4" />
-								</Button>
-							</MessageAction>
+							{process.env.NEXT_PUBLIC_CHAT_DEBUG === "true" && (
+								<MessageAction tooltip={"Compare outputs"}>
+									<Button
+										aria-label="Compare outputs"
+										aria-keyshortcuts="O"
+										size="icon"
+										variant={onCompare ? "secondary" : "ghost"}
+										className="focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+										onClick={() =>
+											onCompare
+												? onCompare(message.content, message.id)
+												: handleEditToInput(message.content, message.id)
+										}
+									>
+										<SplitSquareHorizontal className="h-4 w-4" />
+									</Button>
+								</MessageAction>
+							)}
 							<MessageAction tooltip={"Branch to agent"}>
 								<Button
 									aria-label="Branch to agent"
 									aria-keyshortcuts="B"
+									data-tour="message-branch-agent"
 									size="icon"
 									variant={onBranch ? "secondary" : "ghost"}
 									className="focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
@@ -526,6 +535,7 @@ export const MessageItem: React.FC<MessageItemProps> = ({
 								<Button
 									aria-label="Copy message"
 									aria-keyshortcuts="C"
+									data-tour="message-copy"
 									size="icon"
 									variant="ghost"
 									className="focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
@@ -542,6 +552,7 @@ export const MessageItem: React.FC<MessageItemProps> = ({
 								<Button
 									aria-label="Upvote response"
 									aria-keyshortcuts="ArrowUp"
+									data-tour="message-upvote"
 									size="icon"
 									variant={
 										voteState[message.id] === "up" ? "secondary" : "ghost"
@@ -562,6 +573,7 @@ export const MessageItem: React.FC<MessageItemProps> = ({
 								<Button
 									aria-label="Downvote response"
 									aria-keyshortcuts="ArrowDown"
+									data-tour="message-downvote"
 									size="icon"
 									variant={
 										voteState[message.id] === "down" ? "secondary" : "ghost"

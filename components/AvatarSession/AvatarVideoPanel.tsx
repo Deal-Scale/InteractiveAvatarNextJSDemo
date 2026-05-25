@@ -1,9 +1,17 @@
-import { MessageSquareIcon, Settings2Icon, XIcon } from "lucide-react";
+import {
+	ExpandIcon,
+	Highlighter,
+	MessageSquareIcon,
+	Settings2Icon,
+	XIcon,
+	ZoomIn,
+} from "lucide-react";
 import dynamic from "next/dynamic";
 import type React from "react";
 import { useEffect, useMemo, useState } from "react";
 import { SessionQuickStartCard } from "@/components/AvatarSession/SessionQuickStartCard";
 import { defaultGraphData } from "@/components/data-viewer";
+import { ActionsKanbanPanel as KanbanActionsPanel } from "@/components/kanban/ActionsKanbanPanel";
 import { RetroGrid } from "@/components/magicui/retro-grid";
 import { Button } from "@/components/ui/button";
 
@@ -42,19 +50,6 @@ const DataViewerPanel = dynamic(
 		loading: () => (
 			<div className="flex h-full w-full items-center justify-center text-sm text-muted-foreground">
 				Loading data...
-			</div>
-		),
-	},
-);
-
-const KanbanActionsPanel = dynamic(
-	() =>
-		import("@/components/kanban").then((module) => module.ActionsKanbanPanel),
-	{
-		ssr: false,
-		loading: () => (
-			<div className="flex h-full w-full items-center justify-center text-sm text-muted-foreground">
-				Loading actions...
 			</div>
 		),
 	},
@@ -282,31 +277,49 @@ export function AvatarVideoPanel({
 							>
 								<Settings2Icon className="h-4 w-4" />
 							</Button>
-							<SessionQuickStartCard
-								avatarOptions={avatarOptions}
-								contextOptions={contextOptions}
-								customAvatarId={customAvatarId}
-								customIdValid={customIdValid}
-								isLoadingAvatarOptions={isLoadingAvatarOptions}
-								isLoadingContextOptions={isLoadingContextOptions}
-								isLoadingVoiceOptions={isLoadingVoiceOptions}
-								isConnecting={isConnecting}
-								knowledgeBaseId={knowledgeBaseId}
-								kbIdValid={kbIdValid}
-								onCustomAvatarChange={handleCustomAvatarChange}
-								onKnowledgeBaseChange={handleKnowledgeBaseChange}
-								onSelectAvatar={handleAvatarSelection}
-								onSelectVoice={handleVoiceSelection}
-								onStartSession={forwardStartSession}
-								onStartWithoutAvatar={onStartWithoutAvatar}
-								selectedAvatar={selectedAvatar}
-								selectedVoiceId={selectedVoiceId}
-								voiceOptions={voiceOptions}
-							/>
+							<div
+								className="relative w-[360px] max-w-[calc(100vw-2rem)]"
+								data-tour="live-avatar-start-card"
+							>
+								<span
+									aria-hidden="true"
+									className="pointer-events-none absolute left-1/2 top-3 z-30 h-2 w-2 -translate-x-1/2"
+									data-tour="live-avatar-tour-anchor"
+								/>
+								<SessionQuickStartCard
+									avatarOptions={avatarOptions}
+									contextOptions={contextOptions}
+									customAvatarId={customAvatarId}
+									customIdValid={customIdValid}
+									isLoadingAvatarOptions={isLoadingAvatarOptions}
+									isLoadingContextOptions={isLoadingContextOptions}
+									isLoadingVoiceOptions={isLoadingVoiceOptions}
+									isConnecting={isConnecting}
+									knowledgeBaseId={knowledgeBaseId}
+									kbIdValid={kbIdValid}
+									onCustomAvatarChange={handleCustomAvatarChange}
+									onKnowledgeBaseChange={handleKnowledgeBaseChange}
+									onSelectAvatar={handleAvatarSelection}
+									onSelectVoice={handleVoiceSelection}
+									onStartSession={forwardStartSession}
+									onStartWithoutAvatar={onStartWithoutAvatar}
+									selectedAvatar={selectedAvatar}
+									selectedVoiceId={selectedVoiceId}
+									voiceOptions={voiceOptions}
+								/>
+							</div>
 						</div>
 					) : (
 						<div className="absolute inset-0 flex items-center justify-center px-4">
-							<div className="w-full max-w-md rounded-lg border border-border bg-card/80 p-4 text-card-foreground shadow-lg backdrop-blur">
+							<div
+								className="relative w-full max-w-md rounded-lg border border-border bg-card/80 p-4 text-card-foreground shadow-lg backdrop-blur"
+								data-tour="basic-chat-card"
+							>
+								<span
+									aria-hidden="true"
+									className="pointer-events-none absolute left-1/2 top-3 z-30 h-2 w-2 -translate-x-1/2"
+									data-tour="basic-chat-tour-anchor"
+								/>
 								<div className="mb-4 flex items-start justify-between gap-3">
 									<div>
 										<div className="text-lg font-semibold">
@@ -345,6 +358,7 @@ export function AvatarVideoPanel({
 									{chatExperience === "advanced" && (
 										<>
 											<Button
+												data-tour="brain-tab"
 												type="button"
 												variant="secondary"
 												onClick={() => setViewTab("brain")}
@@ -352,6 +366,7 @@ export function AvatarVideoPanel({
 												Brain
 											</Button>
 											<Button
+												data-tour="data-tab"
 												type="button"
 												variant="secondary"
 												onClick={() => setViewTab("data")}
@@ -359,6 +374,7 @@ export function AvatarVideoPanel({
 												Data
 											</Button>
 											<Button
+												data-tour="actions-tab"
 												type="button"
 												variant="secondary"
 												onClick={() => setViewTab("actions")}
@@ -372,7 +388,47 @@ export function AvatarVideoPanel({
 						</div>
 					)
 				) : viewTab === "brain" ? (
-					<div className="absolute inset-0 z-0 bg-background">
+					<div
+						className="absolute inset-0 z-0 bg-background"
+						data-tour="brain-graph"
+					>
+						<div
+							data-tour="brain-controls"
+							className="absolute left-1/2 top-16 z-20 flex -translate-x-1/2 gap-4"
+						>
+							<button
+								type="button"
+								className="rounded bg-blue-500 px-4 py-2 text-white opacity-80 transition-opacity duration-300 hover:opacity-100"
+								title="Full Screen Vector"
+								onClick={() =>
+									window.dispatchEvent(
+										new CustomEvent("brain-graph-fullscreen"),
+									)
+								}
+							>
+								<ExpandIcon />
+							</button>
+							<button
+								type="button"
+								className="rounded bg-green-500 px-4 py-2 text-white opacity-80 transition-opacity duration-300 hover:opacity-100"
+								title="Recenter Vector"
+								onClick={() =>
+									window.dispatchEvent(
+										new CustomEvent("brain-graph-zoom-to-fit"),
+									)
+								}
+							>
+								<ZoomIn />
+							</button>
+							<button
+								type="button"
+								className="rounded bg-yellow-500 px-4 py-2 text-white opacity-80 transition-opacity duration-300 hover:opacity-100"
+								title="Toggle Highlight"
+								onClick={() => setHighlightGraphNodes((current) => !current)}
+							>
+								<Highlighter />
+							</button>
+						</div>
 						<BrainGraphViewer
 							graphData={defaultGraphData}
 							isHighlightActive={highlightGraphNodes}
@@ -380,6 +436,7 @@ export function AvatarVideoPanel({
 							onHighlightToggle={() =>
 								setHighlightGraphNodes((current) => !current)
 							}
+							showControls={false}
 							loadingFallback={
 								<div className="flex h-full w-full items-center justify-center text-sm text-muted-foreground">
 									Loading graph...
@@ -388,11 +445,21 @@ export function AvatarVideoPanel({
 						/>
 					</div>
 				) : viewTab === "data" ? (
-					<div className="absolute inset-0 z-0 bg-background">
+					<div
+						className="absolute inset-0 z-0 bg-background"
+						data-tour="data-grid"
+					>
 						<DataViewerPanel />
 					</div>
 				) : (
-					<div className="absolute inset-0 z-0 bg-background">
+					<div
+						className="absolute inset-0 z-0 bg-background"
+						data-tour="kanban-board"
+					>
+						<div
+							aria-hidden="true"
+							className="pointer-events-none absolute right-4 top-4 z-20 h-10 w-32 rounded-md"
+						/>
 						<KanbanActionsPanel />
 					</div>
 				)}

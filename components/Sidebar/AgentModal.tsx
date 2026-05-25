@@ -434,6 +434,65 @@ export default function AgentModal(props: {
 		form.reset(defaultValues as any);
 	}, [defaultValues, form]);
 
+	useEffect(() => {
+		if (!open || !isCreate) return;
+
+		const enableMonetization = () => {
+			form.setValue("monetize" as any, true as any, {
+				shouldDirty: true,
+				shouldValidate: true,
+			});
+			form.setValue("rateMultiplier" as any, "2" as any, {
+				shouldDirty: true,
+				shouldValidate: true,
+			});
+		};
+		const selectVideoMode = () => {
+			form.setValue("interactionModes" as any, ["video"] as any, {
+				shouldDirty: true,
+				shouldValidate: true,
+			});
+			form.setValue("sessionType" as any, "video" as any, {
+				shouldDirty: true,
+				shouldValidate: true,
+			});
+		};
+		const selectTextVoiceMode = () => {
+			form.setValue("interactionModes" as any, ["text", "voice"] as any, {
+				shouldDirty: true,
+				shouldValidate: true,
+			});
+			form.setValue("sessionType" as any, "voice" as any, {
+				shouldDirty: true,
+				shouldValidate: true,
+			});
+		};
+
+		window.addEventListener(
+			"tour-enable-agent-monetization",
+			enableMonetization,
+		);
+		window.addEventListener("tour-select-agent-video-mode", selectVideoMode);
+		window.addEventListener(
+			"tour-select-agent-text-voice-mode",
+			selectTextVoiceMode,
+		);
+		return () => {
+			window.removeEventListener(
+				"tour-enable-agent-monetization",
+				enableMonetization,
+			);
+			window.removeEventListener(
+				"tour-select-agent-video-mode",
+				selectVideoMode,
+			);
+			window.removeEventListener(
+				"tour-select-agent-text-voice-mode",
+				selectTextVoiceMode,
+			);
+		};
+	}, [form, isCreate, open]);
+
 	const { data: avatarOptions = [], isFetching: isLoadingAvatars } =
 		useAvatarOptionsQuery();
 	const { data: mcpServerOptions = [] } = useMcpServerOptionsQuery();
@@ -581,32 +640,38 @@ export default function AgentModal(props: {
 			label: "Context",
 			tone: promptSectionTone as "text" | "voice" | "video",
 			description: "Fetched context and system prompt for this agent.",
+			dataTour: "agent-section-context",
 		};
 		const profileSection = {
 			label: "Profile",
 			tone: "general" as const,
 			description: "Identity and supported interaction modes.",
+			dataTour: "agent-section-profile",
 		};
 		const videoSection = {
 			label: "Video",
 			tone: "video" as const,
 			description: "Minimal LiveAvatar setup for video sessions.",
+			dataTour: "agent-section-video",
 		};
 		const voiceSection = {
 			label: "Voice",
 			tone: "voice" as const,
 			description: "Voice chat transport and speech settings.",
+			dataTour: "agent-section-voice",
 		};
 		const sessionControlSection = supportsVideo ? videoSection : voiceSection;
 		const toolsSection = {
 			label: "Tools",
 			tone: "tools" as const,
 			description: "MCP servers and uploaded server config.",
+			dataTour: "agent-section-tools",
 		};
 		const monetizationSection = {
 			label: "Monetization",
 			tone: "general" as const,
 			description: "Pricing and payout settings for this agent.",
+			dataTour: "agent-section-monetization",
 		};
 		const base: FieldsConfig<Record<string, unknown>> & Record<string, any> = {
 			id: {
@@ -1194,8 +1259,12 @@ export default function AgentModal(props: {
 	]);
 
 	return (
-		<Dialog open={open} onOpenChange={onOpenChange}>
-			<DialogContent className="w-[96vw] md:w-[640px] max-w-[96vw] p-4 md:p-6 bg-card text-foreground flex flex-col max-h-[90vh]">
+		<Dialog modal={false} open={open} onOpenChange={onOpenChange}>
+			<DialogContent
+				className="w-[96vw] md:w-[640px] max-w-[96vw] p-4 md:p-6 bg-card text-foreground flex flex-col max-h-[90vh]"
+				data-tour="agent-chat-type"
+				onInteractOutside={(event) => event.preventDefault()}
+			>
 				<DialogHeader>
 					<DialogTitle>
 						{isCreate && <span className="font-semibold">Create Agent</span>}
@@ -1263,163 +1332,168 @@ export default function AgentModal(props: {
 									</Tooltip>
 								</div>
 							)}
-							<AutoForm
-								className="space-y-4"
-								schema={AgentFormSchema as unknown as z.ZodObject<any>}
-								form={form as any}
-								fields={fields as FieldsConfig<any>}
-								submitLabel={isCreate ? "Create" : "Save"}
-								onSubmit={(values: z.infer<typeof AgentFormSchema>) => {
-									const configValues = values as Record<string, any>;
-									const rawId = (values as any)?.id;
-									const id =
-										rawId && String(rawId).trim().length > 0
-											? String(rawId).trim()
-											: (working?.id ?? `new-${Date.now()}`);
-									const name = String(values.name ?? "").trim();
-									const role = values.role ? String(values.role).trim() : "";
-									const interactionModes = Array.isArray(
-										configValues.interactionModes,
-									)
-										? (configValues.interactionModes as InteractionMode[])
-										: (["text"] satisfies InteractionMode[]);
-									const sessionType = deriveSessionType(interactionModes);
-									const avatarUrl =
-										values.avatarUrl != null
-											? String(values.avatarUrl).trim()
-											: "";
-									const description =
-										values.description != null
-											? String(values.description).trim()
-											: "";
-									const saveVideoSettings = interactionModes.includes("video");
-									const saveVoiceSelection =
-										interactionModes.includes("voice") || saveVideoSettings;
-									const saveVoiceSettings = interactionModes.includes("voice");
-									const saveVoiceTuning =
-										interactionModes.includes("voice") || saveVideoSettings;
-									const effectiveVideoVoiceId =
-										configValues.videoVoiceId || configValues.voiceId;
-									const voiceProvider = configValues.voiceProvider;
-									const videoVoiceProvider = configValues.videoVoiceProvider;
-									const saveLiveAvatarSessionSettings =
-										(saveVoiceSettings && voiceProvider === "liveavatar") ||
-										(saveVideoSettings && videoVoiceProvider === "liveavatar");
-									const normalizedVoice =
-										voiceProvider === "liveavatar"
-											? {
-													rate: configValues.voice?.rate,
-													emotion: configValues.voice?.emotion,
-												}
-											: voiceProvider === "elevenlabs"
+							<div data-tour="agent-context">
+								<AutoForm
+									className="space-y-4"
+									schema={AgentFormSchema as unknown as z.ZodObject<any>}
+									form={form as any}
+									fields={fields as FieldsConfig<any>}
+									submitLabel={isCreate ? "Create" : "Save"}
+									onSubmit={(values: z.infer<typeof AgentFormSchema>) => {
+										const configValues = values as Record<string, any>;
+										const rawId = (values as any)?.id;
+										const id =
+											rawId && String(rawId).trim().length > 0
+												? String(rawId).trim()
+												: (working?.id ?? `new-${Date.now()}`);
+										const name = String(values.name ?? "").trim();
+										const role = values.role ? String(values.role).trim() : "";
+										const interactionModes = Array.isArray(
+											configValues.interactionModes,
+										)
+											? (configValues.interactionModes as InteractionMode[])
+											: (["text"] satisfies InteractionMode[]);
+										const sessionType = deriveSessionType(interactionModes);
+										const avatarUrl =
+											values.avatarUrl != null
+												? String(values.avatarUrl).trim()
+												: "";
+										const description =
+											values.description != null
+												? String(values.description).trim()
+												: "";
+										const saveVideoSettings =
+											interactionModes.includes("video");
+										const saveVoiceSelection =
+											interactionModes.includes("voice") || saveVideoSettings;
+										const saveVoiceSettings =
+											interactionModes.includes("voice");
+										const saveVoiceTuning =
+											interactionModes.includes("voice") || saveVideoSettings;
+										const effectiveVideoVoiceId =
+											configValues.videoVoiceId || configValues.voiceId;
+										const voiceProvider = configValues.voiceProvider;
+										const videoVoiceProvider = configValues.videoVoiceProvider;
+										const saveLiveAvatarSessionSettings =
+											(saveVoiceSettings && voiceProvider === "liveavatar") ||
+											(saveVideoSettings &&
+												videoVoiceProvider === "liveavatar");
+										const normalizedVoice =
+											voiceProvider === "liveavatar"
 												? {
-														elevenlabs_settings:
-															configValues.voice?.elevenlabs_settings,
+														rate: configValues.voice?.rate,
+														emotion: configValues.voice?.emotion,
 													}
-												: undefined;
-									const normalizedVideoVoice =
-										videoVoiceProvider === "liveavatar"
-											? {
-													rate: configValues.videoVoice?.rate,
-													emotion: configValues.videoVoice?.emotion,
-												}
-											: videoVoiceProvider === "elevenlabs"
+												: voiceProvider === "elevenlabs"
+													? {
+															elevenlabs_settings:
+																configValues.voice?.elevenlabs_settings,
+														}
+													: undefined;
+										const normalizedVideoVoice =
+											videoVoiceProvider === "liveavatar"
 												? {
-														elevenlabs_settings:
-															configValues.videoVoice?.elevenlabs_settings,
+														rate: configValues.videoVoice?.rate,
+														emotion: configValues.videoVoice?.emotion,
 													}
-												: undefined;
-									const tags: string[] = Array.isArray(values.tags)
-										? (values.tags as string[])
-												.map((tag) => String(tag).trim())
-												.filter(Boolean)
-										: typeof (values as any).tags === "string"
-											? ((values as any).tags as string)
-													.split(/,|\n/)
-													.map((s: string) => s.trim())
+												: videoVoiceProvider === "elevenlabs"
+													? {
+															elevenlabs_settings:
+																configValues.videoVoice?.elevenlabs_settings,
+														}
+													: undefined;
+										const tags: string[] = Array.isArray(values.tags)
+											? (values.tags as string[])
+													.map((tag) => String(tag).trim())
 													.filter(Boolean)
-											: [];
+											: typeof (values as any).tags === "string"
+												? ((values as any).tags as string)
+														.split(/,|\n/)
+														.map((s: string) => s.trim())
+														.filter(Boolean)
+												: [];
 
-									const next: Agent = {
-										id,
-										name,
-										role,
-										sessionType,
-										interactionModes,
-										avatarUrl,
-										description,
-										tags,
-										avatarId: saveVideoSettings
-											? configValues.avatarId
-											: undefined,
-										voiceId: saveVideoSettings
-											? effectiveVideoVoiceId
-											: saveVoiceSelection
-												? configValues.voiceId
+										const next: Agent = {
+											id,
+											name,
+											role,
+											sessionType,
+											interactionModes,
+											avatarUrl,
+											description,
+											tags,
+											avatarId: saveVideoSettings
+												? configValues.avatarId
 												: undefined,
-										videoVoiceId: saveVideoSettings
-											? configValues.videoVoiceId
-											: undefined,
-										language: saveLiveAvatarSessionSettings
-											? configValues.language
-											: undefined,
-										textProvider: configValues.textProvider,
-										voiceProvider: saveVoiceSettings
-											? voiceProvider
-											: undefined,
-										videoVoiceProvider: saveVideoSettings
-											? videoVoiceProvider
-											: undefined,
-										model: configValues.model,
-										temperature: configValues.temperature,
-										maxOutputTokens: configValues.maxOutputTokens,
-										topP: configValues.topP,
-										frequencyPenalty: configValues.frequencyPenalty,
-										presencePenalty: configValues.presencePenalty,
-										quality: saveVideoSettings
-											? configValues.quality
-											: undefined,
-										voiceChatTransport: saveLiveAvatarSessionSettings
-											? configValues.voiceChatTransport
-											: undefined,
-										stt: saveLiveAvatarSessionSettings
-											? configValues.stt
-											: undefined,
-										disableIdleTimeout: saveVideoSettings
-											? configValues.disableIdleTimeout
-											: undefined,
-										activityIdleTimeout: saveVideoSettings
-											? configValues.activityIdleTimeout
-											: undefined,
-										video: saveVideoSettings ? configValues.video : undefined,
-										audio: saveLiveAvatarSessionSettings
-											? configValues.audio
-											: undefined,
-										voice:
-											saveVoiceTuning && normalizedVoice
-												? normalizedVoice
+											voiceId: saveVideoSettings
+												? effectiveVideoVoiceId
+												: saveVoiceSelection
+													? configValues.voiceId
+													: undefined,
+											videoVoiceId: saveVideoSettings
+												? configValues.videoVoiceId
 												: undefined,
-										videoVoice: saveVideoSettings
-											? normalizedVideoVoice
-											: undefined,
-										knowledgeBaseId: configValues.knowledgeBaseId,
-										contextFiles: configValues.contextFiles,
-										canBrowseWeb: configValues.canBrowseWeb,
-										canRunCode: configValues.canRunCode,
-										canGenerateImages: configValues.canGenerateImages,
-										mcpServers: configValues.mcpServers,
-										systemPrompt: configValues.systemPrompt,
-										modalities: interactionModes.includes("video")
-											? ["chat", "voice", "video"]
-											: interactionModes.includes("voice")
-												? ["chat", "voice"]
-												: ["chat"],
-										isOwnedByUser: isCreate ? true : working?.isOwnedByUser,
-									};
-									onSave?.(next);
-									onOpenChange(false);
-								}}
-							/>
+											language: saveLiveAvatarSessionSettings
+												? configValues.language
+												: undefined,
+											textProvider: configValues.textProvider,
+											voiceProvider: saveVoiceSettings
+												? voiceProvider
+												: undefined,
+											videoVoiceProvider: saveVideoSettings
+												? videoVoiceProvider
+												: undefined,
+											model: configValues.model,
+											temperature: configValues.temperature,
+											maxOutputTokens: configValues.maxOutputTokens,
+											topP: configValues.topP,
+											frequencyPenalty: configValues.frequencyPenalty,
+											presencePenalty: configValues.presencePenalty,
+											quality: saveVideoSettings
+												? configValues.quality
+												: undefined,
+											voiceChatTransport: saveLiveAvatarSessionSettings
+												? configValues.voiceChatTransport
+												: undefined,
+											stt: saveLiveAvatarSessionSettings
+												? configValues.stt
+												: undefined,
+											disableIdleTimeout: saveVideoSettings
+												? configValues.disableIdleTimeout
+												: undefined,
+											activityIdleTimeout: saveVideoSettings
+												? configValues.activityIdleTimeout
+												: undefined,
+											video: saveVideoSettings ? configValues.video : undefined,
+											audio: saveLiveAvatarSessionSettings
+												? configValues.audio
+												: undefined,
+											voice:
+												saveVoiceTuning && normalizedVoice
+													? normalizedVoice
+													: undefined,
+											videoVoice: saveVideoSettings
+												? normalizedVideoVoice
+												: undefined,
+											knowledgeBaseId: configValues.knowledgeBaseId,
+											contextFiles: configValues.contextFiles,
+											canBrowseWeb: configValues.canBrowseWeb,
+											canRunCode: configValues.canRunCode,
+											canGenerateImages: configValues.canGenerateImages,
+											mcpServers: configValues.mcpServers,
+											systemPrompt: configValues.systemPrompt,
+											modalities: interactionModes.includes("video")
+												? ["chat", "voice", "video"]
+												: interactionModes.includes("voice")
+													? ["chat", "voice"]
+													: ["chat"],
+											isOwnedByUser: isCreate ? true : working?.isOwnedByUser,
+										};
+										onSave?.(next);
+										onOpenChange(false);
+									}}
+								/>
+							</div>
 							{isCreate && monetizationEnabled && (
 								<AgentMonetizationSummary
 									enabled={monetizationEnabled}

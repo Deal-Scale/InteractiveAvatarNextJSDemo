@@ -12,6 +12,7 @@ export type ChatSettingsTab = "text" | "voice" | "avatar";
 export type ConfigModalTab = "global" | "user";
 
 export type KnowledgeFolder = { id: string; name: string; parentId?: string };
+export type ChatFolder = { id: string; name: string; parentId?: string };
 
 interface SessionState {
 	isConfigModalOpen: boolean;
@@ -26,6 +27,18 @@ interface SessionState {
 	closeChatSettings: () => void;
 	chatSettingsTab: ChatSettingsTab;
 	setChatSettingsTab: (tab: ChatSettingsTab) => void;
+	chatFolders: ChatFolder[];
+	setChatFolders: (
+		folders: ChatFolder[] | ((prev: ChatFolder[]) => ChatFolder[]),
+	) => void;
+	chatFolderAssignments: Record<string, string | undefined>;
+	setChatFolderAssignments: (
+		assignments:
+			| Record<string, string | undefined>
+			| ((
+					prev: Record<string, string | undefined>,
+			  ) => Record<string, string | undefined>),
+	) => void;
 
 	config: StartAvatarRequest | null;
 	setConfig: (config: StartAvatarRequest) => void;
@@ -118,6 +131,25 @@ export const useSessionStore = create<SessionState>()(
 			closeChatSettings: () => set({ isChatSettingsOpen: false }),
 			chatSettingsTab: "text",
 			setChatSettingsTab: (tab) => set({ chatSettingsTab: tab }),
+			chatFolders: [
+				{ id: "chat-folder-sales", name: "Sales" },
+				{ id: "chat-folder-support", name: "Support" },
+			],
+			setChatFolders: (folders) =>
+				set((state) => ({
+					chatFolders:
+						typeof folders === "function"
+							? folders(state.chatFolders)
+							: folders,
+				})),
+			chatFolderAssignments: {},
+			setChatFolderAssignments: (assignments) =>
+				set((state) => ({
+					chatFolderAssignments:
+						typeof assignments === "function"
+							? assignments(state.chatFolderAssignments)
+							: assignments,
+				})),
 
 			config: null,
 			setConfig: (config) => set({ config }),
@@ -243,6 +275,8 @@ export const useSessionStore = create<SessionState>()(
 				agentSettings: state.agentSettings,
 				currentSessionId: state.currentSessionId,
 				configModalTab: state.configModalTab,
+				chatFolders: state.chatFolders,
+				chatFolderAssignments: state.chatFolderAssignments,
 				kbFolders: state.kbFolders,
 				kbItemFolders: state.kbItemFolders,
 				createdKnowledgeItems: state.createdKnowledgeItems,

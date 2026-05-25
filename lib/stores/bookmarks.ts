@@ -119,20 +119,20 @@ export const useBookmarkStore = create<BookmarkState>()(
 
 					collectDescendants(id);
 
+					const nextBookmarkedIds = new Set(state.bookmarkedIds);
+					const nextMeta = { ...state.meta };
+
+					for (const [bookmarkId, meta] of Object.entries(state.meta)) {
+						if (meta.folderId && deletedIds.has(meta.folderId)) {
+							nextBookmarkedIds.delete(bookmarkId);
+							delete nextMeta[bookmarkId];
+						}
+					}
+
 					return {
 						folders: state.folders.filter((f) => !deletedIds.has(f.id)),
-						meta: Object.fromEntries(
-							Object.entries(state.meta).map(([k, v]) => [
-								k,
-								{
-									...v,
-									folderId:
-										v.folderId && deletedIds.has(v.folderId)
-											? undefined
-											: v.folderId,
-								},
-							]),
-						),
+						bookmarkedIds: nextBookmarkedIds,
+						meta: nextMeta,
 					};
 				}),
 			reset: () => set(initialState),

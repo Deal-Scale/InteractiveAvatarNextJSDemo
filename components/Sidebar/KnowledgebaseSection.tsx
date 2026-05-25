@@ -7,7 +7,7 @@ import {
 	DropdownMenuPortal,
 	DropdownMenuTrigger,
 } from "@radix-ui/react-dropdown-menu";
-import { ChevronRight, MoreVertical, Plus } from "lucide-react";
+import { ChevronRight, MoreVertical, Plus, Trash2 } from "lucide-react";
 import { useMemo, useState } from "react";
 
 import {
@@ -42,6 +42,7 @@ export default function KnowledgebaseSection(props: {
 	onMoveFolder?: (id: string, parentId?: string) => void;
 	onDeleteFolder?: (id: string) => void;
 	onMoveKnowledgeItem?: (id: string, folderId?: string) => void;
+	onDeleteKnowledgeItem?: (id: string) => void;
 }) {
 	const {
 		collapsedKnowledge,
@@ -59,6 +60,7 @@ export default function KnowledgebaseSection(props: {
 		onMoveFolder,
 		onDeleteFolder,
 		onMoveKnowledgeItem,
+		onDeleteKnowledgeItem,
 	} = props;
 
 	const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -207,6 +209,7 @@ export default function KnowledgebaseSection(props: {
 							size="sm"
 							title="Add Knowledge Base"
 							aria-label="Add Knowledge Base"
+							data-tour="kb-add-button"
 							data-testid="kb-add-btn"
 							onClick={(e) => {
 								e.stopPropagation();
@@ -252,6 +255,7 @@ export default function KnowledgebaseSection(props: {
 									onOpenMarkdown={onOpenMarkdown}
 									onStartApiSync={onStartApiSync}
 									selectedId={selectedId}
+									onDeleteKBItem={onDeleteKnowledgeItem}
 								/>
 							))}
 						</Tree>
@@ -274,6 +278,7 @@ function KnowledgeTreeNode(props: {
 	onOpenItem: (id: string) => void;
 	onOpenMarkdown?: () => void;
 	onStartApiSync?: () => void;
+	onDeleteKBItem?: (id: string) => void;
 }) {
 	const {
 		node,
@@ -287,6 +292,7 @@ function KnowledgeTreeNode(props: {
 		onOpenItem,
 		onOpenMarkdown,
 		onStartApiSync,
+		onDeleteKBItem,
 	} = props;
 
 	if (node.kind === "folder") {
@@ -297,13 +303,32 @@ function KnowledgeTreeNode(props: {
 				value={node.id}
 				action={
 					isRealFolder ? (
-						<KnowledgeFolderActions
-							folder={node.folder as KnowledgeFolder}
-							folders={folders}
-							onAddFolder={onAddFolder}
-							onDeleteFolder={onDeleteFolder}
-							onMoveFolder={onMoveFolder}
-						/>
+						<div className="flex items-center gap-1">
+							<button
+								type="button"
+								aria-label="Delete folder"
+								className="shrink-0 rounded-md border border-border bg-card p-1 text-muted-foreground hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+								onClick={(e) => {
+									e.stopPropagation();
+									if (
+										window.confirm(
+											`Are you sure you want to delete folder "${node.name}" and all of its contents?`,
+										)
+									) {
+										onDeleteFolder(node.id);
+									}
+								}}
+							>
+								<Trash2 className="size-3" />
+							</button>
+							<KnowledgeFolderActions
+								folder={node.folder as KnowledgeFolder}
+								folders={folders}
+								onAddFolder={onAddFolder}
+								onDeleteFolder={onDeleteFolder}
+								onMoveFolder={onMoveFolder}
+							/>
+						</div>
 					) : undefined
 				}
 			>
@@ -321,6 +346,7 @@ function KnowledgeTreeNode(props: {
 						onOpenMarkdown={onOpenMarkdown}
 						onStartApiSync={onStartApiSync}
 						selectedId={selectedId}
+						onDeleteKBItem={onDeleteKBItem}
 					/>
 				))}
 			</Folder>
@@ -328,7 +354,7 @@ function KnowledgeTreeNode(props: {
 	}
 
 	return (
-		<div className="flex items-center justify-between gap-2">
+		<div className="flex items-center justify-between gap-1 w-full min-w-0">
 			<div className="min-w-0 flex-1">
 				<File
 					value={node.id}
@@ -338,14 +364,31 @@ function KnowledgeTreeNode(props: {
 					<span className="block truncate whitespace-nowrap">{node.name}</span>
 				</File>
 			</div>
-			<KnowledgeItemActions
-				folders={folders}
-				itemId={node.id}
-				currentFolderId={itemFolders[node.id]}
-				onMoveItem={onMoveItem}
-				onOpenMarkdown={onOpenMarkdown}
-				onStartApiSync={onStartApiSync}
-			/>
+			<div className="flex items-center gap-1 shrink-0">
+				<button
+					type="button"
+					aria-label="Delete knowledge item"
+					className="shrink-0 rounded-md border border-border bg-card p-1 text-muted-foreground hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+					onClick={(e) => {
+						e.stopPropagation();
+						if (
+							window.confirm(`Are you sure you want to delete "${node.name}"?`)
+						) {
+							onDeleteKBItem?.(node.id);
+						}
+					}}
+				>
+					<Trash2 className="size-3" />
+				</button>
+				<KnowledgeItemActions
+					folders={folders}
+					itemId={node.id}
+					currentFolderId={itemFolders[node.id]}
+					onMoveItem={onMoveItem}
+					onOpenMarkdown={onOpenMarkdown}
+					onStartApiSync={onStartApiSync}
+				/>
+			</div>
 		</div>
 	);
 }
@@ -390,7 +433,9 @@ function KnowledgeFolderActions(props: {
 			</DropdownMenuTrigger>
 			<DropdownMenuPortal>
 				<DropdownMenuContent
-					className="z-[1000] min-w-[13rem] rounded-md border border-border bg-card p-1 text-xs shadow-xl"
+					className="z-[2147483647] min-w-[13rem] rounded-md border border-border bg-card p-1 text-xs shadow-xl"
+					style={{ zIndex: 2147483647 }}
+					side="right"
 					sideOffset={4}
 					align="end"
 					onClick={(e) => e.stopPropagation()}
@@ -477,7 +522,9 @@ function KnowledgeItemActions(props: {
 			</DropdownMenuTrigger>
 			<DropdownMenuPortal>
 				<DropdownMenuContent
-					className="z-[1000] min-w-[13rem] rounded-md border border-border bg-card p-1 text-xs shadow-xl"
+					className="z-[2147483647] min-w-[13rem] rounded-md border border-border bg-card p-1 text-xs shadow-xl"
+					style={{ zIndex: 2147483647 }}
+					side="right"
 					sideOffset={4}
 					align="end"
 					onClick={(e) => e.stopPropagation()}

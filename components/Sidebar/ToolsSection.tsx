@@ -9,6 +9,7 @@ import { Input } from "@/components/ui/input";
 import { SidebarGroup, SidebarGroupLabel } from "@/components/ui/sidebar";
 
 const PAGE_SIZE = 3;
+type ToolCategoryFilter = "all" | "oauth" | "apiKey";
 
 export default function ToolsSection(props: {
 	collapsedTools: boolean;
@@ -18,17 +19,31 @@ export default function ToolsSection(props: {
 	const { collapsedTools, setCollapsedTools, onOpenTools } = props;
 	const [query, setQuery] = useState("");
 	const [page, setPage] = useState(1);
+	const [category, setCategory] = useState<ToolCategoryFilter>("all");
 	const filteredTools = useMemo(() => {
 		const needle = query.trim().toLowerCase();
-		if (!needle) return KB_CONNECTORS;
-
-		return KB_CONNECTORS.filter(
-			(connector) =>
+		return KB_CONNECTORS.filter((connector) => {
+			if (category !== "all" && connector.auth.type !== category) return false;
+			if (!needle) return true;
+			return (
 				connector.name.toLowerCase().includes(needle) ||
 				connector.description.toLowerCase().includes(needle) ||
-				connector.key.toLowerCase().includes(needle),
-		);
-	}, [query]);
+				connector.key.toLowerCase().includes(needle)
+			);
+		});
+	}, [category, query]);
+
+	const categoryFilters: Array<{ value: ToolCategoryFilter; label: string }> = [
+		{ value: "all", label: "All" },
+		{ value: "oauth", label: "OAuth" },
+		{ value: "apiKey", label: "API Key" },
+	];
+
+	function updateCategory(nextCategory: ToolCategoryFilter) {
+		setCategory(nextCategory);
+		setPage(1);
+	}
+
 	const pageCount = Math.max(1, Math.ceil(filteredTools.length / PAGE_SIZE));
 	const visibleTools = filteredTools.slice(
 		(page - 1) * PAGE_SIZE,
@@ -71,6 +86,20 @@ export default function ToolsSection(props: {
 							placeholder="Search tools"
 							className="h-8 pl-7 text-xs"
 						/>
+					</div>
+					<div className="grid grid-cols-3 gap-1">
+						{categoryFilters.map((filter) => (
+							<Button
+								key={filter.value}
+								type="button"
+								variant={category === filter.value ? "default" : "outline"}
+								size="sm"
+								className="h-7 px-2 text-[0.68rem]"
+								onClick={() => updateCategory(filter.value)}
+							>
+								{filter.label}
+							</Button>
+						))}
 					</div>
 					<div className="grid gap-2">
 						{visibleTools.map((connector) => (

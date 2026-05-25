@@ -89,12 +89,17 @@ export default function BookmarkModal(props: {
 
 	return (
 		<Dialog
+			modal={false}
 			open={open}
 			onOpenChange={(v) => {
 				if (!v) onClose();
 			}}
 		>
-			<DialogContent className="w-[96vw] md:w-[560px] max-w-[96vw] p-4 md:p-6 bg-card text-foreground flex flex-col max-h-[90vh]">
+			<DialogContent
+				className="w-[96vw] md:w-[560px] max-w-[96vw] p-4 md:p-6 bg-card text-foreground flex flex-col max-h-[90vh]"
+				data-tour="bookmark-modal"
+				onInteractOutside={(event) => event.preventDefault()}
+			>
 				<DialogHeader>
 					<DialogTitle className="text-sm font-medium">
 						{bookmarkedIds.has(bookmarkTargetId || "")

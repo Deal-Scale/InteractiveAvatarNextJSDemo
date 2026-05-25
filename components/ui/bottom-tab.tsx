@@ -1,7 +1,7 @@
 "use client";
 
-import React, { useEffect, useMemo, useState } from "react";
 import { Maximize2Icon, Minimize2Icon } from "lucide-react";
+import React, { useEffect, useMemo, useState } from "react";
 
 import { usePlacementStore } from "@/lib/stores/placement";
 import { safeWindow } from "@/lib/utils";
@@ -30,8 +30,19 @@ export function BottomTab({
 }: BottomTabProps) {
 	// Avoid SSR/CSR mismatch from window-dependent sizing by rendering after mount
 	const [mounted, setMounted] = useState(false);
+	const [hiddenForTour, setHiddenForTour] = useState(false);
 
 	useEffect(() => setMounted(true), []);
+	useEffect(() => {
+		const hide = () => setHiddenForTour(true);
+		const show = () => setHiddenForTour(false);
+		window.addEventListener("tour-hide-chat-reopen", hide);
+		window.addEventListener("tour-show-chat-reopen", show);
+		return () => {
+			window.removeEventListener("tour-hide-chat-reopen", hide);
+			window.removeEventListener("tour-show-chat-reopen", show);
+		};
+	}, []);
 
 	const dockMode = usePlacementStore((s) => s.dockMode);
 	const heightFrac = usePlacementStore((s) => s.bottomHeightFrac);
@@ -105,12 +116,13 @@ export function BottomTab({
 	};
 
 	// When open, render the drawer panel. When closed, render the reopen tab.
-	if (!isBottom || !mounted) return null;
+	if (!isBottom || !mounted || hiddenForTour) return null;
 
 	if (!isClosed) {
 		return (
 			<section
 				aria-label="Chat drawer"
+				data-tour="bottom-chat-panel"
 				className={
 					// When sidebar is open, start at 320px to avoid covering it
 					(sidebarCollapsed
@@ -172,6 +184,7 @@ export function BottomTab({
 		<button
 			type="button"
 			aria-label="Open chat drawer"
+			data-tour="bottom-chat-panel-toggle"
 			className={
 				(sidebarCollapsed
 					? "fixed bottom-0 left-1/2 -translate-x-1/2 "

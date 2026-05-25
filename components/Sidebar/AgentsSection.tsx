@@ -7,9 +7,10 @@ import {
 	List,
 	Plus,
 } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { SidebarGroup, SidebarGroupLabel } from "@/components/ui/sidebar";
+import { useAgentStore } from "@/lib/stores/agent";
 import AgentCard, { type Agent } from "./AgentCard";
 import AgentModal from "./AgentModal";
 
@@ -31,6 +32,8 @@ export default function AgentsSection(props: {
 		onEdit,
 		onAdd,
 	} = props;
+
+	const starredAgentIds = useAgentStore((s) => s.starredAgentIds || []);
 
 	// Normalize minimal agents
 	const normalizedAgents: Agent[] = useMemo(
@@ -106,14 +109,25 @@ export default function AgentsSection(props: {
 		});
 	}, [normalizedAgents, search, selectedRole]);
 
+	// Sort starred agents to the top
+	const sortedAgents = useMemo(() => {
+		return filteredAgents.slice().sort((a, b) => {
+			const aStarred = starredAgentIds.includes(a.id);
+			const bStarred = starredAgentIds.includes(b.id);
+			if (aStarred && !bStarred) return -1;
+			if (!aStarred && bStarred) return 1;
+			return 0;
+		});
+	}, [filteredAgents, starredAgentIds]);
+
 	const pageSize = layout === "dense" ? 8 : 4;
 	const visibleAbilityCount = layout === "dense" ? 1 : 3;
-	const pageCount = Math.max(1, Math.ceil(filteredAgents.length / pageSize));
+	const pageCount = Math.max(1, Math.ceil(sortedAgents.length / pageSize));
 	const safePage = Math.min(page, pageCount);
 	const pagedAgents = useMemo(() => {
 		const start = (safePage - 1) * pageSize;
-		return filteredAgents.slice(start, start + pageSize);
-	}, [filteredAgents, pageSize, safePage]);
+		return sortedAgents.slice(start, start + pageSize);
+	}, [sortedAgents, pageSize, safePage]);
 
 	const resetPage = () => setPage(1);
 
@@ -123,12 +137,41 @@ export default function AgentsSection(props: {
 		setOpen(true);
 	};
 
-	const openCreate = () => {
+	const openCreate = useCallback(() => {
 		onAdd?.();
 		setSelectedId(null);
 		setMode("create");
 		setOpen(true);
-	};
+	}, [onAdd]);
+
+	useEffect(() => {
+		const handleOpenAgentCreate = () => {
+			setCollapsedAgents(() => false);
+			openCreate();
+		};
+		const handleCloseAgentCreate = () => {
+			setOpen(false);
+		};
+
+		window.addEventListener(
+			"tour-open-agent-create-modal",
+			handleOpenAgentCreate,
+		);
+		window.addEventListener(
+			"tour-close-agent-create-modal",
+			handleCloseAgentCreate,
+		);
+		return () => {
+			window.removeEventListener(
+				"tour-open-agent-create-modal",
+				handleOpenAgentCreate,
+			);
+			window.removeEventListener(
+				"tour-close-agent-create-modal",
+				handleCloseAgentCreate,
+			);
+		};
+	}, [setCollapsedAgents, openCreate]);
 
 	return (
 		<SidebarGroup>
@@ -148,7 +191,12 @@ export default function AgentsSection(props: {
 			{!collapsedAgents && (
 				<div className="px-2 pb-2">
 					<div className="mb-2 flex items-center gap-2">
-						<Button onClick={openCreate} size="sm" variant="outline">
+						<Button
+							data-tour="agent-create"
+							onClick={openCreate}
+							size="sm"
+							variant="outline"
+						>
 							<Plus className="mr-1 size-3" />
 							Add New
 						</Button>
@@ -228,6 +276,7 @@ export default function AgentsSection(props: {
 										agent={agent}
 										onDelete={onDelete}
 										onFavorite={onFavorite}
+										isFavorite={starredAgentIds.includes(agent.id)}
 										onOpen={openAgent}
 										visibleAbilityCount={visibleAbilityCount}
 									/>

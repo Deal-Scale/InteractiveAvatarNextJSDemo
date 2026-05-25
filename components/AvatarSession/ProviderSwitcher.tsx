@@ -98,6 +98,8 @@ const mapProvider = (
 });
 
 export const ProviderSwitcher = () => {
+	const isDebug = process.env.NEXT_PUBLIC_CHAT_DEBUG === "true";
+
 	const textMode = useChatProviderStore((s) => s.textMode);
 	const voiceMode = useChatProviderStore((s) => s.voiceMode);
 	const streamingMode = useChatProviderStore((s) => s.streamingMode);
@@ -184,6 +186,8 @@ export const ProviderSwitcher = () => {
 		streamingMode,
 		streamingProviders,
 	]);
+
+	if (!isDebug) return null;
 
 	return (
 		<fieldset

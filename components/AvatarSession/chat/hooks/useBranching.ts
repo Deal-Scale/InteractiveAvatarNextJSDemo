@@ -16,22 +16,14 @@ export function useBranching() {
 	);
 
 	const handleBranch = (content: string, id: string) => {
-		if (!currentAgent) {
-			publish({
-				title: "No agent selected",
-				description: "Pick an agent before branching.",
-				duration: 3500,
-			});
-			return;
-		}
 		setBranchMsgId(id);
 		setBranchMsgContent(content);
 		setBranchAction("Act on this response");
 		setBranchOpen(true);
 	};
 
-	const confirmBranch = () => {
-		if (!branchMsgId || !currentAgent) return;
+	const confirmBranch = (targetAgentId?: string, targetAgentName?: string) => {
+		if (!branchMsgId) return;
 		const action = (branchAction ?? "").trim();
 		if (!action) {
 			publish({
@@ -40,17 +32,18 @@ export function useBranching() {
 			});
 			return;
 		}
-		const header = `@agent:${currentAgent.name ?? currentAgent.id ?? "agent"}`;
+		const agentName = targetAgentName || currentAgent?.name || "Agent";
+		const header = `@agent:${agentName}`;
 		const text = `${header}\nAction: ${action}\n\nContext (from AI):\n> ${branchMsgContent.replaceAll("\n", "\n> ")}`;
 		console.debug("[Chat] branch -> agent", {
-			agent: currentAgent.name,
+			agent: agentName,
 			id: branchMsgId,
 			actionLength: action.length,
 		});
 		apiSendMessage(text);
 		publish({
 			title: "Branched to agent",
-			description: currentAgent.name ?? "Agent",
+			description: agentName,
 		});
 		setBranchOpen(false);
 	};

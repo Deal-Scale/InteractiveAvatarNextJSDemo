@@ -19,7 +19,8 @@
 		"typecheck": "tsc --noEmit -p tsconfig.json",
 		"test": "vitest run --config vitest.config.mts --coverage",
 		"test:watch": "vitest",
-		"prepare": "husky"
+		"prepare": "husky",
+		"e2e": "playwright test"
 	},
 	"dependencies": {
 		"3d-force-graph": "^1.78.4",
@@ -78,6 +79,7 @@
 		"react-ga4": "^2.1.0",
 		"react-grid-layout": "^2.2.3",
 		"react-hook-form": "^7.62.0",
+		"react-joyride": "^3.1.0",
 		"react-jsx-parser": "^2.4.0",
 		"react-markdown": "^10.1.0",
 		"react-resizable": "^4.0.1",
@@ -94,6 +96,7 @@
 	},
 	"devDependencies": {
 		"@biomejs/biome": "^2.2.0",
+		"@playwright/test": "^1.60.0",
 		"@testing-library/react": "^16.3.0",
 		"@testing-library/user-event": "^14.6.1",
 		"@types/dotenv": "^8.2.3",

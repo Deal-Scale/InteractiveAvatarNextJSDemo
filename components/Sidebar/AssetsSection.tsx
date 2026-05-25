@@ -13,6 +13,14 @@ import AssetCard, { type Asset } from "@/components/Sidebar/assets/AssetCard";
 import PreviewDialog from "@/components/Sidebar/assets/PreviewDialog";
 import UploadsList from "@/components/Sidebar/assets/UploadsList";
 import { Button } from "@/components/ui/button";
+import {
+	Dialog,
+	DialogContent,
+	DialogDescription,
+	DialogFooter,
+	DialogHeader,
+	DialogTitle,
+} from "@/components/ui/dialog";
 import { SidebarGroup, SidebarGroupLabel } from "@/components/ui/sidebar";
 import { useToast } from "@/components/ui/toaster";
 import { useAssetsStore } from "@/lib/stores/assets";
@@ -55,6 +63,10 @@ export default function AssetsSection(props: {
 	const { publish } = useToast();
 	const notifiedErrors = useRef<Set<string>>(new Set());
 	const [previewId, setPreviewId] = useState<string | null>(null);
+	const [deletingAsset, setDeletingAsset] = useState<{
+		id: string;
+		name: string;
+	} | null>(null);
 	const [search, setSearch] = useState("");
 	const [selectedCategory, setSelectedCategory] = useState("all");
 	const [layout, setLayout] = useState<"comfortable" | "dense">("dense");
@@ -295,7 +307,9 @@ export default function AssetsSection(props: {
 								>
 									<AssetCard
 										asset={asset}
-										onDelete={onDelete}
+										onDelete={(id) => {
+											setDeletingAsset({ id, name: asset.name });
+										}}
 										onAttach={onAttach}
 										onPreview={(id) => setPreviewId(id)}
 									/>
@@ -340,6 +354,43 @@ export default function AssetsSection(props: {
 				open={!!previewId}
 				onOpenChange={(o) => !o && setPreviewId(null)}
 			/>
+
+			{/* Delete Confirmation Dialog */}
+			<Dialog
+				open={!!deletingAsset}
+				onOpenChange={(open) => {
+					if (!open) setDeletingAsset(null);
+				}}
+			>
+				<DialogContent className="max-w-[400px] bg-card text-card-foreground">
+					<DialogHeader>
+						<DialogTitle>Delete Asset</DialogTitle>
+						<DialogDescription>
+							Are you sure you want to delete{" "}
+							<span className="font-semibold text-foreground">
+								"{deletingAsset?.name}"
+							</span>
+							? This action cannot be undone.
+						</DialogDescription>
+					</DialogHeader>
+					<DialogFooter className="flex gap-2 sm:justify-end mt-4">
+						<Button variant="outline" onClick={() => setDeletingAsset(null)}>
+							Cancel
+						</Button>
+						<Button
+							variant="destructive"
+							onClick={() => {
+								if (deletingAsset && onDelete) {
+									onDelete(deletingAsset.id);
+								}
+								setDeletingAsset(null);
+							}}
+						>
+							Delete
+						</Button>
+					</DialogFooter>
+				</DialogContent>
+			</Dialog>
 		</SidebarGroup>
 	);
 }

@@ -36,6 +36,7 @@ export type FieldConfig = {
 		label: string;
 		tone?: "text" | "voice" | "video" | "tools" | "general";
 		description?: string;
+		dataTour?: string;
 	};
 	advanced?: {
 		label?: string;

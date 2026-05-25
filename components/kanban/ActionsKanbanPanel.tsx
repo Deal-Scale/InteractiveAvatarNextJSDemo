@@ -1,7 +1,7 @@
 "use client";
 
-import { KanbanBoard } from "./KanbanBoard";
 import NewTaskDialog from "./components/new-task-dialog";
+import { KanbanBoard } from "./KanbanBoard";
 
 export function ActionsKanbanPanel() {
 	return (
@@ -13,7 +13,9 @@ export function ActionsKanbanPanel() {
 						Create tasks with the modal, then drag cards between sections.
 					</p>
 				</div>
-				<NewTaskDialog />
+				<div>
+					<NewTaskDialog />
+				</div>
 			</div>
 			<div className="min-h-0 flex-1 overflow-hidden">
 				<KanbanBoard />

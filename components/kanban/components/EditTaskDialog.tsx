@@ -1,4 +1,6 @@
 "use client";
+import { RotateCcw, Sparkles } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import {
 	Dialog,
 	DialogContent,
@@ -6,21 +8,19 @@ import {
 	DialogHeader,
 	DialogTitle,
 } from "@/components/ui/dialog";
-import { Button } from "@/components/ui/button";
+import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Textarea } from "@/components/ui/textarea";
+import { useUserStore } from "@/lib/stores/userStore";
 import type { KanbanTask } from "../utils/types";
 import { AssignmentTypeDropdown } from "./new-task-dialog/AssignmentTypeDropdown";
 import { LeadDropdown } from "./new-task-dialog/LeadDropdown";
 import { LeadListDropdown } from "./new-task-dialog/LeadListDropdown";
-import { TeamMemberDropdown } from "./new-task-dialog/TeamMemberDropdown";
 import { TaskFormFields } from "./new-task-dialog/TaskFormFields";
+import { TeamMemberDropdown } from "./new-task-dialog/TeamMemberDropdown";
 import { AiControls } from "./task-dialog/components/AiControls";
-import { RotateCcw, Sparkles } from "lucide-react";
 import { AiPreviewEditor } from "./task-dialog/components/AiPreviewEditor";
 import { useEditTaskDialog } from "./task-dialog/hooks/useEditTaskDialog";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
-import { useUserStore } from "@/lib/stores/userStore";
 
 interface EditTaskDialogProps {
 	task?: KanbanTask; // optional: when absent, dialog creates a new task
@@ -106,8 +106,12 @@ export default function EditTaskDialog({
 	const aiInsufficient = aiRemaining < aiCostAmount;
 
 	return (
-		<Dialog open={open} onOpenChange={onOpenChange}>
-			<DialogContent className="flex h-[90vh] w-[95vw] max-w-2xl flex-col overflow-hidden bg-card p-0 text-card-foreground md:h-[85vh] md:max-w-3xl">
+		<Dialog open={open} onOpenChange={onOpenChange} modal={false}>
+			<DialogContent
+				data-tour="kanban-task-modal"
+				className="flex h-[90vh] w-[95vw] max-w-2xl flex-col overflow-hidden bg-card p-0 text-card-foreground md:h-[85vh] md:max-w-3xl"
+				onInteractOutside={(event) => event.preventDefault()}
+			>
 				<DialogHeader className="border-b px-6 pt-6 pb-3">
 					<DialogTitle>
 						{effectiveMode === "edit" ? "Edit Task" : "Create Task"}
@@ -124,9 +128,16 @@ export default function EditTaskDialog({
 							value={activeTab}
 							onValueChange={(v) => setActiveTab(v as "manual" | "ai")}
 						>
-							<TabsList>
-								<TabsTrigger value="manual">Manual</TabsTrigger>
-								<TabsTrigger value="ai">AI</TabsTrigger>
+							<TabsList data-tour="kanban-task-type">
+								<TabsTrigger
+									value="manual"
+									data-tour="kanban-start-manual-task"
+								>
+									Manual
+								</TabsTrigger>
+								<TabsTrigger value="ai" data-tour="kanban-start-ai-task">
+									AI
+								</TabsTrigger>
 							</TabsList>
 
 							{/* Shared controls for both tabs */}
@@ -157,7 +168,11 @@ export default function EditTaskDialog({
 							/>
 
 							{/* Manual Tab Content */}
-							<TabsContent value="manual" className="mt-2">
+							<TabsContent
+								value="manual"
+								className="mt-2"
+								data-tour="kanban-manual-task-form"
+							>
 								<TaskFormFields
 									assignType={assignType}
 									initialValues={initialValues}
@@ -165,7 +180,11 @@ export default function EditTaskDialog({
 							</TabsContent>
 
 							{/* AI Tab Content */}
-							<TabsContent value="ai" className="mt-2 grid gap-3">
+							<TabsContent
+								value="ai"
+								className="mt-2 grid gap-3"
+								data-tour="kanban-ai-task-form"
+							>
 								<AiControls
 									agentType={agentType}
 									setAgentType={setAgentType}
@@ -228,6 +247,7 @@ export default function EditTaskDialog({
 								<Button
 									type="button"
 									variant="secondary"
+									data-tour="kanban-ai-generate-preview"
 									disabled={!selectedAgentId}
 									onClick={generatePreview}
 								>

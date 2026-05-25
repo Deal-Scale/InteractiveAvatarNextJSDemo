@@ -53,6 +53,10 @@ function stretchInjectedSvg(target: HTMLDivElement | null) {
 	svgElement.style.maxWidth = "none";
 }
 
+type MermaidTourWindow = Window & {
+	__mindStreamTourMermaidActionsOpen?: boolean;
+};
+
 export function Mermaid({
 	chart,
 	children,
@@ -68,6 +72,7 @@ export function Mermaid({
 	const [zoom, setZoom] = React.useState(1);
 	const [renderNonce, setRenderNonce] = React.useState(0);
 	const [menuOpen, setMenuOpen] = React.useState(false);
+	const [tourPinnedMenu, setTourPinnedMenu] = React.useState(false);
 	const [gridAddState, setGridAddState] = React.useState<"idle" | "added">(
 		"idle",
 	);
@@ -75,6 +80,7 @@ export function Mermaid({
 		"idle" | "rendering" | "success" | "error"
 	>("idle");
 	const menuRef = React.useRef<HTMLDivElement | null>(null);
+	const tourPinnedMenuRef = React.useRef(false);
 	const containerRef = React.useRef<HTMLDivElement | null>(null);
 	const modalViewportRef = React.useRef<HTMLDivElement | null>(null);
 	const modalSvgRef = React.useRef<HTMLDivElement | null>(null);
@@ -148,16 +154,26 @@ export function Mermaid({
 
 	const stableCode = React.useDeferredValue(code);
 	const codeHash = React.useMemo(() => hashCode(stableCode), [stableCode]);
+	const isMenuVisible = menuOpen || tourPinnedMenu;
+
+	React.useEffect(() => {
+		tourPinnedMenuRef.current = tourPinnedMenu;
+	}, [tourPinnedMenu]);
 
 	// Close quick actions menu on outside click or Escape
 	React.useEffect(() => {
-		if (!menuOpen) return;
+		if (!isMenuVisible) return;
 		const onDown = (e: MouseEvent) => {
 			if (!menuRef.current) return;
+			if (tourPinnedMenuRef.current) return;
 			if (!menuRef.current.contains(e.target as Node)) setMenuOpen(false);
 		};
 		const onKey = (e: KeyboardEvent) => {
-			if (e.key === "Escape") setMenuOpen(false);
+			if (e.key === "Escape") {
+				tourPinnedMenuRef.current = false;
+				setTourPinnedMenu(false);
+				setMenuOpen(false);
+			}
 		};
 		document.addEventListener("mousedown", onDown);
 		document.addEventListener("keydown", onKey);
@@ -165,7 +181,34 @@ export function Mermaid({
 			document.removeEventListener("mousedown", onDown);
 			document.removeEventListener("keydown", onKey);
 		};
-	}, [menuOpen]);
+	}, [isMenuVisible]);
+
+	React.useEffect(() => {
+		const tourWindow = window as MermaidTourWindow;
+		if (tourWindow.__mindStreamTourMermaidActionsOpen) {
+			tourPinnedMenuRef.current = true;
+			setTourPinnedMenu(true);
+			setMenuOpen(true);
+		}
+		const openForTour = () => {
+			tourWindow.__mindStreamTourMermaidActionsOpen = true;
+			tourPinnedMenuRef.current = true;
+			setTourPinnedMenu(true);
+			setMenuOpen(true);
+		};
+		const closeForTour = () => {
+			tourWindow.__mindStreamTourMermaidActionsOpen = false;
+			tourPinnedMenuRef.current = false;
+			setTourPinnedMenu(false);
+			setMenuOpen(false);
+		};
+		window.addEventListener("tour-open-mermaid-actions", openForTour);
+		window.addEventListener("tour-close-mermaid-actions", closeForTour);
+		return () => {
+			window.removeEventListener("tour-open-mermaid-actions", openForTour);
+			window.removeEventListener("tour-close-mermaid-actions", closeForTour);
+		};
+	}, []);
 
 	const initializedRef = React.useRef(false);
 	React.useEffect(() => {
@@ -354,76 +397,93 @@ export function Mermaid({
 				<Button
 					size="sm"
 					variant="ghost"
+					data-tour="mermaid-actions"
 					aria-haspopup="menu"
-					aria-expanded={menuOpen}
+					aria-expanded={isMenuVisible}
 					aria-label="Quick actions"
-					onClick={() => setMenuOpen((v) => !v)}
+					onClick={() => {
+						tourPinnedMenuRef.current = false;
+						setTourPinnedMenu(false);
+						setMenuOpen((v) => !v);
+					}}
 				>
 					⋯
 				</Button>
-				{menuOpen && (
-					<div
-						role="menu"
-						className="absolute right-0 z-20 mt-1 w-44 overflow-hidden rounded-md border border-border bg-popover shadow-md"
+				<div
+					aria-hidden={!isMenuVisible}
+					role="menu"
+					className={cn(
+						"absolute right-0 z-[2147483646] w-44 overflow-hidden rounded-md border border-border bg-popover shadow-md",
+						tourPinnedMenu ? "bottom-full mb-1" : "mt-1",
+						isMenuVisible ? "opacity-100" : "pointer-events-none opacity-0",
+					)}
+				>
+					<button
+						type="button"
+						role="menuitem"
+						className="block w-full cursor-pointer px-3 py-2 text-left text-xs hover:bg-accent"
+						onClick={() => {
+							tourPinnedMenuRef.current = false;
+							setTourPinnedMenu(false);
+							setMenuOpen(false);
+							handleCopy();
+						}}
 					>
-						<button
-							type="button"
-							role="menuitem"
-							className="block w-full cursor-pointer px-3 py-2 text-left text-xs hover:bg-accent"
-							onClick={() => {
-								setMenuOpen(false);
-								handleCopy();
-							}}
-						>
-							{copyState === "copied" ? "Copied" : "Copy"}
-						</button>
-						<button
-							type="button"
-							role="menuitem"
-							className="block w-full cursor-pointer px-3 py-2 text-left text-xs hover:bg-accent"
-							onClick={() => {
-								setMenuOpen(false);
-								setPan({ x: 0, y: 0 });
-								setOpen(true);
-							}}
-						>
-							View
-						</button>
-						<button
-							type="button"
-							role="menuitem"
-							disabled={status === "rendering"}
-							className={cn(
-								"block w-full cursor-pointer px-3 py-2 text-left text-xs hover:bg-accent",
-								status === "rendering" && "cursor-not-allowed opacity-50",
-							)}
-							onClick={() => {
-								if (status === "rendering") return;
-								setMenuOpen(false);
-								setRenderNonce((n) => n + 1);
-							}}
-						>
-							{status === "error"
-								? "Retry"
-								: status === "rendering"
-									? "Rendering…"
-									: "Reload"}
-						</button>
-						<button
-							type="button"
-							role="menuitem"
-							className={cn(
-								"block w-full cursor-pointer px-3 py-2 text-left text-xs hover:bg-accent",
-							)}
-							onClick={() => {
-								setMenuOpen(false);
-								handleAddToGrid();
-							}}
-						>
-							{gridAddState === "added" ? "Added" : "Add to Grid"}
-						</button>
-					</div>
-				)}
+						{copyState === "copied" ? "Copied" : "Copy"}
+					</button>
+					<button
+						type="button"
+						role="menuitem"
+						className="block w-full cursor-pointer px-3 py-2 text-left text-xs hover:bg-accent"
+						onClick={() => {
+							tourPinnedMenuRef.current = false;
+							setTourPinnedMenu(false);
+							setMenuOpen(false);
+							setPan({ x: 0, y: 0 });
+							setOpen(true);
+						}}
+					>
+						View
+					</button>
+					<button
+						type="button"
+						role="menuitem"
+						disabled={status === "rendering"}
+						className={cn(
+							"block w-full cursor-pointer px-3 py-2 text-left text-xs hover:bg-accent",
+							status === "rendering" && "cursor-not-allowed opacity-50",
+						)}
+						onClick={() => {
+							if (status === "rendering") return;
+							tourPinnedMenuRef.current = false;
+							setTourPinnedMenu(false);
+							setMenuOpen(false);
+							setRenderNonce((n) => n + 1);
+						}}
+					>
+						{status === "error"
+							? "Retry"
+							: status === "rendering"
+								? "Rendering…"
+								: "Reload"}
+					</button>
+					<button
+						type="button"
+						role="menuitem"
+						data-tour="mermaid-add-to-grid"
+						className={cn(
+							"block w-full cursor-pointer px-3 py-2 text-left text-xs hover:bg-accent",
+						)}
+						onClick={() => {
+							tourPinnedMenuRef.current = false;
+							setTourPinnedMenu(false);
+							setMenuOpen(false);
+							handleAddToGrid();
+						}}
+					>
+						{gridAddState === "added" ? "Added" : "Add to Grid"}
+					</button>
+				</div>
 			</div>
 		</div>
 	) : null;
@@ -445,6 +505,7 @@ export function Mermaid({
 	return (
 		<div
 			className={cn("relative flex flex-col", className)}
+			data-tour="mermaid-preview"
 			data-mermaid-id={`${idPrefix}-${uid}`}
 		>
 			{Toolbar}

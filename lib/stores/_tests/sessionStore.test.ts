@@ -18,23 +18,23 @@ describe("useSessionStore config modal controls", () => {
 			chatSettingsTab: "text",
 			isChatSettingsOpen: false,
 			isConfigModalOpen: false,
-			configModalTab: "session",
+			configModalTab: "global",
 		}));
 	});
 
 	it("opens the modal on the requested tab", () => {
-		useSessionStore.getState().openConfigModal("agent");
+		useSessionStore.getState().openConfigModal("user");
 
 		const state = useSessionStore.getState();
 		expect(state.isConfigModalOpen).toBe(true);
-		expect(state.configModalTab).toBe<ConfigModalTab>("agent");
+		expect(state.configModalTab).toBe<ConfigModalTab>("user");
 	});
 
-	it("defaults to the session tab when no tab is provided", () => {
+	it("defaults to the global tab when no tab is provided", () => {
 		useSessionStore.getState().openConfigModal();
 
 		const state = useSessionStore.getState();
-		expect(state.configModalTab).toBe<ConfigModalTab>("session");
+		expect(state.configModalTab).toBe<ConfigModalTab>("global");
 	});
 
 	it("allows the tab to be updated explicitly", () => {

@@ -1,8 +1,8 @@
 "use client";
 
 import React from "react";
-import type { Command } from "@/types/commands";
 import { cn } from "@/lib/utils";
+import type { Command } from "@/types/commands";
 
 export type SlashCommandPaletteProps = {
 	anchorRect: DOMRect;
@@ -64,6 +64,7 @@ export const SlashCommandPalette: React.FC<SlashCommandPaletteProps> = ({
 		<div
 			role="listbox"
 			aria-label="Slash command palette"
+			data-tour="slash-command-menu"
 			className={cn(
 				"fixed z-50 max-h-72 rounded-md border bg-popover text-popover-foreground shadow-md",
 				"outline-none",
@@ -94,6 +95,7 @@ export const SlashCommandPalette: React.FC<SlashCommandPaletteProps> = ({
 						<div
 							key={item.id}
 							role="option"
+							data-tour={idx === 0 ? "slash-command-item" : undefined}
 							aria-selected={idx === highlightedIndex}
 							className={cn(
 								"flex cursor-pointer items-center justify-between rounded-sm px-2 py-1.5 text-sm",

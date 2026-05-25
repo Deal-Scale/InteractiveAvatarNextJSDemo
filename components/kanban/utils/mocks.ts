@@ -68,6 +68,20 @@ export const mockTasks: KanbanTask[] = [
 			.slice(0, 10),
 		assignedToTeamMember: mockTeamMembers[1]?.id,
 		leadListId: String(mockLeadListData[0]?.id),
+		mcpWorkflow: {
+			id: "wf_outreach_running_001",
+			title: "Outreach Sequence Generator",
+			prompts: [
+				{
+					text: "Draft coordinated email and SMS follow-up for warm prospects.",
+					description:
+						"Generates a multi-step outreach sequence while showing running task controls.",
+				},
+			],
+			functions: [],
+			resources: [],
+			status: "pending",
+		},
 		aiState: "running",
 		aiStartedAt: new Date(Date.now() - 15_000).toISOString(),
 		aiEtaSeconds: 90,

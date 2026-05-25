@@ -18,6 +18,7 @@ export function useChatController(sessionState: StreamingAvatarSessionState) {
 	const {
 		messages,
 		addMessage,
+		chatExperience,
 		isChatSolidBg,
 		setChatSolidBg,
 		currentSessionId,
@@ -44,7 +45,7 @@ export function useChatController(sessionState: StreamingAvatarSessionState) {
 	// Mock chat
 	const [mockChatEnabled, setMockChatEnabled] = useState(false);
 	const [mockVoiceActive, setMockVoiceActive] = useState(false);
-	const canChat = isConnected || mockChatEnabled;
+	const canChat = isConnected || mockChatEnabled || chatExperience === "basic";
 
 	// If a real session becomes connected, ensure mock chat is turned off
 	useEffect(() => {

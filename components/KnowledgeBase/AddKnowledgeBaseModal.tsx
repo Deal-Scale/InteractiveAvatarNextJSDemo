@@ -290,13 +290,18 @@ export default function AddKnowledgeBaseModal({
 
 	return (
 		<Dialog
+			modal={false}
 			open={open}
 			onOpenChange={(v) => {
 				if (!v) resetDraft();
 				onOpenChange(v);
 			}}
 		>
-			<DialogContent className="w-[96vw] max-w-[96vw] bg-card text-foreground sm:max-w-xl max-h-[85dvh]">
+			<DialogContent
+				className="w-[96vw] max-w-[96vw] bg-card text-foreground sm:max-w-xl max-h-[85dvh]"
+				data-tour="kb-add-modal"
+				onInteractOutside={(event) => event.preventDefault()}
+			>
 				<DialogHeader>
 					<DialogTitle>Add Knowledge Base</DialogTitle>
 					<DialogDescription>

@@ -1,9 +1,8 @@
 "use client";
 
-import React, { useEffect, useRef, useState, Suspense } from "react";
 import { ForceGraph3DInstance } from "3d-force-graph";
 import { ExpandIcon, EyeIcon, Highlighter, ZoomIn } from "lucide-react";
-import { GraphData } from "./types";
+import React, { Suspense, useEffect, useRef, useState } from "react";
 import {
 	useFullscreen,
 	useFullscreenChangeListener,
@@ -13,6 +12,7 @@ import {
 	useInitializeGraph,
 	useToggleAnimation,
 } from "./hooks";
+import { GraphData } from "./types";
 
 export interface ThreeGraphViewerProps {
 	graphData: GraphData;
@@ -22,6 +22,7 @@ export interface ThreeGraphViewerProps {
 	nodesToHighlight?: (string | number)[];
 	onHighlightToggle?: () => void;
 	isHighlightActive?: boolean;
+	showControls?: boolean;
 }
 
 export const ThreeGraphViewer: React.FC<ThreeGraphViewerProps> = ({
@@ -32,6 +33,7 @@ export const ThreeGraphViewer: React.FC<ThreeGraphViewerProps> = ({
 	nodesToHighlight = [],
 	onHighlightToggle,
 	isHighlightActive = false,
+	showControls = true,
 }) => {
 	const graphRef = useRef<HTMLDivElement>(null);
 	const graphInstanceRef = useRef<ForceGraph3DInstance | null>(null);
@@ -90,6 +92,36 @@ export const ThreeGraphViewer: React.FC<ThreeGraphViewerProps> = ({
 		isHighlightActive ? nodesToHighlight : [],
 	);
 
+	useEffect(() => {
+		const showGraphNodes = () => {
+			if (!graphInstanceRef.current) return;
+			graphInstanceRef.current.resumeAnimation();
+			setAnimationPaused(false);
+			setLoading(false);
+			handleResize();
+			window.setTimeout(() => {
+				handleZoomToFit();
+				handleResize();
+			}, 100);
+		};
+		const zoomToFit = () => {
+			handleZoomToFit();
+			handleResize();
+		};
+		const fullscreen = () => {
+			void handleFullscreen();
+		};
+
+		window.addEventListener("tour-show-brain-graph", showGraphNodes);
+		window.addEventListener("brain-graph-zoom-to-fit", zoomToFit);
+		window.addEventListener("brain-graph-fullscreen", fullscreen);
+		return () => {
+			window.removeEventListener("tour-show-brain-graph", showGraphNodes);
+			window.removeEventListener("brain-graph-zoom-to-fit", zoomToFit);
+			window.removeEventListener("brain-graph-fullscreen", fullscreen);
+		};
+	}, [handleFullscreen, handleResize, handleZoomToFit]);
+
 	return (
 		<Suspense fallback={loadingFallback}>
 			<div style={{ position: "relative", width: "100%", height: "100%" }}>
@@ -116,8 +148,9 @@ export const ThreeGraphViewer: React.FC<ThreeGraphViewerProps> = ({
 						</button>
 					</div>
 				)}
-				{!animationPaused && (
+				{showControls && !animationPaused && (
 					<div
+						data-tour="brain-controls"
 						className="absolute top-16 left-1/2 transform -translate-x-1/2 flex space-x-4"
 						style={{ zIndex: 20, pointerEvents: "none" }}
 					>

@@ -11,6 +11,7 @@ import {
 	loadFromCache,
 	saveToCache,
 } from "@/components/Sidebar/utils/cache";
+import { useSessionStore } from "@/lib/stores/session";
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 const CHAT_GROUPS = [
@@ -75,6 +76,10 @@ export default function useConversations() {
 			return new Set();
 		}
 	});
+	const chatFolders = useSessionStore((state) => state.chatFolders);
+	const chatFolderAssignments = useSessionStore(
+		(state) => state.chatFolderAssignments,
+	);
 
 	// Persist archived ids
 	useEffect(() => {
@@ -109,13 +114,43 @@ export default function useConversations() {
 	}, [groups]);
 
 	// Derived values
-	const filteredGroups = useMemo(() => {
+	const organizedGroups = useMemo(() => {
 		if (!groups) return null;
+		const folderGroups = chatFolders
+			.map((folder) => ({
+				period: folder.name,
+				conversations: groups
+					.flatMap((group) => group.conversations)
+					.filter(
+						(conversation) =>
+							chatFolderAssignments[conversation.id] === folder.id,
+					),
+			}))
+			.filter((group) => group.conversations.length > 0);
+		const assignedIds = new Set(
+			Object.entries(chatFolderAssignments)
+				.filter(([, folderId]) => Boolean(folderId))
+				.map(([conversationId]) => conversationId),
+		);
+		const unassignedGroups = groups
+			.map((group) => ({
+				...group,
+				conversations: group.conversations.filter(
+					(conversation) => !assignedIds.has(conversation.id),
+				),
+			}))
+			.filter((group) => group.conversations.length > 0);
+
+		return [...folderGroups, ...unassignedGroups];
+	}, [chatFolderAssignments, chatFolders, groups]);
+
+	const filteredGroups = useMemo(() => {
+		if (!organizedGroups) return null;
 		const q = query.trim().toLowerCase();
 
-		if (!q) return groups;
+		if (!q) return organizedGroups;
 
-		return groups
+		return organizedGroups
 			.map((g) => ({
 				...g,
 				conversations: g.conversations.filter(
@@ -126,7 +161,7 @@ export default function useConversations() {
 				),
 			}))
 			.filter((g) => g.conversations.length > 0);
-	}, [groups, query, archivedIds]);
+	}, [organizedGroups, query, archivedIds]);
 
 	const archivedList = useMemo(() => {
 		if (!groups) return [] as Conversation[];
@@ -136,11 +171,11 @@ export default function useConversations() {
 	}, [groups, archivedIds]);
 
 	const visibleConversationIds = useMemo(() => {
-		const base = (filteredGroups ?? groups) || [];
+		const base = (filteredGroups ?? organizedGroups ?? groups) || [];
 		const all = base.flatMap((g) => g.conversations);
 
 		return all.filter((c) => !archivedIds.has(c.id)).map((c) => c.id);
-	}, [filteredGroups, groups, archivedIds]);
+	}, [filteredGroups, organizedGroups, groups, archivedIds]);
 
 	const totalCount = useMemo(
 		() => groups?.reduce((acc, g) => acc + g.conversations.length, 0) ?? 0,

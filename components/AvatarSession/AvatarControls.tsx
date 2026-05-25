@@ -1,26 +1,24 @@
-import React from "react";
 import {
 	Brain,
 	Database,
 	LayoutDashboard,
-	Play,
 	Minimize2,
+	Play,
 } from "lucide-react";
-
+import React from "react";
+import {
+	useInterruptTaskMutation,
+	useKeepAliveMutation,
+	useStopSessionMutation,
+} from "@/lib/services/streaming/query";
+import { usePlacementStore } from "@/lib/stores/placement";
+import { useSessionStore } from "@/lib/stores/session";
 import { Button } from "../Button";
-import { useInterrupt } from "../logic/useInterrupt";
 import {
 	StreamingAvatarSessionState,
 	useStreamingAvatarContext,
 } from "../logic/context";
-
-import { useSessionStore } from "@/lib/stores/session";
-import {
-	useInterruptTaskMutation,
-	useStopSessionMutation,
-	useKeepAliveMutation,
-} from "@/lib/services/streaming/query";
-import { usePlacementStore } from "@/lib/stores/placement";
+import { useInterrupt } from "../logic/useInterrupt";
 
 interface AvatarControlsProps {
 	stopSession: () => void;
@@ -102,6 +100,7 @@ export const AvatarControls: React.FC<AvatarControlsProps> = ({
 				<button
 					type="button"
 					aria-label="Show controls"
+					data-tour="top-panel-toggle"
 					className={
 						"fixed top-0 left-1/2 -translate-x-1/2 z-[100] select-none pointer-events-auto " +
 						"flex items-center gap-2 rounded-b-md border border-primary bg-background px-3 py-2 text-foreground " +
@@ -161,6 +160,7 @@ export const AvatarControls: React.FC<AvatarControlsProps> = ({
 					)}
 					{/* Tab switcher */}
 					<div
+						data-tour="top-panel-tabs"
 						className={`mt-2 flex items-center justify-center gap-2 bg-popover/60 border border-border rounded-full px-2 py-1 backdrop-blur-sm transition-opacity duration-200 ${
 							sessionState === StreamingAvatarSessionState.CONNECTED
 								? "opacity-[var(--ui-opacity)] group-hover:opacity-100"
@@ -174,6 +174,7 @@ export const AvatarControls: React.FC<AvatarControlsProps> = ({
 					>
 						{/* Video first */}
 						<Button
+							data-tour="top-panel-toggle"
 							className={`h-9 w-9 aspect-square !p-0 rounded-xl flex items-center justify-center flex-shrink-0 ${
 								viewTab === "video"
 									? "!bg-primary !text-primary-foreground"
@@ -185,6 +186,7 @@ export const AvatarControls: React.FC<AvatarControlsProps> = ({
 							<Play className="h-4 w-4" />
 						</Button>
 						<Button
+							data-tour="brain-tab"
 							className={`h-9 w-9 aspect-square !p-0 rounded-xl flex items-center justify-center flex-shrink-0 ${
 								viewTab === "brain"
 									? "!bg-primary !text-primary-foreground"
@@ -196,6 +198,7 @@ export const AvatarControls: React.FC<AvatarControlsProps> = ({
 							<Brain className="h-4 w-4" />
 						</Button>
 						<Button
+							data-tour="data-tab"
 							className={`h-9 w-9 aspect-square !p-0 rounded-xl flex items-center justify-center flex-shrink-0 ${
 								viewTab === "data"
 									? "!bg-primary !text-primary-foreground"
@@ -207,6 +210,7 @@ export const AvatarControls: React.FC<AvatarControlsProps> = ({
 							<Database className="h-4 w-4" />
 						</Button>
 						<Button
+							data-tour="actions-tab"
 							className={`h-9 w-9 aspect-square !p-0 rounded-xl flex items-center justify-center flex-shrink-0 ${
 								viewTab === "actions"
 									? "!bg-primary !text-primary-foreground"

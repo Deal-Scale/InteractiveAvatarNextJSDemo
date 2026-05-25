@@ -1,12 +1,12 @@
-import React, { useState } from "react";
+import { AvatarQuality } from "@heygen/streaming-avatar";
 import { Play, Settings } from "lucide-react";
+import React, { useState } from "react";
+import { AVATARS } from "@/app/lib/constants";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import { useAgentStore } from "@/lib/stores/agent";
 import { useSessionStore } from "@/lib/stores/session";
-import { AVATARS } from "@/app/lib/constants";
-import { AvatarQuality } from "@heygen/streaming-avatar";
 
 interface AvatarSelectorProps {
 	className?: string;
@@ -39,13 +39,13 @@ export function AvatarSelector({
 		if (onStartSession) {
 			onStartSession();
 		} else {
-			// Fallback to opening config modal with session tab
-			openConfigModal("session");
+			// Fallback to opening the available global configuration tab.
+			openConfigModal("global");
 		}
 	};
 
 	const handleOpenSettings = () => {
-		openConfigModal("agent");
+		openConfigModal("global");
 	};
 
 	return (

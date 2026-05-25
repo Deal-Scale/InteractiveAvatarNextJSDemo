@@ -1,15 +1,14 @@
 "use client";
 
-import { Button } from "@/components/ui/button";
+import { Info, RefreshCw, Square } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import {
 	Tooltip,
 	TooltipContent,
 	TooltipProvider,
 	TooltipTrigger,
 } from "@/components/ui/tooltip";
-import { Info } from "lucide-react";
-import { RefreshCw, Square } from "lucide-react";
 import type { KanbanTask } from "../../../utils/types";
 import { formatHMS } from "../utils/time";
 
@@ -50,6 +49,7 @@ export function AiHeaderControls({
 								variant="secondary"
 								className="mx-0 px-2 py-1 font-bold text-xs"
 								type="button"
+								data-tour="kanban-run-ai-task"
 								onClick={onOpen}
 							>
 								<span role="img" aria-label="Play">
@@ -116,6 +116,7 @@ export function AiHeaderControls({
 				<Button
 					variant="ghost"
 					className="mx-0 h-8 px-2 text-destructive"
+					data-tour="kanban-stop-task"
 					onClick={onCancel}
 					type="button"
 				>
@@ -127,6 +128,7 @@ export function AiHeaderControls({
 				<Button
 					variant="outline"
 					className="mx-0 h-8 px-2"
+					data-tour="kanban-reconnect-task"
 					onClick={onRetry}
 					type="button"
 				>

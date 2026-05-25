@@ -14,7 +14,6 @@ import { ChatPanel } from "./AvatarSession/ChatPanel";
 import { useChatController } from "./AvatarSession/hooks/useChatController";
 import { useChatPanelProps } from "./AvatarSession/hooks/useChatPanelProps";
 import { useDockablePanel } from "./AvatarSession/hooks/useDockablePanel";
-import { useStartMockChat } from "./AvatarSession/hooks/useStartMockChat";
 import { StreamingAvatarSessionState } from "./logic/context";
 
 //
@@ -41,12 +40,17 @@ export function AvatarSession({
 	const messages = useSessionStore((state) => state.messages);
 	const setConfig = useSessionStore((state) => state.setConfig);
 	const chatExperience = useSessionStore((state) => state.chatExperience);
+	const setChatExperience = useSessionStore((state) => state.setChatExperience);
 	const { currentAgent, setLastStarted, markClean } = useAgentStore();
 	const userSettings = useSettingsStore((state) => state.userSettings);
 	const setDockMode = usePlacementStore((state) => state.setDockMode);
 	const setBottomHeightFrac = usePlacementStore(
 		(state) => state.setBottomHeightFrac,
 	);
+	const setRightWidthFrac = usePlacementStore(
+		(state) => state.setRightWidthFrac,
+	);
+	const setFloating = usePlacementStore((state) => state.setFloating);
 	const setSidebarCollapsed = usePlacementStore(
 		(state) => state.setSidebarCollapsed,
 	);
@@ -126,23 +130,127 @@ export function AvatarSession({
 		toggleExpand,
 	]);
 
-	// Start mock chat and open UI in bottom expanded mode
-	const startMockChat = useStartMockChat({
-		dock,
-		expanded,
-		setDock,
-		setBottomSize,
-		toggleExpand,
-		enableMockChatUi,
-	});
-
-	// Open bottom chat expanded without selecting an avatar
-	const startWithoutAvatar = () => {
-		// Ensure docked at bottom and fully expanded
+	// Open bottom chat expanded without selecting an avatar/session.
+	const startWithoutAvatar = useCallback(() => {
+		setChatExperience("basic");
+		enableMockChatUi();
+		setDockMode("bottom");
+		setBottomHeightFrac(1);
+		setSidebarCollapsed(false);
 		setDock("bottom");
 		setBottomSize(100);
 		if (!expanded) toggleExpand();
-	};
+	}, [
+		enableMockChatUi,
+		expanded,
+		setChatExperience,
+		setBottomHeightFrac,
+		setDock,
+		setDockMode,
+		setBottomSize,
+		setSidebarCollapsed,
+		toggleExpand,
+	]);
+
+	useEffect(() => {
+		const handleStartChatWithoutSession = (event: Event) => {
+			if (useSessionStore.getState().chatExperience !== "basic") {
+				return;
+			}
+			const shouldClearInput = (event as CustomEvent<{ clearInput?: boolean }>)
+				.detail?.clearInput;
+			if (shouldClearInput) {
+				setChatInput("");
+			}
+			startWithoutAvatar();
+		};
+
+		window.addEventListener(
+			"tour-start-chat-without-session",
+			handleStartChatWithoutSession,
+		);
+
+		return () => {
+			window.removeEventListener(
+				"tour-start-chat-without-session",
+				handleStartChatWithoutSession,
+			);
+		};
+	}, [setChatInput, startWithoutAvatar]);
+
+	useEffect(() => {
+		const handleShowAvatarWorkspace = () => {
+			setChatExperience("avatar");
+			setDock("bottom");
+			setDockMode("bottom");
+			setBottomHeightFrac(0);
+			setRightWidthFrac(0);
+			setFloating({ visible: false });
+			setSidebarCollapsed(true);
+		};
+
+		window.addEventListener(
+			"tour-show-avatar-workspace",
+			handleShowAvatarWorkspace,
+		);
+		const handleShowBasicWorkspace = () => {
+			autoStartedBasicChatRef.current = true;
+			setChatExperience("basic");
+			setDock("bottom");
+			setDockMode("bottom");
+			setBottomHeightFrac(0);
+			setRightWidthFrac(0);
+			setFloating({ visible: false });
+			setSidebarCollapsed(true);
+		};
+
+		window.addEventListener(
+			"tour-show-basic-workspace",
+			handleShowBasicWorkspace,
+		);
+
+		return () => {
+			window.removeEventListener(
+				"tour-show-avatar-workspace",
+				handleShowAvatarWorkspace,
+			);
+			window.removeEventListener(
+				"tour-show-basic-workspace",
+				handleShowBasicWorkspace,
+			);
+		};
+	}, [
+		setBottomHeightFrac,
+		setChatExperience,
+		setDock,
+		setDockMode,
+		setFloating,
+		setRightWidthFrac,
+		setSidebarCollapsed,
+	]);
+
+	const autoStartedBasicChatRef = useRef(false);
+	useEffect(() => {
+		if (chatExperience !== "basic") {
+			autoStartedBasicChatRef.current = false;
+			return;
+		}
+
+		if (
+			!mounted ||
+			sessionState === StreamingAvatarSessionState.CONNECTED ||
+			autoStartedBasicChatRef.current
+		) {
+			return;
+		}
+
+		if (useSessionStore.getState().chatExperience !== "basic") {
+			return;
+		}
+
+		autoStartedBasicChatRef.current = true;
+		startWithoutAvatar();
+	}, [chatExperience, mounted, sessionState, startWithoutAvatar]);
 
 	// Auxiliary handlers provided by useChatController
 
@@ -169,7 +277,7 @@ export function AvatarSession({
 		onDock: setDock,
 		onHeaderPointerDown: handlePointerDown,
 		onToggleExpand: toggleExpand,
-		onStartMockChat: startMockChat,
+		onStartMockChat: startWithoutAvatar,
 	});
 
 	/**

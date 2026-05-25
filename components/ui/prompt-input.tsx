@@ -47,7 +47,7 @@ function usePromptInput() {
 	return context;
 }
 
-type PromptInputProps = {
+type PromptInputProps = React.HTMLAttributes<HTMLDivElement> & {
 	isLoading?: boolean;
 	value?: string;
 	onValueChange?: (value: string) => void;
@@ -69,6 +69,7 @@ function PromptInput({
 	children,
 	disabled = false,
 	textareaRef: externalTextareaRef,
+	...props
 }: PromptInputProps) {
 	const [internalValue, setInternalValue] = useState(value || "");
 	const internalTextareaRef = useRef<HTMLTextAreaElement>(null);
@@ -93,6 +94,7 @@ function PromptInput({
 				}}
 			>
 				<div
+					{...props}
 					className={cn(
 						"border-input bg-background cursor-text rounded-3xl border p-2 shadow-xs",
 						className,

@@ -7,7 +7,7 @@ import {
 	DropdownMenuPortal,
 	DropdownMenuTrigger,
 } from "@radix-ui/react-dropdown-menu";
-import { ChevronRight, MoreVertical } from "lucide-react";
+import { ChevronRight, MoreVertical, Trash2 } from "lucide-react";
 import { useMemo } from "react";
 
 import {
@@ -207,12 +207,31 @@ function BookmarkFolderNode(props: {
 			value={node.id}
 			action={
 				isRealFolder ? (
-					<BookmarkFolderActions
-						folder={node.folder as BookmarkFolder}
-						folders={bookmarkFolders}
-						onDeleteFolder={onDeleteBookmarkFolder}
-						onMoveFolder={onMoveBookmarkFolder}
-					/>
+					<div className="flex items-center gap-1">
+						<button
+							type="button"
+							aria-label="Delete folder"
+							className="shrink-0 rounded-md border border-border bg-card p-1 text-muted-foreground hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+							onClick={(e) => {
+								e.stopPropagation();
+								if (
+									window.confirm(
+										`Are you sure you want to delete folder "${node.name}" and all of its contents?`,
+									)
+								) {
+									onDeleteBookmarkFolder?.(node.id);
+								}
+							}}
+						>
+							<Trash2 className="size-3" />
+						</button>
+						<BookmarkFolderActions
+							folder={node.folder as BookmarkFolder}
+							folders={bookmarkFolders}
+							onDeleteFolder={onDeleteBookmarkFolder}
+							onMoveFolder={onMoveBookmarkFolder}
+						/>
+					</div>
 				) : undefined
 			}
 		>
@@ -287,7 +306,9 @@ function BookmarkFolderActions(props: {
 			</DropdownMenuTrigger>
 			<DropdownMenuPortal>
 				<DropdownMenuContent
-					className="z-[1000] min-w-[13rem] rounded-md border border-border bg-card p-1 text-xs shadow-xl"
+					className="z-[2147483647] min-w-[13rem] rounded-md border border-border bg-card p-1 text-xs shadow-xl"
+					style={{ zIndex: 2147483647 }}
+					side="right"
 					sideOffset={4}
 					align="end"
 					onClick={(e) => e.stopPropagation()}
@@ -367,74 +388,95 @@ function BookmarkTreeItem(props: {
 					</span>
 				</File>
 			</div>
-			<DropdownMenu>
-				<DropdownMenuTrigger asChild>
-					<button
-						type="button"
-						aria-label="Bookmark actions"
-						className="shrink-0 rounded-md border border-border bg-card p-1 hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
-						onClick={(e) => e.stopPropagation()}
-					>
-						<MoreVertical className="size-3" />
-					</button>
-				</DropdownMenuTrigger>
-				<DropdownMenuPortal>
-					<DropdownMenuContent
-						className="z-[1000] min-w-[13rem] rounded-md border border-border bg-card p-1 text-xs shadow-xl"
-						sideOffset={4}
-						align="end"
-						onClick={(e) => e.stopPropagation()}
-					>
-						<div className="px-2 py-1.5">
-							<div className="mb-1 text-[0.68rem] font-medium uppercase tracking-wide text-muted-foreground">
-								Tags
-							</div>
-							{tags.length > 0 ? (
-								<div className="flex max-w-[11rem] flex-wrap gap-1">
-									{tags.map((tag) => (
-										<span
-											key={tag}
-											className="rounded border border-border bg-muted px-1.5 py-0.5 text-[0.68rem] leading-none text-foreground"
-										>
-											{tag}
-										</span>
-									))}
+			<div className="flex items-center gap-1 shrink-0">
+				<button
+					type="button"
+					aria-label="Delete bookmark"
+					className="shrink-0 rounded-md border border-border bg-card p-1 text-muted-foreground hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+					onClick={(e) => {
+						e.stopPropagation();
+						if (
+							window.confirm(
+								`Are you sure you want to delete bookmark "${child.name}"?`,
+							)
+						) {
+							onDeleteBookmark?.(child.id);
+						}
+					}}
+				>
+					<Trash2 className="size-3" />
+				</button>
+				<DropdownMenu>
+					<DropdownMenuTrigger asChild>
+						<button
+							type="button"
+							aria-label="Bookmark actions"
+							className="shrink-0 rounded-md border border-border bg-card p-1 hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+							onClick={(e) => e.stopPropagation()}
+						>
+							<MoreVertical className="size-3" />
+						</button>
+					</DropdownMenuTrigger>
+					<DropdownMenuPortal>
+						<DropdownMenuContent
+							className="z-[2147483647] min-w-[13rem] rounded-md border border-border bg-card p-1 text-xs shadow-xl"
+							style={{ zIndex: 2147483647 }}
+							side="right"
+							sideOffset={4}
+							align="end"
+							onClick={(e) => e.stopPropagation()}
+						>
+							<div className="px-2 py-1.5">
+								<div className="mb-1 text-[0.68rem] font-medium uppercase tracking-wide text-muted-foreground">
+									Tags
 								</div>
-							) : (
-								<div className="text-muted-foreground">No tags</div>
-							)}
-						</div>
-						<div className="my-1 h-px bg-border" />
-						<DropdownMenuItem
-							className="relative flex cursor-pointer select-none items-center rounded-sm px-2 py-1.5 outline-none data-[highlighted]:bg-muted"
-							onSelect={(e) => {
-								e.preventDefault();
-								if (conversation) onOpenChat?.(conversation);
-							}}
-						>
-							View Chat
-						</DropdownMenuItem>
-						<DropdownMenuItem
-							className="relative flex cursor-pointer select-none items-center rounded-sm px-2 py-1.5 outline-none data-[highlighted]:bg-muted"
-							onSelect={(e) => {
-								e.preventDefault();
-								onOpenBookmarkMove?.(child.id);
-							}}
-						>
-							Edit Bookmark
-						</DropdownMenuItem>
-						<DropdownMenuItem
-							className="relative flex cursor-pointer select-none items-center rounded-sm px-2 py-1.5 text-red-600 outline-none data-[highlighted]:bg-red-50 dark:text-red-400 dark:data-[highlighted]:bg-red-950/40"
-							onSelect={(e) => {
-								e.preventDefault();
-								onDeleteBookmark?.(child.id);
-							}}
-						>
-							Delete Bookmark
-						</DropdownMenuItem>
-					</DropdownMenuContent>
-				</DropdownMenuPortal>
-			</DropdownMenu>
+								{tags.length > 0 ? (
+									<div className="flex max-w-[11rem] flex-wrap gap-1">
+										{tags.map((tag) => (
+											<span
+												key={tag}
+												className="rounded border border-border bg-muted px-1.5 py-0.5 text-[0.68rem] leading-none text-foreground"
+											>
+												{tag}
+											</span>
+										))}
+									</div>
+								) : (
+									<div className="text-muted-foreground">No tags</div>
+								)}
+							</div>
+							<div className="my-1 h-px bg-border" />
+							<DropdownMenuItem
+								className="relative flex cursor-pointer select-none items-center rounded-sm px-2 py-1.5 outline-none data-[highlighted]:bg-muted"
+								onSelect={(e) => {
+									e.preventDefault();
+									if (conversation) onOpenChat?.(conversation);
+								}}
+							>
+								View Chat
+							</DropdownMenuItem>
+							<DropdownMenuItem
+								className="relative flex cursor-pointer select-none items-center rounded-sm px-2 py-1.5 outline-none data-[highlighted]:bg-muted"
+								onSelect={(e) => {
+									e.preventDefault();
+									onOpenBookmarkMove?.(child.id);
+								}}
+							>
+								Edit Bookmark
+							</DropdownMenuItem>
+							<DropdownMenuItem
+								className="relative flex cursor-pointer select-none items-center rounded-sm px-2 py-1.5 text-red-600 outline-none data-[highlighted]:bg-red-50 dark:text-red-400 dark:data-[highlighted]:bg-red-950/40"
+								onSelect={(e) => {
+									e.preventDefault();
+									onDeleteBookmark?.(child.id);
+								}}
+							>
+								Delete Bookmark
+							</DropdownMenuItem>
+						</DropdownMenuContent>
+					</DropdownMenuPortal>
+				</DropdownMenu>
+			</div>
 		</div>
 	);
 }

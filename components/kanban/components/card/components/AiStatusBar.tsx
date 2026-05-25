@@ -1,9 +1,9 @@
 "use client";
 
-import { Button } from "@/components/ui/button";
-import type { KanbanTask } from "../../../utils/types";
-import { useUserStore } from "@/lib/stores/userStore";
 import { AlertTriangle, RefreshCw, XCircle } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { useUserStore } from "@/lib/stores/userStore";
+import type { KanbanTask } from "../../../utils/types";
 
 export function AiStatusBar({
 	task,
@@ -49,7 +49,12 @@ export function AiStatusBar({
 	return (
 		<div className="mt-3 flex flex-wrap items-center gap-2 text-sm">
 			{aiState === "running" && (
-				<Button size="sm" variant="ghost" onClick={onCancel}>
+				<Button
+					size="sm"
+					variant="ghost"
+					data-tour="kanban-stop-task"
+					onClick={onCancel}
+				>
 					Cancel
 				</Button>
 			)}
@@ -61,6 +66,7 @@ export function AiStatusBar({
 					<Button
 						size="sm"
 						className="ml-2 inline-flex h-7 items-center gap-1 px-2"
+						data-tour="kanban-reconnect-task"
 						onClick={onRetry}
 					>
 						<RefreshCw className="h-3 w-3 shrink-0" />
@@ -80,6 +86,7 @@ export function AiStatusBar({
 						size="sm"
 						variant="outline"
 						className="ml-2 h-7 px-2"
+						data-tour="kanban-provide-task-config"
 						onClick={onProvide}
 					>
 						Provide
@@ -87,6 +94,7 @@ export function AiStatusBar({
 					<Button
 						size="sm"
 						className="ml-1 inline-flex h-7 items-center gap-1 px-2"
+						data-tour="kanban-reconnect-task"
 						onClick={onRetry}
 					>
 						<RefreshCw className="h-3 w-3 shrink-0" />
@@ -103,6 +111,7 @@ export function AiStatusBar({
 						size="sm"
 						variant="outline"
 						className="ml-2 h-7 px-2"
+						data-tour="kanban-reconnect-task"
 						onClick={onResolveOAuth}
 					>
 						Connect
@@ -110,6 +119,7 @@ export function AiStatusBar({
 					<Button
 						size="sm"
 						className="ml-1 inline-flex h-7 items-center gap-1 px-2"
+						data-tour="kanban-reconnect-task"
 						onClick={onRetry}
 					>
 						<RefreshCw className="h-3 w-3 shrink-0" />
@@ -122,6 +132,7 @@ export function AiStatusBar({
 				<div className="inline-flex items-center gap-2">
 					<Button
 						size="sm"
+						data-tour="kanban-run-ai-task"
 						onClick={onRun}
 						disabled={insufficient}
 						title={insufficient ? `Not enough ${costLabel} credits` : undefined}

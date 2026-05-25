@@ -33,6 +33,7 @@ export function AgentMonetizationSummary({
 		<section
 			aria-label="Monetization summary"
 			className="mt-4 space-y-3 rounded-md border border-border p-3 text-sm"
+			data-tour="agent-monetization-summary"
 		>
 			<header className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
 				<div>
