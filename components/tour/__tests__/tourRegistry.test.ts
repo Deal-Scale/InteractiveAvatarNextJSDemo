@@ -261,34 +261,38 @@ describe("guided tour registry", () => {
 		const fs = await import("node:fs/promises");
 		const path = await import("node:path");
 		const root = process.cwd();
-		const tourRegistrySource = await fs.readFile(
-			path.join(root, "components", "tour", "tourRegistry.ts"),
+		const tourHelpersSource = await fs.readFile(
+			path.join(root, "components", "tour", "tourHelpers.ts"),
+			"utf8",
+		);
+		const workspaceToursSource = await fs.readFile(
+			path.join(root, "components", "tour", "tours", "workspaceTours.ts"),
 			"utf8",
 		);
 
-		expect(tourRegistrySource).toContain("closeChatPanelForWorkspaceTour");
-		expect(tourRegistrySource).toContain("setBottomHeightFrac(0)");
-		expect(tourRegistrySource).toContain("setRightWidthFrac(0)");
-		expect(tourRegistrySource).toContain("prepareTopPanelTarget");
-		expect(tourRegistrySource).toContain("collapseTopPanelForTour");
-		expect(tourRegistrySource).toContain("prepareBrainGraphTarget");
-		expect(tourRegistrySource).toContain("tour-show-brain-graph");
-		expect(tourRegistrySource).toContain("openKanbanManualTaskModal");
-		expect(tourRegistrySource).toContain("openKanbanAiTaskModal");
-		expect(tourRegistrySource).toContain("closeKanbanTaskModalAndShow");
-		expect(tourRegistrySource).toContain(
+		expect(tourHelpersSource).toContain("closeChatPanelForWorkspaceTour");
+		expect(tourHelpersSource).toContain("setBottomHeightFrac(0)");
+		expect(tourHelpersSource).toContain("setRightWidthFrac(0)");
+		expect(tourHelpersSource).toContain("prepareTopPanelTarget");
+		expect(tourHelpersSource).toContain("collapseTopPanelForTour");
+		expect(tourHelpersSource).toContain("prepareBrainGraphTarget");
+		expect(tourHelpersSource).toContain("tour-show-brain-graph");
+		expect(tourHelpersSource).toContain("openKanbanManualTaskModal");
+		expect(tourHelpersSource).toContain("openKanbanAiTaskModal");
+		expect(tourHelpersSource).toContain("closeKanbanTaskModalAndShow");
+		expect(workspaceToursSource).toContain(
 			"prepareBrainGraphTarget('[data-tour=\"brain-graph\"]')",
 		);
-		expect(tourRegistrySource).toContain("prepareDataGridWithMermaidChart");
-		expect(tourRegistrySource).toContain(
+		expect(tourHelpersSource).toContain("prepareDataGridWithMermaidChart");
+		expect(workspaceToursSource).toContain(
 			'[data-tour="data-grid-layout-controls"]',
 		);
-		expect(tourRegistrySource).toContain("prepareDataResizeHandle");
-		expect(tourRegistrySource).toContain("prepareDataGridWithMermaidChart");
-		expect(tourRegistrySource).toContain("prepareDataRestoreControl");
-		expect(tourRegistrySource).toContain("tour-add-data-mermaid-chart");
-		expect(tourRegistrySource).toContain("tour-show-data-restore-control");
-		expect(tourRegistrySource).toContain(
+		expect(tourHelpersSource).toContain("prepareDataResizeHandle");
+		expect(tourHelpersSource).toContain("prepareDataGridWithMermaidChart");
+		expect(tourHelpersSource).toContain("prepareDataRestoreControl");
+		expect(tourHelpersSource).toContain("tour-add-data-mermaid-chart");
+		expect(tourHelpersSource).toContain("tour-show-data-restore-control");
+		expect(workspaceToursSource).toContain(
 			"closeKanbanTaskModalAndShow('[data-tour=\"kanban-board\"]')",
 		);
 	});
@@ -309,8 +313,8 @@ describe("guided tour registry", () => {
 		const fs = await import("node:fs/promises");
 		const path = await import("node:path");
 		const root = process.cwd();
-		const tourRegistrySource = await fs.readFile(
-			path.join(root, "components", "tour", "tourRegistry.ts"),
+		const tourHelpersSource = await fs.readFile(
+			path.join(root, "components", "tour", "tourHelpers.ts"),
 			"utf8",
 		);
 		const avatarSessionSource = await fs.readFile(
@@ -318,9 +322,9 @@ describe("guided tour registry", () => {
 			"utf8",
 		);
 
-		expect(tourRegistrySource).toContain('setChatExperience("basic")');
-		expect(tourRegistrySource).toContain("tour-start-chat-without-session");
-		expect(tourRegistrySource).toContain("clearInput");
+		expect(tourHelpersSource).toContain('setChatExperience("basic")');
+		expect(tourHelpersSource).toContain("tour-start-chat-without-session");
+		expect(tourHelpersSource).toContain("clearInput");
 		expect(avatarSessionSource).toContain("tour-start-chat-without-session");
 		expect(avatarSessionSource).toContain('setChatInput("")');
 		expect(avatarSessionSource).toContain("enableMockChatUi()");
