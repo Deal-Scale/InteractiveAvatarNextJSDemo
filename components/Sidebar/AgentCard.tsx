@@ -5,6 +5,7 @@ import {
 	TooltipProvider,
 	TooltipTrigger,
 } from "@/components/ui/tooltip";
+import { setChatDragData } from "@/lib/chat-drag";
 import type { AgentConfig } from "@/lib/schemas/agent";
 
 export type Agent = Partial<AgentConfig> & {
@@ -74,6 +75,20 @@ export default function AgentCard(props: {
 		<div
 			className="group relative flex h-full min-h-0 flex-col overflow-hidden rounded-md border border-border bg-background"
 			title={name}
+			draggable
+			onDragStart={(event) => {
+				setChatDragData(event.dataTransfer, {
+					id: `agent-${id}`,
+					name,
+					kind: "agent",
+					mimeType: "application/x-agent",
+					thumbnailUrl: avatarUrl,
+					description:
+						description ||
+						role ||
+						(promptStarter ? `Prompt starter: ${promptStarter}` : undefined),
+				});
+			}}
 		>
 			{/* Actions */}
 			<div className="absolute right-1 top-1 z-10 flex items-center gap-1 opacity-0 transition-opacity group-hover:opacity-100">

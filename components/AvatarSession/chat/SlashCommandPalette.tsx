@@ -76,16 +76,12 @@ export const SlashCommandPalette: React.FC<SlashCommandPaletteProps> = ({
 				top: anchorRect.top - 6,
 				transform: "translateY(-100%)",
 			}}
+			onMouseLeave={() => {
+				onOpenSubmenu?.(undefined);
+			}}
 		>
 			{/* Root column */}
-			<div
-				ref={rootContainerRef}
-				className="w-64 max-h-72 overflow-auto p-1"
-				onMouseLeave={() => {
-					// When pointer leaves the root list, collapse submenu
-					onOpenSubmenu?.(undefined);
-				}}
-			>
+			<div ref={rootContainerRef} className="w-64 max-h-72 overflow-auto p-1">
 				{items.length === 0 ? (
 					<div className="px-2 py-1.5 text-sm text-muted-foreground">
 						No commands
@@ -171,6 +167,9 @@ export const SlashCommandPalette: React.FC<SlashCommandPaletteProps> = ({
 							onMouseEnter={() => {
 								if (item.disabled) return;
 								onHighlightSub?.(idx);
+								if (item.children && item.children.length > 0) {
+									onOpenSubmenu?.(item);
+								}
 							}}
 							onMouseDown={(e) => e.preventDefault()}
 							onClick={() => {
@@ -195,6 +194,9 @@ export const SlashCommandPalette: React.FC<SlashCommandPaletteProps> = ({
 									) : null}
 								</div>
 							</div>
+							{item.children ? (
+								<span className="ml-2 shrink-0 opacity-70">▸</span>
+							) : null}
 						</div>
 					))}
 				</div>

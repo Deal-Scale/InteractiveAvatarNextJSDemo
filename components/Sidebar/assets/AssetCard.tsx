@@ -1,7 +1,8 @@
 "use client";
 
-import React from "react";
 import { Eye, FileIcon, ImageIcon, Plus, X } from "lucide-react";
+import React from "react";
+import { setChatDragData } from "@/lib/chat-drag";
 
 export type Asset = {
 	id: string;
@@ -34,15 +35,14 @@ export default function AssetCard(props: {
 			draggable
 			onDragStart={(e) => {
 				try {
-					const payload = JSON.stringify({
+					setChatDragData(e.dataTransfer, {
 						id: asset.id,
 						name: asset.name,
 						url: asset.url,
 						thumbnailUrl: asset.thumbnailUrl,
 						mimeType: asset.mimeType,
+						kind: "asset",
 					});
-					e.dataTransfer.setData("application/x-asset", payload);
-					e.dataTransfer.setData("text/plain", asset.url || asset.name);
 				} catch {}
 			}}
 		>

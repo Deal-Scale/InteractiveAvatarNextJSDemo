@@ -7,6 +7,7 @@ import { KB_CONNECTORS } from "@/components/KnowledgeBase/connectors";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { SidebarGroup, SidebarGroupLabel } from "@/components/ui/sidebar";
+import { setChatDragData } from "@/lib/chat-drag";
 
 const PAGE_SIZE = 3;
 type ToolCategoryFilter = "all" | "oauth" | "apiKey";
@@ -106,6 +107,17 @@ export default function ToolsSection(props: {
 							<div
 								key={connector.key}
 								className="rounded-md border border-sky-400/20 bg-sky-500/5 p-2"
+								draggable
+								title="Drag tool to chat"
+								onDragStart={(event) => {
+									setChatDragData(event.dataTransfer, {
+										id: `tool-${connector.key}`,
+										name: connector.name,
+										kind: "tool",
+										mimeType: "application/x-tool",
+										description: connector.description,
+									});
+								}}
 							>
 								<div className="flex min-w-0 items-start justify-between gap-2">
 									<div className="min-w-0">

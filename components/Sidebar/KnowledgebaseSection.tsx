@@ -18,6 +18,7 @@ import {
 } from "@/components/magicui/file-tree";
 import { Button } from "@/components/ui/button";
 import { SidebarGroup, SidebarGroupLabel } from "@/components/ui/sidebar";
+import { setChatDragData } from "@/lib/chat-drag";
 
 export type KnowledgeFolder = { id: string; name: string; parentId?: string };
 type KnowledgeNode = Omit<TreeViewElement, "children"> & {
@@ -301,6 +302,20 @@ function KnowledgeTreeNode(props: {
 			<Folder
 				element={node.name}
 				value={node.id}
+				draggable
+				title="Drag knowledge folder to chat"
+				onDragStart={(event) => {
+					event.stopPropagation();
+					setChatDragData(event.dataTransfer, {
+						id: node.id.startsWith("kb-folder-")
+							? node.id
+							: `kb-folder-${node.id}`,
+						name: node.name,
+						kind: "knowledge",
+						mimeType: "application/x-knowledge-folder",
+						description: "Knowledge base folder",
+					});
+				}}
 				action={
 					isRealFolder ? (
 						<div className="flex items-center gap-1">
@@ -360,6 +375,18 @@ function KnowledgeTreeNode(props: {
 					value={node.id}
 					isSelect={selectedId === node.id}
 					onClick={() => onOpenItem(node.id)}
+					draggable
+					title="Drag knowledge item to chat"
+					onDragStart={(event) => {
+						event.stopPropagation();
+						setChatDragData(event.dataTransfer, {
+							id: node.id.startsWith("kb-") ? node.id : `kb-${node.id}`,
+							name: node.name,
+							kind: "knowledge",
+							mimeType: "application/x-knowledge",
+							description: "Knowledge base item",
+						});
+					}}
 				>
 					<span className="block truncate whitespace-nowrap">{node.name}</span>
 				</File>

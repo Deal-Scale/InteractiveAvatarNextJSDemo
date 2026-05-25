@@ -18,6 +18,8 @@ export interface MessageAsset {
 	url?: string;
 	thumbnailUrl?: string;
 	mimeType?: string;
+	kind?: "asset" | "tool" | "knowledge" | "agent";
+	description?: string;
 }
 
 export interface Message {

@@ -12,6 +12,12 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { SlashCommandPalette } from "@/components/AvatarSession/chat/SlashCommandPalette";
 import { KB_CONNECTORS } from "@/components/KnowledgeBase/connectors";
 import { defaultCommands } from "@/data/commands";
+import {
+	getChatDragResource,
+	hasChatDragResource,
+	toComposerAsset,
+} from "@/lib/chat-drag";
+import { buildKnowledgeTree, flattenKnowledgeTree } from "@/lib/knowledge-tree";
 import { useAgentStore } from "@/lib/stores/agent";
 import { useAssetsStore } from "@/lib/stores/assets";
 import type { ComposerAsset } from "@/lib/stores/composer";
@@ -25,6 +31,11 @@ function buildKbCommands(
 	itemFolders: Record<string, string | undefined>,
 	createdItems: Array<{ id: string; name: string }>,
 	onAddKb: () => void,
+	onAttachKnowledge: (item: {
+		id: string;
+		name: string;
+		description?: string;
+	}) => void,
 ): Command[] {
 	const rootItems: Command[] = [
 		{
@@ -36,64 +47,29 @@ function buildKbCommands(
 		},
 	];
 
-	// Static categories and guides
-	const staticItems: Command[] = [
-		{
-			id: "kb-guides",
-			label: "Guides",
-			icon: "📁",
-			description: "Folder",
-			children: [
-				{
-					id: "kb-getting-started",
-					label: "Getting Started",
-					icon: "📄",
-					description: "Guide",
-					insertText: "[KB: Getting Started]",
-				},
-				{
-					id: "kb-integrations",
-					label: "Integrations",
-					icon: "📄",
-					description: "Guide",
-					insertText: "[KB: Integrations]",
-				},
-			],
-		},
-		{
-			id: "kb-faq",
-			label: "FAQ",
-			icon: "📁",
-			description: "Folder",
-			children: [
-				{
-					id: "kb-general",
-					label: "General FAQ",
-					icon: "📄",
-					description: "FAQ",
-					insertText: "[KB: General FAQ]",
-				},
-			],
-		},
-	];
-	rootItems.push(...staticItems);
-
 	// Map folder ID to list of command children
 	const childrenMap: Record<string, Command[]> = {};
 	for (const f of folders) {
 		childrenMap[f.id] = [];
 	}
 
-	// Add items to their folders or root
+	const sourceItems = flattenKnowledgeTree(buildKnowledgeTree(createdItems));
+
+	// Add items to their folders or the same unfiled bucket used by the sidebar.
 	const rootUserItems: Command[] = [];
-	for (const item of createdItems) {
+	for (const item of sourceItems) {
 		const folderId = itemFolders[item.id];
 		const cmd: Command = {
 			id: item.id,
 			label: item.name,
 			icon: "📄",
-			description: "Added Knowledge",
-			insertText: `[KB: ${item.name}]`,
+			description: "Knowledge item",
+			action: () =>
+				onAttachKnowledge({
+					id: item.id,
+					name: item.name,
+					description: "Knowledge item",
+				}),
 		};
 		if (folderId && childrenMap[folderId]) {
 			childrenMap[folderId].push(cmd);
@@ -126,14 +102,31 @@ function buildKbCommands(
 		}
 	}
 
-	if (rootUserFolders.length > 0 || rootUserItems.length > 0) {
-		rootItems.push({
-			id: "kb-added-root",
-			label: "Added Knowledge",
-			icon: "📁",
-			description: "Folder",
-			children: [...rootUserFolders, ...rootUserItems],
+	const sortKnowledgeCommands = (commands: Command[]) => {
+		commands.sort((a, b) => {
+			const aIsFolder = Boolean(a.children);
+			const bIsFolder = Boolean(b.children);
+			if (aIsFolder !== bIsFolder) return aIsFolder ? -1 : 1;
+			return a.label.localeCompare(b.label);
 		});
+		for (const command of commands) {
+			if (command.children) sortKnowledgeCommands(command.children);
+		}
+	};
+	sortKnowledgeCommands(rootUserFolders);
+	sortKnowledgeCommands(rootUserItems);
+
+	if (rootUserFolders.length > 0 || rootUserItems.length > 0) {
+		rootItems.push(...rootUserFolders);
+		if (rootUserItems.length > 0) {
+			rootItems.push({
+				id: "__kb_unfiled__",
+				label: "Knowledge Items",
+				icon: "📁",
+				description: "Folder",
+				children: rootUserItems,
+			});
+		}
 	}
 
 	return rootItems;
@@ -251,11 +244,26 @@ export const ChatInput: React.FC<ChatInputProps> = ({
 	}, [agentSettings]);
 
 	const allCommands = useMemo(() => {
+		const attachKnowledge = (item: {
+			id: string;
+			name: string;
+			description?: string;
+		}) => {
+			addAssetAttachment({
+				id: item.id.startsWith("kb-") ? item.id : `kb-${item.id}`,
+				name: item.name,
+				kind: "knowledge",
+				mimeType: "application/x-knowledge",
+				description: item.description ?? "Knowledge base item",
+			});
+		};
+
 		const kbCommands = buildKbCommands(
 			kbFolders,
 			kbItemFolders,
 			createdKnowledgeItems,
 			() => window.dispatchEvent(new CustomEvent("open-add-kb-modal")),
+			attachKnowledge,
 		);
 
 		const agentCommands: Command[] = [
@@ -273,8 +281,15 @@ export const ChatInput: React.FC<ChatInputProps> = ({
 				description: a.role || "Agent",
 				action: () => {
 					useAgentStore.getState().setAgent(a as any);
+					addAssetAttachment({
+						id: a.id.startsWith("agent-") ? a.id : `agent-${a.id}`,
+						name: a.name,
+						kind: "agent",
+						mimeType: "application/x-agent",
+						description: a.description || a.role || "Agent",
+						thumbnailUrl: (a as { avatarUrl?: string }).avatarUrl,
+					});
 				},
-				insertText: `@${a.name} `,
 			})),
 		];
 
@@ -294,13 +309,14 @@ export const ChatInput: React.FC<ChatInputProps> = ({
 				icon: "🛠️",
 				description: connector.description,
 				action: () => {
-					window.dispatchEvent(
-						new CustomEvent("open-connect-tool-modal", {
-							detail: { connectorKey: connector.key },
-						}),
-					);
+					addAssetAttachment({
+						id: `tool-${connector.key}`,
+						name: connector.name,
+						kind: "tool",
+						mimeType: "application/x-tool",
+						description: connector.description,
+					});
 				},
-				insertText: `[Tool: ${connector.name}]`,
 			})),
 		];
 
@@ -329,9 +345,9 @@ export const ChatInput: React.FC<ChatInputProps> = ({
 						url: asset.url,
 						thumbnailUrl: asset.thumbnailUrl,
 						mimeType: asset.mimeType,
+						kind: "asset",
 					});
 				},
-				insertText: `[Asset: ${asset.name}]`,
 			})),
 		];
 
@@ -385,9 +401,9 @@ export const ChatInput: React.FC<ChatInputProps> = ({
 		isVoiceChatActive,
 	]);
 
-	// Visual affordance for sidebar asset drag-over
-	const [assetDragCounter, setAssetDragCounter] = useState(0);
-	const isAssetDragging = assetDragCounter > 0;
+	// Visual affordance for sidebar resource drag-over
+	const [resourceDragCounter, setResourceDragCounter] = useState(0);
+	const isResourceDragging = resourceDragCounter > 0;
 
 	// Prefer provided ref from parent; fall back to a local one
 	const localTextareaRef = useRef<HTMLTextAreaElement | null>(null);
@@ -707,23 +723,17 @@ export const ChatInput: React.FC<ChatInputProps> = ({
 			types: Array.from(e.dataTransfer.types || []),
 		});
 		try {
-			const data = e.dataTransfer.getData("application/x-asset");
-			if (data) {
-				console.debug("[ChatInput] asset payload detected on drop");
-				const asset = JSON.parse(data) as ComposerAsset;
-				if (asset?.id && asset.name) {
-					addAssetAttachment({
-						id: asset.id,
-						name: asset.name,
-						url: asset.url,
-						thumbnailUrl: asset.thumbnailUrl,
-						mimeType: asset.mimeType,
-					});
-					console.debug("[ChatInput] asset added to composer", asset);
+			const resource = getChatDragResource(e.dataTransfer);
+			if (resource) {
+				console.debug("[ChatInput] chat resource payload detected on drop");
+				if (resource.id && resource.name) {
+					const attachment = toComposerAsset(resource);
+					addAssetAttachment(attachment);
+					console.debug("[ChatInput] resource added to composer", attachment);
 					// Always swallow the drop so FileUpload doesn't keep its overlay active
 					e.preventDefault();
 					e.stopPropagation();
-					setAssetDragCounter(0);
+					setResourceDragCounter(0);
 					return;
 				}
 			}
@@ -732,9 +742,9 @@ export const ChatInput: React.FC<ChatInputProps> = ({
 	};
 
 	const allowDrop = (e: React.DragEvent) => {
-		// If dragging an asset payload, allow drop
-		if (e.dataTransfer.types.includes("application/x-asset")) {
-			console.debug("[ChatInput] dragover asset payload", {
+		// If dragging a sidebar chat resource payload, allow drop
+		if (hasChatDragResource(e.dataTransfer.types)) {
+			console.debug("[ChatInput] dragover chat resource payload", {
 				types: Array.from(e.dataTransfer.types || []),
 			});
 			e.preventDefault();
@@ -746,19 +756,19 @@ export const ChatInput: React.FC<ChatInputProps> = ({
 		}
 	};
 	const onDragEnter = (e: React.DragEvent) => {
-		if (e.dataTransfer.types.includes("application/x-asset")) {
-			console.debug("[ChatInput] dragenter asset payload");
+		if (hasChatDragResource(e.dataTransfer.types)) {
+			console.debug("[ChatInput] dragenter chat resource payload");
 			e.preventDefault();
 			e.stopPropagation();
-			setAssetDragCounter((c) => c + 1);
+			setResourceDragCounter((c) => c + 1);
 		}
 	};
 	const onDragLeave = (e: React.DragEvent) => {
-		if (e.dataTransfer.types.includes("application/x-asset")) {
-			console.debug("[ChatInput] dragleave asset payload");
+		if (hasChatDragResource(e.dataTransfer.types)) {
+			console.debug("[ChatInput] dragleave chat resource payload");
 			e.preventDefault();
 			e.stopPropagation();
-			setAssetDragCounter((c) => Math.max(0, c - 1));
+			setResourceDragCounter((c) => Math.max(0, c - 1));
 		}
 	};
 	return (
@@ -770,13 +780,13 @@ export const ChatInput: React.FC<ChatInputProps> = ({
 			onDragLeave={onDragLeave}
 			onDrop={handleDrop}
 		>
-			{isAssetDragging && (
+			{isResourceDragging && (
 				<div className="pointer-events-none absolute inset-0 z-10 rounded-lg border-2 border-dashed border-primary/70 bg-primary/5" />
 			)}
 			<PromptInput
 				className={cn(
 					"w-full mt-4",
-					isAssetDragging && "ring-2 ring-primary/50 rounded-lg",
+					isResourceDragging && "ring-2 ring-primary/50 rounded-lg",
 				)}
 				data-tour="chat-input"
 				disabled={false}
@@ -837,9 +847,25 @@ export const ChatInput: React.FC<ChatInputProps> = ({
 									menuStack.length > 0
 										? menuStack[menuStack.length - 1]
 										: undefined;
+								let displaySubmenuItems = submenuItems;
+								if (submenuItems && menuStack.length > 1) {
+									displaySubmenuItems = [
+										{
+											id: "back-button",
+											label: "↩ Back",
+											icon: "📁",
+											description: "Go to parent folder",
+											action: () => {
+												setMenuStack((st) => st.slice(0, -1));
+												setHighlightedSubIndex(0);
+											},
+										},
+										...submenuItems,
+									];
+								}
 								const usingSubmenu = !!submenuItems && submenuItems.length > 0;
 								const currentItems: Command[] = usingSubmenu
-									? submenuItems!
+									? displaySubmenuItems!
 									: rootFiltered;
 
 								switch (e.key) {
@@ -894,9 +920,13 @@ export const ChatInput: React.FC<ChatInputProps> = ({
 										return;
 									}
 									case "Enter": {
-										const activeIndex = usingSubmenu
+										const rawActiveIndex = usingSubmenu
 											? highlightedSubIndex
 											: highlightedIndex;
+										const activeIndex = Math.min(
+											Math.max(0, rawActiveIndex),
+											Math.max(0, currentItems.length - 1),
+										);
 										const item = currentItems[activeIndex];
 										if (!item) return;
 										if (item.disabled) return;
@@ -1083,8 +1113,11 @@ export const ChatInput: React.FC<ChatInputProps> = ({
 							<div
 								key={`asset-${a.id}`}
 								className="bg-secondary text-secondary-foreground border border-border px-2 py-1 rounded-full text-xs inline-flex items-center gap-1"
-								title={a.url ? `${a.name} – ${a.url}` : a.name}
+								title={a.description || a.url || a.name}
 							>
+								<span className="rounded bg-muted px-1 uppercase text-[0.56rem] leading-4 text-muted-foreground">
+									{a.kind ?? "asset"}
+								</span>
 								<span className="max-w-[200px] truncate">{a.name}</span>
 								<button
 									aria-label={`Remove ${a.name}`}

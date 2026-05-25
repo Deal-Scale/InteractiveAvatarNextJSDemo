@@ -31,6 +31,7 @@ import {
 } from "@/components/ui/sidebar";
 import ThemeEmotionSelect from "@/components/ui/theme-emotion-select";
 import { ThemeToggle } from "@/components/ui/theme-toggle";
+import { buildKnowledgeTree } from "@/lib/knowledge-tree";
 import {
 	useConnectKBSource,
 	useScheduleKBSync,
@@ -379,32 +380,8 @@ const Sidebar: React.FC<SidebarProps> = ({ onSelect, apps }) => {
 		return map;
 	}, [conv.groups, currentSessionConversation]);
 
-	// Placeholder knowledge base tree (folders/files). Replace with real data.
 	const knowledgeTree = useMemo(
-		() => [
-			{
-				id: "kb-guides",
-				name: "Guides",
-				children: [
-					{ id: "kb-getting-started", name: "Getting Started" },
-					{ id: "kb-integrations", name: "Integrations" },
-				],
-			},
-			{
-				id: "kb-faq",
-				name: "FAQ",
-				children: [{ id: "kb-general", name: "General" }],
-			},
-			...(createdKnowledgeItems.length
-				? [
-						{
-							id: "kb-created",
-							name: "Added Knowledge",
-							children: createdKnowledgeItems,
-						},
-					]
-				: []),
-		],
+		() => buildKnowledgeTree(createdKnowledgeItems),
 		[createdKnowledgeItems],
 	);
 
@@ -540,6 +517,7 @@ const Sidebar: React.FC<SidebarProps> = ({ onSelect, apps }) => {
 									url: asset.url,
 									thumbnailUrl: asset.thumbnailUrl,
 									mimeType: (asset as any).mimeType,
+									kind: "asset",
 								})
 							}
 							setCollapsedAssets={collapse.setCollapsedAssets}

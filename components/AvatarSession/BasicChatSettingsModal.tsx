@@ -145,11 +145,27 @@ export function BasicChatSettingsModal({
 		}));
 	};
 
+	const stopEnterFromSubmittingChat = (
+		event: React.KeyboardEvent<HTMLDivElement>,
+	) => {
+		if (event.key !== "Enter") return;
+		const target = event.target;
+		if (!(target instanceof HTMLElement)) return;
+		if (
+			target.closest(
+				'input, select, textarea, button, [role="combobox"], [role="option"], [role="tab"]',
+			)
+		) {
+			event.stopPropagation();
+		}
+	};
+
 	return (
 		<Dialog modal={false} open={open} onOpenChange={onOpenChange}>
 			<DialogContent
 				className="flex max-h-[92vh] w-[min(92vw,760px)] max-w-[92vw] flex-col overflow-hidden bg-card text-card-foreground"
 				data-tour="chat-settings"
+				onKeyDownCapture={stopEnterFromSubmittingChat}
 				onInteractOutside={(event) => {
 					event.preventDefault();
 				}}
