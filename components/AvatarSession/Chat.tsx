@@ -73,8 +73,14 @@ export const Chat: React.FC<ChatProps> = ({
 	useKeyPress("ArrowDown", onArrowDown);
 
 	const { publish } = useToast();
-	const { isAvatarTalking, isVoiceChatLoading } = useStreamingAvatarContext();
+	const {
+		isAvatarTalking,
+		isVoiceChatLoading,
+		isVoiceChatActive: sessionVoiceActive,
+	} = useStreamingAvatarContext();
 	const { repeatMessage: apiRepeatMessage } = useTextChat();
+	const chatMode = useSessionStore((s) => s.chatMode);
+	const setChatMode = useSessionStore((s) => s.setChatMode);
 
 	const composerAttachments = useComposerStore((s) => s.assetAttachments);
 	const clearComposerAttachments = useComposerStore(
@@ -303,6 +309,7 @@ export const Chat: React.FC<ChatProps> = ({
 					onChoose={handleChooseComparison}
 				/>
 				<ChatInput
+					chatMode={chatMode}
 					attachments={attachments}
 					composerAttachments={composerAttachments}
 					cancelEdit={cancelEdit}

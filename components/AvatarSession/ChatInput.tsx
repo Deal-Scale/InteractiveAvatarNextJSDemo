@@ -149,6 +149,7 @@ import { cn } from "@/lib/utils";
 import { PromptSuggestions } from "./PromptSuggestions";
 
 interface ChatInputProps {
+	chatMode: ChatMode;
 	chatInput: string;
 	isVoiceChatActive: boolean;
 	isSending: boolean;
@@ -170,6 +171,7 @@ interface ChatInputProps {
 }
 
 export const ChatInput: React.FC<ChatInputProps> = ({
+	chatMode,
 	chatInput,
 	isVoiceChatActive,
 	isSending,
@@ -405,6 +407,9 @@ export const ChatInput: React.FC<ChatInputProps> = ({
 	const [resourceDragCounter, setResourceDragCounter] = useState(0);
 	const isResourceDragging = resourceDragCounter > 0;
 
+	const isVoiceMode = chatMode === "voice";
+	const inputDisabled = isVoiceMode && !isEditing;
+
 	// Prefer provided ref from parent; fall back to a local one
 	const localTextareaRef = useRef<HTMLTextAreaElement | null>(null);
 	const textareaRef = inputRef ?? localTextareaRef;
@@ -545,14 +550,14 @@ export const ChatInput: React.FC<ChatInputProps> = ({
 						<FileUpload
 							multiple
 							accept=".png,.jpg,.jpeg,.webp,.gif,.pdf,.txt,.md"
-							disabled={isVoiceChatActive}
+							disabled={isVoiceChatActive || isVoiceMode}
 							onFilesAdded={onFilesAdded}
 						>
 							<FileUploadTrigger asChild>
 								<Button
 									aria-label="Attach files"
 									aria-keyshortcuts="Alt+U"
-									disabled={isVoiceChatActive}
+									disabled={isVoiceChatActive || isVoiceMode}
 									size="icon"
 									type="button"
 									className="focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
@@ -567,11 +572,17 @@ export const ChatInput: React.FC<ChatInputProps> = ({
 							</FileUploadContent>
 						</FileUpload>
 					</PromptInputAction>
-					<PromptInputAction tooltip="Send message">
+					<PromptInputAction
+						tooltip={
+							isVoiceMode
+								? "Switch to Text mode to send typed messages"
+								: "Send message"
+						}
+					>
 						<Button
 							aria-label="Send message"
 							aria-keyshortcuts="Enter"
-							disabled={isVoiceChatActive || isSending}
+							disabled={isVoiceChatActive || isSending || isVoiceMode}
 							size="icon"
 							type="button"
 							className="focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
@@ -678,6 +689,7 @@ export const ChatInput: React.FC<ChatInputProps> = ({
 
 	// Wrap parent onValueChange to also maintain slash trigger state
 	const handleValueChange = (next: string) => {
+		if (isVoiceMode && !isEditing) return;
 		onChatInputChange(next);
 		// Defer until caret updates
 		requestAnimationFrame(() => updateSlashState(next));
@@ -783,6 +795,11 @@ export const ChatInput: React.FC<ChatInputProps> = ({
 			{isResourceDragging && (
 				<div className="pointer-events-none absolute inset-0 z-10 rounded-lg border-2 border-dashed border-primary/70 bg-primary/5" />
 			)}
+			{isVoiceMode && !isEditing && (
+				<div className="mt-4 flex items-center gap-2 rounded-lg border border-dashed border-primary/50 bg-primary/5 px-3 py-2 text-xs text-primary">
+					Voice mode is microphone-first. Switch to Text to resume typing.
+				</div>
+			)}
 			<PromptInput
 				className={cn(
 					"w-full mt-4",
@@ -793,17 +810,27 @@ export const ChatInput: React.FC<ChatInputProps> = ({
 				maxHeight={320}
 				value={chatInput}
 				textareaRef={textareaRef}
-				onSubmit={() =>
-					isEditing ? confirmEdit() : sendWithAttachments(chatInput)
-				}
+				onSubmit={() => {
+					if (isVoiceMode && !isEditing) return;
+					if (isEditing) {
+						confirmEdit();
+					} else {
+						sendWithAttachments(chatInput);
+					}
+				}}
 				onValueChange={handleValueChange}
 			>
 				<div className="flex items-end gap-2">
 					{isInputEmpty ? LeftActions : null}
 					<PromptInputTextarea
-						aria-label="Chat input"
+						aria-label={isVoiceMode ? "Voice chat input" : "Chat input"}
 						className="flex-grow"
-						placeholder="Type a message..."
+						disabled={inputDisabled}
+						placeholder={
+							isVoiceMode
+								? "Voice mode is active — use the microphone controls to speak."
+								: "Type a message..."
+						}
 						onKeyDown={(e) => {
 							// Escape cancels the slash palette immediately
 							if (e.key === "Escape" && slashOpen) {
