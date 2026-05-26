@@ -736,6 +736,10 @@ const Sidebar: React.FC<SidebarProps> = ({ onSelect, apps }) => {
 						if (!popup) return { ok: false };
 						const code: string | undefined = await new Promise((resolve) => {
 							const listener = (e: MessageEvent) => {
+								// Verify sender to prevent accepting messages from untrusted origins/windows.
+								if (e.origin !== url.origin) return;
+								if (e.source !== popup) return;
+
 								if (
 									typeof e.data === "object" &&
 									e.data &&
