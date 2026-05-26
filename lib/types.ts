@@ -33,6 +33,11 @@ export interface Message {
 	jsx?: string;
 	// Optional tool call parts to visualize tool usage within the message
 	toolParts?: MessageToolPart[];
+	// Optional reasoning/trace details for UI transparency. This must be concise,
+	// user-facing reasoning, not hidden chain of thought.
+	reasoning?: string;
+	reasoningMarkdown?: boolean;
+	reasoningOpen?: boolean;
 	// Optional list of sources used to produce this message
 	sources?: MessageSource[];
 	// Optional structured assets associated with this message

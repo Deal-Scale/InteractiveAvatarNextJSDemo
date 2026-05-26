@@ -20,3 +20,7 @@
 	path = scripts
 	url = https://github.com/TechWithTy/scripts.git
 	branch = local/updates
+[submodule "packages/fastmcp-1"]
+	path = packages/fastmcp-1
+	url = https://github.com/TechWithTy/fastmcp-1.git
+	branch = main

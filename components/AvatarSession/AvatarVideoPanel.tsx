@@ -23,6 +23,7 @@ import {
 import { useAgentStore } from "@/lib/stores/agent";
 import { usePlacementStore } from "@/lib/stores/placement";
 import { useSessionStore } from "@/lib/stores/session";
+import { switchWorkspaceView } from "@/lib/workspace-view";
 import { StreamingAvatarSessionState } from "../logic/context";
 import { AvatarControls } from "./AvatarControls";
 import { AvatarVideo } from "./AvatarVideo";
@@ -79,8 +80,7 @@ export function AvatarVideoPanel({
 	}) => void;
 	onStartWithoutAvatar?: () => void;
 }) {
-	const { chatExperience, openChatSettings, setViewTab, viewTab } =
-		useSessionStore();
+	const { chatExperience, openChatSettings, viewTab } = useSessionStore();
 	const { currentAgent, updateAgent } = useAgentStore();
 	const setDockMode = usePlacementStore((state) => state.setDockMode);
 	const setBottomHeightFrac = usePlacementStore(
@@ -361,7 +361,7 @@ export function AvatarVideoPanel({
 												data-tour="brain-tab"
 												type="button"
 												variant="secondary"
-												onClick={() => setViewTab("brain")}
+												onClick={() => switchWorkspaceView("brain")}
 											>
 												Brain
 											</Button>
@@ -369,7 +369,7 @@ export function AvatarVideoPanel({
 												data-tour="data-tab"
 												type="button"
 												variant="secondary"
-												onClick={() => setViewTab("data")}
+												onClick={() => switchWorkspaceView("data")}
 											>
 												Data
 											</Button>
@@ -377,7 +377,7 @@ export function AvatarVideoPanel({
 												data-tour="actions-tab"
 												type="button"
 												variant="secondary"
-												onClick={() => setViewTab("actions")}
+												onClick={() => switchWorkspaceView("actions")}
 											>
 												Actions
 											</Button>

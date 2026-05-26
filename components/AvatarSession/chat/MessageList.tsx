@@ -24,7 +24,7 @@ interface MessageListProps {
 	voteState: Record<string, "up" | "down" | null>;
 	setVote: (id: string, dir: "up" | "down") => void;
 	handleCopy: (id: string, content: string) => void;
-	handleEditToInput: (content: string) => void;
+	handleEditToInput: (content: string, id: string) => void;
 	onBranch: (content: string, id: string) => void;
 	onRetry: (id: string) => void;
 	onCompare: (content: string, id: string) => void;
@@ -65,16 +65,21 @@ export const MessageList: React.FC<MessageListProps> = ({
 						message={message}
 						avatarMarkdownShowHeader={showMarkdownHeaderInBubbles}
 						reasoning={
-							message.id === exampleReasoning.message.id
+							message.reasoning ??
+							(message.id === exampleReasoning.message.id
 								? exampleReasoning.reasoning
-								: undefined
+								: undefined)
 						}
 						reasoningMarkdown={
-							message.id === exampleReasoning.message.id
+							message.reasoningMarkdown ??
+							(message.id === exampleReasoning.message.id
 								? exampleReasoning.reasoningMarkdown
-								: undefined
+								: undefined)
 						}
-						reasoningOpen={message.id === exampleReasoning.message.id}
+						reasoningOpen={
+							message.reasoningOpen ??
+							message.id === exampleReasoning.message.id
+						}
 						setVote={setVote}
 						streamMode="typewriter"
 						streamSpeed={28}
@@ -124,16 +129,21 @@ export const MessageList: React.FC<MessageListProps> = ({
 										message={message}
 										avatarMarkdownShowHeader={showMarkdownHeaderInBubbles}
 										reasoning={
-											message.id === exampleReasoning.message.id
+											message.reasoning ??
+											(message.id === exampleReasoning.message.id
 												? exampleReasoning.reasoning
-												: undefined
+												: undefined)
 										}
 										reasoningMarkdown={
-											message.id === exampleReasoning.message.id
+											message.reasoningMarkdown ??
+											(message.id === exampleReasoning.message.id
 												? exampleReasoning.reasoningMarkdown
-												: undefined
+												: undefined)
 										}
-										reasoningOpen={message.id === exampleReasoning.message.id}
+										reasoningOpen={
+											message.reasoningOpen ??
+											message.id === exampleReasoning.message.id
+										}
 										setVote={setVote}
 										streamMode="typewriter"
 										streamSpeed={28}

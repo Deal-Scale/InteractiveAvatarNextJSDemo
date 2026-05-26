@@ -28,23 +28,23 @@ export function DragHeader({
 }) {
 	return (
 		<div
-			className={`space-between relative flex flex-row border-secondary border-b-2 px-3 py-3 ${className}`}
+			className={`relative flex flex-row flex-wrap items-center gap-x-1 gap-y-1 border-secondary border-b-2 px-3 py-2 ${className}`}
 		>
 			<Button
 				variant="ghost"
 				{...attributes}
 				{...listeners}
-				className="-ml-2 h-auto cursor-grab p-1 text-secondary-foreground/50"
+				className="-ml-2 h-auto cursor-grab p-1 text-secondary-foreground/50 shrink-0"
 			>
 				<span className="sr-only">Move task</span>
 				<GripVertical />
 			</Button>
-			<Badge variant="outline" className="ml-auto font-semibold">
+			<Badge variant="outline" className="font-semibold shrink-0">
 				Task
 			</Badge>
 			<DropdownMenu>
 				<DropdownMenuTrigger asChild>
-					<Button variant="ghost" size="icon" className="ml-1 h-8 w-8">
+					<Button variant="ghost" size="icon" className="h-8 w-8 shrink-0">
 						<MoreVertical className="h-4 w-4" />
 						<span className="sr-only">Open quick actions</span>
 					</Button>
@@ -61,7 +61,11 @@ export function DragHeader({
 					</DropdownMenuItem>
 				</DropdownMenuContent>
 			</DropdownMenu>
-			{aiControls}
+			{aiControls && (
+				<div className="flex flex-wrap items-center gap-1 ml-auto">
+					{aiControls}
+				</div>
+			)}
 		</div>
 	);
 }

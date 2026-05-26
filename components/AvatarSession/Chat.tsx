@@ -1,18 +1,18 @@
 "use client";
 
 import { useKeyPress } from "ahooks";
+import { ChevronDown } from "lucide-react";
 import type React from "react";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { StickToBottom } from "use-stick-to-bottom";
 
 import { useStreamingAvatarContext } from "@/components/logic/context";
 import { useTextChat } from "@/components/logic/useTextChat";
+import { Button } from "@/components/ui/button";
 import {
 	ChatContainerContent,
 	ChatContainerRoot,
 	ChatContainerScrollAnchor,
 } from "@/components/ui/chat-container";
-import { ScrollButton } from "@/components/ui/scroll-button";
 import { useToast } from "@/components/ui/toaster";
 import { getProvider } from "@/lib/chat/registry";
 import { useChatProviderStore } from "@/lib/stores/chatProvider";
@@ -166,6 +166,12 @@ export const Chat: React.FC<ChatProps> = ({
 		}
 	}, [isAtBottom]);
 
+	const scrollToBottom = () => {
+		const el = scrollRef.current;
+		if (!el) return;
+		el.scrollTo({ top: el.scrollHeight, behavior: "smooth" });
+	};
+
 	const handleCopy = async (id: string, content: string) => {
 		try {
 			await navigator.clipboard.writeText(content);
@@ -220,7 +226,7 @@ export const Chat: React.FC<ChatProps> = ({
 
 	return (
 		<div className="flex flex-col w-full flex-1 min-h-0 p-4">
-			<StickToBottom
+			<div
 				className={cn(
 					"flex flex-1 min-h-0 h-full flex-col overflow-hidden text-foreground",
 					inputOnly && "hidden",
@@ -254,10 +260,23 @@ export const Chat: React.FC<ChatProps> = ({
 					</ChatContainerContent>
 					<ChatContainerScrollAnchor />
 					<div className="absolute bottom-4 right-4">
-						<ScrollButton className="shadow-sm" />
+						<Button
+							aria-label="Scroll to bottom"
+							className={cn(
+								"h-10 w-10 rounded-full shadow-sm transition-all duration-150 ease-out",
+								!isAtBottom
+									? "translate-y-0 scale-100 opacity-100"
+									: "pointer-events-none translate-y-4 scale-95 opacity-0",
+							)}
+							size="sm"
+							variant="outline"
+							onClick={scrollToBottom}
+						>
+							<ChevronDown className="h-5 w-5 text-foreground" />
+						</Button>
 					</div>
 				</ChatContainerRoot>
-			</StickToBottom>
+			</div>
 			{/* Ensure input section never shrinks and visually docks under messages */}
 			<div
 				ref={inputWrapRef}

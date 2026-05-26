@@ -43,7 +43,7 @@ interface ChatProviderState {
 }
 
 // Simple localStorage persistence (no SSR impact in client-only chat)
-const STORAGE_KEY_TEXT = "chat_provider_mode:text";
+const STORAGE_KEY_TEXT = "chat_provider_mode:text:v2";
 const STORAGE_KEY_VOICE = "chat_provider_mode:voice";
 const STORAGE_KEY_STREAMING = "chat_provider_mode:streaming";
 const STORAGE_KEY_TEXT_SETTINGS = "chat_provider_settings:text";

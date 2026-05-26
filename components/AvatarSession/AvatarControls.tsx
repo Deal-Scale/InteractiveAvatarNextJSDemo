@@ -11,8 +11,8 @@ import {
 	useKeepAliveMutation,
 	useStopSessionMutation,
 } from "@/lib/services/streaming/query";
-import { usePlacementStore } from "@/lib/stores/placement";
 import { useSessionStore } from "@/lib/stores/session";
+import { switchWorkspaceView } from "@/lib/workspace-view";
 import { Button } from "../Button";
 import {
 	StreamingAvatarSessionState,
@@ -35,8 +35,6 @@ export const AvatarControls: React.FC<AvatarControlsProps> = ({
 		setControlsMinimized,
 		currentSessionId,
 	} = useSessionStore();
-	const setSidebarCollapsed = usePlacementStore((s) => s.setSidebarCollapsed);
-	const setBottomHeightFrac = usePlacementStore((s) => s.setBottomHeightFrac);
 	const { sessionState } = useStreamingAvatarContext();
 
 	const interruptApi = useInterruptTaskMutation();
@@ -72,10 +70,7 @@ export const AvatarControls: React.FC<AvatarControlsProps> = ({
 	// Provide CSS var for Tailwind arbitrary opacity value
 	const rampStyle = { "--ui-opacity": uiOpacity } as React.CSSProperties;
 	const showAlternateView = (tab: "brain" | "data" | "actions") => {
-		setViewTab(tab);
-		setSidebarCollapsed(true);
-		setBottomHeightFrac(0);
-		setControlsMinimized(true);
+		switchWorkspaceView(tab);
 	};
 
 	return (

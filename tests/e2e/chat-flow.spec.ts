@@ -7,7 +7,7 @@ const CHAT_REPLY_VISIBLE =
 
 async function openBasicChat(page: Page) {
 	await page.addInitScript(() => {
-		window.localStorage.setItem("chat_provider_mode:text", "pollinations");
+		window.localStorage.setItem("chat_provider_mode:text:v2", "pollinations");
 		window.localStorage.setItem("chat_provider_mode:voice", "elevenlabs");
 		window.localStorage.setItem(
 			"chat_provider_settings:voice",
@@ -109,6 +109,26 @@ test.describe("basic chat flow", () => {
 		await expect(
 			page.getByRole("listbox", { name: "Slash command palette" }),
 		).toBeHidden();
+	});
+
+	test("loads a user message back into the input for editing", async ({
+		page,
+	}) => {
+		await openBasicChat(page);
+		const draft = "E2E edit this exact user message";
+
+		await sendChatMessage(page, draft);
+		await page.getByRole("button", { name: "Edit into input" }).first().click();
+
+		await expect(page.getByRole("textbox", { name: "Chat input" })).toHaveValue(
+			draft,
+		);
+		await expect(
+			page.getByRole("button", { name: "Confirm edit and send" }),
+		).toBeVisible();
+		await expect(
+			page.getByRole("button", { name: "Cancel editing" }),
+		).toBeVisible();
 	});
 
 	test("opens branch-to-agent from an assistant response", async ({ page }) => {

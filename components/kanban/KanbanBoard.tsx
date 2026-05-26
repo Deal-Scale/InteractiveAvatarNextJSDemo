@@ -178,31 +178,33 @@ export function KanbanBoard() {
 			onDragEnd={onDragEnd}
 			onDragOver={onDragOver}
 		>
-			{/* View toolbar: search + sorting */}
-			<div className="px-2 md:px-0">
-				<ViewSearchAndSort />
-			</div>
-			<BoardContainer>
-				{/* Actions toolbar removed; use top-right NewTaskDialog buttons */}
-				<SortableContext items={columnsId}>
-					{columns?.map((col, index) => (
-						<Fragment key={String(col.id)}>
-							<BoardColumn
-								column={col}
-								tasks={visibleTasks.filter(
-									(task) => String(task.status) === String(col.id),
+			<div className="flex flex-col flex-1 min-h-0 gap-4">
+				{/* View toolbar: search + sorting */}
+				<div className="px-2 md:px-0 shrink-0">
+					<ViewSearchAndSort />
+				</div>
+				<BoardContainer>
+					{/* Actions toolbar removed; use top-right NewTaskDialog buttons */}
+					<SortableContext items={columnsId}>
+						{columns?.map((col, index) => (
+							<Fragment key={String(col.id)}>
+								<BoardColumn
+									column={col}
+									tasks={visibleTasks.filter(
+										(task) => String(task.status) === String(col.id),
+									)}
+								/>
+								{index === columns?.length - 1 && (
+									<div className="w-[300px] shrink-0">
+										<NewSectionDialog />
+									</div>
 								)}
-							/>
-							{index === columns?.length - 1 && (
-								<div className="w-[300px]">
-									<NewSectionDialog />
-								</div>
-							)}
-						</Fragment>
-					))}
-					{!columns.length && <NewSectionDialog />}
-				</SortableContext>
-			</BoardContainer>
+							</Fragment>
+						))}
+						{!columns.length && <NewSectionDialog />}
+					</SortableContext>
+				</BoardContainer>
+			</div>
 
 			{/* Create/Edit Dialog removed here; managed by NewTaskDialog */}
 

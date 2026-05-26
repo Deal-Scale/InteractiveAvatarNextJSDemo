@@ -50,7 +50,7 @@ export function BoardColumn({ column, tasks, isOverlay }: BoardColumnProps) {
 	const style = { transition, transform: CSS.Translate.toString(transform) };
 
 	const variants = cva(
-		"h-[75vh] max-h-[75vh] w-[350px] max-w-full bg-secondary flex flex-col flex-shrink-0 snap-center",
+		"w-[350px] max-w-full bg-secondary flex flex-col flex-shrink-0 snap-center overflow-hidden",
 		{
 			variants: {
 				dragging: {
@@ -64,15 +64,16 @@ export function BoardColumn({ column, tasks, isOverlay }: BoardColumnProps) {
 
 	const defaultColIds = new Set(defaultCols.map((col) => col.id));
 
+	// Pass height down as inline style so column fills the parent container height
 	return (
 		<Card
 			ref={setNodeRef}
-			style={style}
+			style={{ ...style, height: "100%" }}
 			className={variants({
 				dragging: isOverlay ? "overlay" : isDragging ? "over" : undefined,
 			})}
 		>
-			<CardHeader className="space-between flex flex-row items-center border-b-2 p-4 text-left font-semibold">
+			<CardHeader className="space-between flex shrink-0 flex-row items-center border-b-2 p-4 text-left font-semibold">
 				<Button
 					variant={"ghost"}
 					{...attributes}
@@ -89,9 +90,9 @@ export function BoardColumn({ column, tasks, isOverlay }: BoardColumnProps) {
 					<ColumnActions title={column.title} id={String(column.id)} />
 				)}
 			</CardHeader>
-			<CardContent className="flex min-h-0 flex-1 flex-col overflow-hidden p-2">
-				<ScrollArea className="min-h-0 flex-1">
-					<div className="flex flex-col gap-6">
+			<CardContent className="flex min-h-0 flex-1 flex-col overflow-hidden p-0">
+				<ScrollArea className="flex-1 w-full">
+					<div className="flex flex-col gap-6 pl-3 pr-4 pt-3 pb-6">
 						<SortableContext items={tasksIds}>
 							{tasks.map((task) => (
 								<TaskCard key={task.id} task={task} />
@@ -106,21 +107,15 @@ export function BoardColumn({ column, tasks, isOverlay }: BoardColumnProps) {
 
 export function BoardContainer({ children }: { children: React.ReactNode }) {
 	const dndContext = useDndContext();
-	const variations = cva("px-2  pb-4 md:px-0 flex lg:justify-start", {
-		variants: { dragging: { default: "", active: "snap-none" } },
-	});
 	return (
-		<ScrollArea className="w-full whitespace-nowrap rounded-md">
+		<div className="flex-1 min-h-0 w-full overflow-x-auto overflow-y-hidden">
 			<div
-				className={variations({
-					dragging: dndContext.active ? "active" : "default",
-				})}
+				className={`flex flex-row gap-4 px-2 md:px-0 h-full items-start ${
+					dndContext.active ? "snap-none" : ""
+				}`}
 			>
-				<div className="flex flex-row items-start justify-center gap-4">
-					{children}
-				</div>
+				{children}
 			</div>
-			<ScrollBar orientation="horizontal" />
-		</ScrollArea>
+		</div>
 	);
 }

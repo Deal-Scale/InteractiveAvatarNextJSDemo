@@ -2,11 +2,14 @@ import type { ChatProvider } from "@/lib/chat/providers";
 import type { Message } from "@/lib/types";
 import { MessageSender } from "@/lib/types";
 
-function mapHistory(history: Message[], input: string) {
+function mapHistory(history: Message[], input: string, systemPrompt?: string) {
 	const mapped = history.map((m) => ({
 		role: m.sender === MessageSender.CLIENT ? "user" : "assistant",
 		content: m.content as unknown,
 	}));
+	if (systemPrompt?.trim()) {
+		mapped.unshift({ role: "system", content: systemPrompt.trim() });
+	}
 	mapped.push({ role: "user", content: input });
 	return mapped;
 }
@@ -18,14 +21,14 @@ export const OpenAIChatAdapter: ChatProvider = {
 	id: "openai",
 	label: "OpenAI",
 	supportsVoice: false,
-	async sendMessage({ history, input }): Promise<Message> {
+	async sendMessage({ history, input, options }): Promise<Message> {
 		try {
 			const res = await fetch("/api/open-ai/v1/chat/completions", {
 				method: "POST",
 				headers: { "Content-Type": "application/json" },
 				body: JSON.stringify({
 					model: "gpt-4o-mini",
-					messages: mapHistory(history, input),
+					messages: mapHistory(history, input, options?.systemPrompt),
 				}),
 			});
 			if (!res.ok) {

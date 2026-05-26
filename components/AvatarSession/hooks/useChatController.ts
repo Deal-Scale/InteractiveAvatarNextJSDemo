@@ -4,6 +4,14 @@ import { useEffect, useMemo, useState } from "react";
 import { useApiService } from "@/components/logic/ApiServiceContext";
 import { useMessageHistory } from "@/components/logic/useMessageHistory";
 import { useVoiceChat } from "@/components/logic/useVoiceChat";
+import {
+	APP_CAPABILITIES_SYSTEM_PROMPT,
+	buildAppCapabilityReasoning,
+	buildAppCapabilityToolParts,
+	executeAppCapabilities,
+	parseAppCapabilityActions,
+	stripAppCapabilityBlocks,
+} from "@/lib/app-capabilities";
 import type { ProviderId } from "@/lib/chat/providers";
 import { getProvider } from "@/lib/chat/registry";
 import { useSendTaskMutation } from "@/lib/services/streaming/query";
@@ -114,6 +122,12 @@ export function useChatController(sessionState: StreamingAvatarSessionState) {
 
 				const operations: Array<Promise<void>> = [];
 				const history = useSessionStore.getState().messages;
+				const systemPrompt = [
+					textSettings.systemPrompt.trim(),
+					APP_CAPABILITIES_SYSTEM_PROMPT,
+				]
+					.filter(Boolean)
+					.join("\n\n");
 
 				// Dispatch to selected text provider
 				operations.push(
@@ -124,15 +138,40 @@ export function useChatController(sessionState: StreamingAvatarSessionState) {
 								input: text,
 								options: {
 									jsonMode: textSettings.jsonMode,
-									systemPrompt: textSettings.systemPrompt.trim() || undefined,
+									systemPrompt,
 									seed: textSettings.seed.trim()
 										? Number(textSettings.seed)
 										: undefined,
 								},
 							});
+							const appActions = parseAppCapabilityActions(reply.content);
+							const actionResults = executeAppCapabilities(appActions);
+							const cleanedContent = stripAppCapabilityBlocks(reply.content);
+							const actionSummary = actionResults
+								.map((result) => result.message)
+								.join("\n");
+							const appToolParts = buildAppCapabilityToolParts(
+								appActions,
+								actionResults,
+							);
+							const appReasoning = buildAppCapabilityReasoning(
+								appActions,
+								actionResults,
+							);
 							const providerMessage = {
 								...reply,
 								provider: reply.provider ?? textProvider.id,
+								content:
+									cleanedContent || actionSummary || reply.content || "Done.",
+								toolParts:
+									appToolParts.length > 0
+										? [...(reply.toolParts ?? []), ...appToolParts]
+										: reply.toolParts,
+								reasoning: appReasoning ?? reply.reasoning,
+								reasoningMarkdown: appReasoning
+									? true
+									: reply.reasoningMarkdown,
+								reasoningOpen: appReasoning ? true : reply.reasoningOpen,
 							};
 							addMessage(providerMessage);
 

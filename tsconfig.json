@@ -41,5 +41,5 @@
 		".next/types/**/*.ts",
 		"components/AvatarSession/chat/utils/message.tss"
 	],
-	"exclude": ["node_modules"]
+	"exclude": ["node_modules", "packages/fastmcp-1"]
 }

@@ -25,9 +25,12 @@ export const OpenRouterAdapter: ChatProvider = {
 	id: "openrouter",
 	label: "OpenRouter",
 	supportsVoice: false,
-	async sendMessage({ history, input }): Promise<Message> {
+	async sendMessage({ history, input, options }): Promise<Message> {
 		// Map history to OpenAI-like messages
 		const messages = [
+			...(options?.systemPrompt?.trim()
+				? [{ role: "system", content: options.systemPrompt.trim() }]
+				: []),
 			...history.map((m) => ({
 				role: m.sender === MessageSender.CLIENT ? "user" : "assistant",
 				content: m.content as unknown,
