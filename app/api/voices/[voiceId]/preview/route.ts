@@ -62,8 +62,23 @@ const toArrayBuffer = (bytes: Uint8Array): ArrayBuffer =>
 		bytes.byteOffset + bytes.byteLength,
 	) as ArrayBuffer;
 
-const proxyAudioResponse = async (url: string) => {
-	const upstream = await fetch(url, { method: "GET", cache: "no-store" });
+const ALLOWED_PREVIEW_HOSTS = new Set(["storage.googleapis.com", "cdn.elevenlabs.io"]);
+
+const getValidatedPreviewUrl = (value: string): URL | null => {
+	let parsed: URL;
+	try {
+		parsed = new URL(value);
+	} catch {
+		return null;
+	}
+
+	if (parsed.protocol !== "https:") return null;
+	if (!ALLOWED_PREVIEW_HOSTS.has(parsed.hostname)) return null;
+	return parsed;
+};
+
+const proxyAudioResponse = async (url: URL) => {
+	const upstream = await fetch(url.toString(), { method: "GET", cache: "no-store" });
 	const contentType =
 		upstream.headers.get("content-type") ?? "application/octet-stream";
 
@@ -100,7 +115,16 @@ export async function GET(
 
 		if (provider === "elevenlabs") {
 			const previewUrl = url.searchParams.get("preview_url");
-			if (previewUrl) return proxyAudioResponse(previewUrl);
+			if (previewUrl) {
+				const validatedPreviewUrl = getValidatedPreviewUrl(previewUrl);
+				if (!validatedPreviewUrl) {
+					return NextResponse.json(
+						{ error: "Invalid preview_url" },
+						{ status: 400 },
+					);
+				}
+				return proxyAudioResponse(validatedPreviewUrl);
+			}
 
 			const metadataRes = await fetch(
 				`https://api.elevenlabs.io/v1/voices/${encodeURIComponent(voiceId)}`,
@@ -126,7 +150,15 @@ export async function GET(
 				);
 			}
 
-			return proxyAudioResponse(metadataPreviewUrl);
+			const validatedMetadataPreviewUrl = getValidatedPreviewUrl(metadataPreviewUrl);
+			if (!validatedMetadataPreviewUrl) {
+				return NextResponse.json(
+					{ error: "Invalid ElevenLabs preview URL" },
+					{ status: 502 },
+				);
+			}
+
+			return proxyAudioResponse(validatedMetadataPreviewUrl);
 		}
 
 		if (provider === "openai") {
