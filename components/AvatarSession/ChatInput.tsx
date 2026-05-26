@@ -22,7 +22,11 @@ import { useAgentStore } from "@/lib/stores/agent";
 import { useAssetsStore } from "@/lib/stores/assets";
 import type { ComposerAsset } from "@/lib/stores/composer";
 import { useComposerStore } from "@/lib/stores/composer";
-import { type KnowledgeFolder, useSessionStore } from "@/lib/stores/session";
+import {
+	type ChatMode,
+	type KnowledgeFolder,
+	useSessionStore,
+} from "@/lib/stores/session";
 import { getTextareaAnchorRect } from "@/lib/utils/caret";
 import type { Command } from "@/types/commands";
 

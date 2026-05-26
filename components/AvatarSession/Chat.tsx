@@ -17,6 +17,7 @@ import { useToast } from "@/components/ui/toaster";
 import { getProvider } from "@/lib/chat/registry";
 import { useChatProviderStore } from "@/lib/stores/chatProvider";
 import { useComposerStore } from "@/lib/stores/composer";
+import { useSessionStore } from "@/lib/stores/session";
 import type { MessageAsset, Message as MessageType } from "@/lib/types";
 import { MessageSender } from "@/lib/types";
 import { cn } from "@/lib/utils";
@@ -80,7 +81,6 @@ export const Chat: React.FC<ChatProps> = ({
 	} = useStreamingAvatarContext();
 	const { repeatMessage: apiRepeatMessage } = useTextChat();
 	const chatMode = useSessionStore((s) => s.chatMode);
-	const setChatMode = useSessionStore((s) => s.setChatMode);
 
 	const composerAttachments = useComposerStore((s) => s.assetAttachments);
 	const clearComposerAttachments = useComposerStore(
