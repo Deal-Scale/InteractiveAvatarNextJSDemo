@@ -476,7 +476,7 @@ export function useEditTaskDialog({
 				if (/^Plan:/i.test(line)) return false;
 				if (/^\d+\./.test(line)) return false;
 				return !planKeys.some((k) =>
-					new RegExp(`^-?\s*${k}\s*:`, "i").test(line),
+					new RegExp(`^-?\\s*${k}\\s*:`, "i").test(line),
 				);
 			})
 			.join("\n")
