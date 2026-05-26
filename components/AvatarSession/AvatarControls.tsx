@@ -1,25 +1,24 @@
-import React from "react";
 import {
 	Brain,
 	Database,
 	LayoutDashboard,
-	Play,
 	Minimize2,
+	Play,
 } from "lucide-react";
-
+import React from "react";
+import {
+	useInterruptTaskMutation,
+	useKeepAliveMutation,
+	useStopSessionMutation,
+} from "@/lib/services/streaming/query";
+import { useSessionStore } from "@/lib/stores/session";
+import { switchWorkspaceView } from "@/lib/workspace-view";
 import { Button } from "../Button";
-import { useInterrupt } from "../logic/useInterrupt";
 import {
 	StreamingAvatarSessionState,
 	useStreamingAvatarContext,
 } from "../logic/context";
-
-import { useSessionStore } from "@/lib/stores/session";
-import {
-	useInterruptTaskMutation,
-	useStopSessionMutation,
-	useKeepAliveMutation,
-} from "@/lib/services/streaming/query";
+import { useInterrupt } from "../logic/useInterrupt";
 
 interface AvatarControlsProps {
 	stopSession: () => void;
@@ -70,9 +69,12 @@ export const AvatarControls: React.FC<AvatarControlsProps> = ({
 
 	// Provide CSS var for Tailwind arbitrary opacity value
 	const rampStyle = { "--ui-opacity": uiOpacity } as React.CSSProperties;
+	const showAlternateView = (tab: "brain" | "data" | "actions") => {
+		switchWorkspaceView(tab);
+	};
 
 	return (
-		<div className="absolute inset-0 pointer-events-none z-20">
+		<div className="absolute inset-0 pointer-events-none z-[90]">
 			{/* Keep-Alive button top-left when connected */}
 			{sessionState === StreamingAvatarSessionState.CONNECTED && (
 				<div className="absolute top-3 left-3 pointer-events-auto">
@@ -93,14 +95,16 @@ export const AvatarControls: React.FC<AvatarControlsProps> = ({
 				<button
 					type="button"
 					aria-label="Show controls"
+					data-tour="top-panel-toggle"
 					className={
-						"fixed top-0 left-1/2 -translate-x-1/2 z-40 select-none pointer-events-auto " +
-						"flex items-center gap-2 rounded-b-md border border-primary/40 bg-primary/10 px-3 py-1.5 text-primary " +
-						"hover:bg-primary/15"
+						"fixed top-0 left-1/2 -translate-x-1/2 z-[100] select-none pointer-events-auto " +
+						"flex items-center gap-2 rounded-b-md border border-primary bg-background px-3 py-2 text-foreground " +
+						"shadow-lg shadow-black/30 hover:bg-muted"
 					}
 					onClick={() => setControlsMinimized(false)}
 				>
-					<span className="h-1.5 w-8 rounded-full bg-primary/50" />
+					<span className="h-1.5 w-8 rounded-full bg-primary" />
+					<span className="text-xs font-medium">Controls</span>
 				</button>
 			)}
 			{/* Floating controls in the top-center over the video */}
@@ -151,6 +155,7 @@ export const AvatarControls: React.FC<AvatarControlsProps> = ({
 					)}
 					{/* Tab switcher */}
 					<div
+						data-tour="top-panel-tabs"
 						className={`mt-2 flex items-center justify-center gap-2 bg-popover/60 border border-border rounded-full px-2 py-1 backdrop-blur-sm transition-opacity duration-200 ${
 							sessionState === StreamingAvatarSessionState.CONNECTED
 								? "opacity-[var(--ui-opacity)] group-hover:opacity-100"
@@ -164,6 +169,7 @@ export const AvatarControls: React.FC<AvatarControlsProps> = ({
 					>
 						{/* Video first */}
 						<Button
+							data-tour="top-panel-toggle"
 							className={`h-9 w-9 aspect-square !p-0 rounded-xl flex items-center justify-center flex-shrink-0 ${
 								viewTab === "video"
 									? "!bg-primary !text-primary-foreground"
@@ -175,35 +181,38 @@ export const AvatarControls: React.FC<AvatarControlsProps> = ({
 							<Play className="h-4 w-4" />
 						</Button>
 						<Button
+							data-tour="brain-tab"
 							className={`h-9 w-9 aspect-square !p-0 rounded-xl flex items-center justify-center flex-shrink-0 ${
 								viewTab === "brain"
 									? "!bg-primary !text-primary-foreground"
 									: "!bg-muted !text-foreground"
 							}`}
 							title="Brain"
-							onClick={() => setViewTab("brain")}
+							onClick={() => showAlternateView("brain")}
 						>
 							<Brain className="h-4 w-4" />
 						</Button>
 						<Button
+							data-tour="data-tab"
 							className={`h-9 w-9 aspect-square !p-0 rounded-xl flex items-center justify-center flex-shrink-0 ${
 								viewTab === "data"
 									? "!bg-primary !text-primary-foreground"
 									: "!bg-muted !text-foreground"
 							}`}
 							title="Data"
-							onClick={() => setViewTab("data")}
+							onClick={() => showAlternateView("data")}
 						>
 							<Database className="h-4 w-4" />
 						</Button>
 						<Button
+							data-tour="actions-tab"
 							className={`h-9 w-9 aspect-square !p-0 rounded-xl flex items-center justify-center flex-shrink-0 ${
 								viewTab === "actions"
 									? "!bg-primary !text-primary-foreground"
 									: "!bg-muted !text-foreground"
 							}`}
 							title="Actions"
-							onClick={() => setViewTab("actions")}
+							onClick={() => showAlternateView("actions")}
 						>
 							<LayoutDashboard className="h-4 w-4" />
 						</Button>

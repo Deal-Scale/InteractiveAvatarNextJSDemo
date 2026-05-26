@@ -20,7 +20,17 @@ export type ActiveSessionsResponse = {
 		session_id: string;
 		status: string; // new | connecting | connected
 		created_at: number;
+		updated_at?: number;
+		duration?: number;
+		source?: string;
+		mode?: string;
+		is_sandbox?: boolean;
+		credits_consumed?: number;
+		avatar_id?: string;
+		context_id?: string;
+		embed_id?: string;
 	}>;
+	source?: "liveavatar" | "mock";
 };
 
 export type SessionsHistoryResponse = {
@@ -95,9 +105,19 @@ export function useSessionsHistoryQuery(params?: {
 export function useNewSessionMutation() {
 	const qc = useQueryClient();
 	return useMutation({
-		mutationFn: (body: any) =>
-			postJson<NewSessionResponse>("/api/streaming/new", body),
+		mutationFn: async (body: any) => {
+			console.log("[DEBUG] useNewSessionMutation called with body:", body);
+			const response = await postJson<NewSessionResponse>(
+				"/api/streaming/new",
+				body,
+			);
+			console.log("[DEBUG] useNewSessionMutation response:", response);
+			return response;
+		},
 		onSuccess: async () => {
+			console.log(
+				"[DEBUG] useNewSessionMutation success, invalidating queries",
+			);
 			// Refresh active sessions immediately
 			await qc.invalidateQueries({ queryKey: queryKeys.sessions.active });
 		},

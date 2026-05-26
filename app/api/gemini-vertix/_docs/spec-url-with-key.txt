@@ -1,0 +1,2 @@
+https://generativelanguage.googleapis.com/$discovery/OPENAPI3_0?version=v1beta&key=$GOOGLE_API_KEY
+"https://generativelanguage.googleapis.com/$discovery/OPENAPI3_0?version=v1beta&key=YOUR_API_KEY_HERE" | jq .

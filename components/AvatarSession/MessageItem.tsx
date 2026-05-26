@@ -1,20 +1,22 @@
 import {
 	ClipboardCopy,
-	ThumbsUp,
-	ThumbsDown,
-	Pencil,
-	Paperclip,
-	RotateCcw,
 	GitBranch,
+	Paperclip,
+	Pencil,
+	RotateCcw,
 	SplitSquareHorizontal,
+	ThumbsDown,
+	ThumbsUp,
+	Volume2,
 } from "lucide-react";
-
-import {
-	Message as MessageType,
-	MessageSender,
-	type MessageAsset,
-} from "@/lib/types";
+import { useMemo, useRef, useState } from "react";
+import { PromptKitStatsDemo } from "@/components/PromptKit/PromptKitStatsDemo";
+import { StatBadge } from "@/components/PromptKit/StatBadge";
 import { Button } from "@/components/ui/button";
+import { DataCard, Metric, MetricGrid } from "@/components/ui/jsx-demo";
+import { JSXPreview } from "@/components/ui/jsx-preview";
+import { LiveMermaidChart } from "@/components/ui/live-mermaid-chart";
+import { Mermaid } from "@/components/ui/mermaid";
 import {
 	Message,
 	MessageAction,
@@ -23,21 +25,33 @@ import {
 	MessageContent,
 } from "@/components/ui/message";
 import {
-	ResponseStream,
-	type Mode as ResponseStreamMode,
-} from "@/components/ui/response-stream";
-import { useTextStream } from "@/components/ui/response-stream";
-import {
 	Reasoning,
 	ReasoningContent,
 	ReasoningTrigger,
 } from "@/components/ui/reasoning";
-import { JSXPreview } from "@/components/ui/jsx-preview";
-import { Tool } from "@/components/ui/tool";
+import {
+	type Mode as ResponseStreamMode,
+	useTextStream,
+} from "@/components/ui/response-stream";
 import { Source, SourceContent, SourceTrigger } from "@/components/ui/source";
-import { StatBadge } from "@/components/PromptKit/StatBadge";
-import { DataCard, MetricGrid, Metric } from "@/components/ui/jsx-demo";
-import { Mermaid } from "@/components/ui/mermaid";
+import { Tool } from "@/components/ui/tool";
+import {
+	type MessageAsset,
+	MessageSender,
+	type Message as MessageType,
+} from "@/lib/types";
+
+const PROVIDER_LABELS: Record<string, string> = {
+	heygen: "Heygen",
+	pollinations: "Pollinations",
+	gemini: "Gemini",
+	openrouter: "OpenRouter",
+	claude: "Claude",
+	openai: "OpenAI",
+	deepseek: "DeepSeek",
+	mcp: "MCP",
+	"mock-openrouter": "Mock OpenRouter",
+};
 
 // Strict Markdown detection: only treat as markdown when strong cues exist
 function isStrictMarkdown(text: string | undefined | null): boolean {
@@ -51,21 +65,6 @@ function isStrictMarkdown(text: string | undefined | null): boolean {
 	);
 	if (hasTableRow && hasTableSep) return true; // proper table
 	return false;
-}
-
-// For debugging: which strong signal matched
-function markdownStrongReason(
-	text: string | undefined | null,
-): "fence" | "table" | null {
-	if (!text) return null;
-	const str = String(text);
-	if (/```|~~~/.test(str)) return "fence";
-	const hasTableRow = /^\s*\|.+\|\s*$/m.test(str);
-	const hasTableSep = /^\s*\|?\s*:?-{3,}:?\s*(\|\s*:?-{3,}:?\s*)+\|?\s*$/m.test(
-		str,
-	);
-	if (hasTableRow && hasTableSep) return "table";
-	return null;
 }
 
 interface MessageItemProps {
@@ -117,6 +116,76 @@ export const MessageItem: React.FC<MessageItemProps> = ({
 	avatarMarkdownHeaderLabel,
 }) => {
 	const hasJsx = Boolean(message.jsx && message.jsx.trim().length > 0);
+	const [isTtsLoading, setIsTtsLoading] = useState(false);
+	const audioRef = useRef<HTMLAudioElement | null>(null);
+
+	const providerBadge = useMemo(() => {
+		if (!message.provider) return null;
+		const baseLabel = PROVIDER_LABELS[message.provider] ?? message.provider;
+		const fallbackLabel = message.fallbackFrom
+			? (PROVIDER_LABELS[message.fallbackFrom] ?? message.fallbackFrom)
+			: null;
+		return { baseLabel, fallbackLabel } as const;
+	}, [message.fallbackFrom, message.provider]);
+	const jsxPreviewComponents = useMemo(
+		() => ({
+			StatBadge: StatBadge as unknown as React.ComponentType<unknown>,
+			PromptKitStatsDemo:
+				PromptKitStatsDemo as unknown as React.ComponentType<unknown>,
+			Source: Source as unknown as React.ComponentType<unknown>,
+			SourceTrigger: SourceTrigger as unknown as React.ComponentType<unknown>,
+			SourceContent: SourceContent as unknown as React.ComponentType<unknown>,
+			DataCard: DataCard as unknown as React.ComponentType<unknown>,
+			MetricGrid: MetricGrid as unknown as React.ComponentType<unknown>,
+			Metric: Metric as unknown as React.ComponentType<unknown>,
+			Mermaid: Mermaid as unknown as React.ComponentType<unknown>,
+			LiveMermaidChart:
+				LiveMermaidChart as unknown as React.ComponentType<unknown>,
+		}),
+		[],
+	);
+
+	const handleSpeak = async () => {
+		if (!message?.content || typeof message.content !== "string") return;
+		try {
+			setIsTtsLoading(true);
+			// Stop any prior playback
+			if (audioRef.current) {
+				audioRef.current.pause();
+				audioRef.current.src = "";
+				audioRef.current.load();
+				audioRef.current = null;
+			}
+			const params = new URLSearchParams({
+				prompt: message.content,
+				voice: "alloy",
+			});
+			const res = await fetch(
+				`/api/pollinations/text/tts?${params.toString()}`,
+			);
+			if (!res.ok) {
+				// Best-effort surface of error
+				const text = await res.text().catch(() => "");
+				// eslint-disable-next-line no-console
+				console.error("TTS error:", text || res.statusText);
+				return;
+			}
+			const blob = await res.blob();
+			const url = URL.createObjectURL(blob);
+			const audio = new Audio(url);
+			audioRef.current = audio;
+			audio.onended = () => {
+				URL.revokeObjectURL(url);
+				audioRef.current = null;
+			};
+			await audio.play();
+		} catch (e) {
+			// eslint-disable-next-line no-console
+			console.error("Failed to play TTS:", e);
+		} finally {
+			setIsTtsLoading(false);
+		}
+	};
 
 	// Keyboard shortcuts for quick actions when message is focused
 	const handleKeyDown = (e: React.KeyboardEvent<HTMLDivElement>) => {
@@ -181,33 +250,22 @@ export const MessageItem: React.FC<MessageItemProps> = ({
 
 	// If we have JSX, stream it using the same text streaming hook used by ResponseStream.
 	const jsxStream = useTextStream({
-		textStream: message.jsx ?? "",
+		textStream: isStreaming ? (message.jsx ?? "") : "",
 		mode: streamMode,
 		speed: streamSpeed,
 		fadeDuration,
 		segmentDelay,
 		characterChunkSize,
 	});
+	const previewJsx =
+		isStreaming && message.jsx ? jsxStream.displayedText : (message.jsx ?? "");
+	const previewIsStreaming = Boolean(isStreaming && !jsxStream.isComplete);
 
-	// Show header ONLY when content is strict markdown (env flag no longer forces it on)
-	const showMdHeader = Boolean(isStrictMarkdown(message.content));
-
-	// Dev-only logging to inspect detection behavior
-	if (process.env.NODE_ENV !== "production") {
-		try {
-			const preview = (message.content || "").slice(0, 80);
-			// eslint-disable-next-line no-console
-			console.debug("[MessageItem] markdown-detect", {
-				id: message.id,
-				sender: message.sender,
-				isStrictMarkdown: isStrictMarkdown(message.content),
-				reason: markdownStrongReason(message.content),
-				showMdHeader,
-				hasJsx,
-				preview,
-			});
-		} catch {}
-	}
+	const renderMarkdown = message.sender === MessageSender.AVATAR;
+	// Show header only when requested or when content has a strong block signal.
+	const showMdHeader = Boolean(
+		avatarMarkdownShowHeader || isStrictMarkdown(message.content),
+	);
 
 	const renderAssets = (assets?: MessageAsset[]) => {
 		if (!assets || assets.length === 0) return null;
@@ -278,7 +336,7 @@ export const MessageItem: React.FC<MessageItemProps> = ({
 						(isTalking || isToolsRunning);
 
 					return (
-						<div className="flex items-center gap-2">
+						<div className="flex items-center gap-2 w-full">
 							<p className="text-xs text-muted-foreground">
 								{message.sender === MessageSender.AVATAR ? "Avatar" : "You"}
 							</p>
@@ -295,6 +353,34 @@ export const MessageItem: React.FC<MessageItemProps> = ({
 									{isTalking ? "Talking…" : "Tools running"}
 								</span>
 							)}
+							{providerBadge ? (
+								<span className="ml-auto inline-flex items-center gap-1 rounded-full bg-secondary/70 px-2 py-0.5 text-[11px] font-medium text-muted-foreground">
+									<span className="uppercase tracking-wide">
+										{providerBadge.baseLabel}
+									</span>
+									{providerBadge.fallbackLabel ? (
+										<span className="text-[10px] font-normal normal-case">
+											(fallback from {providerBadge.fallbackLabel})
+										</span>
+									) : null}
+								</span>
+							) : null}
+							{message.sender === MessageSender.AVATAR && message.content ? (
+								<Button
+									aria-label={
+										isTtsLoading ? "Generating audio…" : "Speak response"
+									}
+									data-tour="message-speak"
+									title="Speak response"
+									size="icon"
+									variant="ghost"
+									className={providerBadge ? "" : "ml-auto"}
+									disabled={isTtsLoading}
+									onClick={handleSpeak}
+								>
+									<Volume2 className="h-4 w-4" />
+								</Button>
+							) : null}
 						</div>
 					);
 				})()}
@@ -319,7 +405,7 @@ export const MessageItem: React.FC<MessageItemProps> = ({
 							<div className="w-full">
 								{message.content && (
 									<MessageContent
-										markdown={isStrictMarkdown(message.content)}
+										markdown={renderMarkdown}
 										showHeader={showMdHeader}
 										headerLabel={avatarMarkdownHeaderLabel}
 										className="mb-2 bg-muted"
@@ -328,27 +414,15 @@ export const MessageItem: React.FC<MessageItemProps> = ({
 									</MessageContent>
 								)}
 								<JSXPreview
-									isStreaming={Boolean(isStreaming && !jsxStream.isComplete)}
-									jsx={jsxStream.displayedText}
-									components={{
-										StatBadge: StatBadge as unknown as React.ComponentType<any>,
-										Source: Source as unknown as React.ComponentType<any>,
-										SourceTrigger:
-											SourceTrigger as unknown as React.ComponentType<any>,
-										SourceContent:
-											SourceContent as unknown as React.ComponentType<any>,
-										DataCard: DataCard as unknown as React.ComponentType<any>,
-										MetricGrid:
-											MetricGrid as unknown as React.ComponentType<any>,
-										Metric: Metric as unknown as React.ComponentType<any>,
-										Mermaid: Mermaid as unknown as React.ComponentType<any>,
-									}}
+									isStreaming={previewIsStreaming}
+									jsx={previewJsx}
+									components={jsxPreviewComponents}
 								/>
 							</div>
 						) : (
 							// Render markdown for avatar messages (tables, code fences, etc.)
 							<MessageContent
-								markdown={isStrictMarkdown(message.content)}
+								markdown={renderMarkdown}
 								showHeader={showMdHeader}
 								headerLabel={avatarMarkdownHeaderLabel}
 								className="bg-muted"
@@ -394,13 +468,18 @@ export const MessageItem: React.FC<MessageItemProps> = ({
 				)}
 				{message.sender !== MessageSender.AVATAR &&
 					renderAssets(message.assets)}
-				<MessageActions role="toolbar" aria-label="Message quick actions">
+				<MessageActions
+					role="toolbar"
+					aria-label="Message quick actions"
+					data-tour="message-actions"
+				>
 					{message.sender === MessageSender.AVATAR ? (
 						<>
 							<MessageAction tooltip={"Retry (regenerate)"}>
 								<Button
 									aria-label="Retry"
 									aria-keyshortcuts="R"
+									data-tour="message-restream"
 									size="icon"
 									variant={onRetry ? "secondary" : "ghost"}
 									className="focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
@@ -413,26 +492,29 @@ export const MessageItem: React.FC<MessageItemProps> = ({
 									<RotateCcw className="h-4 w-4" />
 								</Button>
 							</MessageAction>
-							<MessageAction tooltip={"Compare outputs"}>
-								<Button
-									aria-label="Compare outputs"
-									aria-keyshortcuts="O"
-									size="icon"
-									variant={onCompare ? "secondary" : "ghost"}
-									className="focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
-									onClick={() =>
-										onCompare
-											? onCompare(message.content, message.id)
-											: handleEditToInput(message.content, message.id)
-									}
-								>
-									<SplitSquareHorizontal className="h-4 w-4" />
-								</Button>
-							</MessageAction>
+							{process.env.NEXT_PUBLIC_CHAT_DEBUG === "true" && (
+								<MessageAction tooltip={"Compare outputs"}>
+									<Button
+										aria-label="Compare outputs"
+										aria-keyshortcuts="O"
+										size="icon"
+										variant={onCompare ? "secondary" : "ghost"}
+										className="focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+										onClick={() =>
+											onCompare
+												? onCompare(message.content, message.id)
+												: handleEditToInput(message.content, message.id)
+										}
+									>
+										<SplitSquareHorizontal className="h-4 w-4" />
+									</Button>
+								</MessageAction>
+							)}
 							<MessageAction tooltip={"Branch to agent"}>
 								<Button
 									aria-label="Branch to agent"
 									aria-keyshortcuts="B"
+									data-tour="message-branch-agent"
 									size="icon"
 									variant={onBranch ? "secondary" : "ghost"}
 									className="focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
@@ -453,6 +535,7 @@ export const MessageItem: React.FC<MessageItemProps> = ({
 								<Button
 									aria-label="Copy message"
 									aria-keyshortcuts="C"
+									data-tour="message-copy"
 									size="icon"
 									variant="ghost"
 									className="focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
@@ -469,6 +552,7 @@ export const MessageItem: React.FC<MessageItemProps> = ({
 								<Button
 									aria-label="Upvote response"
 									aria-keyshortcuts="ArrowUp"
+									data-tour="message-upvote"
 									size="icon"
 									variant={
 										voteState[message.id] === "up" ? "secondary" : "ghost"
@@ -489,6 +573,7 @@ export const MessageItem: React.FC<MessageItemProps> = ({
 								<Button
 									aria-label="Downvote response"
 									aria-keyshortcuts="ArrowDown"
+									data-tour="message-downvote"
 									size="icon"
 									variant={
 										voteState[message.id] === "down" ? "secondary" : "ghost"

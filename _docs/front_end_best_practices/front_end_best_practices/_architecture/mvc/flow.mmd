@@ -1,0 +1,65 @@
+flowchart TD
+    subgraph Client["Client Layer"]
+        Browser["Browser"]
+    end
+    
+    subgraph Frontend["Frontend Layer"]
+        direction TB
+        
+        subgraph View["View Layer"]
+            UI["React Components"]
+            Style["Tailwind CSS"]
+            Anim["Framer Motion"]
+        end
+        
+        subgraph Controller["Controller Layer"]
+            Hooks["Custom Hooks"]
+            Logic["Business Logic"]
+        end
+        
+        subgraph Model["Model Layer"]
+            State["Zustand Stores"]
+            Query["React Query"]
+        end
+    end
+    
+    subgraph Services["External Services"]
+        API["API Endpoints"]
+        Assets["Cloudinary/Spline"]
+    end
+    
+    %% Main Flow
+    Browser --> UI
+    UI --> Hooks
+    Hooks --> Logic
+    Logic --> State
+    Logic --> Query
+    Query --> API
+    State --> UI
+    API --> Query
+    Query --> State
+    State --> UI
+    
+    %% External Service Integration
+    UI --> Assets
+    Assets --> API
+    
+    %% Styling & Animation
+    Style -.-> UI
+    Anim -.-> UI
+    
+    %% Legend
+    subgraph Legend["Legend"]
+        L1["Main Data Flow"]:::main
+        L2["Styling/Animation"]:::style
+    end
+    
+    classDef main fill:#93c5fd,stroke:#1d4ed8,color:#000
+    classDef style fill:#fde68a,stroke:#d97706,color:#000
+    classDef layer fill:#f1f5f9,stroke:#6b7280,color:#000
+    classDef service fill:#dbeafe,stroke:#60a5fa,color:#000
+    
+    class Browser,UI,Hooks,Logic,State,Query,API,Assets main
+    class Style,Anim style
+    class View,Controller,Model layer
+    class Services service

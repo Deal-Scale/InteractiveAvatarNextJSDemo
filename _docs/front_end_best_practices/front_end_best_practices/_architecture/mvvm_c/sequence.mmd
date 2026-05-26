@@ -1,0 +1,26 @@
+sequenceDiagram
+    participant U as User
+    participant V as View
+    participant VM as ViewModel
+    participant C as Coordinator
+    participant M as Model
+    
+    Note over U,M: Navigation Flow Example
+    
+    U->>+V: Interacts with UI
+    V->>+VM: Triggers Action
+    VM->>+M: Updates State
+    M-->>-VM: Confirms Update
+    VM-->>-V: Updates UI
+    V-->>-U: Shows New State
+    
+    Note over U,M: Navigation Request
+    
+    U->>+V: Requests Navigation
+    V->>+C: Trigger Navigation
+    C->>+VM: Prepare Next Screen
+    VM->>+M: Save Current State
+    M-->>-VM: Confirms Save
+    VM-->>-C: Ready for Navigation
+    C-->>-V: Navigate
+    V-->>-U: Show New View

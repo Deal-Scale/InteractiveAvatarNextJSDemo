@@ -1,42 +1,51 @@
+import type { StartAvatarRequest } from "@heygen/streaming-avatar";
 import { NextResponse } from "next/server";
-
-const HEYGEN_BASE =
-	process.env.NEXT_PUBLIC_BASE_API_URL || "https://api.heygen.com";
-
-const HEYGEN_API_KEY = process.env.HEYGEN_API_KEY;
+import {
+	getLiveAvatarErrorMessage,
+	LIVEAVATAR_API_KEY,
+	LIVEAVATAR_BASE,
+	liveAvatarHeaders,
+	missingLiveAvatarKeyResponse,
+	parseLiveAvatarResponse,
+	toLiveAvatarSessionRequest,
+} from "@/lib/server/liveavatar";
 
 export async function POST(req: Request) {
-	if (!HEYGEN_API_KEY) {
-		return NextResponse.json(
-			{ error: "Missing HEYGEN_API_KEY" },
-			{ status: 500 },
-		);
+	console.log("[DEBUG] Starting LiveAvatar session token creation");
+	console.log("[DEBUG] LIVEAVATAR_API_KEY present:", !!LIVEAVATAR_API_KEY);
+
+	if (!LIVEAVATAR_API_KEY) {
+		return missingLiveAvatarKeyResponse();
 	}
 
 	try {
-		const body = await req.json();
-
-		const res = await fetch(`${HEYGEN_BASE}/v1/streaming.new`, {
+		const body = (await req.json()) as StartAvatarRequest;
+		const payload = toLiveAvatarSessionRequest(body);
+		const tokenRes = await fetch(`${LIVEAVATAR_BASE}/v1/sessions/token`, {
 			method: "POST",
-			headers: {
-				"Content-Type": "application/json",
-				Authorization: `Bearer ${HEYGEN_API_KEY}`,
-			},
-			body: JSON.stringify(body ?? {}),
+			headers: liveAvatarHeaders(),
+			body: JSON.stringify(payload),
+			cache: "no-store",
 		});
+		const tokenData = await parseLiveAvatarResponse(tokenRes);
 
-		const data = await res.json();
-
-		if (!res.ok) {
+		if (!tokenRes.ok) {
 			return NextResponse.json(
-				{ error: data?.message || "Failed to start session" },
-				{ status: res.status },
+				{
+					error: getLiveAvatarErrorMessage(
+						tokenData,
+						"Failed to create LiveAvatar session token",
+					),
+					upstream: tokenData,
+				},
+				{ status: tokenRes.status },
 			);
 		}
 
-		return NextResponse.json(data, { status: 200 });
+		return NextResponse.json(tokenData, { status: 200 });
 	} catch (err: unknown) {
 		const message = err instanceof Error ? err.message : "Unknown error";
+		console.error("[DEBUG] Exception in streaming/new:", message);
 		return NextResponse.json({ error: message }, { status: 500 });
 	}
 }

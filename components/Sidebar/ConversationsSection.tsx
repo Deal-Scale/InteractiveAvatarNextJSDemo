@@ -1,12 +1,11 @@
 "use client";
 
+import { Bookmark, BookmarkCheck, ChevronRight } from "lucide-react";
+
 import type {
 	Conversation,
 	ConversationGroup,
 } from "@/components/Sidebar/types";
-
-import { ChevronRight, Bookmark, BookmarkCheck } from "lucide-react";
-
 import {
 	SidebarGroup,
 	SidebarGroupLabel,
@@ -57,7 +56,9 @@ export default function ConversationsSection(props: {
 							})
 						}
 					>
-						<SidebarGroupLabel>{group.period}</SidebarGroupLabel>
+						<SidebarGroupLabel className="border-border bg-background/70 text-muted-foreground">
+							{group.period}
+						</SidebarGroupLabel>
 						<ChevronRight
 							className={`size-3 transition-transform ${collapsedGroups.has(group.period) ? "rotate-0" : "rotate-90"}`}
 						/>

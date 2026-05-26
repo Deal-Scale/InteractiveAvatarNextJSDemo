@@ -1,0 +1,83 @@
+import type { OperationDefinition } from "./operation-registry";
+
+export const DEFAULT_OPERATIONS: readonly OperationDefinition[] = [
+	{
+		id: "listModels",
+		method: "get",
+		path: "models",
+		tag: "Models",
+		summary: "List available DeepSeek models.",
+		parameters: [],
+	},
+	{
+		id: "retrieveModel",
+		method: "get",
+		path: "models/{model}",
+		tag: "Models",
+		summary: "Retrieve metadata for a specific model.",
+		parameters: [{ in: "path", name: "model", required: true }],
+	},
+	{
+		id: "getUserBalance",
+		method: "get",
+		path: "user/balance",
+		tag: "Billing",
+		summary: "Fetch the current DeepSeek account balance information.",
+		parameters: [],
+	},
+	{
+		id: "createChatCompletion",
+		method: "post",
+		path: "chat/completions",
+		tag: "Chat Completions",
+		summary: "Create a chat completion using DeepSeek chat models.",
+		parameters: [
+			{ in: "query", name: "stream" },
+			{ in: "query", name: "safe" },
+			{ in: "query", name: "temperature" },
+		],
+	},
+	{
+		id: "createReasoningCompletion",
+		method: "post",
+		path: "reasoning/completions",
+		tag: "Reasoning",
+		summary: "Invoke DeepSeek reasoning models for extended outputs.",
+		parameters: [
+			{ in: "query", name: "stream" },
+			{ in: "query", name: "temperature" },
+		],
+	},
+	{
+		id: "createEmbedding",
+		method: "post",
+		path: "embeddings",
+		tag: "Embeddings",
+		summary: "Generate embedding vectors using DeepSeek embedding models.",
+		parameters: [],
+	},
+	{
+		id: "createSpeech",
+		method: "post",
+		path: "audio/speech",
+		tag: "Audio",
+		summary: "Synthesize speech from text using DeepSeek TTS models.",
+		parameters: [{ in: "header", name: "accept" }],
+	},
+	{
+		id: "createFimCompletion",
+		method: "post",
+		path: "beta/completions",
+		tag: "Beta",
+		summary: "Call the beta Fill-in-the-Middle completion endpoint.",
+		parameters: [],
+	},
+	{
+		id: "createAnthropicMessage",
+		method: "post",
+		path: "anthropic/messages",
+		tag: "Anthropic Compatibility",
+		summary: "Invoke DeepSeek via the Anthropic-compatible API surface.",
+		parameters: [],
+	},
+];

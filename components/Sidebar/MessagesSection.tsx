@@ -2,14 +2,14 @@
 
 import { ChevronRight } from "lucide-react";
 
-import { SidebarGroup, SidebarGroupLabel } from "@/components/ui/sidebar";
-import { Button } from "@/components/ui/button";
 import ConversationsSection from "@/components/Sidebar/ConversationsSection";
-import { formatCompactNumber } from "@/components/Sidebar/utils/format";
 import type {
 	Conversation,
 	ConversationGroup,
 } from "@/components/Sidebar/types";
+import { formatCompactNumber } from "@/components/Sidebar/utils/format";
+import { Button } from "@/components/ui/button";
+import { SidebarGroup, SidebarGroupLabel } from "@/components/ui/sidebar";
 
 export default function MessagesSection(props: {
 	collapsedMessages: boolean;
@@ -61,7 +61,9 @@ export default function MessagesSection(props: {
 				type="button"
 				onClick={() => setCollapsedMessages((v) => !v)}
 			>
-				<SidebarGroupLabel>Messages</SidebarGroupLabel>
+				<SidebarGroupLabel className="border-sky-400/35 bg-sky-500/10 text-sky-700 dark:text-sky-300">
+					Chats
+				</SidebarGroupLabel>
 				<ChevronRight
 					className={`size-3 transition-transform ${collapsedMessages ? "rotate-0" : "rotate-90"}`}
 				/>

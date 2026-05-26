@@ -1,0 +1,35 @@
+sequenceDiagram
+    participant U as User
+    participant V as View
+    participant P as Presenter
+    participant I as Interactor
+    participant E as Entity
+    participant R as Router
+    
+    Note over U,R: User initiates login process
+    
+    U->>+V: Click Login Button
+    V->>+P: handleLogin()
+    
+    P->>+I: authenticateUser()
+    activate I
+    
+    par Parallel Validation
+        I->>I: Validate Input
+        I->>I: Check Network
+    end
+    
+    I->>+E: Update Auth State
+    E-->>-I: State Updated
+    deactivate I
+    
+    I-->>-P: Authentication Result
+    deactivate P
+    
+    alt Success Path
+        P->>R: Navigate to Dashboard
+        R-->>U: Show Dashboard Page
+    else Error Path
+        P->>V: Display Error Message
+        V-->>U: Show Error UI
+    end

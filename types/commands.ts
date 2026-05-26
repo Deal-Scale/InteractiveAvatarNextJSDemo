@@ -13,5 +13,6 @@ export type Command = {
 	 */
 	mcpPrompt?: string | (() => string);
 	action?: () => void;
+	disabled?: boolean;
 	children?: Command[];
 };

@@ -1,0 +1,15 @@
+Use this online JWT generator: https://jwt.io/
+
+Steps:
+1. Copy the payload below
+2. Use the online generator with your private key
+3. Sign it with RS256 algorithm
+
+Payload:
+{
+  "iss": "deal-scale-668@twt-project-451803.iam.gserviceaccount.com",
+  "scope": "https://www.googleapis.com/auth/cloud-platform",
+  "aud": "https://oauth2.googleapis.com/token",
+  "iat": 1759881948,
+  "exp": 1759885548
+}

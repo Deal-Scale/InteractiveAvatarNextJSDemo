@@ -13,6 +13,9 @@ export interface AgentStoreState {
 	// Whether currentAgent has unsaved/unstaged edits relative to lastStartedConfig
 	isDirty: boolean;
 
+	// Starred/Favorite agent IDs
+	starredAgentIds: string[];
+
 	// Actions
 	setAgent: (agent: AgentConfig) => void;
 	updateAgent: (patch: Partial<AgentConfig>) => void;
@@ -20,6 +23,7 @@ export interface AgentStoreState {
 
 	markClean: () => void;
 	setLastStarted: (config: AgentConfig) => void;
+	toggleStarredAgent: (id: string) => void;
 }
 
 export const useAgentStore = create<AgentStoreState>()(
@@ -28,6 +32,7 @@ export const useAgentStore = create<AgentStoreState>()(
 			currentAgent: null,
 			lastStartedConfig: null,
 			isDirty: false,
+			starredAgentIds: [],
 
 			setAgent: (agent) => set({ currentAgent: agent, isDirty: true }),
 
@@ -50,6 +55,15 @@ export const useAgentStore = create<AgentStoreState>()(
 
 			setLastStarted: (config) =>
 				set({ lastStartedConfig: config, isDirty: false }),
+
+			toggleStarredAgent: (id) =>
+				set((state) => {
+					const exists = state.starredAgentIds.includes(id);
+					const next = exists
+						? state.starredAgentIds.filter((x) => x !== id)
+						: [...state.starredAgentIds, id];
+					return { starredAgentIds: next };
+				}),
 		}),
 		{
 			name: "agent-store",
@@ -58,6 +72,7 @@ export const useAgentStore = create<AgentStoreState>()(
 			partialize: (state) => ({
 				currentAgent: state.currentAgent,
 				lastStartedConfig: state.lastStartedConfig,
+				starredAgentIds: state.starredAgentIds,
 			}),
 		},
 	),

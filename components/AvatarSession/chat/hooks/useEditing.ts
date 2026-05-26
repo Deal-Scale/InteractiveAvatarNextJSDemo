@@ -13,17 +13,28 @@ export function useEditing(opts: {
 	const [isEditing, setIsEditing] = useState(false);
 	const [inputBackup, setInputBackup] = useState<string>("");
 
-	const handleEditToInput = (content: string) => {
+	const handleEditToInput = (content: string, _messageId?: string) => {
 		if (!isEditing) setInputBackup(chatInput);
 		setIsEditing(true);
 		onChatInputChange(content);
-		requestAnimationFrame(() => {
+
+		const focusTextarea = () => {
 			const el = inputRef.current;
 			if (el) {
+				if (el.value !== content) {
+					el.value = content;
+				}
 				el.focus();
 				const len = el.value.length;
 				el.setSelectionRange(len, len);
 			}
+		};
+
+		requestAnimationFrame(focusTextarea);
+		setTimeout(focusTextarea, 0);
+		publish({
+			description: "The message is loaded into the chat input.",
+			title: "Editing message",
 		});
 	};
 

@@ -1,0 +1,339 @@
+{
+	"openapi": "3.1.0",
+	"info": {
+		"title": "Vertex Gemini API",
+		"version": "1.0.0",
+		"description": "OpenAPI specification for calling the Google Vertex AI Gemini endpoints used by the demo."
+	},
+	"servers": [
+		{
+			"url": "https://{location}-aiplatform.googleapis.com",
+			"variables": {
+				"location": {
+					"default": "us-central1",
+					"description": "Regional endpoint for Vertex AI."
+				}
+			}
+		}
+	],
+	"paths": {
+		"/v1/projects/{project}/locations/{location}/publishers/google/models/{model}:generateContent": {
+			"post": {
+				"operationId": "generateContent",
+				"summary": "Generate a response from a Gemini model.",
+				"parameters": [
+					{ "$ref": "#/components/parameters/project" },
+					{ "$ref": "#/components/parameters/location" },
+					{ "$ref": "#/components/parameters/model" }
+				],
+				"requestBody": {
+					"required": true,
+					"content": {
+						"application/json": {
+							"schema": {
+								"$ref": "#/components/schemas/GenerateContentRequest"
+							}
+						}
+					}
+				},
+				"responses": {
+					"200": {
+						"description": "Generation succeeded.",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/GenerateContentResponse"
+								}
+							}
+						}
+					},
+					"default": {
+						"description": "Error response",
+						"content": {
+							"application/json": {
+								"schema": { "$ref": "#/components/schemas/VertexError" }
+							}
+						}
+					}
+				}
+			}
+		},
+		"/v1/projects/{project}/locations/{location}/publishers/google/models/{model}:countTokens": {
+			"post": {
+				"operationId": "countTokens",
+				"summary": "Return token usage for a request payload.",
+				"parameters": [
+					{ "$ref": "#/components/parameters/project" },
+					{ "$ref": "#/components/parameters/location" },
+					{ "$ref": "#/components/parameters/model" }
+				],
+				"requestBody": {
+					"required": true,
+					"content": {
+						"application/json": {
+							"schema": { "$ref": "#/components/schemas/CountTokensRequest" }
+						}
+					}
+				},
+				"responses": {
+					"200": {
+						"description": "Token count computed.",
+						"content": {
+							"application/json": {
+								"schema": { "$ref": "#/components/schemas/CountTokensResponse" }
+							}
+						}
+					},
+					"default": {
+						"description": "Error response",
+						"content": {
+							"application/json": {
+								"schema": { "$ref": "#/components/schemas/VertexError" }
+							}
+						}
+					}
+				}
+			}
+		},
+		"/v1/projects/{project}/locations/{location}/publishers/google/models/{model}:streamGenerateContent": {
+			"post": {
+				"operationId": "streamGenerateContent",
+				"summary": "Stream chunks of a model response as newline delimited JSON.",
+				"parameters": [
+					{ "$ref": "#/components/parameters/project" },
+					{ "$ref": "#/components/parameters/location" },
+					{ "$ref": "#/components/parameters/model" }
+				],
+				"requestBody": {
+					"required": true,
+					"content": {
+						"application/json": {
+							"schema": {
+								"$ref": "#/components/schemas/GenerateContentRequest"
+							}
+						}
+					}
+				},
+				"responses": {
+					"200": {
+						"description": "Stream of response chunks.",
+						"content": {
+							"application/x-ndjson": {
+								"schema": {
+									"$ref": "#/components/schemas/StreamingResponseChunk"
+								}
+							}
+						}
+					},
+					"default": {
+						"description": "Error response",
+						"content": {
+							"application/json": {
+								"schema": { "$ref": "#/components/schemas/VertexError" }
+							}
+						}
+					}
+				}
+			}
+		}
+	},
+	"components": {
+		"parameters": {
+			"project": {
+				"name": "project",
+				"in": "path",
+				"required": true,
+				"schema": { "type": "string" },
+				"description": "Google Cloud project id."
+			},
+			"location": {
+				"name": "location",
+				"in": "path",
+				"required": true,
+				"schema": { "type": "string" },
+				"description": "Vertex AI region."
+			},
+			"model": {
+				"name": "model",
+				"in": "path",
+				"required": true,
+				"schema": { "type": "string" },
+				"description": "Full model name, e.g. gemini-1.5-pro."
+			}
+		},
+		"schemas": {
+			"ContentPart": {
+				"type": "object",
+				"properties": {
+					"text": { "type": "string" },
+					"inlineData": {
+						"type": "object",
+						"properties": {
+							"mimeType": { "type": "string" },
+							"data": {
+								"type": "string",
+								"description": "Base64 encoded bytes."
+							}
+						},
+						"additionalProperties": false
+					},
+					"fileData": {
+						"type": "object",
+						"properties": {
+							"mimeType": { "type": "string" },
+							"fileUri": { "type": "string" }
+						},
+						"additionalProperties": false
+					},
+					"functionCall": {
+						"type": "object",
+						"properties": {
+							"name": { "type": "string" },
+							"args": { "type": "object", "additionalProperties": true }
+						},
+						"additionalProperties": false
+					},
+					"functionResponse": {
+						"type": "object",
+						"properties": {
+							"name": { "type": "string" },
+							"response": { "type": "object", "additionalProperties": true }
+						},
+						"additionalProperties": false
+					}
+				},
+				"additionalProperties": true
+			},
+			"Content": {
+				"type": "object",
+				"properties": {
+					"role": { "type": "string" },
+					"parts": {
+						"type": "array",
+						"items": { "$ref": "#/components/schemas/ContentPart" }
+					}
+				},
+				"required": ["parts"],
+				"additionalProperties": true
+			},
+			"SafetySetting": {
+				"type": "object",
+				"properties": {
+					"category": { "type": "string" },
+					"threshold": { "type": "string" }
+				},
+				"additionalProperties": false
+			},
+			"GenerateContentRequest": {
+				"type": "object",
+				"properties": {
+					"contents": {
+						"type": "array",
+						"items": { "$ref": "#/components/schemas/Content" }
+					},
+					"systemInstruction": { "$ref": "#/components/schemas/Content" },
+					"tools": {
+						"type": "array",
+						"items": { "type": "object", "additionalProperties": true }
+					},
+					"toolConfig": { "type": "object", "additionalProperties": true },
+					"generationConfig": {
+						"type": "object",
+						"additionalProperties": true
+					},
+					"safetySettings": {
+						"type": "array",
+						"items": { "$ref": "#/components/schemas/SafetySetting" }
+					},
+					"cachedContent": { "type": "string" }
+				},
+				"required": ["contents"],
+				"additionalProperties": true
+			},
+			"GenerateContentResponse": {
+				"type": "object",
+				"properties": {
+					"candidates": {
+						"type": "array",
+						"items": {
+							"type": "object",
+							"properties": {
+								"index": { "type": "integer" },
+								"content": { "$ref": "#/components/schemas/Content" },
+								"finishReason": { "type": "string" },
+								"safetyRatings": {
+									"type": "array",
+									"items": { "type": "object", "additionalProperties": true }
+								}
+							},
+							"additionalProperties": true
+						}
+					},
+					"usageMetadata": { "type": "object", "additionalProperties": true }
+				},
+				"additionalProperties": true
+			},
+			"CountTokensRequest": {
+				"type": "object",
+				"properties": {
+					"contents": {
+						"type": "array",
+						"items": { "$ref": "#/components/schemas/Content" }
+					},
+					"model": { "type": "string" },
+					"systemInstruction": { "$ref": "#/components/schemas/Content" }
+				},
+				"required": ["contents"],
+				"additionalProperties": true
+			},
+			"CountTokensResponse": {
+				"type": "object",
+				"properties": {
+					"totalTokens": { "type": "integer" },
+					"totalBillableTokens": { "type": "integer" },
+					"modelVersion": { "type": "string" }
+				},
+				"additionalProperties": true
+			},
+			"StreamingResponseChunk": {
+				"type": "object",
+				"properties": {
+					"candidates": {
+						"type": "array",
+						"items": {
+							"type": "object",
+							"properties": {
+								"content": { "$ref": "#/components/schemas/Content" },
+								"finishReason": { "type": "string" }
+							},
+							"additionalProperties": true
+						}
+					},
+					"usageMetadata": { "type": "object", "additionalProperties": true }
+				},
+				"additionalProperties": true
+			},
+			"VertexError": {
+				"type": "object",
+				"properties": {
+					"error": {
+						"type": "object",
+						"properties": {
+							"code": { "type": "integer" },
+							"message": { "type": "string" },
+							"status": { "type": "string" },
+							"details": {
+								"type": "array",
+								"items": { "type": "object", "additionalProperties": true }
+							}
+						},
+						"required": ["message"],
+						"additionalProperties": true
+					}
+				},
+				"required": ["error"],
+				"additionalProperties": true
+			}
+		}
+	}
+}

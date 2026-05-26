@@ -93,7 +93,7 @@ export function RightTab({
 			<section
 				aria-label="Chat right drawer"
 				className={
-					"fixed right-0 top-0 bottom-0 z-30 border-l border-border bg-background text-foreground shadow-lg " +
+					"fixed right-0 top-0 bottom-0 z-50 border-l border-border bg-background text-foreground shadow-lg " +
 					"flex flex-row min-w-[48px] overflow-hidden " +
 					className
 				}
@@ -101,10 +101,12 @@ export function RightTab({
 			>
 				{/* Left rail with actions */}
 				<div className="relative flex w-12 shrink-0 flex-col items-stretch justify-start border-r border-border/60 bg-background/80">
-					{/* Resize handle area (left edge) */}
-					<hr
-						className="absolute left-0 top-0 bottom-0 w-3 cursor-ew-resize bg-muted/20 hover:bg-muted/40 transition-colors"
+					{/* Resize handle rail (left edge, thin strip) */}
+					<div
+						className="absolute left-0 top-0 bottom-0 z-50 w-2 cursor-ew-resize touch-none hover:bg-foreground/10"
+						aria-label="Resize chat width"
 						onPointerDown={onPointerDown}
+						onPointerDownCapture={onPointerDown}
 					/>
 					{/* Actions stack */}
 					<div className="flex flex-col items-center gap-2 px-1 py-2">
@@ -142,7 +144,7 @@ export function RightTab({
 			type="button"
 			aria-label="Open chat drawer"
 			className={
-				"fixed right-0 top-1/2 -translate-y-1/2 z-40 select-none " +
+				"fixed right-0 top-1/2 -translate-y-1/2 z-50 select-none " +
 				"flex items-center gap-2 rounded-l-md border border-border bg-background/95 px-2 py-2 text-foreground shadow-md " +
 				"hover:bg-muted/60 backdrop-blur supports-[backdrop-filter]:bg-background/70"
 			}

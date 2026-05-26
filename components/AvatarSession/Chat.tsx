@@ -1,42 +1,43 @@
 "use client";
 
 import { useKeyPress } from "ahooks";
+import { ChevronDown } from "lucide-react";
 import type React from "react";
 import { useEffect, useMemo, useRef, useState } from "react";
 
-import { ChatInput } from "./ChatInput";
-import { ChatModeTabs } from "./ChatTabs";
-import { BranchDialog } from "./BranchDialog";
-import { CompareDialog } from "./CompareDialog";
-import { useComposerStore } from "@/lib/stores/composer";
-import { useSessionStore } from "@/lib/stores/session";
-
 import { useStreamingAvatarContext } from "@/components/logic/context";
 import { useTextChat } from "@/components/logic/useTextChat";
+import { Button } from "@/components/ui/button";
 import {
 	ChatContainerContent,
 	ChatContainerRoot,
 	ChatContainerScrollAnchor,
 } from "@/components/ui/chat-container";
-import { ScrollButton } from "@/components/ui/scroll-button";
 import { useToast } from "@/components/ui/toaster";
+import { getProvider } from "@/lib/chat/registry";
+import { useChatProviderStore } from "@/lib/stores/chatProvider";
+import { useComposerStore } from "@/lib/stores/composer";
+import type { MessageAsset, Message as MessageType } from "@/lib/types";
 import { MessageSender } from "@/lib/types";
-import type { Message as MessageType, MessageAsset } from "@/lib/types";
-import { StickToBottom } from "use-stick-to-bottom";
-import { MessageList } from "./chat/MessageList";
-import { useInputAutoHeight } from "./chat/hooks/useInputAutoHeight";
-import { useScrollAnchored } from "./chat/hooks/useScrollAnchored";
+import { cn } from "@/lib/utils";
+import { BranchDialog } from "./BranchDialog";
+import { ChatInput } from "./ChatInput";
+import { CompareDialog } from "./CompareDialog";
+import { useAttachments } from "./chat/hooks/useAttachments";
 import { useBranching } from "./chat/hooks/useBranching";
 import { useComparison } from "./chat/hooks/useComparison";
-import { useAttachments } from "./chat/hooks/useAttachments";
-import { useVotes } from "./chat/hooks/useVotes";
 import { useEditing } from "./chat/hooks/useEditing";
+import { useInputAutoHeight } from "./chat/hooks/useInputAutoHeight";
+import { useScrollAnchored } from "./chat/hooks/useScrollAnchored";
+import { useVotes } from "./chat/hooks/useVotes";
+import { MessageList } from "./chat/MessageList";
 import {
 	buildAugmentedMessages,
 	buildBaseMessagesIfEmpty,
 	dedupeAdjacent,
 } from "./chat/utils";
-import { cn } from "@/lib/utils";
+// * Provider switching & capabilities
+import { ProviderSwitcher } from "./ProviderSwitcher";
 
 interface ChatProps {
 	chatInput: string;
@@ -115,7 +116,7 @@ export const Chat: React.FC<ChatProps> = ({
 	);
 
 	// Always append demo content
-	const augmentedMessages = useMemo(
+	const { chatMessages, exampleMessages } = useMemo(
 		() => buildAugmentedMessages(dedupedMessages),
 		[dedupedMessages],
 	);
@@ -126,7 +127,7 @@ export const Chat: React.FC<ChatProps> = ({
 	// Scroll container ref + anchored state (depends on content changes)
 	const { isAtBottom, handleScroll } = useScrollAnchored(scrollRef, {
 		inputOnly,
-		depsForContentChange: [augmentedMessages],
+		depsForContentChange: [chatMessages, exampleMessages],
 	});
 
 	// Allow enabling Markdown header in chat bubbles via env flag for debugging/UX preference
@@ -156,6 +157,11 @@ export const Chat: React.FC<ChatProps> = ({
 	const inputWrapRef = useRef<HTMLDivElement | null>(null);
 	const inputHeight = useInputAutoHeight(inputWrapRef);
 
+	// Determine active provider capability (voice vs. text-only)
+	const voiceMode = useChatProviderStore((s) => s.voiceMode);
+	const voiceProvider = getProvider(voiceMode);
+	const supportsVoice = voiceProvider.supportsVoice;
+
 	useEffect(() => {
 		if (!scrollRef.current) return;
 		if (isAtBottom) {
@@ -165,6 +171,12 @@ export const Chat: React.FC<ChatProps> = ({
 			} catch {}
 		}
 	}, [isAtBottom]);
+
+	const scrollToBottom = () => {
+		const el = scrollRef.current;
+		if (!el) return;
+		el.scrollTo({ top: el.scrollHeight, behavior: "smooth" });
+	};
 
 	const handleCopy = async (id: string, content: string) => {
 		try {
@@ -220,32 +232,26 @@ export const Chat: React.FC<ChatProps> = ({
 
 	return (
 		<div className="flex flex-col w-full flex-1 min-h-0 p-4">
-			<div className="mb-4">
-				<ChatModeTabs
-					isVoiceActive={sessionVoiceActive}
-					isVoiceLoading={isVoiceChatLoading}
-					value={chatMode}
-					onValueChange={setChatMode}
-				/>
-			</div>
-			<StickToBottom
+			<div
 				className={cn(
-					"flex-1 min-h-0 h-full overflow-hidden text-foreground",
+					"flex flex-1 min-h-0 h-full flex-col overflow-hidden text-foreground",
 					inputOnly && "hidden",
 				)}
 			>
 				{/* Dynamically pad bottom by input height to avoid overlap */}
+				<ProviderSwitcher />
 				<ChatContainerRoot
 					ref={scrollRef}
 					onScroll={handleScroll}
-					className="flex-1 min-h-0 h-full text-foreground"
+					className="flex-1 min-h-0 text-foreground"
 					style={{
 						paddingBottom: isAtBottom ? 16 : Math.max(16, inputHeight + 8),
 					}}
 				>
 					<ChatContainerContent>
 						<MessageList
-							messages={augmentedMessages}
+							messages={chatMessages}
+							exampleMessages={exampleMessages}
 							isAvatarTalking={isAvatarTalking}
 							lastCopiedId={lastCopiedId}
 							voteState={voteState}
@@ -260,10 +266,23 @@ export const Chat: React.FC<ChatProps> = ({
 					</ChatContainerContent>
 					<ChatContainerScrollAnchor />
 					<div className="absolute bottom-4 right-4">
-						<ScrollButton className="shadow-sm" />
+						<Button
+							aria-label="Scroll to bottom"
+							className={cn(
+								"h-10 w-10 rounded-full shadow-sm transition-all duration-150 ease-out",
+								!isAtBottom
+									? "translate-y-0 scale-100 opacity-100"
+									: "pointer-events-none translate-y-4 scale-95 opacity-0",
+							)}
+							size="sm"
+							variant="outline"
+							onClick={scrollToBottom}
+						>
+							<ChevronDown className="h-5 w-5 text-foreground" />
+						</Button>
 					</div>
 				</ChatContainerRoot>
-			</StickToBottom>
+			</div>
 			{/* Ensure input section never shrinks and visually docks under messages */}
 			<div
 				ref={inputWrapRef}
@@ -299,16 +318,16 @@ export const Chat: React.FC<ChatProps> = ({
 					inputRef={inputRef}
 					isEditing={isEditing}
 					isSending={isSending}
-					isVoiceChatActive={isVoiceChatActive}
-					isVoiceChatLoading={isVoiceChatLoading}
+					isVoiceChatActive={supportsVoice ? isVoiceChatActive : false}
+					isVoiceChatLoading={supportsVoice ? isVoiceChatLoading : false}
 					promptSuggestions={promptSuggestions}
 					removeAttachment={removeAttachment}
 					removeComposerAttachment={removeComposerAttachment}
 					sendWithAttachments={sendWithAttachments}
 					onChatInputChange={onChatInputChange}
 					onFilesAdded={onFilesAdded}
-					onStartVoiceChat={onStartVoiceChat}
-					onStopVoiceChat={onStopVoiceChat}
+					onStartVoiceChat={supportsVoice ? onStartVoiceChat : () => {}}
+					onStopVoiceChat={supportsVoice ? onStopVoiceChat : () => {}}
 				/>
 			</div>
 		</div>

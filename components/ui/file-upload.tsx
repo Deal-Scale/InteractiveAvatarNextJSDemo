@@ -11,7 +11,7 @@ import {
 	useState,
 } from "react";
 import { createPortal } from "react-dom";
-
+import { hasChatDragResource } from "@/lib/chat-drag";
 import { cn } from "@/lib/utils";
 
 type FileUploadContextValue = {
@@ -56,20 +56,19 @@ function FileUpload({
 	);
 
 	useEffect(() => {
-		const isCustomAssetDrag = (e: DragEvent) => {
+		const isCustomChatResourceDrag = (e: DragEvent) => {
 			try {
-				const types = Array.from(e.dataTransfer?.types || []);
-				return types.includes("application/x-asset");
+				return hasChatDragResource(Array.from(e.dataTransfer?.types || []));
 			} catch {
 				return false;
 			}
 		};
 
 		const handleDrag = (e: DragEvent) => {
-			if (isCustomAssetDrag(e)) {
-				// Do not interfere with custom asset drags from sidebar
+			if (isCustomChatResourceDrag(e)) {
+				// Do not interfere with custom chat resource drags from sidebar
 				// This prevents the full-screen overlay flicker
-				// console.debug("[FileUpload] ignore dragover for custom asset");
+				// console.debug("[FileUpload] ignore dragover for custom chat resource");
 				return;
 			}
 			console.debug("[FileUpload] dragover window");
@@ -79,8 +78,8 @@ function FileUpload({
 		};
 
 		const handleDragIn = (e: DragEvent) => {
-			if (isCustomAssetDrag(e)) {
-				// console.debug("[FileUpload] ignore dragenter for custom asset");
+			if (isCustomChatResourceDrag(e)) {
+				// console.debug("[FileUpload] ignore dragenter for custom chat resource");
 				return;
 			}
 			handleDrag(e);
@@ -95,8 +94,8 @@ function FileUpload({
 		};
 
 		const handleDragOut = (e: DragEvent) => {
-			if (isCustomAssetDrag(e)) {
-				// console.debug("[FileUpload] ignore dragleave for custom asset");
+			if (isCustomChatResourceDrag(e)) {
+				// console.debug("[FileUpload] ignore dragleave for custom chat resource");
 				return;
 			}
 			handleDrag(e);
@@ -108,9 +107,9 @@ function FileUpload({
 		};
 
 		const handleDrop = (e: DragEvent) => {
-			if (isCustomAssetDrag(e)) {
+			if (isCustomChatResourceDrag(e)) {
 				// Do not consume this drop; ChatInput handles it
-				// console.debug("[FileUpload] ignore drop for custom asset");
+				// console.debug("[FileUpload] ignore drop for custom chat resource");
 				return;
 			}
 			handleDrag(e);

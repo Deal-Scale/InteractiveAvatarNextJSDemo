@@ -1,5 +1,5 @@
-import { MessageAsset } from "@/lib/types";
 import type { ComposerAsset } from "@/lib/stores/composer";
+import { MessageAsset } from "@/lib/types";
 
 export function buildAssetsFromComposer(
 	composerAttachments: ComposerAsset[],
@@ -11,5 +11,7 @@ export function buildAssetsFromComposer(
 		url: a.url ?? undefined,
 		thumbnailUrl: a.thumbnailUrl ?? undefined,
 		mimeType: a.mimeType ?? undefined,
+		kind: a.kind ?? "asset",
+		description: a.description ?? undefined,
 	}));
 }

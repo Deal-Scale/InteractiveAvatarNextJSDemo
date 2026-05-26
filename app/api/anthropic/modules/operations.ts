@@ -1,0 +1,81 @@
+import type { OperationDefinition } from "./operation-registry";
+
+export const DEFAULT_OPERATIONS: readonly OperationDefinition[] = [
+	{
+		id: "createMessage",
+		method: "post",
+		path: "messages",
+		tag: "Messages",
+		summary:
+			"Create a Claude message with optional tool use and multimodal content.",
+		parameters: [{ in: "query", name: "stream" }],
+	},
+	{
+		id: "streamMessage",
+		method: "post",
+		path: "messages",
+		tag: "Messages",
+		summary: "Stream a Claude message using server-sent events.",
+		parameters: [{ in: "query", name: "stream" }],
+	},
+	{
+		id: "countMessageTokens",
+		method: "post",
+		path: "messages/count-tokens",
+		tag: "Messages",
+		summary: "Estimate Claude token usage for a prospective message payload.",
+		parameters: [],
+	},
+	{
+		id: "createMessageBatch",
+		method: "post",
+		path: "messages/batches",
+		tag: "MessageBatches",
+		summary: "Create an asynchronous Claude message batch job.",
+		parameters: [],
+	},
+	{
+		id: "listMessageBatches",
+		method: "get",
+		path: "messages/batches",
+		tag: "MessageBatches",
+		summary: "List historical Claude message batches for the account.",
+		parameters: [
+			{ in: "query", name: "limit" },
+			{ in: "query", name: "after" },
+			{ in: "query", name: "before" },
+		],
+	},
+	{
+		id: "retrieveMessageBatch",
+		method: "get",
+		path: "messages/batches/{batchId}",
+		tag: "MessageBatches",
+		summary: "Retrieve metadata for a specific Claude message batch.",
+		parameters: [{ in: "path", name: "batchId", required: true }],
+	},
+	{
+		id: "cancelMessageBatch",
+		method: "post",
+		path: "messages/batches/{batchId}/cancel",
+		tag: "MessageBatches",
+		summary: "Cancel a pending Claude message batch job.",
+		parameters: [{ in: "path", name: "batchId", required: true }],
+	},
+	{
+		id: "listModels",
+		method: "get",
+		path: "models",
+		tag: "Models",
+		summary: "List all available Claude models for the authenticated account.",
+		parameters: [],
+	},
+	{
+		id: "retrieveModel",
+		method: "get",
+		path: "models/{modelId}",
+		tag: "Models",
+		summary: "Retrieve metadata about a specific Claude model.",
+		parameters: [{ in: "path", name: "modelId", required: true }],
+	},
+] as const;

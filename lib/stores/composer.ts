@@ -6,6 +6,8 @@ export type ComposerAsset = {
 	url?: string;
 	thumbnailUrl?: string;
 	mimeType?: string;
+	kind?: "asset" | "tool" | "knowledge" | "agent";
+	description?: string;
 };
 
 export type ComposerState = {

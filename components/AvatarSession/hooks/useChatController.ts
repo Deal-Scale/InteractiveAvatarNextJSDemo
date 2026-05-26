@@ -1,24 +1,32 @@
-import { useEffect, useMemo, useState } from "react";
 import { useMemoizedFn } from "ahooks";
 import { nanoid } from "nanoid";
-
-import { mockOpenRouter } from "../utils/mock";
-import { StreamingAvatarSessionState } from "../../logic/context";
-
-import { useMcpCommands } from "./useMcpCommands";
-
+import { useEffect, useMemo, useState } from "react";
 import { useApiService } from "@/components/logic/ApiServiceContext";
-import { useVoiceChat } from "@/components/logic/useVoiceChat";
 import { useMessageHistory } from "@/components/logic/useMessageHistory";
-import { useSessionStore } from "@/lib/stores/session";
-import { MessageSender, type MessageAsset } from "@/lib/types";
+import { useVoiceChat } from "@/components/logic/useVoiceChat";
+import {
+	APP_CAPABILITIES_SYSTEM_PROMPT,
+	buildAppCapabilityReasoning,
+	buildAppCapabilityToolParts,
+	executeAppCapabilities,
+	parseAppCapabilityActions,
+	stripAppCapabilityBlocks,
+} from "@/lib/app-capabilities";
+import type { ProviderId } from "@/lib/chat/providers";
+import { getProvider } from "@/lib/chat/registry";
 import { useSendTaskMutation } from "@/lib/services/streaming/query";
+import { useChatProviderStore } from "@/lib/stores/chatProvider";
+import { useSessionStore } from "@/lib/stores/session";
+import { type MessageAsset, MessageSender } from "@/lib/types";
+import { StreamingAvatarSessionState } from "../../logic/context";
+import { useMcpCommands } from "./useMcpCommands";
 
 export function useChatController(sessionState: StreamingAvatarSessionState) {
 	const { apiService } = useApiService();
 	const {
 		messages,
 		addMessage,
+		chatExperience,
 		isChatSolidBg,
 		setChatSolidBg,
 		currentSessionId,
@@ -45,7 +53,7 @@ export function useChatController(sessionState: StreamingAvatarSessionState) {
 	// Mock chat
 	const [mockChatEnabled, setMockChatEnabled] = useState(false);
 	const [mockVoiceActive, setMockVoiceActive] = useState(false);
-	const canChat = isConnected || mockChatEnabled;
+	const canChat = isConnected || mockChatEnabled || chatExperience === "basic";
 
 	// If a real session becomes connected, ensure mock chat is turned off
 	useEffect(() => {
@@ -57,42 +65,154 @@ export function useChatController(sessionState: StreamingAvatarSessionState) {
 	const addAvatarMessage = (content: string) =>
 		addMessage({ id: nanoid(), content, sender: MessageSender.AVATAR });
 
-	const handleMcpCommand = useMcpCommands(addAvatarMessage);
+	const handleMcpCommand = useMcpCommands();
+
+	const speakThroughAvatar = useMemoizedFn(async (content: string) => {
+		if (!content?.trim()) return;
+
+		try {
+			if (currentSessionId) {
+				await sendTaskMutation.mutateAsync({
+					session_id: currentSessionId,
+					text: content,
+					task_mode: "async",
+					task_type: "repeat",
+				});
+			} else if (apiService?.textChat?.speakQueued) {
+				await apiService.textChat.speakQueued(content);
+			} else if (apiService) {
+				apiService.textChat.repeatMessage(content);
+			}
+		} catch (error) {
+			console.error("[Chat] speakThroughAvatar failed", error);
+		}
+	});
 
 	const handleSendMessage = useMemoizedFn(
 		async (text: string, assets?: MessageAsset[]) => {
-			if (!text.trim()) return;
+			const trimmed = text.trim();
+			if (!trimmed) return;
 
-			// Begin send sequence
 			setIsSending(true);
-			addMessage({
+
+			const userMessage = {
 				id: nanoid(),
 				content: text,
 				sender: MessageSender.CLIENT,
 				assets,
-			});
+			} as const;
+			addMessage(userMessage);
 
-			// Choose message handling path
+			const lower = trimmed.toLowerCase();
+
 			try {
-				// Prefer server API if we have a session id; otherwise use SDK service; fallback to mock
-				if (currentSessionId) {
-					// Map to chat task by default
-					await sendTaskMutation.mutateAsync({
-						session_id: currentSessionId,
-						text,
-						task_mode: "sync",
-						task_type: "chat",
-					});
-				} else if (apiService) {
-					if (text.trim().toLowerCase().startsWith("/mcp")) {
-						await handleMcpCommand(text);
-					} else {
-						await apiService.textChat.sendMessageSync(text, assets);
+				if (lower.startsWith("/mcp")) {
+					const responses = await handleMcpCommand(trimmed);
+					for (const response of responses) {
+						addMessage(response);
+						await speakThroughAvatar(response.content);
 					}
-				} else if (mockChatEnabled) {
-					const reply = await mockOpenRouter(text);
-					addAvatarMessage(reply);
+					return;
 				}
+
+				const { textMode, voiceMode } = useChatProviderStore.getState();
+				const { textSettings, voiceSettings } = useChatProviderStore.getState();
+				const textProvider = getProvider(textMode as ProviderId);
+				const voiceProvider = getProvider(voiceMode as ProviderId);
+
+				const operations: Array<Promise<void>> = [];
+				const history = useSessionStore.getState().messages;
+				const systemPrompt = [
+					textSettings.systemPrompt.trim(),
+					APP_CAPABILITIES_SYSTEM_PROMPT,
+				]
+					.filter(Boolean)
+					.join("\n\n");
+
+				// Dispatch to selected text provider
+				operations.push(
+					(async () => {
+						try {
+							const reply = await textProvider.sendMessage({
+								history,
+								input: text,
+								options: {
+									jsonMode: textSettings.jsonMode,
+									systemPrompt,
+									seed: textSettings.seed.trim()
+										? Number(textSettings.seed)
+										: undefined,
+								},
+							});
+							const appActions = parseAppCapabilityActions(reply.content);
+							const actionResults = executeAppCapabilities(appActions);
+							const cleanedContent = stripAppCapabilityBlocks(reply.content);
+							const actionSummary = actionResults
+								.map((result) => result.message)
+								.join("\n");
+							const appToolParts = buildAppCapabilityToolParts(
+								appActions,
+								actionResults,
+							);
+							const appReasoning = buildAppCapabilityReasoning(
+								appActions,
+								actionResults,
+							);
+							const providerMessage = {
+								...reply,
+								provider: reply.provider ?? textProvider.id,
+								content:
+									cleanedContent || actionSummary || reply.content || "Done.",
+								toolParts:
+									appToolParts.length > 0
+										? [...(reply.toolParts ?? []), ...appToolParts]
+										: reply.toolParts,
+								reasoning: appReasoning ?? reply.reasoning,
+								reasoningMarkdown: appReasoning
+									? true
+									: reply.reasoningMarkdown,
+								reasoningOpen: appReasoning ? true : reply.reasoningOpen,
+							};
+							addMessage(providerMessage);
+
+							if (voiceProvider.supportsVoice && voiceSettings.autoSpeak) {
+								await speakThroughAvatar(providerMessage.content);
+							}
+						} catch (error) {
+							console.error("[Chat] provider sendMessage failed", error);
+							addMessage({
+								id: nanoid(),
+								sender: MessageSender.AVATAR,
+								content: `Error from ${textProvider.id}: ${
+									(error as Error)?.message ?? "unknown"
+								}`,
+								provider: textProvider.id,
+							});
+						}
+					})(),
+				);
+
+				// Fire voice pipeline concurrently when available.
+				operations.push(
+					(async () => {
+						if (!voiceProvider.supportsVoice || !voiceSettings.voiceEnabled) {
+							return;
+						}
+
+						if (currentSessionId) {
+							await sendTaskMutation.mutateAsync({
+								session_id: currentSessionId,
+								text,
+								task_mode: "async",
+								task_type: "chat",
+							});
+						} else if (apiService) {
+							await apiService.textChat.sendMessage(text, assets);
+						}
+					})(),
+				);
+
+				await Promise.allSettled(operations);
 			} finally {
 				resetHistory();
 				setChatInput("");

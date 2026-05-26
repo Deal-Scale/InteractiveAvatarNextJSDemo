@@ -1,0 +1,39 @@
+flowchart TD
+    subgraph View["View Layer"]
+        direction TB
+        UI["UI Components
+        • React + Shadcn
+        • Tailwind CSS"]
+        Style["Styling
+        • Component-specific styles
+        • Global themes"]
+    end
+    
+    subgraph Presenter["Presenter Layer"]
+        direction TB
+        Logic["UI Logic
+        • Event handlers
+        • Form validation"]
+        Hook["Custom Hooks
+        • Business logic
+        • State management"]
+    end
+    
+    subgraph Model["Model Layer"]
+        direction TB
+        State["State Management
+        • Zustand stores
+        • React Query"]
+        Data["Data Layer
+        • Async operations
+        • Caching"]
+    end
+    
+    UI -->|"Events"| Logic
+    Logic -->|"Updates"| State
+    State -->|"Data"| UI
+    Hook -->|"Controls"| UI
+    Data -->|"Feeds"| State
+    
+    classDef layer fill:#f5f5f5,stroke:#333,stroke-width:2px,color:#000000
+    class View,Presenter,Model layer

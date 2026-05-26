@@ -5,6 +5,7 @@ export interface TextChatService {
 	sendMessageSync(message: string, assets?: MessageAsset[]): Promise<any>;
 	repeatMessage(message: string): void;
 	repeatMessageSync(message: string): Promise<any>;
+	speakQueued?: (message: string, assets?: MessageAsset[]) => Promise<void>;
 }
 
 export interface VoiceChatService {

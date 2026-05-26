@@ -3,8 +3,8 @@
 import { ChevronRight } from "lucide-react";
 import { useMemo } from "react";
 
-import { useActiveSessionsQuery } from "@/lib/services/streaming/query";
 import { SidebarGroup, SidebarGroupLabel } from "@/components/ui/sidebar";
+import { useActiveSessionsQuery } from "@/lib/services/streaming/query";
 import { useSessionStore } from "@/lib/stores/session";
 
 export default function ActiveSessionsSection(props: {
@@ -33,7 +33,9 @@ export default function ActiveSessionsSection(props: {
 				onClick={() => setCollapsed((v) => !v)}
 				className="flex w-full items-center justify-between px-2 py-1 text-left rounded-md hover:bg-muted"
 			>
-				<SidebarGroupLabel>Active Sessions</SidebarGroupLabel>
+				<SidebarGroupLabel className="border-emerald-400/35 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300">
+					Active Sessions
+				</SidebarGroupLabel>
 				<div className="flex items-center gap-2 text-xs text-muted-foreground">
 					{!isLoading && !isError ? <span>{total}</span> : null}
 					<ChevronRight
@@ -45,7 +47,7 @@ export default function ActiveSessionsSection(props: {
 			{!collapsed && (
 				<div className="pt-2">
 					{isLoading && (
-						<div className="px-2 text-xs text-muted-foreground">Loading…</div>
+						<div className="px-2 text-xs text-muted-foreground">Loading...</div>
 					)}
 					{isError && (
 						<div className="px-2 text-xs text-destructive">Failed to load</div>
@@ -57,28 +59,40 @@ export default function ActiveSessionsSection(props: {
 					)}
 					{!isLoading && !isError && items.length > 0 && (
 						<ul className="px-2 space-y-1">
-							{items.map((s) => (
+							{items.map((session) => (
 								<li
-									key={s.session_id}
-									className="flex items-center justify-between rounded-md border border-border bg-card px-2 py-1 text-xs hover:bg-muted cursor-pointer"
-									onClick={() => {
-										// Set current session and bring focus to the video tab
-										useSessionStore
-											.getState()
-											.setCurrentSessionId(s.session_id);
-										useSessionStore.getState().setViewTab("video");
-									}}
+									key={session.session_id}
+									className="rounded-md border border-border bg-card text-xs hover:bg-muted"
 								>
-									<div className="truncate mr-2">
-										<span className="font-medium">{s.status}</span>
-										<span className="mx-1 text-muted-foreground">•</span>
-										<span className="text-muted-foreground truncate align-middle">
-											{s.session_id}
+									<button
+										type="button"
+										className="flex w-full cursor-pointer items-center justify-between px-2 py-1 text-left"
+										onClick={() => {
+											useSessionStore
+												.getState()
+												.setCurrentSessionId(session.session_id);
+											useSessionStore.getState().setViewTab("video");
+										}}
+									>
+										<span className="mr-2 min-w-0 truncate">
+											<span className="font-medium">{session.status}</span>
+											<span className="mx-1 text-muted-foreground">/</span>
+											{session.mode ? (
+												<>
+													<span className="text-muted-foreground">
+														{session.mode}
+													</span>
+													<span className="mx-1 text-muted-foreground">/</span>
+												</>
+											) : null}
+											<span className="text-muted-foreground">
+												{session.session_id}
+											</span>
 										</span>
-									</div>
-									<span className="text-muted-foreground">
-										{new Date(s.created_at * 1000).toLocaleTimeString()}
-									</span>
+										<span className="shrink-0 text-muted-foreground">
+											{new Date(session.created_at * 1000).toLocaleTimeString()}
+										</span>
+									</button>
 								</li>
 							))}
 						</ul>

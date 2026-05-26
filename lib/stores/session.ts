@@ -1,25 +1,52 @@
 import type { StartAvatarRequest } from "@heygen/streaming-avatar";
-import type { AgentConfig } from "@/lib/schemas/agent";
-import type { UserSettings, AppGlobalSettings } from "@/lib/schemas/global";
-import type { Message } from "@/lib/types";
-
-import { persist, createJSONStorage } from "zustand/middleware";
 import { create } from "zustand";
-
-import type { MessageSender } from "@/lib/types";
+import { createJSONStorage, persist } from "zustand/middleware";
+import type { AgentConfig } from "@/lib/schemas/agent";
+import type { AppGlobalSettings, UserSettings } from "@/lib/schemas/global";
+import type { Message, MessageSender } from "@/lib/types";
 
 export type ChatMode = "voice" | "text";
+export type ChatExperience = "basic" | "advanced" | "avatar";
+export type ChatSettingsTab = "text" | "voice" | "avatar";
+
+export type ConfigModalTab = "global" | "user";
+
+export type KnowledgeFolder = { id: string; name: string; parentId?: string };
+export type ChatFolder = { id: string; name: string; parentId?: string };
 
 interface SessionState {
 	isConfigModalOpen: boolean;
-	openConfigModal: () => void;
+	openConfigModal: (tab?: ConfigModalTab) => void;
 	closeConfigModal: () => void;
+
+	configModalTab: ConfigModalTab;
+	setConfigModalTab: (tab: ConfigModalTab) => void;
+
+	isChatSettingsOpen: boolean;
+	openChatSettings: (tab?: ChatSettingsTab) => void;
+	closeChatSettings: () => void;
+	chatSettingsTab: ChatSettingsTab;
+	setChatSettingsTab: (tab: ChatSettingsTab) => void;
+	chatFolders: ChatFolder[];
+	setChatFolders: (
+		folders: ChatFolder[] | ((prev: ChatFolder[]) => ChatFolder[]),
+	) => void;
+	chatFolderAssignments: Record<string, string | undefined>;
+	setChatFolderAssignments: (
+		assignments:
+			| Record<string, string | undefined>
+			| ((
+					prev: Record<string, string | undefined>,
+			  ) => Record<string, string | undefined>),
+	) => void;
 
 	config: StartAvatarRequest | null;
 	setConfig: (config: StartAvatarRequest) => void;
 
 	chatMode: ChatMode;
 	setChatMode: (mode: ChatMode) => void;
+	chatExperience: ChatExperience;
+	setChatExperience: (mode: ChatExperience) => void;
 
 	messages: Message[];
 	addMessage: (message: Message) => void;
@@ -54,20 +81,83 @@ interface SessionState {
 	setGlobalSettings: (s: AppGlobalSettings) => void;
 	agentSettings?: AgentConfig;
 	setAgentSettings: (s: AgentConfig) => void;
+
+	// Shared Knowledge Base States
+	kbFolders: KnowledgeFolder[];
+	setKbFolders: (
+		folders:
+			| KnowledgeFolder[]
+			| ((prev: KnowledgeFolder[]) => KnowledgeFolder[]),
+	) => void;
+	kbItemFolders: Record<string, string | undefined>;
+	setKbItemFolders: (
+		itemFolders:
+			| Record<string, string | undefined>
+			| ((
+					prev: Record<string, string | undefined>,
+			  ) => Record<string, string | undefined>),
+	) => void;
+	createdKnowledgeItems: Array<{ id: string; name: string }>;
+	setCreatedKnowledgeItems: (
+		items:
+			| Array<{ id: string; name: string }>
+			| ((
+					prev: Array<{ id: string; name: string }>,
+			  ) => Array<{ id: string; name: string }>),
+	) => void;
 }
 
 export const useSessionStore = create<SessionState>()(
 	persist(
 		(set) => ({
-			isConfigModalOpen: true, // Open modal by default
-			openConfigModal: () => set({ isConfigModalOpen: true }),
+			isConfigModalOpen: false,
+			openConfigModal: (tab = "global") =>
+				set({
+					isConfigModalOpen: true,
+					configModalTab: tab,
+				}),
 			closeConfigModal: () => set({ isConfigModalOpen: false }),
+
+			configModalTab: "global",
+			setConfigModalTab: (tab) => set({ configModalTab: tab }),
+
+			isChatSettingsOpen: false,
+			openChatSettings: (tab) =>
+				set((state) => ({
+					isChatSettingsOpen: true,
+					chatSettingsTab:
+						tab ?? (state.chatExperience === "avatar" ? "avatar" : "text"),
+				})),
+			closeChatSettings: () => set({ isChatSettingsOpen: false }),
+			chatSettingsTab: "text",
+			setChatSettingsTab: (tab) => set({ chatSettingsTab: tab }),
+			chatFolders: [
+				{ id: "chat-folder-sales", name: "Sales" },
+				{ id: "chat-folder-support", name: "Support" },
+			],
+			setChatFolders: (folders) =>
+				set((state) => ({
+					chatFolders:
+						typeof folders === "function"
+							? folders(state.chatFolders)
+							: folders,
+				})),
+			chatFolderAssignments: {},
+			setChatFolderAssignments: (assignments) =>
+				set((state) => ({
+					chatFolderAssignments:
+						typeof assignments === "function"
+							? assignments(state.chatFolderAssignments)
+							: assignments,
+				})),
 
 			config: null,
 			setConfig: (config) => set({ config }),
 
 			chatMode: "text",
 			setChatMode: (mode) => set({ chatMode: mode }),
+			chatExperience: "basic",
+			setChatExperience: (mode) => set({ chatExperience: mode }),
 
 			messages: [],
 			addMessage: (message) =>
@@ -128,14 +218,54 @@ export const useSessionStore = create<SessionState>()(
 			setGlobalSettings: (s) => set({ globalSettings: s }),
 			agentSettings: undefined,
 			setAgentSettings: (s) => set({ agentSettings: s }),
+
+			// Shared Knowledge Base States
+			kbFolders: [],
+			setKbFolders: (folders) =>
+				set((state) => ({
+					kbFolders:
+						typeof folders === "function" ? folders(state.kbFolders) : folders,
+				})),
+			kbItemFolders: {},
+			setKbItemFolders: (itemFolders) =>
+				set((state) => ({
+					kbItemFolders:
+						typeof itemFolders === "function"
+							? itemFolders(state.kbItemFolders)
+							: itemFolders,
+				})),
+			createdKnowledgeItems: [],
+			setCreatedKnowledgeItems: (items) =>
+				set((state) => ({
+					createdKnowledgeItems:
+						typeof items === "function"
+							? items(state.createdKnowledgeItems)
+							: items,
+				})),
 		}),
 		{
 			name: "session-store",
+			version: 2,
 			storage: createJSONStorage(() => localStorage),
+			migrate: (persistedState) => {
+				if (!persistedState || typeof persistedState !== "object") {
+					return persistedState;
+				}
+
+				return {
+					...persistedState,
+					isConfigModalOpen: false,
+					isChatSettingsOpen: false,
+					chatExperience: "basic",
+					chatSettingsTab: "text",
+					viewTab: "video",
+				};
+			},
 			// Only persist what's useful across reloads
 			partialize: (state) => ({
 				messages: state.messages,
 				chatMode: state.chatMode,
+				chatExperience: state.chatExperience,
 				creditsRemaining: state.creditsRemaining,
 				creditsPerMinute: state.creditsPerMinute,
 				viewTab: state.viewTab,
@@ -144,6 +274,12 @@ export const useSessionStore = create<SessionState>()(
 				globalSettings: state.globalSettings,
 				agentSettings: state.agentSettings,
 				currentSessionId: state.currentSessionId,
+				configModalTab: state.configModalTab,
+				chatFolders: state.chatFolders,
+				chatFolderAssignments: state.chatFolderAssignments,
+				kbFolders: state.kbFolders,
+				kbItemFolders: state.kbItemFolders,
+				createdKnowledgeItems: state.createdKnowledgeItems,
 			}),
 		},
 	),

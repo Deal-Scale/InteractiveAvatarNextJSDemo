@@ -1,36 +1,59 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
-
+import type { StartAvatarRequest } from "@heygen/streaming-avatar";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { buildSessionConfig } from "@/components/modals/session/utils";
+import type { AgentConfig } from "@/lib/schemas/agent";
+import { useAgentStore } from "@/lib/stores/agent";
+import { usePlacementStore } from "@/lib/stores/placement";
+import { useSessionStore } from "@/lib/stores/session";
+import { useSettingsStore } from "@/lib/stores/settings";
+import { cn, safeWindow } from "@/lib/utils";
+import { AvatarVideoPanel } from "./AvatarSession/AvatarVideoPanel";
 import { ChatPanel } from "./AvatarSession/ChatPanel";
-import { useDockablePanel } from "./AvatarSession/hooks/useDockablePanel";
 import { useChatController } from "./AvatarSession/hooks/useChatController";
 import { useChatPanelProps } from "./AvatarSession/hooks/useChatPanelProps";
-import { useStartMockChat } from "./AvatarSession/hooks/useStartMockChat";
-import { AvatarVideoPanel } from "./AvatarSession/AvatarVideoPanel";
+import { useDockablePanel } from "./AvatarSession/hooks/useDockablePanel";
 import { StreamingAvatarSessionState } from "./logic/context";
-
-import { useSessionStore } from "@/lib/stores/session";
-import { usePlacementStore } from "@/lib/stores/placement";
-import { cn } from "@/lib/utils";
-import { safeWindow } from "@/lib/utils";
 
 //
 
 interface AvatarSessionProps {
-	mediaStream: React.RefObject<HTMLVideoElement>;
+	mediaStream: React.RefObject<HTMLVideoElement | null>;
 	sessionState: StreamingAvatarSessionState;
 	stopSession: () => void;
+	startSession: (config: StartAvatarRequest) => Promise<void> | void;
+	initialConfig: StartAvatarRequest;
+	liveAvatarEmbedUrl?: string | null;
 }
 
 export function AvatarSession({
 	stopSession,
 	mediaStream,
 	sessionState,
+	startSession,
+	initialConfig,
+	liveAvatarEmbedUrl,
 }: AvatarSessionProps) {
 	const [mounted, setMounted] = useState(false);
 	useEffect(() => setMounted(true), []);
-	const { messages } = useSessionStore();
+	const messages = useSessionStore((state) => state.messages);
+	const setConfig = useSessionStore((state) => state.setConfig);
+	const chatExperience = useSessionStore((state) => state.chatExperience);
+	const setChatExperience = useSessionStore((state) => state.setChatExperience);
+	const { currentAgent, setLastStarted, markClean } = useAgentStore();
+	const userSettings = useSettingsStore((state) => state.userSettings);
+	const setDockMode = usePlacementStore((state) => state.setDockMode);
+	const setBottomHeightFrac = usePlacementStore(
+		(state) => state.setBottomHeightFrac,
+	);
+	const setRightWidthFrac = usePlacementStore(
+		(state) => state.setRightWidthFrac,
+	);
+	const setFloating = usePlacementStore((state) => state.setFloating);
+	const setSidebarCollapsed = usePlacementStore(
+		(state) => state.setSidebarCollapsed,
+	);
 
 	// Refs for dockable panel root and panel
 	const panelRef = useRef<HTMLDivElement | null>(null);
@@ -68,23 +91,166 @@ export function AvatarSession({
 		enableMockChatUi,
 	} = useChatController(sessionState);
 
-	// Start mock chat and open UI in bottom expanded mode
-	const startMockChat = useStartMockChat({
-		dock,
-		expanded,
-		setDock,
-		setBottomSize,
-		toggleExpand,
-		enableMockChatUi,
-	});
+	const initializedChatModeRef = useRef<string | null>(null);
+	useEffect(() => {
+		if (sessionState === StreamingAvatarSessionState.CONNECTED) {
+			return;
+		}
 
-	// Open bottom chat expanded without selecting an avatar
-	const startWithoutAvatar = () => {
-		// Ensure docked at bottom and fully expanded
+		if (chatExperience === "basic") {
+			enableMockChatUi();
+			setDockMode("bottom");
+			if (initializedChatModeRef.current !== "basic") {
+				setBottomHeightFrac(1);
+				setSidebarCollapsed(false);
+				if (!expanded) {
+					toggleExpand();
+				}
+			}
+		}
+
+		if (chatExperience === "advanced") {
+			enableMockChatUi();
+			setDockMode("bottom");
+			if (initializedChatModeRef.current !== "advanced") {
+				setBottomHeightFrac(0.35);
+				setSidebarCollapsed(true);
+			}
+		}
+
+		initializedChatModeRef.current = chatExperience;
+	}, [
+		chatExperience,
+		enableMockChatUi,
+		expanded,
+		sessionState,
+		setBottomHeightFrac,
+		setDockMode,
+		setSidebarCollapsed,
+		toggleExpand,
+	]);
+
+	// Open bottom chat expanded without selecting an avatar/session.
+	const startWithoutAvatar = useCallback(() => {
+		setChatExperience("basic");
+		enableMockChatUi();
+		setDockMode("bottom");
+		setBottomHeightFrac(1);
+		setSidebarCollapsed(false);
 		setDock("bottom");
 		setBottomSize(100);
 		if (!expanded) toggleExpand();
-	};
+	}, [
+		enableMockChatUi,
+		expanded,
+		setChatExperience,
+		setBottomHeightFrac,
+		setDock,
+		setDockMode,
+		setBottomSize,
+		setSidebarCollapsed,
+		toggleExpand,
+	]);
+
+	useEffect(() => {
+		const handleStartChatWithoutSession = (event: Event) => {
+			if (useSessionStore.getState().chatExperience !== "basic") {
+				return;
+			}
+			const shouldClearInput = (event as CustomEvent<{ clearInput?: boolean }>)
+				.detail?.clearInput;
+			if (shouldClearInput) {
+				setChatInput("");
+			}
+			startWithoutAvatar();
+		};
+
+		window.addEventListener(
+			"tour-start-chat-without-session",
+			handleStartChatWithoutSession,
+		);
+
+		return () => {
+			window.removeEventListener(
+				"tour-start-chat-without-session",
+				handleStartChatWithoutSession,
+			);
+		};
+	}, [setChatInput, startWithoutAvatar]);
+
+	useEffect(() => {
+		const handleShowAvatarWorkspace = () => {
+			setChatExperience("avatar");
+			setDock("bottom");
+			setDockMode("bottom");
+			setBottomHeightFrac(0);
+			setRightWidthFrac(0);
+			setFloating({ visible: false });
+			setSidebarCollapsed(true);
+		};
+
+		window.addEventListener(
+			"tour-show-avatar-workspace",
+			handleShowAvatarWorkspace,
+		);
+		const handleShowBasicWorkspace = () => {
+			autoStartedBasicChatRef.current = true;
+			setChatExperience("basic");
+			setDock("bottom");
+			setDockMode("bottom");
+			setBottomHeightFrac(0);
+			setRightWidthFrac(0);
+			setFloating({ visible: false });
+			setSidebarCollapsed(true);
+		};
+
+		window.addEventListener(
+			"tour-show-basic-workspace",
+			handleShowBasicWorkspace,
+		);
+
+		return () => {
+			window.removeEventListener(
+				"tour-show-avatar-workspace",
+				handleShowAvatarWorkspace,
+			);
+			window.removeEventListener(
+				"tour-show-basic-workspace",
+				handleShowBasicWorkspace,
+			);
+		};
+	}, [
+		setBottomHeightFrac,
+		setChatExperience,
+		setDock,
+		setDockMode,
+		setFloating,
+		setRightWidthFrac,
+		setSidebarCollapsed,
+	]);
+
+	const autoStartedBasicChatRef = useRef(false);
+	useEffect(() => {
+		if (chatExperience !== "basic") {
+			autoStartedBasicChatRef.current = false;
+			return;
+		}
+
+		if (
+			!mounted ||
+			sessionState === StreamingAvatarSessionState.CONNECTED ||
+			autoStartedBasicChatRef.current
+		) {
+			return;
+		}
+
+		if (useSessionStore.getState().chatExperience !== "basic") {
+			return;
+		}
+
+		autoStartedBasicChatRef.current = true;
+		startWithoutAvatar();
+	}, [chatExperience, mounted, sessionState, startWithoutAvatar]);
 
 	// Auxiliary handlers provided by useChatController
 
@@ -111,15 +277,77 @@ export function AvatarSession({
 		onDock: setDock,
 		onHeaderPointerDown: handlePointerDown,
 		onToggleExpand: toggleExpand,
-		onStartMockChat: startMockChat,
+		onStartMockChat: startWithoutAvatar,
 	});
+
+	/**
+	 * Starts a streaming session using inline selections from the video panel while merging
+	 * persisted agent and user preferences.
+	 */
+	const startFromVideoPanel = useCallback(
+		async (options?: {
+			avatarId?: string;
+			knowledgeBaseId?: string;
+			voiceId?: string;
+		}) => {
+			try {
+				const overrides = options
+					? {
+							avatarId: options.avatarId,
+							knowledgeBaseId: options.knowledgeBaseId,
+							voiceOverrides: options.voiceId
+								? { voiceId: options.voiceId }
+								: undefined,
+						}
+					: undefined;
+
+				const finalConfig = buildSessionConfig({
+					baseConfig: initialConfig,
+					agentConfig: currentAgent ?? undefined,
+					userSettings,
+					overrides,
+				});
+
+				setConfig(finalConfig);
+
+				if (currentAgent) {
+					const nextAgent: AgentConfig = {
+						...currentAgent,
+						...(overrides?.avatarId ? { avatarId: overrides.avatarId } : {}),
+						...(overrides?.knowledgeBaseId !== undefined
+							? { knowledgeBaseId: overrides.knowledgeBaseId ?? undefined }
+							: {}),
+						...(options?.voiceId ? { voiceId: options.voiceId } : {}),
+					} as AgentConfig;
+
+					setLastStarted(nextAgent);
+					markClean();
+				}
+
+				await startSession(finalConfig);
+			} catch (error) {
+				console.error("Failed to start session from video panel", error);
+			}
+		},
+		[
+			currentAgent,
+			initialConfig,
+			markClean,
+			setConfig,
+			setLastStarted,
+			startSession,
+			userSettings,
+		],
+	);
 
 	const avatarVideoPanel = (
 		<AvatarVideoPanel
+			liveAvatarEmbedUrl={liveAvatarEmbedUrl}
 			mediaStream={mediaStream}
 			sessionState={sessionState}
 			stopSession={stopSession}
 			userVideoStream={userVideoStream}
+			onStartSession={startFromVideoPanel}
 			onStartWithoutAvatar={startWithoutAvatar}
 		/>
 	);
@@ -156,8 +384,8 @@ export function AvatarSession({
 			{/* Video panel stays mounted */}
 			<div
 				className={cn(
-					"relative bg-background overflow-hidden",
-					!isFloating && (isRight ? "flex-1" : "flex-1"),
+					"relative min-h-0 bg-background overflow-hidden",
+					!isFloating && (isRight ? "h-full flex-1" : "flex-1 basis-0"),
 					isFloating && "w-full h-full",
 				)}
 				style={!isFloating ? undefined : {}}
@@ -174,7 +402,7 @@ export function AvatarSession({
 			{isFloating && (
 				<div
 					ref={panelRef}
-					className="pointer-events-auto z-30 absolute"
+					className="pointer-events-auto fixed z-[60]"
 					style={{
 						left: floatingPos.x,
 						top: floatingPos.y,
@@ -183,16 +411,18 @@ export function AvatarSession({
 					}}
 				>
 					<ChatPanel dock={dock} expanded={expanded} {...chatPanelProps} />
-					{/* Resize handle (bottom-right corner) - more noticeable */}
-					<div
-						className="absolute bottom-1 right-1 w-5 h-5 cursor-nwse-resize rounded-md border-2 border-border bg-muted-foreground/40 shadow-sm hover:bg-muted-foreground/60 hover:border-foreground/90"
-						role="presentation"
+					{/* Resize handle (bottom-right corner) - larger, always on top */}
+					<button
+						type="button"
+						className="absolute bottom-1 right-1 z-[70] w-6 h-6 cursor-nwse-resize rounded-md border-2 border-border bg-muted-foreground/40 shadow-sm hover:bg-muted-foreground/60 hover:border-foreground/90 pointer-events-auto select-none"
+						aria-label="Resize chat"
 						style={{
 							backgroundImage:
 								"repeating-linear-gradient(135deg, rgba(255,255,255,0.9) 0 2px, transparent 2px 6px)",
 							backgroundClip: "padding-box",
 						}}
 						onPointerDown={startFloatingResize}
+						onPointerDownCapture={startFloatingResize}
 					/>
 				</div>
 			)}

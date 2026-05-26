@@ -4,26 +4,61 @@ import { Button } from "@/components/ui/button";
 import {
 	Dialog,
 	DialogContent,
+	DialogDescription,
 	DialogHeader,
 	DialogTitle,
-	DialogDescription,
 } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
 import {
 	Select,
-	SelectTrigger,
-	SelectValue,
 	SelectContent,
 	SelectItem,
+	SelectTrigger,
+	SelectValue,
 } from "@/components/ui/select";
-import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+
+const NO_FOLDER_VALUE = "__NO_FOLDER__";
+type BookmarkFolderOption = { id: string; name: string; parentId?: string };
+
+function buildFolderOptions(folders: BookmarkFolderOption[]) {
+	const childrenByParent = new Map<string, BookmarkFolderOption[]>();
+
+	for (const folder of folders) {
+		const parentId = folder.parentId ?? "";
+		const children = childrenByParent.get(parentId) ?? [];
+
+		children.push(folder);
+		childrenByParent.set(parentId, children);
+	}
+	for (const children of childrenByParent.values()) {
+		children.sort((a, b) => a.name.localeCompare(b.name));
+	}
+
+	const result: Array<BookmarkFolderOption & { label: string }> = [];
+	const walk = (parentId = "", depth = 0) => {
+		for (const folder of childrenByParent.get(parentId) ?? []) {
+			result.push({
+				...folder,
+				label: `${"  ".repeat(depth)}${depth > 0 ? "- " : ""}${folder.name}`,
+			});
+			walk(folder.id, depth + 1);
+		}
+	};
+
+	walk();
+
+	return result;
+}
 
 export default function BookmarkModal(props: {
 	open: boolean;
 	onClose: () => void;
 	bookmarkedIds: Set<string>;
 	bookmarkTargetId: string | null;
-	bookmarkFolders: { id: string; name: string }[];
+	bookmarkFolders: BookmarkFolderOption[];
+	draftTitle: string;
+	setDraftTitle: (v: string) => void;
 	draftFolderId: string;
 	setDraftFolderId: (v: string) => void;
 	draftNewFolder: string;
@@ -39,6 +74,8 @@ export default function BookmarkModal(props: {
 		bookmarkedIds,
 		bookmarkTargetId,
 		bookmarkFolders,
+		draftTitle,
+		setDraftTitle,
 		draftFolderId,
 		setDraftFolderId,
 		draftNewFolder,
@@ -48,15 +85,21 @@ export default function BookmarkModal(props: {
 		onRemove,
 		onSave,
 	} = props;
+	const folderOptions = buildFolderOptions(bookmarkFolders);
 
 	return (
 		<Dialog
+			modal={false}
 			open={open}
 			onOpenChange={(v) => {
 				if (!v) onClose();
 			}}
 		>
-			<DialogContent className="w-[96vw] md:w-[560px] max-w-[96vw] p-4 md:p-6 bg-card text-foreground flex flex-col max-h-[90vh]">
+			<DialogContent
+				className="w-[96vw] md:w-[560px] max-w-[96vw] p-4 md:p-6 bg-card text-foreground flex flex-col max-h-[90vh]"
+				data-tour="bookmark-modal"
+				onInteractOutside={(event) => event.preventDefault()}
+			>
 				<DialogHeader>
 					<DialogTitle className="text-sm font-medium">
 						{bookmarkedIds.has(bookmarkTargetId || "")
@@ -70,17 +113,33 @@ export default function BookmarkModal(props: {
 				<div className="flex-1 overflow-y-auto space-y-3">
 					<div>
 						<span className="mb-1 block text-xs text-muted-foreground">
+							Bookmark name
+						</span>
+						<Input
+							placeholder="Current chat"
+							type="text"
+							value={draftTitle}
+							onChange={(e) => setDraftTitle(e.target.value)}
+						/>
+					</div>
+					<div>
+						<span className="mb-1 block text-xs text-muted-foreground">
 							Folder
 						</span>
-						<Select value={draftFolderId} onValueChange={setDraftFolderId}>
+						<Select
+							value={draftFolderId || NO_FOLDER_VALUE}
+							onValueChange={(value) =>
+								setDraftFolderId(value === NO_FOLDER_VALUE ? "" : value)
+							}
+						>
 							<SelectTrigger>
 								<SelectValue placeholder="No folder" />
 							</SelectTrigger>
 							<SelectContent>
-								<SelectItem value="">No folder</SelectItem>
-								{bookmarkFolders.map((f) => (
+								<SelectItem value={NO_FOLDER_VALUE}>No folder</SelectItem>
+								{folderOptions.map((f) => (
 									<SelectItem key={f.id} value={f.id}>
-										{f.name}
+										{f.label}
 									</SelectItem>
 								))}
 							</SelectContent>
@@ -113,7 +172,7 @@ export default function BookmarkModal(props: {
 					<div className="text-xs text-muted-foreground">
 						{draftFolderId
 							? `Folder: ${
-									bookmarkFolders.find((f) => f.id === draftFolderId)?.name ||
+									folderOptions.find((f) => f.id === draftFolderId)?.label ||
 									"(new)"
 								}`
 							: draftNewFolder

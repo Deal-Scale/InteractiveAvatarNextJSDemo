@@ -18,16 +18,26 @@ export interface MessageAsset {
 	url?: string;
 	thumbnailUrl?: string;
 	mimeType?: string;
+	kind?: "asset" | "tool" | "knowledge" | "agent";
+	description?: string;
 }
 
 export interface Message {
 	id: string;
 	content: string;
 	sender: MessageSender;
+	// Optional provider metadata for UI transparency
+	provider?: string; // e.g., "gemini", "openrouter"
+	fallbackFrom?: string; // original provider if a fallback was used
 	// Optional JSX payload for rich rendering. When present, render with JSXPreview.
 	jsx?: string;
 	// Optional tool call parts to visualize tool usage within the message
 	toolParts?: MessageToolPart[];
+	// Optional reasoning/trace details for UI transparency. This must be concise,
+	// user-facing reasoning, not hidden chain of thought.
+	reasoning?: string;
+	reasoningMarkdown?: boolean;
+	reasoningOpen?: boolean;
 	// Optional list of sources used to produce this message
 	sources?: MessageSource[];
 	// Optional structured assets associated with this message

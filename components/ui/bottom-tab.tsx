@@ -1,7 +1,7 @@
 "use client";
 
-import React, { useEffect, useMemo, useState } from "react";
 import { Maximize2Icon, Minimize2Icon } from "lucide-react";
+import React, { useEffect, useMemo, useState } from "react";
 
 import { usePlacementStore } from "@/lib/stores/placement";
 import { safeWindow } from "@/lib/utils";
@@ -30,8 +30,19 @@ export function BottomTab({
 }: BottomTabProps) {
 	// Avoid SSR/CSR mismatch from window-dependent sizing by rendering after mount
 	const [mounted, setMounted] = useState(false);
+	const [hiddenForTour, setHiddenForTour] = useState(false);
 
 	useEffect(() => setMounted(true), []);
+	useEffect(() => {
+		const hide = () => setHiddenForTour(true);
+		const show = () => setHiddenForTour(false);
+		window.addEventListener("tour-hide-chat-reopen", hide);
+		window.addEventListener("tour-show-chat-reopen", show);
+		return () => {
+			window.removeEventListener("tour-hide-chat-reopen", hide);
+			window.removeEventListener("tour-show-chat-reopen", show);
+		};
+	}, []);
 
 	const dockMode = usePlacementStore((s) => s.dockMode);
 	const heightFrac = usePlacementStore((s) => s.bottomHeightFrac);
@@ -91,6 +102,8 @@ export function BottomTab({
 			w.addEventListener("pointermove", onMove, { passive: true });
 			w.addEventListener("pointerup", onUp, { once: true });
 		}
+		// Capture pointer so moves track even if we leave the rail
+		(e.target as Element).setPointerCapture?.(e.pointerId);
 	};
 
 	const onClick = () => {
@@ -103,31 +116,36 @@ export function BottomTab({
 	};
 
 	// When open, render the drawer panel. When closed, render the reopen tab.
-	if (!isBottom || !mounted) return null;
+	if (!isBottom || !mounted || hiddenForTour) return null;
 
 	if (!isClosed) {
 		return (
 			<section
 				aria-label="Chat drawer"
+				data-tour="bottom-chat-panel"
 				className={
 					// When sidebar is open, start at 320px to avoid covering it
 					(sidebarCollapsed
 						? "fixed inset-x-0 "
 						: "fixed left-[320px] right-0 ") +
-					"bottom-0 z-30 border-t border-border bg-background text-foreground shadow-lg " +
+					"bottom-0 z-50 border-t border-border bg-background text-foreground shadow-lg " +
 					"flex min-h-[48px] flex-col overflow-hidden " +
 					className
 				}
 				style={{ height: heightPx }}
 			>
 				<div className="relative flex h-9 w-full items-center justify-center border-b border-border/60">
-					{/* Resize handle area (full bar) */}
-					<hr
-						className="absolute inset-y-0 left-0 right-40 cursor-ns-resize"
+					{/* Visual cue line across the draggable strip (non-interactive) */}
+					<div className="pointer-events-none absolute top-0 left-0 right-0 h-px bg-foreground/20" />
+					{/* Resize handle rail (thin top strip) */}
+					<div
+						className="absolute top-0 left-0 right-0 h-2 z-50 cursor-ns-resize touch-none hover:bg-foreground/10"
+						aria-label="Resize chat height"
 						onPointerDown={onPointerDown}
+						onPointerDownCapture={onPointerDown}
 					/>
 					{/* Grip */}
-					<span className="pointer-events-none h-1 w-12 rounded-full bg-muted-foreground/50" />
+					<span className="pointer-events-none h-1.5 w-14 rounded-full bg-foreground/55 shadow-sm" />
 					{/* Actions on the right */}
 					<div className="absolute right-2 top-1/2 -translate-y-1/2 z-10 flex items-center gap-1">
 						<button
@@ -166,12 +184,13 @@ export function BottomTab({
 		<button
 			type="button"
 			aria-label="Open chat drawer"
+			data-tour="bottom-chat-panel-toggle"
 			className={
 				(sidebarCollapsed
 					? "fixed bottom-0 left-1/2 -translate-x-1/2 "
 					: "fixed bottom-0 left-[328px] ") + // small offset past the sidebar edge
-				"z-40 select-none flex items-center gap-2 rounded-t-md border border-primary/40 bg-primary/10 text-primary px-3 py-1.5 " +
-				"shadow-md hover:bg-primary/15 backdrop-blur supports-[backdrop-filter]:bg-primary/10 " +
+				"z-[120] select-none flex items-center gap-2 rounded-t-md border border-primary bg-background text-foreground px-3 py-2 " +
+				"shadow-lg shadow-black/30 hover:bg-muted backdrop-blur supports-[backdrop-filter]:bg-background/95 " +
 				className
 			}
 			onClick={onClick}
@@ -183,8 +202,8 @@ export function BottomTab({
 			}}
 			onPointerDown={onPointerDown}
 		>
-			<span className="h-1.5 w-8 rounded-full bg-primary/50" />
-			<span className="text-xs text-primary">{label}</span>
+			<span className="h-1.5 w-8 rounded-full bg-primary" />
+			<span className="text-xs font-medium text-foreground">{label}</span>
 		</button>
 	);
 }

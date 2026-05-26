@@ -1,24 +1,60 @@
-import { z } from "zod";
+import type { z } from "zod";
 
 export type Widget =
 	| "input"
 	| "number"
 	| "textarea"
 	| "select"
+	| "mode-buttons"
+	| "mcp-badges"
+	| "voice-select"
+	| "tags"
+	| "avatar-url"
 	| "switch"
 	| "slider"
 	| "password";
 
+export type SelectOption = {
+	value: string;
+	label: string;
+	description?: string;
+	capabilities?: string[];
+	docsUrl?: string;
+	previewUrl?: string;
+	transport?: string;
+	command?: string;
+	url?: string;
+};
+
 export type FieldConfig = {
 	label?: string;
+	badge?: {
+		label: string;
+		tone?: "text" | "voice" | "video" | "tools";
+	};
+	section?: {
+		label: string;
+		tone?: "text" | "voice" | "video" | "tools" | "general";
+		description?: string;
+		dataTour?: string;
+	};
+	advanced?: {
+		label?: string;
+		resetLabel?: string;
+	};
+	defaultValue?: unknown;
+	required?: boolean;
 	widget?: Widget;
-	options?: Array<{ value: string; label: string }>;
+	options?: SelectOption[];
 	min?: number;
 	max?: number;
 	step?: number;
 	multiple?: boolean;
 	rows?: number;
 	placeholder?: string;
+	disabled?: boolean;
+	hidden?: boolean;
+	helpText?: string;
 };
 
 export type FieldsConfig<T> = Partial<Record<keyof T & string, FieldConfig>>;
@@ -31,19 +67,28 @@ export function unwrapType(t: z.ZodTypeAny): z.ZodTypeAny {
 	// To avoid infinite loops, cap the number of unwrap iterations
 	let safety = 20;
 	while (safety-- > 0) {
-		const tn = cur?._def?.typeName as string | undefined;
+		const tn = (cur?._def?.typeName ?? cur?._def?.type) as string | undefined;
 		if (!tn) break;
 
 		// List of wrapper typeNames we want to unwrap through
 		const isWrapper =
 			tn === "ZodOptional" ||
+			tn === "optional" ||
 			tn === "ZodNullable" ||
+			tn === "nullable" ||
 			tn === "ZodDefault" ||
+			tn === "default" ||
 			tn === "ZodEffects" ||
+			tn === "transform" ||
 			tn === "ZodReadonly" ||
+			tn === "readonly" ||
 			tn === "ZodBranded" ||
 			tn === "ZodPromise" ||
+			tn === "promise" ||
 			tn === "ZodCatch" ||
+			tn === "catch" ||
+			tn === "ZodPipe" ||
+			tn === "pipe" ||
 			tn === "ZodPipeline";
 		if (!isWrapper) break;
 

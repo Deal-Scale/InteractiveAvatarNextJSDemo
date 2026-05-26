@@ -1,9 +1,28 @@
 import type { UseFormReturn } from "react-hook-form";
-import type { Option } from "@/data/options";
-
-import React from "react";
-
 import { AutoForm } from "@/components/forms/AutoForm";
+import {
+	type Option,
+	sttProviderOptions,
+	voiceChatTransportOptions,
+} from "@/data/options";
+
+const SESSION_TYPE_OPTIONS = [
+	{ value: "all", label: "All modes" },
+	{ value: "text", label: "Text chat" },
+	{ value: "video", label: "Video chat" },
+	{ value: "voice", label: "Voice chat" },
+];
+
+const VIDEO_RESOLUTION_OPTIONS = [
+	{ value: "720p", label: "720p" },
+	{ value: "1080p", label: "1080p" },
+];
+
+const VIDEO_BACKGROUND_OPTIONS = [
+	{ value: "transparent", label: "Transparent" },
+	{ value: "blur", label: "Blur" },
+	{ value: "none", label: "None" },
+];
 
 interface AgentSettingsTabProps {
 	form: UseFormReturn<any>;
@@ -44,6 +63,12 @@ export function AgentSettingsTab({
 						max: 2,
 						step: 0.1,
 					},
+					sessionType: {
+						label: "Chat Type",
+						widget: "select",
+						options: SESSION_TYPE_OPTIONS,
+						placeholder: "Select voice or video chat",
+					},
 					avatarId: {
 						label: "Avatar",
 						widget: "select",
@@ -64,6 +89,8 @@ export function AgentSettingsTab({
 					},
 					voiceChatTransport: {
 						label: "Voice Chat Transport",
+						widget: "select",
+						options: voiceChatTransportOptions,
 						placeholder: "Select transport",
 					},
 					disableIdleTimeout: {
@@ -82,7 +109,38 @@ export function AgentSettingsTab({
 						max: 3600,
 						step: 10,
 					},
-					stt: { label: "STT Settings" },
+					"stt.provider": {
+						label: "STT Provider",
+						widget: "select",
+						options: sttProviderOptions,
+						placeholder: "Select STT provider",
+					},
+					"stt.confidenceThreshold": {
+						label: "STT Confidence Threshold",
+						widget: "slider",
+						min: 0,
+						max: 1,
+						step: 0.05,
+					},
+					"video.resolution": {
+						label: "Video Resolution",
+						widget: "select",
+						options: VIDEO_RESOLUTION_OPTIONS,
+						placeholder: "Select resolution",
+					},
+					"video.background": {
+						label: "Video Background",
+						widget: "select",
+						options: VIDEO_BACKGROUND_OPTIONS,
+						placeholder: "Select background",
+					},
+					"video.fps": {
+						label: "Video FPS",
+						widget: "slider",
+						min: 15,
+						max: 60,
+						step: 1,
+					},
 					language: {
 						label: "Language",
 						widget: "select",

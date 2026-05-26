@@ -1,0 +1,17 @@
+{
+	"id": "msg_tool_001",
+	"type": "message",
+	"role": "assistant",
+	"model": "claude-3-5-sonnet-20241022",
+	"stop_reason": "tool_use",
+	"content": [
+		{
+			"type": "tool_use",
+			"id": "toolu_001",
+			"name": "fetch_runbook",
+			"input": {
+				"name": "avatar_web_client"
+			}
+		}
+	]
+}

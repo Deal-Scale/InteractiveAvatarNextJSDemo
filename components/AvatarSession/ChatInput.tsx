@@ -1,38 +1,152 @@
 import {
+	Check,
 	MicIcon,
 	MicOffIcon,
-	SendIcon,
 	Paperclip,
+	SendIcon,
 	X,
-	Check,
 	XCircle,
 } from "lucide-react";
 import type React from "react";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { SlashCommandPalette } from "@/components/AvatarSession/chat/SlashCommandPalette";
+import { KB_CONNECTORS } from "@/components/KnowledgeBase/connectors";
 import { defaultCommands } from "@/data/commands";
-import type { Command } from "@/types/commands";
-import { getTextareaAnchorRect } from "@/lib/utils/caret";
+import {
+	getChatDragResource,
+	hasChatDragResource,
+	toComposerAsset,
+} from "@/lib/chat-drag";
+import { buildKnowledgeTree, flattenKnowledgeTree } from "@/lib/knowledge-tree";
+import { useAgentStore } from "@/lib/stores/agent";
+import { useAssetsStore } from "@/lib/stores/assets";
 import type { ComposerAsset } from "@/lib/stores/composer";
 import { useComposerStore } from "@/lib/stores/composer";
-import type { ChatMode } from "@/lib/stores/session";
+import { type KnowledgeFolder, useSessionStore } from "@/lib/stores/session";
+import { getTextareaAnchorRect } from "@/lib/utils/caret";
+import type { Command } from "@/types/commands";
 
-import { PromptSuggestions } from "./PromptSuggestions";
+function buildKbCommands(
+	folders: KnowledgeFolder[],
+	itemFolders: Record<string, string | undefined>,
+	createdItems: Array<{ id: string; name: string }>,
+	onAddKb: () => void,
+	onAttachKnowledge: (item: {
+		id: string;
+		name: string;
+		description?: string;
+	}) => void,
+): Command[] {
+	const rootItems: Command[] = [
+		{
+			id: "action-add-kb",
+			label: "+ Add Knowledge Base",
+			icon: "➕",
+			description: "Configure a new knowledge source",
+			action: onAddKb,
+		},
+	];
+
+	// Map folder ID to list of command children
+	const childrenMap: Record<string, Command[]> = {};
+	for (const f of folders) {
+		childrenMap[f.id] = [];
+	}
+
+	const sourceItems = flattenKnowledgeTree(buildKnowledgeTree(createdItems));
+
+	// Add items to their folders or the same unfiled bucket used by the sidebar.
+	const rootUserItems: Command[] = [];
+	for (const item of sourceItems) {
+		const folderId = itemFolders[item.id];
+		const cmd: Command = {
+			id: item.id,
+			label: item.name,
+			icon: "📄",
+			description: "Knowledge item",
+			action: () =>
+				onAttachKnowledge({
+					id: item.id,
+					name: item.name,
+					description: "Knowledge item",
+				}),
+		};
+		if (folderId && childrenMap[folderId]) {
+			childrenMap[folderId].push(cmd);
+		} else {
+			rootUserItems.push(cmd);
+		}
+	}
+
+	// Add subfolders to their parent folders or root
+	const rootUserFolders: Command[] = [];
+	const folderCommandMap: Record<string, Command> = {};
+	for (const f of folders) {
+		folderCommandMap[f.id] = {
+			id: f.id,
+			label: f.name,
+			icon: "📁",
+			description: "Folder",
+			children: childrenMap[f.id],
+		};
+	}
+
+	for (const f of folders) {
+		const cmd = folderCommandMap[f.id];
+		if (f.parentId && folderCommandMap[f.parentId]) {
+			const parentCmd = folderCommandMap[f.parentId];
+			parentCmd.children = parentCmd.children || [];
+			parentCmd.children.push(cmd);
+		} else {
+			rootUserFolders.push(cmd);
+		}
+	}
+
+	const sortKnowledgeCommands = (commands: Command[]) => {
+		commands.sort((a, b) => {
+			const aIsFolder = Boolean(a.children);
+			const bIsFolder = Boolean(b.children);
+			if (aIsFolder !== bIsFolder) return aIsFolder ? -1 : 1;
+			return a.label.localeCompare(b.label);
+		});
+		for (const command of commands) {
+			if (command.children) sortKnowledgeCommands(command.children);
+		}
+	};
+	sortKnowledgeCommands(rootUserFolders);
+	sortKnowledgeCommands(rootUserItems);
+
+	if (rootUserFolders.length > 0 || rootUserItems.length > 0) {
+		rootItems.push(...rootUserFolders);
+		if (rootUserItems.length > 0) {
+			rootItems.push({
+				id: "__kb_unfiled__",
+				label: "Knowledge Items",
+				icon: "📁",
+				description: "Folder",
+				children: rootUserItems,
+			});
+		}
+	}
+
+	return rootItems;
+}
 
 import { Button } from "@/components/ui/button";
+import {
+	FileUpload,
+	FileUploadContent,
+	FileUploadTrigger,
+} from "@/components/ui/file-upload";
+import { Loader } from "@/components/ui/loader";
 import {
 	PromptInput,
 	PromptInputAction,
 	PromptInputActions,
 	PromptInputTextarea,
 } from "@/components/ui/prompt-input";
-import { Loader } from "@/components/ui/loader";
 import { cn } from "@/lib/utils";
-import {
-	FileUpload,
-	FileUploadContent,
-	FileUploadTrigger,
-} from "@/components/ui/file-upload";
+import { PromptSuggestions } from "./PromptSuggestions";
 
 interface ChatInputProps {
 	chatMode: ChatMode;
@@ -78,9 +192,220 @@ export const ChatInput: React.FC<ChatInputProps> = ({
 	inputRef,
 }) => {
 	const addAssetAttachment = useComposerStore((s) => s.addAssetAttachment);
-	// Visual affordance for sidebar asset drag-over
-	const [assetDragCounter, setAssetDragCounter] = useState(0);
-	const isAssetDragging = assetDragCounter > 0;
+	const storeAssets = useAssetsStore((s) => s.assets);
+	const {
+		agentSettings,
+		kbFolders,
+		kbItemFolders,
+		createdKnowledgeItems,
+		openChatSettings,
+	} = useSessionStore();
+
+	const agents = useMemo(() => {
+		const base = [
+			{
+				id: "agent-1",
+				name: "Sales Assistant",
+				role: "Revenue",
+				description:
+					"Qualifies leads, drafts outreach, and coordinates follow-up tasks through MCP actions.",
+				icon: "🤖",
+			},
+			{
+				id: "agent-2",
+				name: "Support Bot",
+				role: "Customer Success",
+				description:
+					"Answers product questions, searches knowledge bases, and escalates unresolved issues.",
+				icon: "💬",
+			},
+			{
+				id: "agent-3",
+				name: "Content Analyst",
+				role: "Research",
+				description:
+					"Reviews messages, extracts structured insights, and turns findings into dashboard-ready notes.",
+				icon: "📊",
+			},
+		];
+
+		if (agentSettings?.id) {
+			return [
+				{
+					id: agentSettings.id,
+					name: agentSettings.name || "Configured Agent",
+					role: "Configured",
+					description:
+						"Current saved agent configuration with the selected avatar, voice, knowledge base, and MCP settings.",
+					icon: "⚙️",
+				},
+				...base,
+			];
+		}
+		return base;
+	}, [agentSettings]);
+
+	const allCommands = useMemo(() => {
+		const attachKnowledge = (item: {
+			id: string;
+			name: string;
+			description?: string;
+		}) => {
+			addAssetAttachment({
+				id: item.id.startsWith("kb-") ? item.id : `kb-${item.id}`,
+				name: item.name,
+				kind: "knowledge",
+				mimeType: "application/x-knowledge",
+				description: item.description ?? "Knowledge base item",
+			});
+		};
+
+		const kbCommands = buildKbCommands(
+			kbFolders,
+			kbItemFolders,
+			createdKnowledgeItems,
+			() => window.dispatchEvent(new CustomEvent("open-add-kb-modal")),
+			attachKnowledge,
+		);
+
+		const agentCommands: Command[] = [
+			{
+				id: "action-create-agent",
+				label: "+ Create Agent",
+				icon: "➕",
+				description: "Configure a new agent",
+				action: () => openChatSettings("avatar"),
+			},
+			...agents.map((a) => ({
+				id: a.id,
+				label: a.name,
+				icon: a.icon || "🤖",
+				description: a.role || "Agent",
+				action: () => {
+					useAgentStore.getState().setAgent(a as any);
+					addAssetAttachment({
+						id: a.id.startsWith("agent-") ? a.id : `agent-${a.id}`,
+						name: a.name,
+						kind: "agent",
+						mimeType: "application/x-agent",
+						description: a.description || a.role || "Agent",
+						thumbnailUrl: (a as { avatarUrl?: string }).avatarUrl,
+					});
+				},
+			})),
+		];
+
+		const toolCommands: Command[] = [
+			{
+				id: "action-connect-tool",
+				label: "+ Connect Tool",
+				icon: "➕",
+				description: "Connect a new MCP tool",
+				action: () => {
+					window.dispatchEvent(new CustomEvent("open-connect-tool-modal"));
+				},
+			},
+			...KB_CONNECTORS.map((connector) => ({
+				id: `tool-${connector.key}`,
+				label: connector.name,
+				icon: "🛠️",
+				description: connector.description,
+				action: () => {
+					addAssetAttachment({
+						id: `tool-${connector.key}`,
+						name: connector.name,
+						kind: "tool",
+						mimeType: "application/x-tool",
+						description: connector.description,
+					});
+				},
+			})),
+		];
+
+		const assetCommands: Command[] = [
+			{
+				id: "action-upload-asset",
+				label: "+ Upload Asset",
+				icon: "➕",
+				description: "Upload a file to assets",
+				action: () => {
+					const fileInput = document.querySelector(
+						'input[type="file"]',
+					) as HTMLInputElement;
+					fileInput?.click();
+				},
+			},
+			...storeAssets.map((asset) => ({
+				id: asset.id,
+				label: asset.name,
+				icon: asset.mimeType?.startsWith("image/") ? "🖼️" : "📄",
+				description: asset.mimeType || "File",
+				action: () => {
+					addAssetAttachment({
+						id: asset.id,
+						name: asset.name,
+						url: asset.url,
+						thumbnailUrl: asset.thumbnailUrl,
+						mimeType: asset.mimeType,
+						kind: "asset",
+					});
+				},
+			})),
+		];
+
+		return [
+			{
+				id: "submenu-agents",
+				label: "Agents ▸",
+				icon: "🤖",
+				description: "Manage and select agents",
+				children: agentCommands,
+			},
+			{
+				id: "submenu-kb",
+				label: "Knowledge Base ▸",
+				icon: "📚",
+				description: "Browse knowledge items",
+				children: kbCommands,
+			},
+			{
+				id: "submenu-tools",
+				label: "Tools ▸",
+				icon: "🛠️",
+				description: "Connect and configure tools",
+				children: toolCommands,
+			},
+			{
+				id: "submenu-assets",
+				label: "Assets ▸",
+				icon: "📎",
+				description: "Upload and attach assets",
+				children: assetCommands,
+			},
+			...defaultCommands.map((cmd) => {
+				if (cmd.id === "start-voice") {
+					return { ...cmd, disabled: isVoiceChatActive };
+				}
+				if (cmd.id === "stop-voice") {
+					return { ...cmd, disabled: !isVoiceChatActive };
+				}
+				return cmd;
+			}),
+		];
+	}, [
+		kbFolders,
+		kbItemFolders,
+		createdKnowledgeItems,
+		openChatSettings,
+		agents,
+		storeAssets,
+		addAssetAttachment,
+		isVoiceChatActive,
+	]);
+
+	// Visual affordance for sidebar resource drag-over
+	const [resourceDragCounter, setResourceDragCounter] = useState(0);
+	const isResourceDragging = resourceDragCounter > 0;
 
 	const isVoiceMode = chatMode === "voice";
 	const inputDisabled = isVoiceMode && !isEditing;
@@ -96,6 +421,7 @@ export const ChatInput: React.FC<ChatInputProps> = ({
 	const [highlightedIndex, setHighlightedIndex] = useState(0);
 	const [menuStack, setMenuStack] = useState<Command[][]>([]);
 	const [highlightedSubIndex, setHighlightedSubIndex] = useState(0);
+	const tourSlashMenuOpenRef = useRef(false);
 
 	// Open the slash command palette programmatically for accessibility
 	const openSlashPalette = () => {
@@ -122,6 +448,41 @@ export const ChatInput: React.FC<ChatInputProps> = ({
 		requestAnimationFrame(() => t.focus());
 	};
 
+	useEffect(() => {
+		const handleTourOpenSlashMenu = () => {
+			tourSlashMenuOpenRef.current = true;
+			openSlashPalette();
+		};
+		const handleTourCloseSlashMenu = () => {
+			tourSlashMenuOpenRef.current = false;
+			setSlashOpen(false);
+			setSlashStart(null);
+			setSlashQuery("");
+			setMenuStack([]);
+			setHighlightedIndex(0);
+			setHighlightedSubIndex(0);
+		};
+
+		window.addEventListener(
+			"tour-open-slash-command-menu",
+			handleTourOpenSlashMenu,
+		);
+		window.addEventListener(
+			"tour-close-slash-command-menu",
+			handleTourCloseSlashMenu,
+		);
+		return () => {
+			window.removeEventListener(
+				"tour-open-slash-command-menu",
+				handleTourOpenSlashMenu,
+			);
+			window.removeEventListener(
+				"tour-close-slash-command-menu",
+				handleTourCloseSlashMenu,
+			);
+		};
+	}, [openSlashPalette]);
+
 	// Show the left "/" button only when the input is truly empty (0 chars)
 	const isInputEmpty = (chatInput ?? "").length === 0;
 
@@ -136,6 +497,7 @@ export const ChatInput: React.FC<ChatInputProps> = ({
 				<Button
 					aria-label="Open commands"
 					aria-keyshortcuts="Alt+/"
+					data-tour="slash-command-item"
 					size="icon"
 					variant="secondary"
 					type="button"
@@ -338,6 +700,7 @@ export const ChatInput: React.FC<ChatInputProps> = ({
 		const t = textareaRef?.current;
 		if (!t) return;
 		const onBlur = () => {
+			if (tourSlashMenuOpenRef.current) return;
 			if (slashOpen) {
 				setSlashOpen(false);
 				setSlashStart(null);
@@ -372,23 +735,17 @@ export const ChatInput: React.FC<ChatInputProps> = ({
 			types: Array.from(e.dataTransfer.types || []),
 		});
 		try {
-			const data = e.dataTransfer.getData("application/x-asset");
-			if (data) {
-				console.debug("[ChatInput] asset payload detected on drop");
-				const asset = JSON.parse(data) as ComposerAsset;
-				if (asset?.id && asset.name) {
-					addAssetAttachment({
-						id: asset.id,
-						name: asset.name,
-						url: asset.url,
-						thumbnailUrl: asset.thumbnailUrl,
-						mimeType: asset.mimeType,
-					});
-					console.debug("[ChatInput] asset added to composer", asset);
+			const resource = getChatDragResource(e.dataTransfer);
+			if (resource) {
+				console.debug("[ChatInput] chat resource payload detected on drop");
+				if (resource.id && resource.name) {
+					const attachment = toComposerAsset(resource);
+					addAssetAttachment(attachment);
+					console.debug("[ChatInput] resource added to composer", attachment);
 					// Always swallow the drop so FileUpload doesn't keep its overlay active
 					e.preventDefault();
 					e.stopPropagation();
-					setAssetDragCounter(0);
+					setResourceDragCounter(0);
 					return;
 				}
 			}
@@ -397,9 +754,9 @@ export const ChatInput: React.FC<ChatInputProps> = ({
 	};
 
 	const allowDrop = (e: React.DragEvent) => {
-		// If dragging an asset payload, allow drop
-		if (e.dataTransfer.types.includes("application/x-asset")) {
-			console.debug("[ChatInput] dragover asset payload", {
+		// If dragging a sidebar chat resource payload, allow drop
+		if (hasChatDragResource(e.dataTransfer.types)) {
+			console.debug("[ChatInput] dragover chat resource payload", {
 				types: Array.from(e.dataTransfer.types || []),
 			});
 			e.preventDefault();
@@ -411,19 +768,19 @@ export const ChatInput: React.FC<ChatInputProps> = ({
 		}
 	};
 	const onDragEnter = (e: React.DragEvent) => {
-		if (e.dataTransfer.types.includes("application/x-asset")) {
-			console.debug("[ChatInput] dragenter asset payload");
+		if (hasChatDragResource(e.dataTransfer.types)) {
+			console.debug("[ChatInput] dragenter chat resource payload");
 			e.preventDefault();
 			e.stopPropagation();
-			setAssetDragCounter((c) => c + 1);
+			setResourceDragCounter((c) => c + 1);
 		}
 	};
 	const onDragLeave = (e: React.DragEvent) => {
-		if (e.dataTransfer.types.includes("application/x-asset")) {
-			console.debug("[ChatInput] dragleave asset payload");
+		if (hasChatDragResource(e.dataTransfer.types)) {
+			console.debug("[ChatInput] dragleave chat resource payload");
 			e.preventDefault();
 			e.stopPropagation();
-			setAssetDragCounter((c) => Math.max(0, c - 1));
+			setResourceDragCounter((c) => Math.max(0, c - 1));
 		}
 	};
 	return (
@@ -435,7 +792,7 @@ export const ChatInput: React.FC<ChatInputProps> = ({
 			onDragLeave={onDragLeave}
 			onDrop={handleDrop}
 		>
-			{isAssetDragging && (
+			{isResourceDragging && (
 				<div className="pointer-events-none absolute inset-0 z-10 rounded-lg border-2 border-dashed border-primary/70 bg-primary/5" />
 			)}
 			{isVoiceMode && !isEditing && (
@@ -446,9 +803,10 @@ export const ChatInput: React.FC<ChatInputProps> = ({
 			<PromptInput
 				className={cn(
 					"w-full mt-4",
-					isAssetDragging && "ring-2 ring-primary/50 rounded-lg",
+					isResourceDragging && "ring-2 ring-primary/50 rounded-lg",
 				)}
-				disabled={inputDisabled}
+				data-tour="chat-input"
+				disabled={false}
 				maxHeight={320}
 				value={chatInput}
 				textareaRef={textareaRef}
@@ -504,7 +862,7 @@ export const ChatInput: React.FC<ChatInputProps> = ({
 							// Handle navigation when palette is open
 							if (slashOpen) {
 								e.preventDefault();
-								const rootFiltered = defaultCommands.filter((cmd) => {
+								const rootFiltered = allCommands.filter((cmd) => {
 									const q = slashQuery.toLowerCase();
 									if (!q) return true;
 									const pool = [cmd.label, ...(cmd.keywords || [])].map((s) =>
@@ -516,9 +874,25 @@ export const ChatInput: React.FC<ChatInputProps> = ({
 									menuStack.length > 0
 										? menuStack[menuStack.length - 1]
 										: undefined;
+								let displaySubmenuItems = submenuItems;
+								if (submenuItems && menuStack.length > 1) {
+									displaySubmenuItems = [
+										{
+											id: "back-button",
+											label: "↩ Back",
+											icon: "📁",
+											description: "Go to parent folder",
+											action: () => {
+												setMenuStack((st) => st.slice(0, -1));
+												setHighlightedSubIndex(0);
+											},
+										},
+										...submenuItems,
+									];
+								}
 								const usingSubmenu = !!submenuItems && submenuItems.length > 0;
 								const currentItems: Command[] = usingSubmenu
-									? submenuItems!
+									? displaySubmenuItems!
 									: rootFiltered;
 
 								switch (e.key) {
@@ -555,9 +929,11 @@ export const ChatInput: React.FC<ChatInputProps> = ({
 										return;
 									}
 									case "ArrowRight": {
-										if (usingSubmenu) return; // no deeper nesting
-										const item = currentItems[highlightedIndex];
-										if (item?.children) {
+										const activeIdx = usingSubmenu
+											? highlightedSubIndex
+											: highlightedIndex;
+										const item = currentItems[activeIdx];
+										if (item?.children && item.children.length > 0) {
 											setMenuStack((st) => [...st, item.children!]);
 											setHighlightedSubIndex(0);
 										}
@@ -571,11 +947,20 @@ export const ChatInput: React.FC<ChatInputProps> = ({
 										return;
 									}
 									case "Enter": {
-										const activeIndex = usingSubmenu
+										const rawActiveIndex = usingSubmenu
 											? highlightedSubIndex
 											: highlightedIndex;
+										const activeIndex = Math.min(
+											Math.max(0, rawActiveIndex),
+											Math.max(0, currentItems.length - 1),
+										);
 										const item = currentItems[activeIndex];
 										if (!item) return;
+										if (item.disabled) return;
+										if (item.id === "back-button") {
+											item.action?.();
+											return;
+										}
 										if (item.children) {
 											setMenuStack((st) => [...st, item.children!]);
 											setHighlightedSubIndex(0);
@@ -629,7 +1014,7 @@ export const ChatInput: React.FC<ChatInputProps> = ({
 					{slashOpen && textareaRef.current
 						? (() => {
 								const anchorRect = getTextareaAnchorRect(textareaRef.current!);
-								const rootFiltered = defaultCommands.filter((cmd) => {
+								const rootFiltered = allCommands.filter((cmd) => {
 									const q = slashQuery.toLowerCase();
 									if (!q) return true;
 									const pool = [cmd.label, ...(cmd.keywords || [])].map((s) =>
@@ -641,26 +1026,46 @@ export const ChatInput: React.FC<ChatInputProps> = ({
 									menuStack.length > 0
 										? menuStack[menuStack.length - 1]
 										: undefined;
+								let displaySubmenuItems = submenuItems;
+								if (submenuItems && menuStack.length > 1) {
+									displaySubmenuItems = [
+										{
+											id: "back-button",
+											label: "↩ Back",
+											icon: "📁",
+											description: "Go to parent folder",
+											action: () => {
+												setMenuStack((st) => st.slice(0, -1));
+												setHighlightedSubIndex(0);
+											},
+										},
+										...submenuItems,
+									];
+								}
 								return (
 									<SlashCommandPalette
 										anchorRect={anchorRect}
 										items={rootFiltered}
-										submenuItems={submenuItems}
+										submenuItems={displaySubmenuItems}
 										highlightedIndex={Math.min(
 											highlightedIndex,
 											Math.max(0, rootFiltered.length - 1),
 										)}
 										highlightedSubIndex={
-											submenuItems
+											displaySubmenuItems
 												? Math.min(
 														highlightedSubIndex,
-														Math.max(0, submenuItems.length - 1),
+														Math.max(0, displaySubmenuItems.length - 1),
 													)
 												: 0
 										}
 										onHighlight={setHighlightedIndex}
 										onHighlightSub={setHighlightedSubIndex}
 										onSelect={(cmd) => {
+											if (cmd.id === "back-button") {
+												cmd.action?.();
+												return;
+											}
 											if (cmd.children) {
 												setMenuStack((st) => [...st, cmd.children!]);
 												setHighlightedSubIndex(0);
@@ -735,8 +1140,11 @@ export const ChatInput: React.FC<ChatInputProps> = ({
 							<div
 								key={`asset-${a.id}`}
 								className="bg-secondary text-secondary-foreground border border-border px-2 py-1 rounded-full text-xs inline-flex items-center gap-1"
-								title={a.url ? `${a.name} – ${a.url}` : a.name}
+								title={a.description || a.url || a.name}
 							>
+								<span className="rounded bg-muted px-1 uppercase text-[0.56rem] leading-4 text-muted-foreground">
+									{a.kind ?? "asset"}
+								</span>
 								<span className="max-w-[200px] truncate">{a.name}</span>
 								<button
 									aria-label={`Remove ${a.name}`}

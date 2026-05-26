@@ -1,0 +1,46 @@
+flowchart TD
+    subgraph View["View Layer"]
+        direction TB
+        C["Components
+        • React/Shadcn UI
+        • Tailwind CSS
+        • Presentational Logic"]
+        
+        subgraph ViewSub["View Sublayers"]
+            direction LR
+            PC["Pure Components
+            • UI Rendering
+            • Event Handling"]
+            VP["View Pages
+            • Route Handling
+            • Layout Composition"]
+        end
+    end
+    
+    subgraph VM["ViewModel Layer"]
+        direction TB
+        H["Custom Hooks
+        • State Management
+        • Business Logic"]
+        CT["Context Providers
+        • Global State
+        • Theme/Config"]
+    end
+    
+    subgraph M["Model Layer"]
+        direction TB
+        S["State Management
+        • Zustand Stores
+        • React Query Cache"]
+        BL["Business Logic
+        • Data Processing
+        • API Integration"]
+    end
+    
+    PC <--> H
+    VP <--> CT
+    H <--> S
+    CT <--> BL
+    
+    classDef layer fill:#f9f9f9,stroke:#666,stroke-width:2px,color:#000000
+    class View,VM,M layer
