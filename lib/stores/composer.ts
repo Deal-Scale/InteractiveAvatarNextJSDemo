@@ -8,6 +8,7 @@ export type ComposerAsset = {
 	mimeType?: string;
 	kind?: "asset" | "tool" | "knowledge" | "agent";
 	description?: string;
+	conversationStarters?: string[];
 };
 
 export type ComposerState = {
@@ -26,10 +27,12 @@ export const useComposerStore = create<ComposerState>((set) => ({
 	pendingResourceMatches: [],
 	addAssetAttachment: (a) =>
 		set((s) => {
-			// de-duplicate by id
-			if (s.assetAttachments.some((x) => x.id === a.id)) {
-				console.debug("[composer] duplicate asset ignored", a);
-				return s;
+			const existingIndex = s.assetAttachments.findIndex((x) => x.id === a.id);
+			if (existingIndex >= 0) {
+				const next = [...s.assetAttachments];
+				next[existingIndex] = { ...next[existingIndex], ...a };
+				console.debug("[composer] update", { id: a.id, updated: a });
+				return { assetAttachments: next };
 			}
 			const next = [...s.assetAttachments, a];
 			console.debug("[composer] add", { count: next.length, added: a });

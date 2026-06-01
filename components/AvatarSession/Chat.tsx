@@ -16,8 +16,10 @@ import {
 } from "@/components/ui/chat-container";
 import { useToast } from "@/components/ui/toaster";
 import { getProvider } from "@/lib/chat/registry";
+import { useAgentStore } from "@/lib/stores/agent";
 import { useChatProviderStore } from "@/lib/stores/chatProvider";
 import { useComposerStore } from "@/lib/stores/composer";
+import { resolveConversationStarters } from "@/lib/agent-conversation-starters";
 import { useSessionStore } from "@/lib/stores/session";
 import type { MessageAsset, Message as MessageType } from "@/lib/types";
 import { MessageSender } from "@/lib/types";
@@ -73,6 +75,8 @@ export const Chat: React.FC<ChatProps> = ({
 	} = useStreamingAvatarContext();
 	const { repeatMessage: apiRepeatMessage } = useTextChat();
 	const chatMode = useSessionStore((s) => s.chatMode);
+	const sessionAgent = useSessionStore((s) => s.agentSettings);
+	const currentAgent = useAgentStore((s) => s.currentAgent);
 
 	const composerAttachments = useComposerStore((s) => s.assetAttachments);
 	const clearComposerAttachments = useComposerStore(
@@ -87,15 +91,19 @@ export const Chat: React.FC<ChatProps> = ({
 	const { voteState, setVote } = useVotes();
 	const composerRef = useRef<ChatInputHandle | null>(null);
 	const { navigateHistory, resetHistory } = useMessageHistory(messages);
-	const promptSuggestions = useMemo(
-		() => [
+	const promptSuggestions = useMemo(() => {
+		const selectedAgent = currentAgent ?? sessionAgent ?? null;
+		if (selectedAgent) {
+			const starters = resolveConversationStarters(selectedAgent);
+			if (starters.length > 0) return starters;
+		}
+		return [
 			"What can you do?",
 			"Summarize the last reply",
 			"Explain step by step",
 			"Give me an example",
-		],
-		[],
-	);
+		];
+	}, [currentAgent, sessionAgent]);
 
 	// Base messages and demos
 	const baseMessages = useMemo(

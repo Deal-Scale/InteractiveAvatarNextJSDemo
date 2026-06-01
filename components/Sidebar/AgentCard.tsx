@@ -20,6 +20,7 @@ export type Agent = Partial<AgentConfig> & {
 	sessionType?: "text" | "voice" | "video" | "all";
 	interactionModes?: Array<"text" | "voice" | "video">;
 	promptStarter?: string;
+	conversationStarters?: string[];
 	isOwnedByUser?: boolean;
 };
 
@@ -67,9 +68,11 @@ export default function AgentCard(props: {
 		abilities = [],
 		modalities = [],
 		promptStarter,
+		conversationStarters = [],
 		isOwnedByUser,
 	} = agent;
 	const visibleAbilities = abilities.slice(0, visibleAbilityCount);
+	const visibleStarters = conversationStarters.slice(0, 3);
 
 	return (
 		<div
@@ -259,6 +262,19 @@ export default function AgentCard(props: {
 								title={promptStarter}
 							>
 								{promptStarter}
+							</div>
+						)}
+						{visibleStarters.length > 0 && (
+							<div className="flex flex-wrap gap-1">
+								{visibleStarters.map((starter) => (
+									<div
+										key={starter}
+										className="truncate rounded border border-border/30 bg-muted/40 px-1.5 py-0.5 text-[0.58rem] text-muted-foreground"
+										title={starter}
+									>
+										{starter}
+									</div>
+								))}
 							</div>
 						)}
 					</div>

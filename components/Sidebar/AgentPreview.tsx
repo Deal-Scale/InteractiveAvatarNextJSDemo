@@ -13,6 +13,7 @@ export default function AgentPreview(props: { agent: Agent }) {
 		abilities = [],
 		modalities = [],
 		promptStarter,
+		conversationStarters = [],
 	} = agent;
 
 	return (
@@ -61,6 +62,24 @@ export default function AgentPreview(props: { agent: Agent }) {
 					{promptStarter && (
 						<div className="mt-2 rounded-md bg-muted px-2 py-1 text-xs text-muted-foreground">
 							{promptStarter}
+						</div>
+					)}
+					{conversationStarters.length > 0 && (
+						<div className="mt-2 space-y-1">
+							<div className="text-[0.7rem] font-medium uppercase tracking-wide text-muted-foreground">
+								Conversation starters
+							</div>
+							<div className="flex flex-wrap gap-1">
+								{conversationStarters.slice(0, 3).map((starter) => (
+									<div
+										key={starter}
+										className="max-w-full rounded border border-border bg-background px-2 py-1 text-xs text-muted-foreground"
+										title={starter}
+									>
+										{starter}
+									</div>
+								))}
+							</div>
 						</div>
 					)}
 					{tags && tags.length > 0 && (

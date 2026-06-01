@@ -30,6 +30,7 @@ import { useAgentStore } from "@/lib/stores/agent";
 import { useAssetsStore } from "@/lib/stores/assets";
 import type { ComposerAsset } from "@/lib/stores/composer";
 import { useComposerStore } from "@/lib/stores/composer";
+import { resolveConversationStarters } from "@/lib/agent-conversation-starters";
 import {
 	type ChatMode,
 	type KnowledgeFolder,
@@ -37,6 +38,12 @@ import {
 } from "@/lib/stores/session";
 import { getTextareaAnchorRect } from "@/lib/utils/caret";
 import type { Command } from "@/types/commands";
+import {
+	Tooltip,
+	TooltipContent,
+	TooltipProvider,
+	TooltipTrigger,
+} from "@/components/ui/tooltip";
 
 function buildKbCommands(
 	folders: KnowledgeFolder[],
@@ -220,6 +227,7 @@ export const ChatInput = forwardRef<ChatInputHandle, ChatInputProps>(
 		}, [initialValue]);
 
 		const addAssetAttachment = useComposerStore((s) => s.addAssetAttachment);
+		const currentAgent = useAgentStore((s) => s.currentAgent);
 		const pendingResourceMatches = useComposerStore(
 			(s) => s.pendingResourceMatches,
 		);
@@ -237,6 +245,7 @@ export const ChatInput = forwardRef<ChatInputHandle, ChatInputProps>(
 			createdKnowledgeItems,
 			openChatSettings,
 		} = useSessionStore();
+		const selectedAgent = currentAgent ?? agentSettings ?? null;
 
 		const agents = useMemo(() => {
 			const base = [
@@ -247,6 +256,11 @@ export const ChatInput = forwardRef<ChatInputHandle, ChatInputProps>(
 					description:
 						"Qualifies leads, drafts outreach, and coordinates follow-up tasks through MCP actions.",
 					icon: "🤖",
+					conversationStarters: [
+						"Find warm leads and draft a short follow-up sequence.",
+						"Summarize the best next step for this prospect.",
+						"Create a concise follow-up message for this lead.",
+					],
 				},
 				{
 					id: "agent-2",
@@ -255,6 +269,11 @@ export const ChatInput = forwardRef<ChatInputHandle, ChatInputProps>(
 					description:
 						"Answers product questions, searches knowledge bases, and escalates unresolved issues.",
 					icon: "💬",
+					conversationStarters: [
+						"Summarize this customer issue and suggest the next support step.",
+						"Draft a clear response and mention any follow-up needed.",
+						"Turn this into a short support ticket summary.",
+					],
 				},
 				{
 					id: "agent-3",
@@ -263,23 +282,39 @@ export const ChatInput = forwardRef<ChatInputHandle, ChatInputProps>(
 					description:
 						"Reviews messages, extracts structured insights, and turns findings into dashboard-ready notes.",
 					icon: "📊",
+					conversationStarters: [
+						"Analyze the latest chat and create a dashboard insight.",
+						"Turn this thread into action items and key takeaways.",
+						"Extract the most important metrics from this conversation.",
+					],
 				},
 			];
 
-			if (agentSettings?.id) {
-				return [
-					{
-						id: agentSettings.id,
-						name: agentSettings.name || "Configured Agent",
-						role: "Configured",
-						description:
-							"Current saved agent configuration with the selected avatar, voice, knowledge base, and MCP settings.",
-						icon: "⚙️",
-					},
-					...base,
-				];
-			}
-			return base;
+			const configured = agentSettings?.id
+				? [
+						{
+							id: agentSettings.id,
+							name: agentSettings.name || "Configured Agent",
+							role: "Configured",
+							description:
+								"Current saved agent configuration with the selected avatar, voice, knowledge base, and MCP settings.",
+							icon: "⚙️",
+							conversationStarters: agentSettings.conversationStarters?.length
+								? agentSettings.conversationStarters.slice(0, 3)
+								: agentSettings.promptStarter
+									? [agentSettings.promptStarter]
+									: ["Start from my current agent settings."],
+						},
+					]
+				: [];
+
+			const merged = [...configured, ...base];
+			const seen = new Set<string>();
+			return merged.filter((agent) => {
+				if (seen.has(agent.id)) return false;
+				seen.add(agent.id);
+				return true;
+			});
 		}, [agentSettings]);
 
 		const allCommands = useMemo(() => {
@@ -320,6 +355,7 @@ export const ChatInput = forwardRef<ChatInputHandle, ChatInputProps>(
 					description: a.role || "Agent",
 					action: () => {
 						useAgentStore.getState().setAgent(a as any);
+						useSessionStore.getState().setAgentSettings(a as any);
 						addAssetAttachment({
 							id: a.id.startsWith("agent-") ? a.id : `agent-${a.id}`,
 							name: a.name,
@@ -327,6 +363,7 @@ export const ChatInput = forwardRef<ChatInputHandle, ChatInputProps>(
 							mimeType: "application/x-agent",
 							description: a.description || a.role || "Agent",
 							thumbnailUrl: (a as { avatarUrl?: string }).avatarUrl,
+							conversationStarters: resolveConversationStarters(a as any),
 						});
 					},
 				})),
@@ -1211,6 +1248,18 @@ export const ChatInput = forwardRef<ChatInputHandle, ChatInputProps>(
 							: null}
 						{RightActions}
 					</div>
+					{selectedAgent ? (
+						<div className="flex flex-col gap-1 px-2 pt-2">
+							<div className="inline-flex items-center gap-2">
+								<span className="rounded-full border border-violet-400/30 bg-violet-500/10 px-2 py-1 text-xs font-medium text-violet-700 dark:text-violet-300">
+									Selected agent
+								</span>
+								<span className="max-w-[220px] truncate rounded-full border border-border bg-background px-2 py-1 text-xs text-foreground">
+									{selectedAgent.name || "Agent"}
+								</span>
+							</div>
+						</div>
+					) : null}
 					{/* FileUpload handles file selection and drag/drop */}
 					{(attachments.length > 0 ||
 						composerAttachments.length > 0 ||
@@ -1269,21 +1318,23 @@ export const ChatInput = forwardRef<ChatInputHandle, ChatInputProps>(
 							{composerAttachments.map((a) => (
 								<div
 									key={`asset-${a.id}`}
-									className="bg-secondary text-secondary-foreground border border-border px-2 py-1 rounded-full text-xs inline-flex items-center gap-1"
+									className="bg-secondary text-secondary-foreground border border-border px-2 py-1 rounded-full text-xs inline-flex flex-col gap-1"
 									title={a.description || a.url || a.name}
 								>
-									<span className="rounded bg-muted px-1 uppercase text-[0.56rem] leading-4 text-muted-foreground">
-										{a.kind ?? "asset"}
-									</span>
-									<span className="max-w-[200px] truncate">{a.name}</span>
-									<button
-										aria-label={`Remove ${a.name}`}
-										className="hover:text-destructive"
-										type="button"
-										onClick={() => removeComposerAttachment(a.id)}
-									>
-										<X className="h-3 w-3" />
-									</button>
+									<div className="inline-flex items-center gap-1">
+										<span className="rounded bg-muted px-1 uppercase text-[0.56rem] leading-4 text-muted-foreground">
+											{a.kind ?? "asset"}
+										</span>
+										<span className="max-w-[200px] truncate">{a.name}</span>
+										<button
+											aria-label={`Remove ${a.name}`}
+											className="hover:text-destructive"
+											type="button"
+											onClick={() => removeComposerAttachment(a.id)}
+										>
+											<X className="h-3 w-3" />
+										</button>
+									</div>
 								</div>
 							))}
 							{attachments.map((file, idx) => (

@@ -9,6 +9,8 @@ import { z } from "zod";
 export const AgentConfigSchema = z.object({
 	id: z.string().min(1), // agent ID
 	name: z.string().min(1), // display name
+	promptStarter: z.string().optional(),
+	conversationStarters: z.array(z.string()).optional(),
 	avatarId: z.string().optional(), // avatar asset, required only for video modes at session start
 	voiceId: z.string().optional(), // default voice
 	videoVoiceId: z.string().optional(), // video session voice

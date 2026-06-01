@@ -22,6 +22,7 @@ export default function AgentsSection(props: {
 	onDelete?: (id: string) => void;
 	onEdit?: (agent: Agent) => void;
 	onAdd?: () => void;
+	onStartPreview?: (agent: Agent) => void;
 }) {
 	const {
 		agents,
@@ -31,6 +32,7 @@ export default function AgentsSection(props: {
 		onDelete,
 		onEdit,
 		onAdd,
+		onStartPreview,
 	} = props;
 
 	const starredAgentIds = useAgentStore((s) => s.starredAgentIds || []);
@@ -49,6 +51,7 @@ export default function AgentsSection(props: {
 				modalities: (a as any).modalities,
 				sessionType: (a as any).sessionType,
 				promptStarter: (a as any).promptStarter,
+				conversationStarters: (a as any).conversationStarters,
 				isOwnedByUser: (a as any).isOwnedByUser,
 				avatarId: (a as any).avatarId,
 				voiceId: (a as any).voiceId,
@@ -100,6 +103,9 @@ export default function AgentsSection(props: {
 				a.role?.toLowerCase().includes(q) ||
 				a.description?.toLowerCase().includes(q) ||
 				a.promptStarter?.toLowerCase().includes(q) ||
+				(a.conversationStarters || []).some((starter) =>
+					starter.toLowerCase().includes(q),
+				) ||
 				(a.abilities || []).some((ability) =>
 					ability.toLowerCase().includes(q),
 				) ||
@@ -319,6 +325,10 @@ export default function AgentsSection(props: {
 						open={open}
 						onOpenChange={(o) => setOpen(o)}
 						onRequestEdit={() => setMode("edit")}
+						onStartPreview={(agent) => {
+							onStartPreview?.(agent);
+							setOpen(false);
+						}}
 						onSave={(updated) => {
 							onEdit?.(updated);
 						}}

@@ -2,7 +2,7 @@
 
 import { Bookmark, Plus as PlusIcon } from "lucide-react";
 import { useRouter } from "next/navigation";
-import React, { useMemo, useRef } from "react";
+import React, { useCallback, useMemo, useRef } from "react";
 import AddKnowledgeBaseModal from "@/components/KnowledgeBase/AddKnowledgeBaseModal";
 import ActiveSessionsSection from "@/components/Sidebar/ActiveSessionsSection";
 import AgentsSection from "@/components/Sidebar/AgentsSection";
@@ -50,12 +50,18 @@ const SKELETON_IDS = ["s1", "s2", "s3", "s4", "s5", "s6"] as const;
 const Sidebar: React.FC<SidebarProps> = ({ onSelect, apps }) => {
 	const router = useRouter();
 	const { agentSettings } = useSessionStore();
+	const setAgentSettings = useSessionStore((s) => s.setAgentSettings);
 	const currentSessionId = useSessionStore((s) => s.currentSessionId);
 	const chatExperience = useSessionStore((s) => s.chatExperience);
 	const messages = useSessionStore((s) => s.messages);
 	const openConfigModal = useSessionStore((s) => s.openConfigModal);
 	const openChatSettings = useSessionStore((s) => s.openChatSettings);
 	const { currentAgent, updateAgent, toggleStarredAgent } = useAgentStore();
+
+	const handleStartPreview = useCallback((agent: any) => {
+		useAgentStore.getState().setAgent(agent as any);
+		useSessionStore.getState().setAgentSettings(agent as any);
+	}, []);
 	const { globalSettings, setGlobalSettings, clearGlobalSettings } =
 		useSettingsStore();
 	const [starterScale, setStarterScale] = React.useState<number>(1);
@@ -84,6 +90,11 @@ const Sidebar: React.FC<SidebarProps> = ({ onSelect, apps }) => {
 				abilities: ["crm.search", "mail.send", "task.plan"],
 				modalities: ["chat", "voice", "video"],
 				promptStarter: "Find warm leads and draft a short follow-up sequence.",
+				conversationStarters: [
+					"Find warm leads and draft a short follow-up sequence.",
+					"Summarize the best next step for this prospect.",
+					"Create a concise follow-up message for this lead.",
+				],
 				isOwnedByUser: true,
 			},
 			{
@@ -96,6 +107,11 @@ const Sidebar: React.FC<SidebarProps> = ({ onSelect, apps }) => {
 				modalities: ["chat", "voice"],
 				promptStarter:
 					"Summarize this customer issue and suggest the next support step.",
+				conversationStarters: [
+					"Summarize this customer issue and suggest the next support step.",
+					"Draft a clear response and mention any follow-up needed.",
+					"Turn this into a short support ticket summary.",
+				],
 				isOwnedByUser: false,
 			},
 			{
@@ -108,28 +124,42 @@ const Sidebar: React.FC<SidebarProps> = ({ onSelect, apps }) => {
 				modalities: ["chat"],
 				promptStarter:
 					"Analyze the latest chat and create a dashboard insight.",
+				conversationStarters: [
+					"Analyze the latest chat and create a dashboard insight.",
+					"Turn this thread into action items and key takeaways.",
+					"Extract the most important metrics from this conversation.",
+				],
 				isOwnedByUser: false,
 			},
 		];
 
-		if (agentSettings?.id) {
-			return [
-				{
-					id: agentSettings.id,
-					name: agentSettings.name || "Configured Agent",
-					role: "Configured",
-					description:
-						"Current saved agent configuration with the selected avatar, voice, knowledge base, and MCP settings.",
-					abilities: ["session.start", "kb.use", "mcp.tools"],
-					modalities: ["chat", "voice", "video"],
-					promptStarter: "Start from my current agent settings.",
-					isOwnedByUser: true,
-				},
-				...base,
-			];
-		}
-
-		return base;
+		const configured = agentSettings?.id
+			? [
+					{
+						id: agentSettings.id,
+						name: agentSettings.name || "Configured Agent",
+						role: "Configured",
+						description:
+							"Current saved agent configuration with the selected avatar, voice, knowledge base, and MCP settings.",
+						abilities: ["session.start", "kb.use", "mcp.tools"],
+						modalities: ["chat", "voice", "video"],
+						promptStarter: "Start from my current agent settings.",
+						conversationStarters: agentSettings.conversationStarters?.length
+							? agentSettings.conversationStarters.slice(0, 3)
+							: agentSettings.promptStarter
+								? [agentSettings.promptStarter]
+								: ["Start from my current agent settings."],
+						isOwnedByUser: true,
+					},
+				]
+			: [];
+		const merged = [...configured, ...base];
+		const seen = new Set<string>();
+		return merged.filter((agent) => {
+			if (seen.has(agent.id)) return false;
+			seen.add(agent.id);
+			return true;
+		});
 	}, [agentSettings]);
 	const openBookmarkModal = bookmark.openBookmarkModal;
 	const addAssetAttachment = useComposerStore((s) => s.addAssetAttachment);
@@ -583,7 +613,9 @@ const Sidebar: React.FC<SidebarProps> = ({ onSelect, apps }) => {
 							onFavorite={(id) => toggleStarredAgent(id)}
 							onEdit={(a) => {
 								updateAgent(a);
+								setAgentSettings(a as any);
 							}}
+							onStartPreview={handleStartPreview}
 						/>
 					</div>
 
