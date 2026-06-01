@@ -3,6 +3,7 @@
 import { ChevronDown } from "lucide-react";
 import type React from "react";
 import { memo, useState } from "react";
+import { useVirtualizer } from "@tanstack/react-virtual";
 import { Button } from "@/components/ui/button";
 import {
 	Collapsible,
@@ -19,6 +20,7 @@ import { exampleReasoning } from "./_mock_data/example-reasoning";
 interface MessageListProps {
 	messages: MessageType[];
 	exampleMessages?: MessageType[];
+	parentRef: React.RefObject<HTMLDivElement | null>;
 	isAvatarTalking: boolean;
 	lastCopiedId: string | null;
 	voteState: Record<string, "up" | "down" | null>;
@@ -34,6 +36,7 @@ interface MessageListProps {
 function MessageListImpl({
 	messages,
 	exampleMessages = [],
+	parentRef,
 	isAvatarTalking,
 	lastCopiedId,
 	voteState,
@@ -47,46 +50,72 @@ function MessageListImpl({
 }: MessageListProps) {
 	const [examplesOpen, setExamplesOpen] = useState(false);
 	const hasExamples = exampleMessages.length > 0;
+	const messageCount = messages.length;
+	const virtualizer = useVirtualizer({
+		count: messageCount,
+		getScrollElement: () => parentRef.current,
+		estimateSize: () => 140,
+		overscan: 6,
+	});
+	const virtualItems = virtualizer.getVirtualItems();
 
 	return (
-		<>
-			{messages.map((message) => (
-				<div key={message.id} className="w-full">
-					<MessageItem
-						handleCopy={handleCopy}
-						handleEditToInput={handleEditToInput}
-						onBranch={onBranch}
-						onRetry={(mid) => onRetry(mid)}
-						onCompare={(content, mid) => onCompare(content, mid)}
-						isStreaming={
-							isAvatarTalking && message.sender === MessageSender.AVATAR
-						}
-						lastCopiedId={lastCopiedId}
-						message={message}
-						avatarMarkdownShowHeader={showMarkdownHeaderInBubbles}
-						reasoning={
-							message.reasoning ??
-							(message.id === exampleReasoning.message.id
-								? exampleReasoning.reasoning
-								: undefined)
-						}
-						reasoningMarkdown={
-							message.reasoningMarkdown ??
-							(message.id === exampleReasoning.message.id
-								? exampleReasoning.reasoningMarkdown
-								: undefined)
-						}
-						reasoningOpen={
-							message.reasoningOpen ??
-							message.id === exampleReasoning.message.id
-						}
-						setVote={setVote}
-						streamMode="typewriter"
-						streamSpeed={28}
-						voteState={voteState}
-					/>
-				</div>
-			))}
+		<div className="w-full">
+			<div
+				className="relative w-full"
+				style={{ height: `${virtualizer.getTotalSize()}px` }}
+			>
+				{virtualItems.map((virtualRow) => {
+					const message = messages[virtualRow.index];
+					if (!message) return null;
+
+					return (
+						<div
+							key={message.id}
+							ref={virtualizer.measureElement}
+							data-index={virtualRow.index}
+							className="absolute left-0 top-0 w-full"
+							style={{
+								transform: `translateY(${virtualRow.start}px)`,
+							}}
+						>
+							<MessageItem
+								handleCopy={handleCopy}
+								handleEditToInput={handleEditToInput}
+								onBranch={onBranch}
+								onRetry={(mid) => onRetry(mid)}
+								onCompare={(content, mid) => onCompare(content, mid)}
+								isStreaming={
+									isAvatarTalking && message.sender === MessageSender.AVATAR
+								}
+								isCopied={lastCopiedId === message.id}
+								message={message}
+								avatarMarkdownShowHeader={showMarkdownHeaderInBubbles}
+								reasoning={
+									message.reasoning ??
+									(message.id === exampleReasoning.message.id
+										? exampleReasoning.reasoning
+										: undefined)
+								}
+								reasoningMarkdown={
+									message.reasoningMarkdown ??
+									(message.id === exampleReasoning.message.id
+										? exampleReasoning.reasoningMarkdown
+										: undefined)
+								}
+								reasoningOpen={
+									message.reasoningOpen ??
+									message.id === exampleReasoning.message.id
+								}
+								setVote={setVote}
+								streamMode="typewriter"
+								streamSpeed={28}
+								voteState={voteState}
+							/>
+						</div>
+					);
+				})}
+			</div>
 			{hasExamples && (
 				<div className="mt-6 w-full">
 					<Collapsible
@@ -125,7 +154,7 @@ function MessageListImpl({
 										onRetry={(mid) => onRetry(mid)}
 										onCompare={(content, mid) => onCompare(content, mid)}
 										isStreaming={false}
-										lastCopiedId={lastCopiedId}
+										isCopied={lastCopiedId === message.id}
 										message={message}
 										avatarMarkdownShowHeader={showMarkdownHeaderInBubbles}
 										reasoning={
@@ -168,7 +197,7 @@ function MessageListImpl({
 					</div>
 				</Message>
 			)}
-		</>
+		</div>
 	);
 }
 

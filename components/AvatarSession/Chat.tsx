@@ -262,6 +262,7 @@ export const Chat: React.FC<ChatProps> = ({
 						<MessageList
 							messages={chatMessages}
 							exampleMessages={exampleMessages}
+							parentRef={scrollRef}
 							isAvatarTalking={isAvatarTalking}
 							lastCopiedId={lastCopiedId}
 							voteState={voteState}
