@@ -29,6 +29,7 @@ export default function AiTaskModal({
 	const { setAiPending, runAi } = useTaskStore();
 	const costType = task?.costType ?? (task?.mcpWorkflow ? "ai" : undefined);
 	const costAmount = Math.max(1, task?.costAmount ?? 1);
+	const workflow = task?.mcpWorkflow;
 	const remaining = useUserStore((s) => {
 		if (!costType) return 0;
 		if (costType === "ai") {
@@ -53,6 +54,14 @@ export default function AiTaskModal({
 	const [leadId, setLeadId] = useState("");
 	const [emailTone, setEmailTone] = useState("");
 	const [appointmentDate, setAppointmentDate] = useState("");
+	const referencedTools = useMemo(
+		() => workflow?.functions ?? [],
+		[workflow?.functions],
+	);
+	const referencedResources = useMemo(
+		() => workflow?.resources ?? [],
+		[workflow?.resources],
+	);
 
 	const required = useMemo(() => {
 		// Minimal required params demo. In real usage, derive from workflow definition.
@@ -84,6 +93,26 @@ export default function AiTaskModal({
 				</DialogHeader>
 
 				<div className="grid gap-4 py-4">
+					{(referencedTools.length > 0 || referencedResources.length > 0) && (
+						<div className="rounded-md border bg-muted/30 px-3 py-2 text-xs text-muted-foreground">
+							<div className="mb-1 font-semibold text-foreground">
+								Referenced MCP items
+							</div>
+							{referencedTools.length > 0 && (
+								<div className="mb-1">
+									Tools: {referencedTools.map((fn) => fn.name).join(", ")}
+								</div>
+							)}
+							{referencedResources.length > 0 && (
+								<div>
+									Resources:{" "}
+									{referencedResources
+										.map((resource) => resource.uri)
+										.join(", ")}
+								</div>
+							)}
+						</div>
+					)}
 					{costType && (
 						<div className="rounded-md border bg-muted/40 px-3 py-2 text-muted-foreground text-xs">
 							Cost: {costAmount} {costLabel}{" "}

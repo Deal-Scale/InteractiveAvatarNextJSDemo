@@ -14,6 +14,9 @@ The chat can execute these app capabilities:
 | `add_chat_resource` | Adds a matched resource to the chat composer. |
 | `reference_chat_resource` | References a matched resource in the chat composer. |
 
+Task execution also supports MCP references while a task is running, including clear matches from the app catalog. See [task-mcp-runtime-capabilities.md](task-mcp-runtime-capabilities.md) for the task-side reference rules.
+That runtime also tracks connected local tools such as GitHub, Notion, and Google Drive through the shared tool registry, so task execution only calls connectors that are actually connected.
+
 There are two ways to trigger them:
 
 1. Direct slash commands typed by you.

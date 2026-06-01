@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { SidebarGroup, SidebarGroupLabel } from "@/components/ui/sidebar";
 import { setChatDragData } from "@/lib/chat-drag";
+import { useSessionStore } from "@/lib/stores/session";
 
 const PAGE_SIZE = 3;
 type ToolCategoryFilter = "all" | "oauth" | "apiKey";
@@ -18,6 +19,7 @@ export default function ToolsSection(props: {
 	onOpenTools?: (connectorKey?: string) => void;
 }) {
 	const { collapsedTools, setCollapsedTools, onOpenTools } = props;
+	const toolConnections = useSessionStore((s) => s.toolConnections);
 	const [query, setQuery] = useState("");
 	const [page, setPage] = useState(1);
 	const [category, setCategory] = useState<ToolCategoryFilter>("all");
@@ -129,6 +131,15 @@ export default function ToolsSection(props: {
 										</div>
 									</div>
 									<div className="flex shrink-0 flex-col items-end gap-1">
+										{toolConnections[connector.key] ? (
+											<span className="rounded border border-emerald-500/40 bg-emerald-500/10 px-1.5 py-0.5 text-[0.62rem] uppercase leading-none text-emerald-700 dark:text-emerald-300">
+												Connected
+											</span>
+										) : (
+											<span className="rounded border border-border bg-card px-1.5 py-0.5 text-[0.62rem] uppercase leading-none text-muted-foreground">
+												Offline
+											</span>
+										)}
 										<span className="rounded border border-border bg-card px-1.5 py-0.5 text-[0.62rem] uppercase leading-none text-muted-foreground">
 											{connector.auth.type === "oauth" ? "OAuth" : "Key"}
 										</span>

@@ -312,9 +312,12 @@ export function stripAppCapabilityBlocks(content: string) {
 	return stripped.trim();
 }
 
-type ChatResource = ComposerAsset & {
+export type ChatResource = ComposerAsset & {
 	kind: ChatResourceType;
 	searchText: string;
+	toolName?: string;
+	isConnected?: boolean;
+	connectionName?: string;
 };
 
 const DEFAULT_AGENT_RESOURCES: ChatResource[] = [
@@ -455,10 +458,14 @@ function buildAssetResources(): ChatResource[] {
 }
 
 function buildToolResources(): ChatResource[] {
+	const toolConnections = useSessionStore.getState().toolConnections;
 	return KB_CONNECTORS.map((connector) => ({
 		id: `tool-${connector.key}`,
 		name: connector.name,
 		kind: "tool" as const,
+		toolName: connector.key,
+		isConnected: Boolean(toolConnections[connector.key]),
+		connectionName: toolConnections[connector.key]?.name,
 		mimeType: "application/x-tool",
 		description: connector.description,
 		searchText: normalizeSearchText(
@@ -467,7 +474,9 @@ function buildToolResources(): ChatResource[] {
 	}));
 }
 
-function getChatResourceCatalog(resourceType?: ChatResourceType | "all") {
+export function getChatResourceCatalog(
+	resourceType?: ChatResourceType | "all",
+) {
 	const resources = [
 		...buildAssetResources(),
 		...buildKnowledgeResources(),
@@ -531,7 +540,7 @@ function scoreResource(
 	return matches.length > 0 ? matches.length * 10 : 0;
 }
 
-function searchChatResources(args?: Record<string, unknown>) {
+export function searchChatResources(args?: Record<string, unknown>) {
 	const resourceType = getRequestedResourceType(args);
 	const query = normalizeSearchText(args?.query ?? args?.name ?? args?.id);
 	const limit =

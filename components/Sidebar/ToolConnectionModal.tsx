@@ -16,15 +16,10 @@ import {
 	DialogTitle,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
+import { useSessionStore } from "@/lib/stores/session";
 
 const PAGE_SIZE = 6;
 type ToolCategoryFilter = "all" | "oauth" | "apiKey";
-
-type ConnectedTool = {
-	id: string;
-	name: string;
-	connectedAt: number;
-};
 
 export default function ToolConnectionModal(props: {
 	open: boolean;
@@ -62,9 +57,9 @@ export default function ToolConnectionModal(props: {
 	const [testing, setTesting] = useState(false);
 	const [connecting, setConnecting] = useState(false);
 	const [status, setStatus] = useState<string | null>(null);
-	const [connectedTools, setConnectedTools] = useState<
-		Record<string, ConnectedTool | undefined>
-	>({});
+	const toolConnections = useSessionStore((s) => s.toolConnections);
+	const setToolConnection = useSessionStore((s) => s.setToolConnection);
+	const removeToolConnection = useSessionStore((s) => s.removeToolConnection);
 
 	const filteredTools = useMemo(() => {
 		const needle = query.trim().toLowerCase();
@@ -101,7 +96,7 @@ export default function ToolConnectionModal(props: {
 		[selectedConnector],
 	);
 	const selectedConnection = selectedConnector
-		? connectedTools[selectedConnector]
+		? toolConnections[selectedConnector]
 		: undefined;
 
 	useEffect(() => {
@@ -144,14 +139,13 @@ export default function ToolConnectionModal(props: {
 					id: `tool_${Date.now()}`,
 					name: selectedMeta?.name ?? "Connected tool",
 				}));
-			setConnectedTools((prev) => ({
-				...prev,
-				[selectedConnector]: {
-					id: result.id,
-					name: result.name,
-					connectedAt: Date.now(),
-				},
-			}));
+			setToolConnection(selectedConnector, {
+				id: result.id,
+				name: result.name,
+				connectedAt: Date.now(),
+				authType: selectedMeta?.auth.type ?? "apiKey",
+				config,
+			});
 			setStatus(`Connected ${result.name}`);
 		} finally {
 			setConnecting(false);
@@ -160,11 +154,7 @@ export default function ToolConnectionModal(props: {
 
 	function handleDisconnect() {
 		if (!selectedConnector || !selectedMeta) return;
-		setConnectedTools((prev) => {
-			const next = { ...prev };
-			delete next[selectedConnector];
-			return next;
-		});
+		removeToolConnection(selectedConnector);
 		setConfig({});
 		setStatus(`Disconnected ${selectedMeta.name}`);
 	}
@@ -191,14 +181,13 @@ export default function ToolConnectionModal(props: {
 					id: `tool_${Date.now()}`,
 					name: connector.name,
 				}));
-			setConnectedTools((prev) => ({
-				...prev,
-				[connector.key]: {
-					id: connected.id,
-					name: connected.name,
-					connectedAt: Date.now(),
-				},
-			}));
+			setToolConnection(connector.key, {
+				id: connected.id,
+				name: connected.name,
+				connectedAt: Date.now(),
+				authType: connector.auth.type,
+				config: { oauth: "true", code: result.code ?? "demo_code" },
+			});
 			setStatus(`Connected ${connected.name}`);
 		} finally {
 			setConnecting(false);
@@ -249,7 +238,7 @@ export default function ToolConnectionModal(props: {
 
 					<div className="grid gap-2 sm:grid-cols-2">
 						{visibleTools.map((connector) => {
-							const connection = connectedTools[connector.key];
+							const connection = toolConnections[connector.key];
 
 							return (
 								<button
