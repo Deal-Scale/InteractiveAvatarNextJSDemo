@@ -1,10 +1,23 @@
+import { KB_CONNECTORS } from "@/components/KnowledgeBase/connectors";
 import { useTaskStore } from "@/components/kanban/utils/store";
+import { buildKnowledgeTree, flattenKnowledgeTree } from "@/lib/knowledge-tree";
+import { useAgentStore } from "@/lib/stores/agent";
+import { useAssetsStore } from "@/lib/stores/assets";
+import type { ComposerAsset } from "@/lib/stores/composer";
+import { useComposerStore } from "@/lib/stores/composer";
+import { useSessionStore } from "@/lib/stores/session";
 import type { MessageToolPart } from "@/lib/types";
 import { switchWorkspaceView } from "@/lib/workspace-view";
 
 export type WorkspaceTab = "video" | "brain" | "data" | "actions";
+export type ChatResourceType = "asset" | "knowledge" | "agent" | "tool";
 
-export type AppCapabilityName = "switch_workspace_tab" | "create_kanban_task";
+export type AppCapabilityName =
+	| "switch_workspace_tab"
+	| "create_kanban_task"
+	| "search_chat_resources"
+	| "add_chat_resource"
+	| "reference_chat_resource";
 
 export type AppCapabilityAction = {
 	tool: AppCapabilityName;
@@ -15,6 +28,7 @@ export type AppCapabilityResult = {
 	tool: AppCapabilityName;
 	ok: boolean;
 	message: string;
+	data?: Record<string, unknown>;
 };
 
 const APP_ACTION_BLOCK_RE =
@@ -23,10 +37,16 @@ const FENCED_CODE_BLOCK_RE = /```([a-zA-Z_-]+)?\s*([\s\S]*?)```/g;
 
 export const APP_CAPABILITIES_SYSTEM_PROMPT = [
 	"App capabilities are available through structured app-action blocks.",
-	"When the user asks to switch workspace tabs, navigate Brain/Data/Actions, or create Kanban tasks, include a fenced app-action block and a short user-facing response.",
+	"When the user asks to switch workspace tabs, navigate Brain/Data/Actions, create Kanban tasks, search app resources, or add/reference resources in chat, include a fenced app-action block and a short user-facing response.",
 	"Use only these tools:",
 	'1. switch_workspace_tab: {"tool":"switch_workspace_tab","args":{"tab":"brain|data|actions|video"}}',
 	'2. create_kanban_task: {"tool":"create_kanban_task","args":{"title":"Task title","description":"Task details","dueDate":"YYYY-MM-DD","assignedToTeamMember":"optional","priority":"low|medium|high"}}',
+	'3. search_chat_resources: {"tool":"search_chat_resources","args":{"resourceType":"asset|knowledge|agent|tool|all","query":"search text","limit":5}}',
+	'4. add_chat_resource: {"tool":"add_chat_resource","args":{"resourceType":"asset|knowledge|agent|tool","id":"resource id"}}',
+	'5. reference_chat_resource: {"tool":"reference_chat_resource","args":{"resourceType":"asset|knowledge|agent|tool","query":"resource name"}}',
+	"Use search_chat_resources first when the user gives an ambiguous resource name.",
+	"When the user asks to search and attach or reference a resource, return a multi-action block that searches first and then attaches/references the matched resource.",
+	"Use add_chat_resource or reference_chat_resource directly when the requested resource is clear.",
 	"Multiple actions may be returned as a JSON array inside one app-action block.",
 ].join("\n");
 
@@ -41,6 +61,25 @@ function isWorkspaceTab(value: unknown): value is WorkspaceTab {
 
 function defaultDueDate() {
 	return new Date().toISOString().slice(0, 10);
+}
+
+function isAppCapabilityName(value: unknown): value is AppCapabilityName {
+	return (
+		value === "switch_workspace_tab" ||
+		value === "create_kanban_task" ||
+		value === "search_chat_resources" ||
+		value === "add_chat_resource" ||
+		value === "reference_chat_resource"
+	);
+}
+
+function isChatResourceType(value: unknown): value is ChatResourceType {
+	return (
+		value === "asset" ||
+		value === "knowledge" ||
+		value === "agent" ||
+		value === "tool"
+	);
 }
 
 function normalizeAction(value: unknown): AppCapabilityAction[] {
@@ -58,7 +97,7 @@ function normalizeAction(value: unknown): AppCapabilityAction[] {
 	};
 	const tool = candidate.tool ?? candidate.name;
 
-	if (tool !== "switch_workspace_tab" && tool !== "create_kanban_task") {
+	if (!isAppCapabilityName(tool)) {
 		return [];
 	}
 
@@ -87,6 +126,23 @@ function getActionKey(action: AppCapabilityAction) {
 
 	if (action.tool === "switch_workspace_tab") {
 		return `${action.tool}:${normalizeKeyText(action.args?.tab)}`;
+	}
+
+	if (
+		action.tool === "search_chat_resources" ||
+		action.tool === "add_chat_resource" ||
+		action.tool === "reference_chat_resource"
+	) {
+		const ids = Array.isArray(action.args?.ids)
+			? action.args.ids.map(normalizeKeyText).join(",")
+			: normalizeKeyText(action.args?.id);
+		return [
+			action.tool,
+			normalizeKeyText(
+				action.args?.resourceType ?? action.args?.type ?? action.args?.kind,
+			),
+			ids || normalizeKeyText(action.args?.query ?? action.args?.name),
+		].join(":");
 	}
 
 	return `${action.tool}:${JSON.stringify(action.args ?? {})}`;
@@ -256,6 +312,302 @@ export function stripAppCapabilityBlocks(content: string) {
 	return stripped.trim();
 }
 
+type ChatResource = ComposerAsset & {
+	kind: ChatResourceType;
+	searchText: string;
+};
+
+const DEFAULT_AGENT_RESOURCES: ChatResource[] = [
+	{
+		id: "agent-1",
+		name: "Sales Assistant",
+		kind: "agent",
+		mimeType: "application/x-agent",
+		description:
+			"Qualifies leads, drafts outreach, and coordinates follow-up tasks through MCP actions.",
+		searchText:
+			"sales assistant revenue qualifies leads drafts outreach follow up tasks",
+	},
+	{
+		id: "agent-2",
+		name: "Support Bot",
+		kind: "agent",
+		mimeType: "application/x-agent",
+		description:
+			"Answers product questions, searches knowledge bases, and escalates unresolved issues.",
+		searchText:
+			"support bot customer success product questions knowledge bases escalation",
+	},
+	{
+		id: "agent-3",
+		name: "Content Analyst",
+		kind: "agent",
+		mimeType: "application/x-agent",
+		description:
+			"Reviews messages, extracts structured insights, and turns findings into dashboard-ready notes.",
+		searchText:
+			"content analyst research messages structured insights dashboard notes",
+	},
+];
+
+function normalizeSearchText(value: unknown) {
+	return typeof value === "string"
+		? value.trim().toLowerCase().replace(/\s+/g, " ")
+		: "";
+}
+
+function uniqueResources(resources: ChatResource[]) {
+	const seen = new Set<string>();
+	const out: ChatResource[] = [];
+
+	for (const resource of resources) {
+		const key = `${resource.kind}:${resource.id}`;
+		if (seen.has(key)) continue;
+		seen.add(key);
+		out.push(resource);
+	}
+
+	return out;
+}
+
+function buildKnowledgeResources(): ChatResource[] {
+	const session = useSessionStore.getState();
+	const items = flattenKnowledgeTree(
+		buildKnowledgeTree(session.createdKnowledgeItems),
+	);
+	const folderResources = session.kbFolders.map((folder) => ({
+		id: folder.id.startsWith("kb-folder-")
+			? folder.id
+			: `kb-folder-${folder.id}`,
+		name: folder.name,
+		kind: "knowledge" as const,
+		mimeType: "application/x-knowledge-folder",
+		description: folder.parentId
+			? "Knowledge base subfolder"
+			: "Knowledge base folder",
+		searchText: normalizeSearchText(
+			`${folder.id} ${folder.name} knowledge base folder`,
+		),
+	}));
+	const itemResources = items.map((item) => ({
+		id: item.id.startsWith("kb-") ? item.id : `kb-${item.id}`,
+		name: item.name,
+		kind: "knowledge" as const,
+		mimeType: "application/x-knowledge",
+		description: "Knowledge base item",
+		searchText: normalizeSearchText(
+			`${item.id} ${item.name} knowledge base document item`,
+		),
+	}));
+
+	return uniqueResources([...folderResources, ...itemResources]);
+}
+
+function buildAgentResources(): ChatResource[] {
+	const agentStore = useAgentStore.getState();
+	const sessionAgent = useSessionStore.getState().agentSettings;
+	const configuredAgents = [
+		agentStore.currentAgent,
+		agentStore.lastStartedConfig,
+		sessionAgent,
+	].filter(Boolean);
+
+	const configuredResources = configuredAgents.map((agent) => ({
+		id: agent?.id?.startsWith("agent-") ? agent.id : `agent-${agent?.id}`,
+		name: agent?.name || "Configured Agent",
+		kind: "agent" as const,
+		mimeType: "application/x-agent",
+		thumbnailUrl: (agent as { avatarUrl?: string } | null)?.avatarUrl,
+		description:
+			agent?.systemPrompt ||
+			agent?.sessionType ||
+			"Configured agent with saved chat, voice, video, and MCP settings.",
+		searchText: normalizeSearchText(
+			[
+				agent?.id,
+				agent?.name,
+				agent?.sessionType,
+				agent?.model,
+				agent?.knowledgeBaseId,
+				agent?.systemPrompt,
+				...(agent?.mcpServers ?? []),
+				...(agent?.interactionModes ?? []),
+			].join(" "),
+		),
+	}));
+
+	return uniqueResources([...configuredResources, ...DEFAULT_AGENT_RESOURCES]);
+}
+
+function buildAssetResources(): ChatResource[] {
+	return useAssetsStore.getState().assets.map((asset) => ({
+		id: asset.id,
+		name: asset.name,
+		url: asset.url,
+		thumbnailUrl: asset.thumbnailUrl,
+		mimeType: asset.mimeType,
+		kind: "asset" as const,
+		description: asset.mimeType || "Asset",
+		searchText: normalizeSearchText(
+			`${asset.id} ${asset.name} ${asset.mimeType ?? ""} ${asset.url ?? ""}`,
+		),
+	}));
+}
+
+function buildToolResources(): ChatResource[] {
+	return KB_CONNECTORS.map((connector) => ({
+		id: `tool-${connector.key}`,
+		name: connector.name,
+		kind: "tool" as const,
+		mimeType: "application/x-tool",
+		description: connector.description,
+		searchText: normalizeSearchText(
+			`${connector.key} ${connector.name} ${connector.description} ${connector.auth.type}`,
+		),
+	}));
+}
+
+function getChatResourceCatalog(resourceType?: ChatResourceType | "all") {
+	const resources = [
+		...buildAssetResources(),
+		...buildKnowledgeResources(),
+		...buildAgentResources(),
+		...buildToolResources(),
+	];
+
+	if (!resourceType || resourceType === "all")
+		return uniqueResources(resources);
+	return uniqueResources(
+		resources.filter((resource) => resource.kind === resourceType),
+	);
+}
+
+function getRequestedResourceType(args?: Record<string, unknown>) {
+	const candidate = args?.resourceType ?? args?.type ?? args?.kind;
+	if (candidate === "all") return "all" as const;
+	return isChatResourceType(candidate) ? candidate : undefined;
+}
+
+function scoreResource(
+	resource: ChatResource,
+	query: string,
+	resourceType?: ChatResourceType | "all",
+) {
+	const needle = normalizeSearchText(query);
+	if (!needle) return 1;
+
+	const name = normalizeSearchText(resource.name);
+	const id = normalizeSearchText(resource.id);
+	const text = resource.searchText || normalizeSearchText(resource.description);
+	const terms = needle.split(" ").filter(Boolean);
+
+	if (resourceType === "asset" && terms.length > 1) {
+		if (id === needle || name === needle) return 200;
+		if (name.startsWith(needle) || id.startsWith(needle)) return 180;
+		const everyTermInName = terms.every((term) => name.includes(term));
+		const everyTermInId = terms.every((term) => id.includes(term));
+		if (everyTermInName || everyTermInId) return 160;
+		return 0;
+	}
+
+	if (id === needle || name === needle) return 200;
+	if (name.startsWith(needle) || id.startsWith(needle)) return 180;
+	if (terms.length > 1) {
+		const everyTermInName = terms.every((term) => name.includes(term));
+		const everyTermInId = terms.every((term) => id.includes(term));
+		if (everyTermInName || everyTermInId) return 160;
+	}
+	if (id.includes(needle)) return 80;
+	if (name.includes(needle)) return 70;
+	if (text.includes(needle)) return 40;
+
+	if (terms.length === 0) return 1;
+	const matches = terms.filter(
+		(term) => text.includes(term) || name.includes(term),
+	);
+	if (matches.length === terms.length && terms.length > 1) {
+		return 140;
+	}
+	return matches.length > 0 ? matches.length * 10 : 0;
+}
+
+function searchChatResources(args?: Record<string, unknown>) {
+	const resourceType = getRequestedResourceType(args);
+	const query = normalizeSearchText(args?.query ?? args?.name ?? args?.id);
+	const limit =
+		typeof args?.limit === "number" && Number.isFinite(args.limit)
+			? Math.min(Math.max(Math.floor(args.limit), 1), 20)
+			: 5;
+
+	return getChatResourceCatalog(resourceType)
+		.map((resource) => ({
+			resource,
+			score: scoreResource(resource, query, resourceType),
+		}))
+		.filter((entry) => !query || entry.score > 0)
+		.sort(
+			(a, b) =>
+				b.score - a.score || a.resource.name.localeCompare(b.resource.name),
+		)
+		.filter((entry, index, entries) => {
+			if (!query) return true;
+			const topScore = entries[0]?.score ?? 0;
+			if (topScore <= 0) return false;
+			const cutoff = Math.max(20, Math.round(topScore * 0.65));
+			return entry.score >= cutoff || index === 0;
+		})
+		.slice(0, limit)
+		.map((entry) => entry.resource);
+}
+
+function findChatResourcesToAttach(args?: Record<string, unknown>) {
+	const resourceType = getRequestedResourceType(args);
+	const catalog = getChatResourceCatalog(resourceType);
+	const ids = Array.isArray(args?.ids)
+		? args.ids.map(normalizeSearchText).filter(Boolean)
+		: [];
+	const id = normalizeSearchText(args?.id);
+
+	if (ids.length > 0 || id) {
+		const requested = new Set([...ids, id].filter(Boolean));
+		return catalog.filter((resource) =>
+			requested.has(normalizeSearchText(resource.id)),
+		);
+	}
+
+	const query = normalizeSearchText(args?.query ?? args?.name);
+	if (!query) return [];
+
+	const exactMatches = catalog.filter((resource) => {
+		const normalizedName = normalizeSearchText(resource.name);
+		const normalizedId = normalizeSearchText(resource.id);
+		return normalizedName === query || normalizedId === query;
+	});
+
+	return exactMatches;
+}
+
+function toAttachment(resource: ChatResource): ComposerAsset {
+	return {
+		id: resource.id,
+		name: resource.name,
+		url: resource.url,
+		thumbnailUrl: resource.thumbnailUrl,
+		mimeType: resource.mimeType,
+		kind: resource.kind,
+		description: resource.description,
+	};
+}
+
+function summarizeResource(resource: ChatResource) {
+	return {
+		id: resource.id,
+		name: resource.name,
+		type: resource.kind,
+		description: resource.description,
+	};
+}
+
 export function executeAppCapability(
 	action: AppCapabilityAction,
 ): AppCapabilityResult {
@@ -274,6 +626,65 @@ export function executeAppCapability(
 			tool: action.tool,
 			ok: true,
 			message: `Switched workspace to ${tab}.`,
+		};
+	}
+
+	if (action.tool === "search_chat_resources") {
+		const matches = searchChatResources(action.args);
+		const resourceType = getRequestedResourceType(action.args) ?? "all";
+		const singleMatch = matches.length === 1 ? matches[0] : undefined;
+		const { addAssetAttachment, setPendingResourceMatches } =
+			useComposerStore.getState();
+
+		if (singleMatch) {
+			addAssetAttachment(toAttachment(singleMatch));
+			setPendingResourceMatches([]);
+		} else {
+			setPendingResourceMatches(matches.map(toAttachment));
+		}
+
+		return {
+			tool: action.tool,
+			ok: true,
+			message:
+				matches.length > 0
+					? singleMatch
+						? `Found 1 ${resourceType} resource and attached it to the chat.`
+						: `Found ${matches.length} ${resourceType} resources.`
+					: `No ${resourceType} resources matched the search.`,
+			data: {
+				matches: matches.map(summarizeResource),
+			},
+		};
+	}
+
+	if (
+		action.tool === "add_chat_resource" ||
+		action.tool === "reference_chat_resource"
+	) {
+		const resources = findChatResourcesToAttach(action.args);
+		if (resources.length === 0) {
+			return {
+				tool: action.tool,
+				ok: false,
+				message: "No matching chat resource was found.",
+			};
+		}
+
+		const { addAssetAttachment, clearPendingResourceMatches } =
+			useComposerStore.getState();
+		for (const resource of resources) {
+			addAssetAttachment(toAttachment(resource));
+		}
+		clearPendingResourceMatches();
+
+		return {
+			tool: action.tool,
+			ok: true,
+			message: `Added ${resources.length} resource${resources.length === 1 ? "" : "s"} to the chat composer.`,
+			data: {
+				attachments: resources.map(summarizeResource),
+			},
 		};
 	}
 

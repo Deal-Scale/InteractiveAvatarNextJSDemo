@@ -12,13 +12,18 @@ export type ComposerAsset = {
 
 export type ComposerState = {
 	assetAttachments: ComposerAsset[];
+	pendingResourceMatches: ComposerAsset[];
 	addAssetAttachment: (a: ComposerAsset) => void;
 	removeAssetAttachment: (id: string) => void;
 	clearAssetAttachments: () => void;
+	setPendingResourceMatches: (items: ComposerAsset[]) => void;
+	removePendingResourceMatch: (id: string) => void;
+	clearPendingResourceMatches: () => void;
 };
 
 export const useComposerStore = create<ComposerState>((set) => ({
 	assetAttachments: [],
+	pendingResourceMatches: [],
 	addAssetAttachment: (a) =>
 		set((s) => {
 			// de-duplicate by id
@@ -45,4 +50,18 @@ export const useComposerStore = create<ComposerState>((set) => ({
 			}
 			return { assetAttachments: [] };
 		}),
+	setPendingResourceMatches: (items) =>
+		set(() => ({
+			pendingResourceMatches: items,
+		})),
+	removePendingResourceMatch: (id) =>
+		set((s) => ({
+			pendingResourceMatches: s.pendingResourceMatches.filter(
+				(item) => item.id !== id,
+			),
+		})),
+	clearPendingResourceMatches: () =>
+		set(() => ({
+			pendingResourceMatches: [],
+		})),
 }));

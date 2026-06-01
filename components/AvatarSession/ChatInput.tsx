@@ -196,6 +196,15 @@ export const ChatInput: React.FC<ChatInputProps> = ({
 	inputRef,
 }) => {
 	const addAssetAttachment = useComposerStore((s) => s.addAssetAttachment);
+	const pendingResourceMatches = useComposerStore(
+		(s) => s.pendingResourceMatches,
+	);
+	const clearPendingResourceMatches = useComposerStore(
+		(s) => s.clearPendingResourceMatches,
+	);
+	const removePendingResourceMatch = useComposerStore(
+		(s) => s.removePendingResourceMatch,
+	);
 	const storeAssets = useAssetsStore((s) => s.assets);
 	const {
 		agentSettings,
@@ -757,6 +766,11 @@ export const ChatInput: React.FC<ChatInputProps> = ({
 		// If it's not our payload, let it bubble (FileUpload will handle file drops)
 	};
 
+	const attachPendingResource = (resource: ComposerAsset) => {
+		addAssetAttachment(resource);
+		removePendingResourceMatch(resource.id);
+	};
+
 	const allowDrop = (e: React.DragEvent) => {
 		// If dragging a sidebar chat resource payload, allow drop
 		if (hasChatDragResource(e.dataTransfer.types)) {
@@ -1138,8 +1152,60 @@ export const ChatInput: React.FC<ChatInputProps> = ({
 					{RightActions}
 				</div>
 				{/* FileUpload handles file selection and drag/drop */}
-				{(attachments.length > 0 || composerAttachments.length > 0) && (
+				{(attachments.length > 0 ||
+					composerAttachments.length > 0 ||
+					pendingResourceMatches.length > 0) && (
 					<div className="flex flex-wrap items-center gap-2 px-2 pt-2">
+						{pendingResourceMatches.length > 0 && (
+							<div className="flex w-full flex-wrap items-center gap-2">
+								<span className="text-[0.68rem] font-medium uppercase tracking-wide text-muted-foreground">
+									Resource matches
+								</span>
+								{pendingResourceMatches.map((resource) => (
+									<div
+										key={`pending-${resource.kind}-${resource.id}`}
+										className="inline-flex items-center gap-2 rounded-full border border-border bg-secondary px-2 py-1 text-xs text-secondary-foreground"
+										title={resource.description || resource.name}
+									>
+										<button
+											type="button"
+											className="inline-flex items-center gap-2 hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+											onClick={() => attachPendingResource(resource)}
+										>
+											<span className="rounded bg-muted px-1 uppercase text-[0.56rem] leading-4 text-muted-foreground">
+												{resource.kind ?? "resource"}
+											</span>
+											<span className="max-w-[200px] truncate">
+												{resource.name}
+											</span>
+											<span className="text-[0.62rem] text-muted-foreground">
+												Attach
+											</span>
+										</button>
+										<button
+											aria-label={`Dismiss ${resource.name}`}
+											className="hover:text-destructive"
+											type="button"
+											onClick={(event) => {
+												event.stopPropagation();
+												removePendingResourceMatch(resource.id);
+											}}
+										>
+											<X className="h-3 w-3" />
+										</button>
+									</div>
+								))}
+								{pendingResourceMatches.length > 1 && (
+									<button
+										type="button"
+										className="rounded-full border border-border bg-background px-2 py-1 text-[0.68rem] text-muted-foreground hover:bg-muted"
+										onClick={clearPendingResourceMatches}
+									>
+										Clear matches
+									</button>
+								)}
+							</div>
+						)}
 						{composerAttachments.map((a) => (
 							<div
 								key={`asset-${a.id}`}
