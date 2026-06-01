@@ -3,9 +3,10 @@
 import { useKeyPress } from "ahooks";
 import { ChevronDown } from "lucide-react";
 import type React from "react";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { useStreamingAvatarContext } from "@/components/logic/context";
+import { useMessageHistory } from "@/components/logic/useMessageHistory";
 import { useTextChat } from "@/components/logic/useTextChat";
 import { Button } from "@/components/ui/button";
 import {
@@ -22,7 +23,7 @@ import type { MessageAsset, Message as MessageType } from "@/lib/types";
 import { MessageSender } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { BranchDialog } from "./BranchDialog";
-import { ChatInput } from "./ChatInput";
+import { ChatInput, type ChatInputHandle } from "./ChatInput";
 import { CompareDialog } from "./CompareDialog";
 import { useAttachments } from "./chat/hooks/useAttachments";
 import { useBranching } from "./chat/hooks/useBranching";
@@ -41,38 +42,29 @@ import {
 import { ProviderSwitcher } from "./ProviderSwitcher";
 
 interface ChatProps {
-	chatInput: string;
 	isSending: boolean;
 	isVoiceChatActive: boolean;
 	messages: MessageType[];
 	// When true, render only the input area (no messages/scroll area)
 	inputOnly?: boolean;
-	onArrowDown: () => void;
-	onArrowUp: () => void;
-	onChatInputChange: (value: string) => void;
 	onCopy: (text: string) => void;
 	onSendMessage: (text: string, assets?: MessageAsset[]) => void;
+	onStopSending: () => void;
 	onStartVoiceChat: () => void;
 	onStopVoiceChat: () => void;
 }
 
 export const Chat: React.FC<ChatProps> = ({
-	chatInput,
 	isSending,
 	isVoiceChatActive,
 	messages,
 	inputOnly = false,
-	onArrowDown,
-	onArrowUp,
-	onChatInputChange,
 	onCopy,
 	onSendMessage,
+	onStopSending,
 	onStartVoiceChat,
 	onStopVoiceChat,
 }) => {
-	useKeyPress("ArrowUp", onArrowUp);
-	useKeyPress("ArrowDown", onArrowDown);
-
 	const { publish } = useToast();
 	const {
 		isAvatarTalking,
@@ -93,6 +85,8 @@ export const Chat: React.FC<ChatProps> = ({
 	const scrollRef = useRef<HTMLDivElement | null>(null);
 	const branching = useBranching();
 	const { voteState, setVote } = useVotes();
+	const composerRef = useRef<ChatInputHandle | null>(null);
+	const { navigateHistory, resetHistory } = useMessageHistory(messages);
 	const promptSuggestions = useMemo(
 		() => [
 			"What can you do?",
@@ -139,17 +133,33 @@ export const Chat: React.FC<ChatProps> = ({
 			composerAttachments,
 			clearComposerAttachments,
 			onSendMessage,
-			onChatInputChange,
 		});
 
 	const [lastCopiedId, setLastCopiedId] = useState<string | null>(null);
 
 	const { isEditing, handleEditToInput, cancelEdit, confirmEdit } = useEditing({
-		chatInput,
-		onChatInputChange,
 		sendWithAttachments,
 		inputRef,
+		composerRef,
 	});
+
+	useKeyPress("ArrowUp", () => {
+		const prev = navigateHistory("up");
+		if (prev != null) composerRef.current?.setDraft(prev);
+	});
+	useKeyPress("ArrowDown", () => {
+		const next = navigateHistory("down");
+		if (next != null) composerRef.current?.setDraft(next);
+	});
+
+	const handleSendMessage = useCallback(
+		(text: string, assets?: MessageAsset[]) => {
+			onSendMessage(text, assets);
+			resetHistory();
+			composerRef.current?.clearDraft();
+		},
+		[onSendMessage, resetHistory],
+	);
 
 	// Compare dialog state handled by hook
 
@@ -309,13 +319,14 @@ export const Chat: React.FC<ChatProps> = ({
 					onChoose={handleChooseComparison}
 				/>
 				<ChatInput
+					ref={composerRef}
 					chatMode={chatMode}
 					attachments={attachments}
 					composerAttachments={composerAttachments}
 					cancelEdit={cancelEdit}
-					chatInput={chatInput}
 					confirmEdit={confirmEdit}
 					inputRef={inputRef}
+					initialValue=""
 					isEditing={isEditing}
 					isSending={isSending}
 					isVoiceChatActive={supportsVoice ? isVoiceChatActive : false}
@@ -323,8 +334,8 @@ export const Chat: React.FC<ChatProps> = ({
 					promptSuggestions={promptSuggestions}
 					removeAttachment={removeAttachment}
 					removeComposerAttachment={removeComposerAttachment}
-					sendWithAttachments={sendWithAttachments}
-					onChatInputChange={onChatInputChange}
+					sendWithAttachments={handleSendMessage}
+					onStopSending={onStopSending}
 					onFilesAdded={onFilesAdded}
 					onStartVoiceChat={supportsVoice ? onStartVoiceChat : () => {}}
 					onStopVoiceChat={supportsVoice ? onStopVoiceChat : () => {}}

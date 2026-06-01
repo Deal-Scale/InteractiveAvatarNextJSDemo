@@ -8,14 +8,8 @@ export function useAttachments(opts: {
 	composerAttachments: ComposerAsset[];
 	clearComposerAttachments: () => void;
 	onSendMessage: (text: string, assets?: MessageAsset[]) => void;
-	onChatInputChange: (value: string) => void;
 }) {
-	const {
-		composerAttachments,
-		clearComposerAttachments,
-		onSendMessage,
-		onChatInputChange,
-	} = opts;
+	const { composerAttachments, clearComposerAttachments, onSendMessage } = opts;
 
 	const [attachments, setAttachments] = useState<File[]>([]);
 
@@ -62,7 +56,6 @@ export function useAttachments(opts: {
 		console.debug("[Chat] onSendMessage called; clearing attachments");
 		setAttachments([]);
 		clearComposerAttachments();
-		onChatInputChange("");
 	};
 
 	return {

@@ -26,17 +26,14 @@ interface ChatPanelProps {
 	canChat: boolean;
 	messages: Message[];
 	isSending: boolean;
-	chatInput: string;
 	isVoiceActive: boolean;
 	// handlers
 	onHeaderPointerDown: (e: React.PointerEvent) => void;
 	onDock: (mode: DockMode) => void;
 	onToggleExpand: () => void;
-	onArrowUp: () => void;
-	onArrowDown: () => void;
-	onChatInputChange: (v: string) => void;
 	onCopy: (text: string) => void;
 	onSendMessage: (text: string, assets?: MessageAsset[]) => void;
+	onStopSending: () => void;
 	onStartVoiceChat: () => void | Promise<void>;
 	onStopVoiceChat: () => void | Promise<void>;
 	sessionState: StreamingAvatarSessionState;
@@ -50,16 +47,13 @@ export function ChatPanel({
 	canChat,
 	messages,
 	isSending,
-	chatInput,
 	isVoiceActive,
 	onHeaderPointerDown,
 	onDock,
 	onToggleExpand,
-	onArrowUp,
-	onArrowDown,
-	onChatInputChange,
 	onCopy,
 	onSendMessage,
+	onStopSending,
 	onStartVoiceChat,
 	onStopVoiceChat,
 	sessionState,
@@ -100,16 +94,13 @@ export function ChatPanel({
 				>
 					{canChat ? (
 						<Chat
-							chatInput={chatInput}
 							inputOnly={!expanded}
 							isSending={isSending}
 							isVoiceChatActive={isVoiceActive}
 							messages={messages}
-							onArrowDown={onArrowDown}
-							onArrowUp={onArrowUp}
-							onChatInputChange={onChatInputChange}
 							onCopy={onCopy}
 							onSendMessage={onSendMessage}
+							onStopSending={onStopSending}
 							onStartVoiceChat={onStartVoiceChat}
 							onStopVoiceChat={onStopVoiceChat}
 						/>
@@ -163,16 +154,13 @@ export function ChatPanel({
 				<div className={cn("flex h-full w-full flex-col", "min-h-0")}>
 					{canChat ? (
 						<Chat
-							chatInput={chatInput}
 							inputOnly={!expanded}
 							isSending={isSending}
 							isVoiceChatActive={isVoiceActive}
 							messages={messages}
-							onArrowDown={onArrowDown}
-							onArrowUp={onArrowUp}
-							onChatInputChange={onChatInputChange}
 							onCopy={onCopy}
 							onSendMessage={onSendMessage}
+							onStopSending={onStopSending}
 							onStartVoiceChat={onStartVoiceChat}
 							onStopVoiceChat={onStopVoiceChat}
 						/>
@@ -260,16 +248,13 @@ export function ChatPanel({
 			<div className={cn("flex flex-1 flex-col", "min-h-0")}>
 				{canChat ? (
 					<Chat
-						chatInput={chatInput}
 						inputOnly={!expanded}
 						isSending={isSending}
 						isVoiceChatActive={isVoiceActive}
 						messages={messages}
-						onArrowDown={onArrowDown}
-						onArrowUp={onArrowUp}
-						onChatInputChange={onChatInputChange}
 						onCopy={onCopy}
 						onSendMessage={onSendMessage}
+						onStopSending={onStopSending}
 						onStartVoiceChat={onStartVoiceChat}
 						onStopVoiceChat={onStopVoiceChat}
 					/>

@@ -2,9 +2,11 @@
 
 import React, {
 	createContext,
+	useLayoutEffect,
 	useContext,
 	useEffect,
 	useRef,
+	useMemo,
 	useState,
 } from "react";
 
@@ -83,15 +85,28 @@ function PromptInput({
 	return (
 		<TooltipProvider>
 			<PromptInputContext.Provider
-				value={{
-					isLoading,
-					value: value ?? internalValue,
-					setValue: onValueChange ?? handleChange,
-					maxHeight,
-					onSubmit,
-					disabled,
-					textareaRef,
-				}}
+				value={useMemo(
+					() => ({
+						isLoading,
+						value: value ?? internalValue,
+						setValue: onValueChange ?? handleChange,
+						maxHeight,
+						onSubmit,
+						disabled,
+						textareaRef,
+					}),
+					[
+						disabled,
+						handleChange,
+						internalValue,
+						isLoading,
+						maxHeight,
+						onSubmit,
+						onValueChange,
+						textareaRef,
+						value,
+					],
+				)}
 			>
 				<div
 					{...props}
@@ -142,16 +157,21 @@ function PromptInputTextarea({
 }: PromptInputTextareaProps) {
 	const { value, setValue, maxHeight, onSubmit, disabled, textareaRef } =
 		usePromptInput();
+	const lastHeightRef = useRef<string | null>(null);
 
-	useEffect(() => {
+	useLayoutEffect(() => {
 		if (disableAutosize) return;
 
 		if (!textareaRef.current) return;
 		textareaRef.current.style.height = "auto";
-		textareaRef.current.style.height =
+		const nextHeight =
 			typeof maxHeight === "number"
 				? `${Math.min(textareaRef.current.scrollHeight, maxHeight)}px`
 				: `min(${textareaRef.current.scrollHeight}px, ${maxHeight})`;
+		if (lastHeightRef.current !== nextHeight) {
+			textareaRef.current.style.height = nextHeight;
+			lastHeightRef.current = nextHeight;
+		}
 	}, [value, maxHeight, disableAutosize, textareaRef]);
 
 	const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {

@@ -1,22 +1,23 @@
 import { RefObject, useState } from "react";
 import { useToast } from "@/components/ui/toaster";
+import type { ChatInputHandle } from "../../ChatInput";
 
 export function useEditing(opts: {
-	chatInput: string;
-	onChatInputChange: (v: string) => void;
 	sendWithAttachments: (text: string) => void;
 	inputRef: RefObject<HTMLTextAreaElement | null>;
+	composerRef: RefObject<ChatInputHandle | null>;
 }) {
-	const { chatInput, onChatInputChange, sendWithAttachments, inputRef } = opts;
+	const { sendWithAttachments, inputRef, composerRef } = opts;
 	const { publish } = useToast();
 
 	const [isEditing, setIsEditing] = useState(false);
 	const [inputBackup, setInputBackup] = useState<string>("");
 
 	const handleEditToInput = (content: string, _messageId?: string) => {
-		if (!isEditing) setInputBackup(chatInput);
+		const currentDraft = composerRef.current?.getDraft() ?? "";
+		if (!isEditing) setInputBackup(currentDraft);
 		setIsEditing(true);
-		onChatInputChange(content);
+		composerRef.current?.setDraft(content);
 
 		const focusTextarea = () => {
 			const el = inputRef.current;
@@ -40,15 +41,15 @@ export function useEditing(opts: {
 
 	const cancelEdit = () => {
 		setIsEditing(false);
-		onChatInputChange(inputBackup);
+		composerRef.current?.setDraft(inputBackup);
 	};
 
 	const confirmEdit = () => {
-		const text = chatInput ?? "";
+		const text = composerRef.current?.getDraft() ?? "";
 		console.debug("[Chat] confirmEdit", { textLength: text.length });
 		sendWithAttachments(text);
 		setIsEditing(false);
-		onChatInputChange("");
+		composerRef.current?.clearDraft();
 		publish({ description: "Edited message sent.", title: "Edited" });
 	};
 

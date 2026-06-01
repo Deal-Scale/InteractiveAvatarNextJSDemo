@@ -2,7 +2,7 @@
 
 import { ChevronDown } from "lucide-react";
 import type React from "react";
-import { useState } from "react";
+import { memo, useState } from "react";
 import { Button } from "@/components/ui/button";
 import {
 	Collapsible,
@@ -31,7 +31,7 @@ interface MessageListProps {
 	showMarkdownHeaderInBubbles?: boolean;
 }
 
-export const MessageList: React.FC<MessageListProps> = ({
+function MessageListImpl({
 	messages,
 	exampleMessages = [],
 	isAvatarTalking,
@@ -44,7 +44,7 @@ export const MessageList: React.FC<MessageListProps> = ({
 	onRetry,
 	onCompare,
 	showMarkdownHeaderInBubbles,
-}: MessageListProps) => {
+}: MessageListProps) {
 	const [examplesOpen, setExamplesOpen] = useState(false);
 	const hasExamples = exampleMessages.length > 0;
 
@@ -170,4 +170,6 @@ export const MessageList: React.FC<MessageListProps> = ({
 			)}
 		</>
 	);
-};
+}
+
+export const MessageList = memo(MessageListImpl);
