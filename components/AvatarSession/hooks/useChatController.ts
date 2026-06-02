@@ -16,7 +16,7 @@ import { useSendTaskMutation } from "@/lib/services/streaming/query";
 import { useChatProviderStore } from "@/lib/stores/chatProvider";
 import { useSessionStore } from "@/lib/stores/session";
 import { type MessageAsset, MessageSender } from "@/lib/types";
-import { useMemoizedFn } from "ahooks";
+import { useMemoizedFn } from "@/lib/compat/ahooks";
 import { nanoid } from "nanoid";
 import { useEffect, useMemo, useState } from "react";
 import { StreamingAvatarSessionState } from "../../logic/context";

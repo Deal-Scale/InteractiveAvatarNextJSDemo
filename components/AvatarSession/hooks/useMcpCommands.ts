@@ -1,4 +1,4 @@
-import { useMemoizedFn } from "ahooks";
+import { useMemoizedFn } from "@/lib/compat/ahooks";
 import { nanoid } from "nanoid";
 import {
 	type AppCapabilityName,

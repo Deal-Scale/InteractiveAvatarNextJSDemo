@@ -1,9 +1,7 @@
 "use client";
 
-import { useKeyPress } from "ahooks";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { ChevronDown } from "lucide-react";
-import type React from "react";
-import { useEffect, useMemo, useRef, useState } from "react";
 
 import { useStreamingAvatarContext } from "@/components/logic/context";
 import { useTextChat } from "@/components/logic/useTextChat";
@@ -23,6 +21,7 @@ import { cn } from "@/lib/utils";
 import { BranchDialog } from "./BranchDialog";
 import { ChatInput } from "./ChatInput";
 import { CompareDialog } from "./CompareDialog";
+import { useKeyPress } from "@/lib/compat/ahooks";
 import { useAttachments } from "./chat/hooks/useAttachments";
 import { useBranching } from "./chat/hooks/useBranching";
 import { useComparison } from "./chat/hooks/useComparison";
