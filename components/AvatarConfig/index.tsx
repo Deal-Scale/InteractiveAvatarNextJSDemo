@@ -18,7 +18,7 @@ import STTSettings from "./components/STTSettings";
 import StartSessionButton from "./components/StartSessionButton";
 
 import { useAgentStore } from "@/lib/stores/agent";
-import { STT_LANGUAGE_LIST } from "@/app/lib/constants";
+import { STT_LANGUAGE_LIST } from "../../app/lib/constants";
 
 interface AvatarConfigProps {
 	onConfigChange: (config: StartAvatarRequest) => void;

@@ -1,6 +1,6 @@
-import { useTaskStore } from "@/components/kanban/utils/store";
+import { useTaskStore } from "@/lib/stores/taskActions";
 import type { MessageToolPart } from "@/lib/types";
-import { switchWorkspaceView } from "@/lib/workspace-view";
+import { switchWorkspaceView } from "./workspace-view";
 
 export type WorkspaceTab = "video" | "brain" | "data" | "actions";
 

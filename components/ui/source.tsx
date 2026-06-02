@@ -2,17 +2,12 @@
 
 import { createContext, useContext } from "react";
 
-import {
-	HoverCard,
-	HoverCardContent,
-	HoverCardTrigger,
-} from "@/components/ui/hover-card";
+import { HoverCard, HoverCardContent, HoverCardTrigger } from "./hover-card";
 import { cn } from "@/lib/utils";
 
-const SourceContext = createContext<{
-	href: string;
-	domain: string;
-} | null>(null);
+const SourceContext = createContext<{ href: string; domain: string } | null>(
+	null,
+);
 
 function useSourceContext() {
 	const ctx = useContext(SourceContext);
@@ -63,9 +58,7 @@ export function SourceTrigger({
 		<HoverCardTrigger asChild>
 			<a
 				className={cn(
-					"inline-flex h-5 max-w-32 items-center gap-1 overflow-hidden rounded-full py-0 text-xs leading-none no-underline transition-colors duration-150",
-					// Token-based chip styling with accent hover
-					"bg-muted text-muted-foreground hover:bg-accent hover:text-accent-foreground",
+					"inline-flex h-5 max-w-32 items-center gap-1 overflow-hidden rounded-full py-0 text-xs leading-none no-underline transition-colors duration-150 bg-muted text-muted-foreground hover:bg-accent hover:text-accent-foreground",
 					showFavicon ? "pr-2 pl-1" : "px-1",
 					className,
 				)}
@@ -105,10 +98,7 @@ export function SourceContent({
 
 	return (
 		<HoverCardContent
-			className={cn(
-				"w-80 p-0 shadow-xs border border-border bg-card",
-				className,
-			)}
+			className={cn("w-80 border border-border bg-card p-0 shadow-xs", className)}
 		>
 			<a
 				className="flex flex-col gap-2 p-3"
@@ -117,15 +107,6 @@ export function SourceContent({
 				target="_blank"
 			>
 				<div className="flex items-center gap-1.5">
-					<img
-						alt="favicon"
-						className="size-4 rounded-full"
-						height={16}
-						src={`https://www.google.com/s2/favicons?sz=64&domain_url=${encodeURIComponent(
-							href,
-						)}`}
-						width={16}
-					/>
 					<div className="text-primary truncate text-sm">
 						{domain.replace("www.", "")}
 					</div>

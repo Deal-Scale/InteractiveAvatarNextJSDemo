@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { formatAttachmentSummary } from "@/components/AvatarSession/utils";
+import { formatAttachmentSummary } from "../../utils";
 import { buildAssetsFromComposer } from "../utils";
 import type { MessageAsset } from "@/lib/types";
 import type { ComposerAsset } from "@/lib/stores/composer";

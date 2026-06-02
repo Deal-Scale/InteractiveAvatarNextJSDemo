@@ -1,6 +1,3 @@
-import { useMemoizedFn } from "ahooks";
-import { nanoid } from "nanoid";
-import { useEffect, useMemo, useState } from "react";
 import { useApiService } from "@/components/logic/ApiServiceContext";
 import { useMessageHistory } from "@/components/logic/useMessageHistory";
 import { useVoiceChat } from "@/components/logic/useVoiceChat";
@@ -12,12 +9,16 @@ import {
 	parseAppCapabilityActions,
 	stripAppCapabilityBlocks,
 } from "@/lib/app-capabilities";
+import { MANUAL_CHAT_MESSAGE_TYPE } from "@/lib/chat/manual-bridge";
 import type { ProviderId } from "@/lib/chat/providers";
 import { getProvider } from "@/lib/chat/registry";
 import { useSendTaskMutation } from "@/lib/services/streaming/query";
 import { useChatProviderStore } from "@/lib/stores/chatProvider";
 import { useSessionStore } from "@/lib/stores/session";
 import { type MessageAsset, MessageSender } from "@/lib/types";
+import { useMemoizedFn } from "ahooks";
+import { nanoid } from "nanoid";
+import { useEffect, useMemo, useState } from "react";
 import { StreamingAvatarSessionState } from "../../logic/context";
 import { useMcpCommands } from "./useMcpCommands";
 
@@ -225,6 +226,28 @@ export function useChatController(sessionState: StreamingAvatarSessionState) {
 		void handleSendMessage(t, a);
 	});
 
+	useEffect(() => {
+		const handleManualMessage = (event: MessageEvent) => {
+			const payload = event.data as
+				| { type?: string; text?: unknown }
+				| undefined;
+
+			if (payload?.type !== MANUAL_CHAT_MESSAGE_TYPE) return;
+
+			const text = typeof payload.text === "string" ? payload.text.trim() : "";
+
+			if (!text) return;
+
+			void handleSendMessage(text);
+		};
+
+		window.addEventListener("message", handleManualMessage);
+
+		return () => {
+			window.removeEventListener("message", handleManualMessage);
+		};
+	}, [handleSendMessage]);
+
 	const startVoiceChatVoid = useMemoizedFn(async () => {
 		try {
 			if (mockChatEnabled) {
@@ -270,15 +293,15 @@ export function useChatController(sessionState: StreamingAvatarSessionState) {
 		stopVoiceChat();
 
 		if (userVideoStream) {
-			userVideoStream.getTracks().forEach((t) => {
-				t.stop();
-			});
+			for (const track of userVideoStream.getTracks()) {
+				track.stop();
+			}
 			setUserVideoStream(null);
 		}
 		if (userAudioStream) {
-			userAudioStream.getTracks().forEach((t) => {
-				t.stop();
-			});
+			for (const track of userAudioStream.getTracks()) {
+				track.stop();
+			}
 			setUserAudioStream(null);
 		}
 	});

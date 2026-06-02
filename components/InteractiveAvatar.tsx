@@ -10,7 +10,7 @@ import { useMemoizedFn, useUnmount } from "ahooks";
 import { useMemo, useRef, useState } from "react";
 // removed Settings icon (no longer used here)
 
-import { AVATARS } from "@/app/lib/constants";
+import { AVATARS } from "../app/lib/constants";
 import {
 	ApiServiceProvider,
 	useApiService,

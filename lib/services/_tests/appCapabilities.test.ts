@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { useTaskStore } from "@/components/kanban/utils/store";
+import { useTaskStore } from "@/lib/stores/taskActions";
 import {
 	APP_CAPABILITIES_SYSTEM_PROMPT,
 	executeAppCapabilities,
@@ -9,7 +9,7 @@ import {
 import { PollinationsAdapter } from "@/lib/providers/PollinationsAdapter";
 import { usePlacementStore } from "@/lib/stores/placement";
 import { useSessionStore } from "@/lib/stores/session";
-import { COMPACT_BOTTOM_CHAT_HEIGHT_FRAC } from "@/lib/workspace-view";
+import { COMPACT_BOTTOM_CHAT_HEIGHT_FRAC } from "../../workspace-view";
 
 describe("app MCP capabilities", () => {
 	beforeEach(() => {

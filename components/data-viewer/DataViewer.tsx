@@ -11,8 +11,8 @@ import type {
 } from "react-grid-layout";
 import { Responsive, useContainerWidth } from "react-grid-layout";
 
-import { LiveMermaidChart } from "@/components/ui/live-mermaid-chart";
-import { Mermaid } from "@/components/ui/mermaid";
+import { LiveMermaidChart } from "../ui/live-mermaid-chart";
+import { Mermaid } from "../ui/mermaid";
 import { useDataGridStore } from "@/lib/stores/dataGrid";
 import PlatformList from "./analytics/PlatformList";
 import TargetAudienceList from "./analytics/TargetAudienceList";

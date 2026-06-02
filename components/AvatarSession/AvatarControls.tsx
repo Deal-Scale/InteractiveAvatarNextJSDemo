@@ -12,7 +12,7 @@ import {
 	useStopSessionMutation,
 } from "@/lib/services/streaming/query";
 import { useSessionStore } from "@/lib/stores/session";
-import { switchWorkspaceView } from "@/lib/workspace-view";
+import { switchWorkspaceView } from "../../lib/workspace-view";
 import { Button } from "../Button";
 import {
 	StreamingAvatarSessionState,

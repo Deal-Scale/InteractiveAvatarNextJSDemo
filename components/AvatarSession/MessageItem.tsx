@@ -10,13 +10,13 @@ import {
 	Volume2,
 } from "lucide-react";
 import { useMemo, useRef, useState } from "react";
-import { PromptKitStatsDemo } from "@/components/PromptKit/PromptKitStatsDemo";
-import { StatBadge } from "@/components/PromptKit/StatBadge";
+import { PromptKitStatsDemo } from "../PromptKit/PromptKitStatsDemo";
+import { StatBadge } from "../PromptKit/StatBadge";
 import { Button } from "@/components/ui/button";
 import { DataCard, Metric, MetricGrid } from "@/components/ui/jsx-demo";
 import { JSXPreview } from "@/components/ui/jsx-preview";
-import { LiveMermaidChart } from "@/components/ui/live-mermaid-chart";
-import { Mermaid } from "@/components/ui/mermaid";
+import { LiveMermaidChart } from "../ui/live-mermaid-chart";
+import { Mermaid } from "../ui/mermaid";
 import {
 	Message,
 	MessageAction,

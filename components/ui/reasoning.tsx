@@ -1,15 +1,6 @@
 "use client";
 
-import { ChevronDownIcon } from "lucide-react";
-import React, {
-	createContext,
-	useContext,
-	useEffect,
-	useRef,
-	useState,
-} from "react";
-
-import { Markdown } from "./markdown";
+import React, { createContext, useContext, useEffect, useState } from "react";
 
 import { cn } from "@/lib/utils";
 
@@ -41,6 +32,7 @@ export type ReasoningProps = {
 	onOpenChange?: (open: boolean) => void;
 	isStreaming?: boolean;
 };
+
 function Reasoning({
 	children,
 	className,
@@ -49,7 +41,6 @@ function Reasoning({
 	isStreaming,
 }: ReasoningProps) {
 	const [internalOpen, setInternalOpen] = useState(false);
-	const [wasAutoOpened, setWasAutoOpened] = useState(false);
 
 	const isControlled = open !== undefined;
 	const isOpen = isControlled ? open : internalOpen;
@@ -62,16 +53,10 @@ function Reasoning({
 	};
 
 	useEffect(() => {
-		if (isStreaming && !wasAutoOpened) {
-			if (!isControlled) setInternalOpen(true);
-			setWasAutoOpened(true);
+		if (isStreaming && !isOpen) {
+			handleOpenChange(true);
 		}
-
-		if (!isStreaming && wasAutoOpened) {
-			if (!isControlled) setInternalOpen(false);
-			setWasAutoOpened(false);
-		}
-	}, [isStreaming, wasAutoOpened, isControlled]);
+	}, [isOpen, isStreaming]);
 
 	return (
 		<ReasoningContext.Provider
@@ -100,7 +85,6 @@ function ReasoningTrigger({
 	return (
 		<button
 			className={cn(
-				// Token-based styling to adapt to themes
 				"flex cursor-pointer items-center gap-2 rounded-md border border-transparent bg-transparent px-1 py-0.5 text-sm hover:bg-accent hover:text-accent-foreground",
 				className,
 			)}
@@ -108,14 +92,6 @@ function ReasoningTrigger({
 			{...props}
 		>
 			<span className="text-primary">{children}</span>
-			<div
-				className={cn(
-					"transform transition-transform",
-					isOpen ? "rotate-180" : "",
-				)}
-			>
-				<ChevronDownIcon className="size-4" />
-			</div>
 		</button>
 	);
 }
@@ -131,65 +107,22 @@ function ReasoningContent({
 	children,
 	className,
 	contentClassName,
-	markdown = false,
 	...props
 }: ReasoningContentProps) {
-	const contentRef = useRef<HTMLDivElement>(null);
-	const innerRef = useRef<HTMLDivElement>(null);
 	const { isOpen } = useReasoningContext();
 
-	useEffect(() => {
-		if (!contentRef.current || !innerRef.current) return;
-
-		const observer = new ResizeObserver(() => {
-			if (contentRef.current && innerRef.current && isOpen) {
-				contentRef.current.style.maxHeight = `${innerRef.current.scrollHeight}px`;
-			}
-		});
-
-		observer.observe(innerRef.current);
-
-		if (isOpen) {
-			contentRef.current.style.maxHeight = `${innerRef.current.scrollHeight}px`;
-		}
-
-		return () => observer.disconnect();
-	}, [isOpen]);
-
-	const content = markdown ? (
-		<Markdown
-			data-invoker="ReasoningContent"
-			showHeader
-			headerLabel="Reasoning"
-			className="prose prose-sm dark:prose-invert text-muted-foreground"
-		>
-			{children as string}
-		</Markdown>
-	) : (
-		children
-	);
-
-	return (
+	return isOpen ? (
 		<div
-			ref={contentRef}
 			className={cn(
-				// Container uses tokens so it adapts to theme
-				"overflow-hidden transition-[max-height] duration-150 ease-out rounded-md border border-border bg-card",
+				"overflow-hidden rounded-md border border-border bg-card p-2 text-muted-foreground",
 				className,
+				contentClassName,
 			)}
-			style={{
-				maxHeight: isOpen ? contentRef.current?.scrollHeight : "0px",
-			}}
 			{...props}
 		>
-			<div
-				ref={innerRef}
-				className={cn("p-2 text-muted-foreground", contentClassName)}
-			>
-				{content}
-			</div>
+			{children}
 		</div>
-	);
+	) : null;
 }
 
 export { Reasoning, ReasoningTrigger, ReasoningContent };

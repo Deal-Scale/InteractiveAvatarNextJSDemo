@@ -9,8 +9,8 @@ import {
 } from "lucide-react";
 import type React from "react";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { SlashCommandPalette } from "@/components/AvatarSession/chat/SlashCommandPalette";
-import { KB_CONNECTORS } from "@/components/KnowledgeBase/connectors";
+import { SlashCommandPalette } from "./chat/SlashCommandPalette";
+import { KB_CONNECTORS } from "../KnowledgeBase/connectors";
 import { defaultCommands } from "@/data/commands";
 import {
 	getChatDragResource,

@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 
-import { AVATARS } from "@/app/lib/constants";
+import { AVATARS } from "../../../app/lib/constants";
 
 export type AvatarOption = { avatar_id: string; name: string };
 type AvatarApiItem = {

@@ -1,7 +1,7 @@
 import { AvatarQuality } from "@heygen/streaming-avatar";
 import { Play, Settings } from "lucide-react";
 import React, { useState } from "react";
-import { AVATARS } from "@/app/lib/constants";
+import { AVATARS } from "../app/lib/constants";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";

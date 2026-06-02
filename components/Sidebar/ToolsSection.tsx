@@ -3,7 +3,7 @@
 import { ChevronRight, Plug, Search } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 
-import { KB_CONNECTORS } from "@/components/KnowledgeBase/connectors";
+import { KB_CONNECTORS } from "../../KnowledgeBase/connectors";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { SidebarGroup, SidebarGroupLabel } from "@/components/ui/sidebar";
