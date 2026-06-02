@@ -20,6 +20,8 @@ export interface MessageAsset {
 	mimeType?: string;
 	kind?: "asset" | "tool" | "knowledge" | "agent";
 	description?: string;
+	conversationStarters?: string[];
+	chainOrder?: number;
 }
 
 export interface Message {

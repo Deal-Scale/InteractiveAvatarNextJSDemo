@@ -11,6 +11,7 @@ import {
 	parseAppCapabilityActions,
 	stripAppCapabilityBlocks,
 } from "@/lib/app-capabilities";
+import { buildAgentChainInstruction } from "@/lib/agent-chain";
 import type { ProviderId } from "@/lib/chat/providers";
 import { getProvider } from "@/lib/chat/registry";
 import { useSendTaskMutation } from "@/lib/services/streaming/query";
@@ -90,6 +91,10 @@ export function useChatController(sessionState: StreamingAvatarSessionState) {
 		async (text: string, assets?: MessageAsset[]) => {
 			const trimmed = text.trim();
 			if (!trimmed) return;
+			const agentChainInstruction = buildAgentChainInstruction(assets);
+			const providerInputText = agentChainInstruction
+				? `${text}\n\n${agentChainInstruction}`
+				: text;
 
 			const sendId = ++activeSendIdRef.current;
 			const isActiveSend = () => sendId === activeSendIdRef.current;
@@ -126,6 +131,7 @@ export function useChatController(sessionState: StreamingAvatarSessionState) {
 				const history = useSessionStore.getState().messages;
 				const systemPrompt = [
 					textSettings.systemPrompt.trim(),
+					agentChainInstruction,
 					APP_CAPABILITIES_SYSTEM_PROMPT,
 				]
 					.filter(Boolean)
@@ -137,7 +143,7 @@ export function useChatController(sessionState: StreamingAvatarSessionState) {
 						try {
 							const reply = await textProvider.sendMessage({
 								history,
-								input: text,
+								input: providerInputText,
 								options: {
 									jsonMode: textSettings.jsonMode,
 									systemPrompt,
@@ -213,12 +219,12 @@ export function useChatController(sessionState: StreamingAvatarSessionState) {
 						if (currentSessionId) {
 							await sendTaskMutation.mutateAsync({
 								session_id: currentSessionId,
-								text,
+								text: providerInputText,
 								task_mode: "async",
 								task_type: "chat",
 							});
 						} else if (apiService) {
-							await apiService.textChat.sendMessage(text, assets);
+							await apiService.textChat.sendMessage(providerInputText, assets);
 						}
 					})(),
 				);

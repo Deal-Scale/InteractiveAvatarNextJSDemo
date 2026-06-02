@@ -9,6 +9,7 @@ export type ComposerAsset = {
 	kind?: "asset" | "tool" | "knowledge" | "agent";
 	description?: string;
 	conversationStarters?: string[];
+	chainOrder?: number;
 };
 
 export type ComposerState = {
