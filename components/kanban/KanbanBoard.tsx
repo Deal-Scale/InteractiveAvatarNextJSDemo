@@ -178,7 +178,7 @@ export function KanbanBoard() {
 			onDragEnd={onDragEnd}
 			onDragOver={onDragOver}
 		>
-			<div className="flex flex-col flex-1 min-h-0 gap-4">
+			<div className="flex min-h-0 flex-1 flex-col gap-4 overflow-hidden">
 				{/* View toolbar: search + sorting */}
 				<div className="px-2 md:px-0 shrink-0">
 					<ViewSearchAndSort />

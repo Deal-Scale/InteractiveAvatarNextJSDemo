@@ -1,4 +1,4 @@
-import type { TourId } from "@/components/tour/tourRegistry";
+import type { TourId } from "./tourRegistry";
 
 export type TourGroup = {
 	id: string;

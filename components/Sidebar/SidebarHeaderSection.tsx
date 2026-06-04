@@ -2,10 +2,10 @@
 
 import { HelpCircle, PanelLeft, Search } from "lucide-react";
 import React from "react";
-import HeaderActionsStack from "@/components/Sidebar/HeaderActionsStack";
-import { useAppTour } from "@/components/tour/AppTourProvider";
+import HeaderActionsStack from "./HeaderActionsStack";
+import { useAppTour } from "../tour/AppTourProvider";
 import { Input } from "@/components/ui/input";
-import { SidebarTrigger } from "@/components/ui/sidebar";
+import { SidebarTrigger } from "../ui/sidebar";
 
 type Props = {
 	onAssetsClick: () => void;

@@ -3,51 +3,55 @@
 import { Bookmark, Plus as PlusIcon } from "lucide-react";
 import { useRouter } from "next/navigation";
 import React, { useMemo, useRef } from "react";
-import AddKnowledgeBaseModal from "@/components/KnowledgeBase/AddKnowledgeBaseModal";
-import ActiveSessionsSection from "@/components/Sidebar/ActiveSessionsSection";
-import AgentsSection from "@/components/Sidebar/AgentsSection";
-import ApplicationsStarter from "@/components/Sidebar/ApplicationsStarter";
-import AssetsSection from "@/components/Sidebar/AssetsSection";
-import BookmarkModal from "@/components/Sidebar/BookmarkModal";
-import BookmarksSection from "@/components/Sidebar/BookmarksSection";
-import useBookmarkModal from "@/components/Sidebar/hooks/useBookmarkModal";
-import useConversations from "@/components/Sidebar/hooks/useConversations";
-import useSidebarCollapse from "@/components/Sidebar/hooks/useSidebarCollapse";
+import AddKnowledgeBaseModal from "./KnowledgeBase/AddKnowledgeBaseModal";
+import ActiveSessionsSection from "./Sidebar/ActiveSessionsSection";
+import AgentsSection from "./Sidebar/AgentsSection";
+import ApplicationsStarter from "./Sidebar/ApplicationsStarter";
+import AssetsSection from "./Sidebar/AssetsSection";
+import BookmarkModal from "./Sidebar/BookmarkModal";
+import BookmarksSection from "./Sidebar/BookmarksSection";
+import useBookmarkModal from "./Sidebar/hooks/useBookmarkModal";
+import useConversations from "./Sidebar/hooks/useConversations";
+import useSidebarCollapse from "./Sidebar/hooks/useSidebarCollapse";
 import KnowledgebaseSection, {
 	type KnowledgeFolder,
-} from "@/components/Sidebar/KnowledgebaseSection";
-import MessagesSection from "@/components/Sidebar/MessagesSection";
-import SessionsHistorySection from "@/components/Sidebar/SessionsHistorySection";
-import SidebarHeaderSection from "@/components/Sidebar/SidebarHeaderSection";
-import ToolConnectionModal from "@/components/Sidebar/ToolConnectionModal";
-import ToolsSection from "@/components/Sidebar/ToolsSection";
-import type { SidebarProps } from "@/components/Sidebar/types";
-import { Button } from "@/components/ui/button";
+} from "./Sidebar/KnowledgebaseSection";
+import MessagesSection from "./Sidebar/MessagesSection";
+import SessionsHistorySection from "./Sidebar/SessionsHistorySection";
+import SidebarHeaderSection from "./Sidebar/SidebarHeaderSection";
+import ToolConnectionModal from "./Sidebar/ToolConnectionModal";
+import ToolsSection from "./Sidebar/ToolsSection";
+import type { SidebarProps } from "./Sidebar/types";
+import { Button } from "./ui/button";
 import {
 	SidebarContent,
 	SidebarHeader,
 	SidebarProvider,
 	Sidebar as UISidebar,
-} from "@/components/ui/sidebar";
-import ThemeEmotionSelect from "@/components/ui/theme-emotion-select";
-import { ThemeToggle } from "@/components/ui/theme-toggle";
-import { buildKnowledgeTree } from "@/lib/knowledge-tree";
+} from "./ui/sidebar";
+import ThemeEmotionSelect from "./ui/theme-emotion-select";
+import { ThemeToggle } from "./ui/theme-toggle";
+import { buildKnowledgeTree } from "../lib/knowledge-tree";
 import {
 	useConnectKBSource,
 	useScheduleKBSync,
 	useTestKBConnection,
-} from "@/lib/query/mutations";
-import { useAgentStore } from "@/lib/stores/agent";
-import { useAssetsStore } from "@/lib/stores/assets";
-import { useComposerStore } from "@/lib/stores/composer";
-import { useSessionStore } from "@/lib/stores/session";
-import { useSettingsStore } from "@/lib/stores/settings";
+} from "../lib/query/mutations";
+import { useAgentStore } from "../lib/stores/agent";
+import { useAssetsStore } from "../lib/stores/assets";
+import { useComposerStore } from "../lib/stores/composer";
+import { useSessionStore } from "../lib/stores/session";
+import { useSettingsStore } from "../lib/stores/settings";
 
 // types, utils, and subcomponents are imported from components/Sidebar/*
 
 const SKELETON_IDS = ["s1", "s2", "s3", "s4", "s5", "s6"] as const;
 
-const Sidebar: React.FC<SidebarProps> = ({ onSelect, apps }) => {
+const Sidebar: React.FC<SidebarProps> = ({
+	onSelect,
+	apps,
+	showCollapsedTrigger = true,
+}) => {
 	const router = useRouter();
 	const { agentSettings } = useSessionStore();
 	const currentSessionId = useSessionStore((s) => s.currentSessionId);
@@ -367,7 +371,7 @@ const Sidebar: React.FC<SidebarProps> = ({ onSelect, apps }) => {
 	const conversationsById = useMemo(() => {
 		const map: Record<
 			string,
-			import("@/components/Sidebar/types").Conversation
+			import("./Sidebar/types").Conversation
 		> = {};
 		if (conv.groups) {
 			for (const g of conv.groups) {
@@ -387,7 +391,11 @@ const Sidebar: React.FC<SidebarProps> = ({ onSelect, apps }) => {
 
 	return (
 		<SidebarProvider>
-			<UISidebar className="bg-background text-foreground" data-tour="sidebar">
+			<UISidebar
+				className="bg-background text-foreground"
+				data-tour="sidebar"
+				showCollapsedTrigger={showCollapsedTrigger}
+			>
 				<SidebarHeader>
 					<SidebarHeaderSection
 						query={conv.query}

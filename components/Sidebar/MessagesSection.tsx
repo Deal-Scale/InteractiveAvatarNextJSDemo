@@ -2,14 +2,14 @@
 
 import { ChevronRight } from "lucide-react";
 
-import ConversationsSection from "@/components/Sidebar/ConversationsSection";
+import ConversationsSection from "./ConversationsSection";
 import type {
 	Conversation,
 	ConversationGroup,
-} from "@/components/Sidebar/types";
-import { formatCompactNumber } from "@/components/Sidebar/utils/format";
+} from "./types";
+import { formatCompactNumber } from "./utils/format";
 import { Button } from "@/components/ui/button";
-import { SidebarGroup, SidebarGroupLabel } from "@/components/ui/sidebar";
+import { SidebarGroup, SidebarGroupLabel } from "../ui/sidebar";
 
 export default function MessagesSection(props: {
 	collapsedMessages: boolean;

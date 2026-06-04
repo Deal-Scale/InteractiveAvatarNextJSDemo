@@ -1,4 +1,4 @@
-import type { UserSettings, AppGlobalSettings } from "@/lib/schemas/global";
+import type { UserSettings, AppGlobalSettings } from "../schemas/global";
 
 import { create } from "zustand";
 import { persist, createJSONStorage } from "zustand/middleware";

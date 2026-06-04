@@ -9,9 +9,9 @@ import {
 } from "lucide-react";
 import React, { useEffect, useMemo, useRef, useState } from "react";
 
-import AssetCard, { type Asset } from "@/components/Sidebar/assets/AssetCard";
-import PreviewDialog from "@/components/Sidebar/assets/PreviewDialog";
-import UploadsList from "@/components/Sidebar/assets/UploadsList";
+import AssetCard, { type Asset } from "./assets/AssetCard";
+import PreviewDialog from "./assets/PreviewDialog";
+import UploadsList from "./assets/UploadsList";
 import { Button } from "@/components/ui/button";
 import {
 	Dialog,
@@ -21,7 +21,7 @@ import {
 	DialogHeader,
 	DialogTitle,
 } from "@/components/ui/dialog";
-import { SidebarGroup, SidebarGroupLabel } from "@/components/ui/sidebar";
+import { SidebarGroup, SidebarGroupLabel } from "../ui/sidebar";
 import { useToast } from "@/components/ui/toaster";
 import { useAssetsStore } from "@/lib/stores/assets";
 

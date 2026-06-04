@@ -15,9 +15,9 @@ import {
 	Folder,
 	Tree,
 	type TreeViewElement,
-} from "@/components/magicui/file-tree";
-import type { Conversation } from "@/components/Sidebar/types";
-import { SidebarGroup, SidebarGroupLabel } from "@/components/ui/sidebar";
+} from "../magicui/file-tree";
+import type { Conversation } from "./types";
+import { SidebarGroup, SidebarGroupLabel } from "../ui/sidebar";
 
 type BookmarkFolder = { id: string; name: string; parentId?: string };
 type BookmarkTreeNode = Omit<TreeViewElement, "children"> & {

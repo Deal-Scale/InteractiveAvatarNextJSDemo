@@ -13,7 +13,7 @@ import { Responsive, useContainerWidth } from "react-grid-layout";
 
 import { LiveMermaidChart } from "../ui/live-mermaid-chart";
 import { Mermaid } from "../ui/mermaid";
-import { useDataGridStore } from "@/lib/stores/dataGrid";
+import { useDataGridStore } from "../../lib/stores/dataGrid";
 import PlatformList from "./analytics/PlatformList";
 import TargetAudienceList from "./analytics/TargetAudienceList";
 import TrafficList from "./analytics/TrafficList";

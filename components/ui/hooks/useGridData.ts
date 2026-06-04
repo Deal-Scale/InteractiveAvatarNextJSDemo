@@ -5,7 +5,7 @@ import {
 	GridItem,
 	GridResponse,
 	GridQueryParams,
-} from "@/types/component-grid";
+} from "../../../types/component-grid";
 import {
 	useInfiniteQuery,
 	useQuery,

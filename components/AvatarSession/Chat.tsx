@@ -15,6 +15,7 @@ import { useToast } from "@/components/ui/toaster";
 import { getProvider } from "@/lib/chat/registry";
 import { useChatProviderStore } from "@/lib/stores/chatProvider";
 import { useComposerStore } from "@/lib/stores/composer";
+import { useSessionStore } from "@/lib/stores/session";
 import type { MessageAsset, Message as MessageType } from "@/lib/types";
 import { MessageSender } from "@/lib/types";
 import { cn } from "@/lib/utils";
@@ -230,7 +231,7 @@ export const Chat: React.FC<ChatProps> = ({
 	};
 
 	return (
-		<div className="flex flex-col w-full flex-1 min-h-0 p-4">
+		<div className="flex h-full w-full min-h-0 flex-1 flex-col p-4">
 			<div
 				className={cn(
 					"flex flex-1 min-h-0 h-full flex-col overflow-hidden text-foreground",
@@ -288,25 +289,29 @@ export const Chat: React.FC<ChatProps> = ({
 				className="shrink-0 border-t border-border pt-3 bg-background"
 			>
 				{/* Branch Dialog */}
-				<BranchDialog
-					open={branching.state.branchOpen}
-					onOpenChange={branching.setBranchOpen}
-					messageContent={branching.state.branchMsgContent}
-					agentName={branching.agentName}
-					actionText={branching.state.branchAction}
-					onActionTextChange={branching.setBranchAction}
-					onConfirm={branching.confirmBranch}
-				/>
+				{branching.state.branchOpen ? (
+					<BranchDialog
+						open={branching.state.branchOpen}
+						onOpenChange={branching.setBranchOpen}
+						messageContent={branching.state.branchMsgContent}
+						agentName={branching.agentName}
+						actionText={branching.state.branchAction}
+						onActionTextChange={branching.setBranchAction}
+						onConfirm={branching.confirmBranch}
+					/>
+				) : null}
 
 				{/* Compare Dialog */}
-				<CompareDialog
-					open={comparison.state.compareOpen}
-					onOpenChange={comparison.setCompareOpen}
-					original={comparison.state.compareOriginal}
-					alternative={comparison.state.compareAlternative}
-					isGenerating={comparison.state.isGeneratingAlt}
-					onChoose={handleChooseComparison}
-				/>
+				{comparison.state.compareOpen ? (
+					<CompareDialog
+						open={comparison.state.compareOpen}
+						onOpenChange={comparison.setCompareOpen}
+						original={comparison.state.compareOriginal}
+						alternative={comparison.state.compareAlternative}
+						isGenerating={comparison.state.isGeneratingAlt}
+						onChoose={handleChooseComparison}
+					/>
+				) : null}
 				<ChatInput
 					chatMode={chatMode}
 					attachments={attachments}

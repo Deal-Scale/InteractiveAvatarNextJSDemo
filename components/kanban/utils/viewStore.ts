@@ -14,6 +14,8 @@ export interface ViewFilters {
 	status: Status[]; // empty = no filter
 	priority: Priority[]; // empty = no filter
 	assignedToTeamMember: string[]; // empty = no filter
+	leadId: string[]; // empty = no filter
+	leadListId: string[]; // empty = no filter
 }
 
 export interface ViewSort {
@@ -56,11 +58,25 @@ const defaultState: ViewState = {
 		status: [],
 		priority: [],
 		assignedToTeamMember: [],
+		leadId: [],
+		leadListId: [],
 	},
 	sort: { field: "dueDate", direction: "asc" },
 	previewFields: ["priority", "dueDate", "assignedToTeamMember"],
 	savedFilters: null,
 };
+
+const normalizeFilters = (
+	filters?: Partial<ViewFilters> | null,
+): ViewFilters => ({
+	status: Array.isArray(filters?.status) ? filters.status : [],
+	priority: Array.isArray(filters?.priority) ? filters.priority : [],
+	assignedToTeamMember: Array.isArray(filters?.assignedToTeamMember)
+		? filters.assignedToTeamMember
+		: [],
+	leadId: Array.isArray(filters?.leadId) ? filters.leadId : [],
+	leadListId: Array.isArray(filters?.leadListId) ? filters.leadListId : [],
+});
 
 // Priority sort helper
 const priorityRank: Record<Priority, number> = {
@@ -92,6 +108,16 @@ function applyFilters(tasks: KanbanTask[], v: ViewState): KanbanTask[] {
 			filters.assignedToTeamMember.length > 0 &&
 			(!t.assignedToTeamMember ||
 				!filters.assignedToTeamMember.includes(String(t.assignedToTeamMember)))
+		)
+			return false;
+		if (
+			filters.leadId.length > 0 &&
+			(!t.leadId || !filters.leadId.includes(String(t.leadId)))
+		)
+			return false;
+		if (
+			filters.leadListId.length > 0 &&
+			(!t.leadListId || !filters.leadListId.includes(String(t.leadListId)))
 		)
 			return false;
 		// search (title + description)
@@ -138,21 +164,20 @@ export const useKanbanView = create<ViewState & Actions>()(
 			setSearchQuery: (q) => set({ searchQuery: q }),
 			setFilters: (filters) =>
 				set((s) => ({
-					filters: {
-						status: filters.status ?? s.filters.status,
-						priority: filters.priority ?? s.filters.priority,
-						assignedToTeamMember:
-							filters.assignedToTeamMember ?? s.filters.assignedToTeamMember,
-					},
+					filters: normalizeFilters({
+						...normalizeFilters(s.filters),
+						...filters,
+					}),
 				})),
 			clearFilters: () =>
-				set((s) => ({ filters: { ...defaultState.filters } })),
-			saveFilters: () => set((s) => ({ filters: { ...s.filters } })),
+				set((s) => ({ filters: normalizeFilters(defaultState.filters) })),
+			saveFilters: () =>
+				set((s) => ({ filters: normalizeFilters(s.filters) })),
 			saveCurrentFilters: () =>
-				set((s) => ({ savedFilters: { ...s.filters } })),
+				set((s) => ({ savedFilters: normalizeFilters(s.filters) })),
 			loadSavedFilters: () =>
 				set((s) => ({
-					filters: s.savedFilters ? { ...s.savedFilters } : { ...s.filters },
+					filters: normalizeFilters(s.savedFilters ?? s.filters),
 				})),
 			clearSavedFilters: () => set({ savedFilters: null }),
 			setSort: (sort) =>
@@ -171,6 +196,19 @@ export const useKanbanView = create<ViewState & Actions>()(
 				return sorted;
 			},
 		}),
-		{ name: "external-kanban-view-store" },
+		{
+			name: "external-kanban-view-store",
+			merge: (persistedState, currentState) => {
+				const persisted = (persistedState as Partial<ViewState & Actions>) ?? {};
+				return {
+					...currentState,
+					...persisted,
+					filters: normalizeFilters(persisted.filters),
+					savedFilters: persisted.savedFilters
+						? normalizeFilters(persisted.savedFilters)
+						: null,
+				};
+			},
+		},
 	),
 );

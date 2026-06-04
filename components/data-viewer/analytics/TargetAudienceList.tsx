@@ -76,14 +76,17 @@ function GenderDonut({ male, female }: { male: number; female: number }) {
 					male
 				</text>
 			</svg>
-			<div className="flex items-center gap-4 text-xs">
-				<span className="flex items-center gap-1.5">
-					<span className="block h-2.5 w-2.5 rounded-full bg-primary" />
-					<span className="text-foreground font-medium">{male}% male</span>
+			<div className="flex flex-wrap items-center justify-center gap-2 text-xs">
+				<span className="flex items-center gap-1.5 rounded-full border border-border bg-card px-2.5 py-1 shadow-sm">
+					<span className="block h-2 w-2 flex-shrink-0 rounded-full bg-primary" />
+					<span className="font-medium text-foreground">{male}% male</span>
 				</span>
-				<span className="flex items-center gap-1.5">
-					<span className="block h-2.5 w-2.5 rounded-full bg-primary/25" />
-					<span className="text-foreground font-medium">{female}% female</span>
+				<span className="flex items-center gap-1.5 rounded-full border border-border bg-card px-2.5 py-1 shadow-sm">
+					<span
+						className="block h-2 w-2 flex-shrink-0 rounded-full"
+						style={{ backgroundColor: "hsl(var(--primary) / 0.5)" }}
+					/>
+					<span className="font-medium text-foreground">{female}% female</span>
 				</span>
 			</div>
 		</div>

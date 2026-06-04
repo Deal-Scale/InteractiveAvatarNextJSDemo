@@ -1,8 +1,8 @@
 "use client";
 import React, { useEffect, useRef } from "react";
-import { useGridData } from "@/components/ui/hooks/useGridData";
-import type { GridItem } from "@/types/component-grid";
-import ComponentGridControls from "@/components/ui/grid/components/ComponentGridControls";
+import { useGridData } from "../../hooks/useGridData";
+import type { GridItem } from "../../../../types/component-grid";
+import ComponentGridControls from "./ComponentGridControls";
 import type { ComponentGridProps } from "../types";
 import { useIntersection } from "../utils/useIntersection";
 import { useResponsiveColumns } from "../utils/useResponsiveColumns";

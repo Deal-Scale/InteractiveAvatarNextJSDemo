@@ -22,4 +22,5 @@ export interface AppOption {
 export interface SidebarProps {
 	onSelect?: (c: Conversation) => void;
 	apps?: AppOption[];
+	showCollapsedTrigger?: boolean;
 }

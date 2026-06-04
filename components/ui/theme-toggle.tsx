@@ -4,7 +4,7 @@ import * as React from "react";
 import { useTheme } from "next-themes";
 import { Moon, Sun, Monitor } from "lucide-react";
 
-import { useThemeStore } from "@/lib/stores/theme";
+import { useThemeStore } from "../../lib/stores/theme";
 
 /****
  * Accessible theme toggle that cycles through: system -> light -> dark -> system.

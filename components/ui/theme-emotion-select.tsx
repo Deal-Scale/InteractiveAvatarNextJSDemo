@@ -2,7 +2,7 @@
 
 import * as React from "react";
 
-import { useThemeStore } from "@/lib/stores/theme";
+import { useThemeStore } from "../../lib/stores/theme";
 import {
 	Select,
 	SelectContent,

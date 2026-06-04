@@ -10,7 +10,7 @@ import {
 	SidebarGroupLabel,
 	SidebarMenu,
 	SidebarMenuButton,
-} from "@/components/ui/sidebar";
+} from "../../components/ui/sidebar";
 import { useBookmarkStore } from "@/lib/stores/bookmarks";
 
 type Conversation = {

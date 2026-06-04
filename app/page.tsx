@@ -3,7 +3,7 @@
 import InteractiveAvatar from "@/components/InteractiveAvatar";
 import Sidebar from "@/components/Sidebar";
 import { AppTourProvider } from "@/components/tour/AppTourProvider";
-import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
+import { SidebarInset, SidebarProvider } from "../components/ui/sidebar";
 
 export default function App() {
 	return (

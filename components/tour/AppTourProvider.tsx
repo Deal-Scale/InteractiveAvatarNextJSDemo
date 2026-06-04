@@ -8,8 +8,8 @@ import {
 	useMemo,
 	useState,
 } from "react";
-import { EVENTS, type EventData, Joyride, STATUS } from "react-joyride";
-import { type TourId, tourRegistry } from "@/components/tour/tourRegistry";
+import Joyride, { EVENTS, type EventData, STATUS } from "react-joyride";
+import { type TourId, tourRegistry } from "./tourRegistry";
 
 type AppTourContextValue = {
 	activeTourId: TourId;

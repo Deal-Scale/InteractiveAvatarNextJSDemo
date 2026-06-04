@@ -4,8 +4,8 @@ import {
 	openSidebar,
 	openSlashCommandMenu,
 	prepareChatTourTarget,
-} from "@/components/tour/tourHelpers";
-import type { TourDefinition } from "@/components/tour/tourTypes";
+} from "../tourHelpers";
+import type { TourDefinition } from "../tourTypes";
 
 export const chatsTour: TourDefinition = {
 	id: "chats",

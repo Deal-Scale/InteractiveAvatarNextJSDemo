@@ -5,13 +5,13 @@ import { Bookmark, BookmarkCheck, ChevronRight } from "lucide-react";
 import type {
 	Conversation,
 	ConversationGroup,
-} from "@/components/Sidebar/types";
+} from "./types";
 import {
 	SidebarGroup,
 	SidebarGroupLabel,
 	SidebarMenu,
 	SidebarMenuButton,
-} from "@/components/ui/sidebar";
+} from "../ui/sidebar";
 
 export default function ConversationsSection(props: {
 	groups: ConversationGroup[];

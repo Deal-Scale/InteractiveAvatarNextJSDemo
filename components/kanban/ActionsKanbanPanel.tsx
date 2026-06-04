@@ -17,7 +17,7 @@ export function ActionsKanbanPanel() {
 					<NewTaskDialog />
 				</div>
 			</div>
-			<div className="min-h-0 flex-1 overflow-hidden flex flex-col">
+			<div className="flex min-h-0 flex-1 flex-col overflow-hidden">
 				<KanbanBoard />
 			</div>
 		</div>

@@ -6,8 +6,8 @@ import {
 	prepareAgentMonetizationSummary,
 	prepareAgentTextVoiceMode,
 	prepareAgentVideoMode,
-} from "@/components/tour/tourHelpers";
-import type { TourDefinition } from "@/components/tour/tourTypes";
+} from "../tourHelpers";
+import type { TourDefinition } from "../tourTypes";
 
 export const agentsTour: TourDefinition = {
 	id: "agents",

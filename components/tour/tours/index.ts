@@ -1,23 +1,23 @@
-import { agentsTour } from "@/components/tour/tours/agents";
-import { appOverviewTour } from "@/components/tour/tours/appOverview";
-import { chatsTour } from "@/components/tour/tours/chats";
+import { agentsTour } from "./agents";
+import { appOverviewTour } from "./appOverview";
+import { chatsTour } from "./chats";
 import {
 	salesDemoTour,
 	supportDemoTour,
-} from "@/components/tour/tours/demoTours";
+} from "./demoTours";
 import {
 	assetsTour,
 	bookmarksTour,
 	knowledgeBaseTour,
 	leftSidebarTour,
 	toolsTour,
-} from "@/components/tour/tours/sidebarTours";
+} from "./sidebarTours";
 import {
 	actionsKanbanTour,
 	brainTour,
 	dataGridTour,
-} from "@/components/tour/tours/workspaceTours";
-import type { TourDefinition } from "@/components/tour/tourTypes";
+} from "./workspaceTours";
+import type { TourDefinition } from "../tourTypes";
 
 export const tourDefinitions: TourDefinition[] = [
 	appOverviewTour,

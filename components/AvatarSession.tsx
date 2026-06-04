@@ -7,7 +7,7 @@ import type { AgentConfig } from "@/lib/schemas/agent";
 import { useAgentStore } from "@/lib/stores/agent";
 import { usePlacementStore } from "@/lib/stores/placement";
 import { useSessionStore } from "@/lib/stores/session";
-import { useSettingsStore } from "@/lib/stores/settings";
+import { useSettingsStore } from "../lib/stores/settings";
 import { cn, safeWindow } from "@/lib/utils";
 import { AvatarVideoPanel } from "./AvatarSession/AvatarVideoPanel";
 import { ChatPanel } from "./AvatarSession/ChatPanel";

@@ -6,7 +6,7 @@ import { useEffect, useMemo, useState } from "react";
 import {
 	KB_CONNECTORS,
 	type KBConnector,
-} from "../../KnowledgeBase/connectors";
+} from "../KnowledgeBase/connectors";
 import { Button } from "@/components/ui/button";
 import {
 	Dialog,

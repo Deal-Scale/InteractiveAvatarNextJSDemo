@@ -8,8 +8,8 @@ import {
 	openSidebarSection,
 	prepareTopPanelTarget,
 	showBottomChatPanelToggle,
-} from "@/components/tour/tourHelpers";
-import type { TourDefinition } from "@/components/tour/tourTypes";
+} from "../tourHelpers";
+import type { TourDefinition } from "../tourTypes";
 
 export const appOverviewTour: TourDefinition = {
 	id: "app-overview",

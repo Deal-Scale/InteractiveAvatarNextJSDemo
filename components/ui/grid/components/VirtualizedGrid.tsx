@@ -1,7 +1,7 @@
 "use client";
 import React from "react";
 import { useVirtualizer } from "@tanstack/react-virtual";
-import type { GridItem } from "@/types/component-grid";
+import type { GridItem } from "../../../../types/component-grid";
 import type { GridItemRendererProps } from "../types";
 
 type Props<TItem extends GridItem> = {

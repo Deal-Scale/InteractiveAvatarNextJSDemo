@@ -3,9 +3,9 @@
 import { AvatarQuality } from "@heygen/streaming-avatar";
 import { useEffect, useMemo, useState } from "react";
 import { z } from "zod";
-import { AutoForm } from "@/components/forms/AutoForm";
-import { useZodForm } from "@/components/forms/useZodForm";
-import type { FieldsConfig } from "@/components/forms/utils";
+import { AutoForm } from "../forms/AutoForm";
+import { useZodForm } from "../forms/useZodForm";
+import type { FieldsConfig } from "../forms/utils";
 import { Button } from "@/components/ui/button";
 import {
 	Dialog,
@@ -30,9 +30,9 @@ import {
 	type VoiceOptionProvider,
 	voiceChatTransportOptions,
 	voiceEmotionOptions,
-} from "@/data/options";
-import { getAgentUsageProfile } from "@/lib/agents/monetization";
-import { AgentConfigSchema } from "@/lib/schemas/agent";
+} from "../../data/options";
+import { getAgentUsageProfile } from "../../lib/agents/monetization";
+import { AgentConfigSchema } from "../../lib/schemas/agent";
 import type { Agent } from "./AgentCard";
 import { AgentMonetizationSummary } from "./AgentMonetizationSummary";
 import AgentPreview from "./AgentPreview";

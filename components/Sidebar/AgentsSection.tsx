@@ -9,7 +9,7 @@ import {
 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
-import { SidebarGroup, SidebarGroupLabel } from "@/components/ui/sidebar";
+import { SidebarGroup, SidebarGroupLabel } from "../ui/sidebar";
 import { useAgentStore } from "@/lib/stores/agent";
 import AgentCard, { type Agent } from "./AgentCard";
 import AgentModal from "./AgentModal";

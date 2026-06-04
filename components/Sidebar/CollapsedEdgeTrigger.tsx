@@ -3,7 +3,7 @@
 import { ChevronRight, Settings } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
-import { useSidebar } from "@/components/ui/sidebar";
+import { useSidebar } from "../ui/sidebar";
 import { useSessionStore } from "@/lib/stores/session";
 
 export default function CollapsedEdgeTrigger() {

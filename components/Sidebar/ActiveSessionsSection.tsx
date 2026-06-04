@@ -3,7 +3,7 @@
 import { ChevronRight } from "lucide-react";
 import { useMemo } from "react";
 
-import { SidebarGroup, SidebarGroupLabel } from "@/components/ui/sidebar";
+import { SidebarGroup, SidebarGroupLabel } from "../ui/sidebar";
 import { useActiveSessionsQuery } from "@/lib/services/streaming/query";
 import { useSessionStore } from "@/lib/stores/session";
 

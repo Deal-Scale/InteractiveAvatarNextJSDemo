@@ -4,16 +4,16 @@ import type { z } from "zod";
 import { useZodForm } from "@/components/forms/useZodForm";
 import { languagesOptions } from "@/data/options";
 import { AgentConfigSchema } from "@/lib/schemas/agent";
-import type { AppGlobalSettings, UserSettings } from "@/lib/schemas/global";
+import type { AppGlobalSettings, UserSettings } from "../../lib/schemas/global";
 import {
 	AppGlobalSettingsSchema,
 	UserSettingsSchema,
-} from "@/lib/schemas/global";
+} from "../../lib/schemas/global";
 import { useAgentStore } from "@/lib/stores/agent";
 import type { ConfigModalTab } from "@/lib/stores/session";
 import { useSessionStore } from "@/lib/stores/session";
-import { useSettingsStore } from "@/lib/stores/settings";
-import { useThemeStore } from "@/lib/stores/theme";
+import { useSettingsStore } from "../../lib/stores/settings";
+import { useThemeStore } from "../../lib/stores/theme";
 import { GlobalSettingsTab } from "../modals/session/GlobalSettingsTab";
 import { SessionConfigHeader } from "../modals/session/Header";
 import { TabsHeader } from "../modals/session/Tabs";

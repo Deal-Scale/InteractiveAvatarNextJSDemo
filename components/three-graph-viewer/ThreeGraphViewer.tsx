@@ -137,7 +137,7 @@ export const ThreeGraphViewer: React.FC<ThreeGraphViewerProps> = ({
 				{animationPaused && (
 					<div
 						className="absolute inset-0 bg-black bg-opacity-75 flex items-center justify-center z-20"
-						style={{ pointerEvents: "none" }}
+						style={{ pointerEvents: "auto" }}
 					>
 						<button
 							onClick={handleToggleAnimation}

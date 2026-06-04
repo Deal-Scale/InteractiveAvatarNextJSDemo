@@ -15,9 +15,9 @@ import {
 	Folder,
 	Tree,
 	type TreeViewElement,
-} from "@/components/magicui/file-tree";
+} from "../magicui/file-tree";
 import { Button } from "@/components/ui/button";
-import { SidebarGroup, SidebarGroupLabel } from "@/components/ui/sidebar";
+import { SidebarGroup, SidebarGroupLabel } from "../ui/sidebar";
 import { setChatDragData } from "@/lib/chat-drag";
 
 export type KnowledgeFolder = { id: string; name: string; parentId?: string };

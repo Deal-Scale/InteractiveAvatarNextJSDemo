@@ -1,7 +1,7 @@
 import { Pause, Play } from "lucide-react";
 import { useId, useRef, useState } from "react";
-import type { AvatarOption } from "@/components/AvatarConfig/hooks/useAvatarOptions";
-import { Input } from "@/components/Input";
+import type { AvatarOption } from "../AvatarConfig/hooks/useAvatarOptions";
+import { Input } from "@/components/ui/input";
 import { BorderBeam } from "@/components/magicui/border-beam";
 import { Button } from "@/components/ui/button";
 import {
@@ -25,7 +25,7 @@ import {
 	TooltipProvider,
 	TooltipTrigger,
 } from "@/components/ui/tooltip";
-import type { Option } from "@/data/options";
+import type { Option } from "../../data/options";
 
 interface SessionQuickStartCardProps {
 	avatarOptions: AvatarOption[];

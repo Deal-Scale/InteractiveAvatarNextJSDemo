@@ -4,8 +4,8 @@ import {
 	openSidebarSection,
 	prepareKanbanTarget,
 	prepareTopPanelTarget,
-} from "@/components/tour/tourHelpers";
-import type { TourDefinition } from "@/components/tour/tourTypes";
+} from "../tourHelpers";
+import type { TourDefinition } from "../tourTypes";
 
 export const salesDemoTour: TourDefinition = {
 	id: "sales-demo",

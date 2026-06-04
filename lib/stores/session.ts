@@ -1,8 +1,8 @@
 import type { StartAvatarRequest } from "@heygen/streaming-avatar";
 import { create } from "zustand";
 import { createJSONStorage, persist } from "zustand/middleware";
-import type { AgentConfig } from "@/lib/schemas/agent";
-import type { AppGlobalSettings, UserSettings } from "@/lib/schemas/global";
+import type { AgentConfig } from "../schemas/agent";
+import type { AppGlobalSettings, UserSettings } from "../schemas/global";
 import type { Message, MessageSender } from "@/lib/types";
 
 export type ChatMode = "voice" | "text";

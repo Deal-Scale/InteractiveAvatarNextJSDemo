@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 
-import { useBookmarkStore } from "@/lib/stores/bookmarks";
+import { useBookmarkStore } from "../../../lib/stores/bookmarks";
 
 export default function useBookmarkModal() {
 	const {

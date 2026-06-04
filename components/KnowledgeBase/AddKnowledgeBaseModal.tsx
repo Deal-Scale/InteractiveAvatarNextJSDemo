@@ -11,10 +11,10 @@ import {
 	DialogHeader,
 	DialogTitle,
 } from "@/components/ui/dialog";
-import ComponentGridControls from "@/components/ui/grid/components/ComponentGridControls";
-import { useResponsiveColumns } from "@/components/ui/grid/utils/useResponsiveColumns";
-import { useGridData } from "@/components/ui/hooks/useGridData";
-import type { GridItem, GridResponse } from "@/types/component-grid";
+import ComponentGridControls from "../ui/grid/components/ComponentGridControls";
+import { useResponsiveColumns } from "../ui/grid/utils/useResponsiveColumns";
+import { useGridData } from "../ui/hooks/useGridData";
+import type { GridItem, GridResponse } from "../../types/component-grid";
 import { KB_CONNECTORS, type KBConnector } from "./connectors";
 
 const NO_FOLDER_VALUE = "__NO_FOLDER__";

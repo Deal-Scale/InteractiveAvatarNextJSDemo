@@ -9,17 +9,17 @@ import {
 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 
-import { useAppTour } from "@/components/tour/AppTourProvider";
-import { tourGroups } from "@/components/tour/tourGroups";
-import { tourDefinitions } from "@/components/tour/tourRegistry";
+import { useAppTour } from "../tour/AppTourProvider";
+import { tourGroups } from "../tour/tourGroups";
+import { tourDefinitions } from "../tour/tourRegistry";
 import { Button } from "@/components/ui/button";
 import {
 	SidebarGroup,
 	SidebarGroupLabel,
 	SidebarMenu,
 	SidebarMenuButton,
-} from "@/components/ui/sidebar";
-import { cn } from "@/lib/utils";
+} from "../ui/sidebar";
+import { cn } from "../../lib/utils";
 import type { AppOption } from "./types";
 
 type TourDefinition = (typeof tourDefinitions)[number];

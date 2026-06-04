@@ -8,7 +8,7 @@ import {
 } from "lucide-react";
 import { useEffect, useState } from "react";
 
-import PlacementModal from "@/components/Sidebar/PlacementModal";
+import PlacementModal from "./PlacementModal";
 import { Button } from "@/components/ui/button";
 import {
 	Tooltip,

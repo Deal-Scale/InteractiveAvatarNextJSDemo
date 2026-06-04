@@ -1,5 +1,4 @@
 "use client";
-import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
 import type { KanbanColumn, KanbanTask } from "../utils/types";
 import { useDndContext } from "@dnd-kit/core";
 import { SortableContext, useSortable } from "@dnd-kit/sortable";
@@ -68,7 +67,7 @@ export function BoardColumn({ column, tasks, isOverlay }: BoardColumnProps) {
 	return (
 		<Card
 			ref={setNodeRef}
-			style={{ ...style, height: "100%" }}
+			style={style}
 			className={variants({
 				dragging: isOverlay ? "overlay" : isDragging ? "over" : undefined,
 			})}
@@ -90,8 +89,8 @@ export function BoardColumn({ column, tasks, isOverlay }: BoardColumnProps) {
 					<ColumnActions title={column.title} id={String(column.id)} />
 				)}
 			</CardHeader>
-			<CardContent className="flex min-h-0 flex-1 flex-col overflow-hidden p-0">
-				<ScrollArea className="flex-1 w-full">
+			<CardContent className="flex flex-1 flex-col p-0">
+				<div className="w-full overscroll-y-contain">
 					<div className="flex flex-col gap-6 pl-3 pr-4 pt-3 pb-6">
 						<SortableContext items={tasksIds}>
 							{tasks.map((task) => (
@@ -99,7 +98,7 @@ export function BoardColumn({ column, tasks, isOverlay }: BoardColumnProps) {
 							))}
 						</SortableContext>
 					</div>
-				</ScrollArea>
+				</div>
 			</CardContent>
 		</Card>
 	);
@@ -108,9 +107,9 @@ export function BoardColumn({ column, tasks, isOverlay }: BoardColumnProps) {
 export function BoardContainer({ children }: { children: React.ReactNode }) {
 	const dndContext = useDndContext();
 	return (
-		<div className="flex-1 min-h-0 w-full overflow-x-auto overflow-y-hidden">
+		<div className="flex-1 min-h-0 w-full overflow-auto overscroll-contain pb-2 [scrollbar-gutter:stable]">
 			<div
-				className={`flex flex-row gap-4 px-2 md:px-0 h-full items-start ${
+				className={`flex min-w-max flex-row items-start gap-4 px-2 md:px-0 ${
 					dndContext.active ? "snap-none" : ""
 				}`}
 			>

@@ -1,5 +1,7 @@
 "use client";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { useLeadListStore } from "@/lib/stores/leadList";
+import { useUserLeadsStore } from "@/lib/stores/user/leads/leads";
 import { useKanbanView } from "../utils/viewStore";
 import type { Status, Priority, KanbanTask } from "../utils/types";
 import type { SortField, SortDirection } from "../utils/viewStore";
@@ -29,10 +31,23 @@ import {
 } from "@/components/ui/select";
 import SuggestModal from "./SuggestModal";
 
+type ToolbarMenuKey =
+	| "status"
+	| "priority"
+	| "assignee"
+	| "lead"
+	| "leadList"
+	| "quickActions";
+
+type ToolbarSelectKey = "sortField" | "sortDirection";
+
 export default function ViewSearchAndSort() {
 	// View store state and actions
 	// Suggest modal state
 	const [suggestOpen, setSuggestOpen] = useState(false);
+	const [openMenu, setOpenMenu] = useState<ToolbarMenuKey | null>(null);
+	const [openSelect, setOpenSelect] = useState<ToolbarSelectKey | null>(null);
+	const toolbarRef = useRef<HTMLDivElement | null>(null);
 	const searchQuery = useKanbanView((s) => s.searchQuery);
 	const setSearchQuery = useKanbanView((s) => s.setSearchQuery);
 	const sort = useKanbanView((s) => s.sort);
@@ -149,6 +164,8 @@ export default function ViewSearchAndSort() {
 	// Data sources to build options
 	const columns = useTaskStore((s) => s.columns);
 	const tasks = useTaskStore((s) => s.tasks);
+	const leadLists = useLeadListStore((s) => s.leadLists);
+	const userLeads = useUserLeadsStore((s) => s.leads);
 
 	const statusOptions: Status[] = useMemo(
 		() => columns.map((c) => String(c.id) as Status),
@@ -166,12 +183,106 @@ export default function ViewSearchAndSort() {
 		);
 		return Array.from(set);
 	}, [tasks]);
+	const leadOptions = useMemo(() => {
+		const activeLeadIds = new Set(
+			tasks
+				.map((task) => task.leadId)
+				.filter((leadId): leadId is string => Boolean(leadId))
+				.map(String),
+		);
+		const options = new Map<string, string>();
+		for (const lead of userLeads) {
+			if (!lead?.id || !activeLeadIds.has(String(lead.id))) continue;
+			const fullName = [lead.contactInfo?.firstName, lead.contactInfo?.lastName]
+				.filter(Boolean)
+				.join(" ")
+				.trim();
+			const label =
+				fullName ||
+				lead.contactInfo?.address ||
+				lead.address1?.fullStreetLine ||
+				String(lead.id);
+			options.set(String(lead.id), label);
+		}
+		for (const leadList of leadLists) {
+			for (const lead of leadList.leads ?? []) {
+				if (
+					!lead?.id ||
+					!activeLeadIds.has(String(lead.id)) ||
+					options.has(String(lead.id))
+				) {
+					continue;
+				}
+				const fullName = [lead.contactInfo?.firstName, lead.contactInfo?.lastName]
+					.filter(Boolean)
+					.join(" ")
+					.trim();
+				const label =
+					fullName ||
+					lead.contactInfo?.address ||
+					lead.address1?.fullStreetLine ||
+					String(lead.id);
+				options.set(String(lead.id), label);
+			}
+		}
+		return Array.from(options.entries()).map(([id, label]) => ({ id, label }));
+	}, [leadLists, tasks, userLeads]);
+	const leadListOptions = useMemo(() => {
+		const activeLeadListIds = new Set(
+			tasks
+				.map((task) => task.leadListId)
+				.filter((leadListId): leadListId is string => Boolean(leadListId))
+				.map(String),
+		);
+		return leadLists
+			.filter((leadList) => activeLeadListIds.has(String(leadList.id)))
+			.map((leadList) => ({
+				id: String(leadList.id),
+				label: leadList.listName || String(leadList.id),
+			}));
+	}, [leadLists, tasks]);
 
 	const sortField: SortField = sort.field;
 	const sortDirection: SortDirection = sort.direction;
 
 	const toggleInArray = <T extends string>(arr: T[], value: T): T[] =>
 		arr.includes(value) ? arr.filter((v) => v !== value) : [...arr, value];
+	const selectedLeadIds = filters.leadId ?? [];
+	const selectedLeadListIds = filters.leadListId ?? [];
+	const dismissToolbarOverlays = () => {
+		setOpenMenu(null);
+		setOpenSelect(null);
+	};
+	const menuProps = (menu: ToolbarMenuKey) => ({
+		open: openMenu === menu,
+		onOpenChange: (nextOpen: boolean) =>
+			setOpenMenu(nextOpen ? menu : openMenu === menu ? null : openMenu),
+	});
+	const menuContentProps = (menu: ToolbarMenuKey) => ({
+		onInteractOutside: dismissToolbarOverlays,
+		onEscapeKeyDown: dismissToolbarOverlays,
+	});
+	const selectProps = (select: ToolbarSelectKey) => ({
+		open: openSelect === select,
+		onOpenChange: (nextOpen: boolean) =>
+			setOpenSelect(nextOpen ? select : openSelect === select ? null : openSelect),
+	});
+
+	useEffect(() => {
+		if (!openMenu && !openSelect) return;
+
+		const handlePointerDown = (event: PointerEvent) => {
+			const target = event.target;
+			if (!(target instanceof Node)) return;
+			if (toolbarRef.current?.contains(target)) return;
+			dismissToolbarOverlays();
+		};
+
+		document.addEventListener("pointerdown", handlePointerDown, true);
+		return () => {
+			document.removeEventListener("pointerdown", handlePointerDown, true);
+		};
+	}, [openMenu, openSelect]);
 
 	// Preview fields options (subset of KanbanTask keys that make sense on cards)
 	const previewOptions: Array<keyof KanbanTask> = [
@@ -186,7 +297,10 @@ export default function ViewSearchAndSort() {
 	];
 
 	return (
-		<div className="flex w-full flex-wrap items-end gap-3 py-2">
+		<div
+			ref={toolbarRef}
+			className="flex w-full flex-wrap items-end gap-3 py-2"
+		>
 			{/* Search */}
 			<div className="flex min-w-[220px] flex-col gap-1">
 				<Label htmlFor="kanban-search">Search</Label>
@@ -201,7 +315,7 @@ export default function ViewSearchAndSort() {
 			{/* Status filter (multi) */}
 			<div className="flex min-w-[200px] flex-col gap-1">
 				<Label>Status</Label>
-				<DropdownMenu>
+				<DropdownMenu {...menuProps("status")} modal={false}>
 					<DropdownMenuTrigger asChild>
 						<Button
 							type="button"
@@ -213,7 +327,10 @@ export default function ViewSearchAndSort() {
 								: "All"}
 						</Button>
 					</DropdownMenuTrigger>
-					<DropdownMenuContent className="w-56">
+					<DropdownMenuContent
+						className="w-56"
+						{...menuContentProps("status")}
+					>
 						<DropdownMenuLabel>Select status</DropdownMenuLabel>
 						<DropdownMenuSeparator />
 						{statusOptions.map((s) => (
@@ -236,7 +353,7 @@ export default function ViewSearchAndSort() {
 			{/* Priority filter (multi) */}
 			<div className="flex min-w-[200px] flex-col gap-1">
 				<Label>Priority</Label>
-				<DropdownMenu>
+				<DropdownMenu {...menuProps("priority")} modal={false}>
 					<DropdownMenuTrigger asChild>
 						<Button
 							type="button"
@@ -248,7 +365,10 @@ export default function ViewSearchAndSort() {
 								: "All"}
 						</Button>
 					</DropdownMenuTrigger>
-					<DropdownMenuContent className="w-56">
+					<DropdownMenuContent
+						className="w-56"
+						{...menuContentProps("priority")}
+					>
 						<DropdownMenuLabel>Select priority</DropdownMenuLabel>
 						<DropdownMenuSeparator />
 						{priorityOptions.map((p) => (
@@ -271,7 +391,7 @@ export default function ViewSearchAndSort() {
 			{/* Assignee filter (multi) */}
 			<div className="flex min-w-[220px] flex-col gap-1">
 				<Label>Assignee</Label>
-				<DropdownMenu>
+				<DropdownMenu {...menuProps("assignee")} modal={false}>
 					<DropdownMenuTrigger asChild>
 						<Button
 							type="button"
@@ -283,7 +403,10 @@ export default function ViewSearchAndSort() {
 								: "All"}
 						</Button>
 					</DropdownMenuTrigger>
-					<DropdownMenuContent className="w-64">
+					<DropdownMenuContent
+						className="w-64"
+						{...menuContentProps("assignee")}
+					>
 						<DropdownMenuLabel>Select assignees</DropdownMenuLabel>
 						<DropdownMenuSeparator />
 						{assigneeOptions.map((a) => (
@@ -306,17 +429,84 @@ export default function ViewSearchAndSort() {
 				</DropdownMenu>
 			</div>
 
+			<div className="flex min-w-[220px] flex-col gap-1">
+				<Label>Lead</Label>
+				<DropdownMenu {...menuProps("lead")} modal={false}>
+					<DropdownMenuTrigger asChild>
+						<Button
+							type="button"
+							variant="outline"
+							className="justify-between w-[220px]"
+						>
+							{selectedLeadIds.length ? `${selectedLeadIds.length} selected` : "All"}
+						</Button>
+					</DropdownMenuTrigger>
+					<DropdownMenuContent className="w-64" {...menuContentProps("lead")}>
+						<DropdownMenuLabel>Select leads</DropdownMenuLabel>
+						<DropdownMenuSeparator />
+						{leadOptions.map(({ id, label }) => (
+							<DropdownMenuCheckboxItem
+								key={id}
+								checked={selectedLeadIds.includes(id)}
+								onCheckedChange={() =>
+									setFilters({
+										leadId: toggleInArray(selectedLeadIds, id),
+									})
+								}
+							>
+								{label}
+							</DropdownMenuCheckboxItem>
+						))}
+					</DropdownMenuContent>
+				</DropdownMenu>
+			</div>
+
+			<div className="flex min-w-[220px] flex-col gap-1">
+				<Label>Lead List</Label>
+				<DropdownMenu {...menuProps("leadList")} modal={false}>
+					<DropdownMenuTrigger asChild>
+						<Button
+							type="button"
+							variant="outline"
+							className="justify-between w-[220px]"
+						>
+							{selectedLeadListIds.length
+								? `${selectedLeadListIds.length} selected`
+								: "All"}
+						</Button>
+					</DropdownMenuTrigger>
+					<DropdownMenuContent className="w-64" {...menuContentProps("leadList")}>
+						<DropdownMenuLabel>Select lead lists</DropdownMenuLabel>
+						<DropdownMenuSeparator />
+						{leadListOptions.map(({ id, label }) => (
+							<DropdownMenuCheckboxItem
+								key={id}
+								checked={selectedLeadListIds.includes(id)}
+								onCheckedChange={() =>
+									setFilters({
+										leadListId: toggleInArray(selectedLeadListIds, id),
+									})
+								}
+							>
+								{label}
+							</DropdownMenuCheckboxItem>
+						))}
+					</DropdownMenuContent>
+				</DropdownMenu>
+			</div>
+
 			{/* Sort field */}
 			<div className="flex min-w-[180px] flex-col gap-1">
 				<Label>Sort field</Label>
 				<Select
+					{...selectProps("sortField")}
 					value={sortField}
 					onValueChange={(v) => setSort({ field: v as SortField })}
 				>
-					<SelectTrigger className="w-[200px]">
+					<SelectTrigger className="w-[200px] bg-card text-card-foreground">
 						<SelectValue placeholder="Sort field" />
 					</SelectTrigger>
-					<SelectContent>
+					<SelectContent className="bg-card text-card-foreground">
 						<SelectItem value="dueDate">Due date</SelectItem>
 						<SelectItem value="scheduledDate">Scheduled date</SelectItem>
 						<SelectItem value="priority">Priority</SelectItem>
@@ -330,13 +520,14 @@ export default function ViewSearchAndSort() {
 			<div className="flex min-w-[160px] flex-col gap-1">
 				<Label>Direction</Label>
 				<Select
+					{...selectProps("sortDirection")}
 					value={sortDirection}
 					onValueChange={(v) => setSort({ direction: v as SortDirection })}
 				>
-					<SelectTrigger className="w-[160px]">
+					<SelectTrigger className="w-[160px] bg-card text-card-foreground">
 						<SelectValue placeholder="Direction" />
 					</SelectTrigger>
-					<SelectContent>
+					<SelectContent className="bg-card text-card-foreground">
 						<SelectItem value="asc">Ascending</SelectItem>
 						<SelectItem value="desc">Descending</SelectItem>
 					</SelectContent>
@@ -345,7 +536,7 @@ export default function ViewSearchAndSort() {
 
 			{/* Quick actions menu: includes preview, Filters submenu, and AI submenu */}
 			<div className="flex items-end gap-2 pb-0">
-				<DropdownMenu>
+				<DropdownMenu {...menuProps("quickActions")} modal={false}>
 					<DropdownMenuTrigger asChild>
 						<Button
 							type="button"
@@ -356,7 +547,10 @@ export default function ViewSearchAndSort() {
 							<MoreVertical className="h-4 w-4" />
 						</Button>
 					</DropdownMenuTrigger>
-					<DropdownMenuContent className="w-64">
+					<DropdownMenuContent
+						className="w-64"
+						{...menuContentProps("quickActions")}
+					>
 						<DropdownMenuSub>
 							<DropdownMenuSubTrigger>Preview fields</DropdownMenuSubTrigger>
 							<DropdownMenuSubContent>

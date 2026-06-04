@@ -3,7 +3,7 @@ import type {
 	GridFetcher,
 	GridItem,
 	UseGridDataOptions,
-} from "@/types/component-grid";
+} from "../../../types/component-grid";
 
 export type GridItemRendererProps<TItem extends GridItem = GridItem> = {
 	item: TItem;

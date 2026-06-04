@@ -3,7 +3,7 @@
 import type React from "react";
 import { createContext, useContext } from "react";
 
-import { usePlacementStore } from "@/lib/stores/placement";
+import { usePlacementStore } from "../../lib/stores/placement";
 
 // Basic provider to manage open/close state for a collapsible sidebar
 type SidebarCtx = {
@@ -67,9 +67,14 @@ export function SidebarInset({ children }: { children: React.ReactNode }) {
 interface SidebarProps {
 	children: React.ReactNode;
 	className?: string;
+	showCollapsedTrigger?: boolean;
 }
 
-export function Sidebar({ children, className = "" }: SidebarProps) {
+export function Sidebar({
+	children,
+	className = "",
+	showCollapsedTrigger = true,
+}: SidebarProps) {
 	const { open, setOpen } = useSidebar();
 
 	return (
@@ -82,7 +87,7 @@ export function Sidebar({ children, className = "" }: SidebarProps) {
 			}
 			data-state={open ? "open" : "collapsed"}
 		>
-			{!open && (
+			{!open && showCollapsedTrigger && (
 				<button
 					aria-label="Open sidebar"
 					className="fixed left-0 top-1/2 -translate-y-1/2 z-[120] flex h-20 w-6 items-center justify-center rounded-r border border-primary bg-background text-foreground shadow-lg shadow-black/30 hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary backdrop-blur supports-[backdrop-filter]:bg-background/95"
