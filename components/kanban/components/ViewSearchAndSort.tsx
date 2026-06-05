@@ -253,12 +253,16 @@ export default function ViewSearchAndSort() {
 		setOpenMenu(null);
 		setOpenSelect(null);
 	};
+	const overlayAnchorProps = {
+		"data-toolbar-overlay-anchor": "true",
+	} as const;
 	const menuProps = (menu: ToolbarMenuKey) => ({
 		open: openMenu === menu,
 		onOpenChange: (nextOpen: boolean) =>
 			setOpenMenu(nextOpen ? menu : openMenu === menu ? null : openMenu),
 	});
 	const menuContentProps = (menu: ToolbarMenuKey) => ({
+		"data-toolbar-overlay-surface": "true",
 		onInteractOutside: dismissToolbarOverlays,
 		onEscapeKeyDown: dismissToolbarOverlays,
 	});
@@ -273,8 +277,13 @@ export default function ViewSearchAndSort() {
 
 		const handlePointerDown = (event: PointerEvent) => {
 			const target = event.target;
-			if (!(target instanceof Node)) return;
-			if (toolbarRef.current?.contains(target)) return;
+			if (!(target instanceof Element)) return;
+			if (
+				target.closest("[data-toolbar-overlay-anchor='true']") ||
+				target.closest("[data-toolbar-overlay-surface='true']")
+			) {
+				return;
+			}
 			dismissToolbarOverlays();
 		};
 
@@ -318,6 +327,7 @@ export default function ViewSearchAndSort() {
 				<DropdownMenu {...menuProps("status")} modal={false}>
 					<DropdownMenuTrigger asChild>
 						<Button
+							{...overlayAnchorProps}
 							type="button"
 							variant="outline"
 							className="justify-between w-[220px]"
@@ -356,6 +366,7 @@ export default function ViewSearchAndSort() {
 				<DropdownMenu {...menuProps("priority")} modal={false}>
 					<DropdownMenuTrigger asChild>
 						<Button
+							{...overlayAnchorProps}
 							type="button"
 							variant="outline"
 							className="justify-between w-[180px]"
@@ -394,6 +405,7 @@ export default function ViewSearchAndSort() {
 				<DropdownMenu {...menuProps("assignee")} modal={false}>
 					<DropdownMenuTrigger asChild>
 						<Button
+							{...overlayAnchorProps}
 							type="button"
 							variant="outline"
 							className="justify-between w-[220px]"
@@ -434,6 +446,7 @@ export default function ViewSearchAndSort() {
 				<DropdownMenu {...menuProps("lead")} modal={false}>
 					<DropdownMenuTrigger asChild>
 						<Button
+							{...overlayAnchorProps}
 							type="button"
 							variant="outline"
 							className="justify-between w-[220px]"
@@ -466,6 +479,7 @@ export default function ViewSearchAndSort() {
 				<DropdownMenu {...menuProps("leadList")} modal={false}>
 					<DropdownMenuTrigger asChild>
 						<Button
+							{...overlayAnchorProps}
 							type="button"
 							variant="outline"
 							className="justify-between w-[220px]"
@@ -503,10 +517,16 @@ export default function ViewSearchAndSort() {
 					value={sortField}
 					onValueChange={(v) => setSort({ field: v as SortField })}
 				>
-					<SelectTrigger className="w-[200px] bg-card text-card-foreground">
+					<SelectTrigger
+						{...overlayAnchorProps}
+						className="w-[200px] bg-card text-card-foreground"
+					>
 						<SelectValue placeholder="Sort field" />
 					</SelectTrigger>
-					<SelectContent className="bg-card text-card-foreground">
+					<SelectContent
+						className="bg-card text-card-foreground"
+						data-toolbar-overlay-surface="true"
+					>
 						<SelectItem value="dueDate">Due date</SelectItem>
 						<SelectItem value="scheduledDate">Scheduled date</SelectItem>
 						<SelectItem value="priority">Priority</SelectItem>
@@ -524,10 +544,16 @@ export default function ViewSearchAndSort() {
 					value={sortDirection}
 					onValueChange={(v) => setSort({ direction: v as SortDirection })}
 				>
-					<SelectTrigger className="w-[160px] bg-card text-card-foreground">
+					<SelectTrigger
+						{...overlayAnchorProps}
+						className="w-[160px] bg-card text-card-foreground"
+					>
 						<SelectValue placeholder="Direction" />
 					</SelectTrigger>
-					<SelectContent className="bg-card text-card-foreground">
+					<SelectContent
+						className="bg-card text-card-foreground"
+						data-toolbar-overlay-surface="true"
+					>
 						<SelectItem value="asc">Ascending</SelectItem>
 						<SelectItem value="desc">Descending</SelectItem>
 					</SelectContent>
@@ -539,6 +565,7 @@ export default function ViewSearchAndSort() {
 				<DropdownMenu {...menuProps("quickActions")} modal={false}>
 					<DropdownMenuTrigger asChild>
 						<Button
+							{...overlayAnchorProps}
 							type="button"
 							variant="ghost"
 							size="icon"

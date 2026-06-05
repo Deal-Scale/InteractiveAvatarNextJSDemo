@@ -96,12 +96,12 @@ export default function BookmarkModal(props: {
 			}}
 		>
 			<DialogContent
-				className="w-[96vw] md:w-[560px] max-w-[96vw] p-4 md:p-6 bg-card text-foreground flex flex-col max-h-[90vh]"
+				className="flex max-h-[90vh] w-[96vw] max-w-[96vw] flex-col bg-card p-4 text-foreground md:w-[560px] md:p-6"
 				data-tour="bookmark-modal"
 				onInteractOutside={(event) => event.preventDefault()}
 			>
 				<DialogHeader>
-					<DialogTitle className="text-sm font-medium">
+					<DialogTitle className="font-medium text-sm">
 						{bookmarkedIds.has(bookmarkTargetId || "")
 							? "Edit bookmark"
 							: "Add bookmark"}
@@ -110,9 +110,9 @@ export default function BookmarkModal(props: {
 						Manage bookmark folder and tags
 					</DialogDescription>
 				</DialogHeader>
-				<div className="flex-1 overflow-y-auto space-y-3">
+				<div className="flex-1 space-y-3 overflow-y-auto">
 					<div>
-						<span className="mb-1 block text-xs text-muted-foreground">
+						<span className="mb-1 block text-muted-foreground text-xs">
 							Bookmark name
 						</span>
 						<Input
@@ -123,7 +123,7 @@ export default function BookmarkModal(props: {
 						/>
 					</div>
 					<div>
-						<span className="mb-1 block text-xs text-muted-foreground">
+						<span className="mb-1 block text-muted-foreground text-xs">
 							Folder
 						</span>
 						<Select
@@ -146,7 +146,7 @@ export default function BookmarkModal(props: {
 						</Select>
 					</div>
 					<div>
-						<span className="mb-1 block text-xs text-muted-foreground">
+						<span className="mb-1 block text-muted-foreground text-xs">
 							Or create new folder
 						</span>
 						<Input
@@ -157,7 +157,7 @@ export default function BookmarkModal(props: {
 						/>
 					</div>
 					<div>
-						<span className="mb-1 block text-xs text-muted-foreground">
+						<span className="mb-1 block text-muted-foreground text-xs">
 							Tags (comma separated)
 						</span>
 						<Textarea
@@ -169,7 +169,7 @@ export default function BookmarkModal(props: {
 					</div>
 				</div>
 				<div className="mt-4 flex items-center justify-between gap-2">
-					<div className="text-xs text-muted-foreground">
+					<div className="text-muted-foreground text-xs">
 						{draftFolderId
 							? `Folder: ${
 									folderOptions.find((f) => f.id === draftFolderId)?.label ||

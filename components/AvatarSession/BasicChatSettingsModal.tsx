@@ -1,13 +1,5 @@
 "use client";
 
-import {
-	BotIcon,
-	FolderPlusIcon,
-	MessageSquareIcon,
-	MicIcon,
-} from "lucide-react";
-import type React from "react";
-import { useId, useState } from "react";
 import { Button } from "@/components/ui/button";
 import {
 	Dialog,
@@ -18,12 +10,20 @@ import {
 } from "@/components/ui/dialog";
 import {
 	type TextProviderMode,
-	useChatProviderStore,
 	type VoiceProviderMode,
+	useChatProviderStore,
 } from "@/lib/stores/chatProvider";
 import type { ChatExperience, ChatSettingsTab } from "@/lib/stores/session";
 import { useSessionStore } from "@/lib/stores/session";
 import { cn } from "@/lib/utils";
+import {
+	BotIcon,
+	FolderPlusIcon,
+	MessageSquareIcon,
+	MicIcon,
+} from "lucide-react";
+import type React from "react";
+import { useId, useState } from "react";
 
 interface BasicChatSettingsModalProps {
 	open: boolean;
@@ -55,6 +55,9 @@ const TABS: Array<{
 	{ value: "avatar", label: "Avatar Chat", icon: BotIcon },
 ];
 
+const NATIVE_SELECT_CLASS =
+	"min-w-0 rounded-md border border-input bg-slate-950 px-3 py-2 text-sm text-slate-50 [color-scheme:dark]";
+
 function FieldLabel({
 	children,
 	htmlFor,
@@ -63,7 +66,7 @@ function FieldLabel({
 	htmlFor?: string;
 }) {
 	return (
-		<label className="text-sm font-medium text-foreground" htmlFor={htmlFor}>
+		<label className="font-medium text-foreground text-sm" htmlFor={htmlFor}>
 			{children}
 		</label>
 	);
@@ -181,8 +184,8 @@ export function BasicChatSettingsModal({
 					<div className="mb-4 grid gap-3 rounded-lg border border-border bg-background p-3">
 						<div className="flex items-start justify-between gap-3">
 							<div>
-								<div className="text-sm font-semibold">Workflow setup</div>
-								<p className="mt-1 text-xs text-muted-foreground">
+								<div className="font-semibold text-sm">Workflow setup</div>
+								<p className="mt-1 text-muted-foreground text-xs">
 									Organize chats into folders. Guided flows live in the left
 									sidebar.
 								</p>
@@ -195,8 +198,8 @@ export function BasicChatSettingsModal({
 						>
 							<div className="flex items-center justify-between gap-3">
 								<div>
-									<div className="text-sm font-medium">Chat folders</div>
-									<p className="mt-1 text-xs text-muted-foreground">
+									<div className="font-medium text-sm">Chat folders</div>
+									<p className="mt-1 text-muted-foreground text-xs">
 										Create folders, then assign the current chat/session.
 									</p>
 								</div>
@@ -222,7 +225,7 @@ export function BasicChatSettingsModal({
 							</div>
 							<div className="mt-3 grid gap-2 sm:grid-cols-[1fr_auto]">
 								<select
-									className="min-w-0 rounded-md border border-input bg-background px-3 py-2 text-sm"
+									className={NATIVE_SELECT_CLASS}
 									value={selectedFolderId}
 									onChange={(event) =>
 										assignCurrentChatFolder(event.target.value)
@@ -239,7 +242,7 @@ export function BasicChatSettingsModal({
 									{chatFolders.map((folder) => (
 										<span
 											key={folder.id}
-											className="rounded-full border border-border bg-muted px-2 py-1 text-xs text-muted-foreground"
+											className="rounded-full border border-border bg-muted px-2 py-1 text-muted-foreground text-xs"
 										>
 											{folder.name}
 										</span>
@@ -265,7 +268,7 @@ export function BasicChatSettingsModal({
 									role="tab"
 									aria-selected={active}
 									className={cn(
-										"flex min-w-0 items-center justify-center gap-2 px-2 py-2 text-xs font-medium transition-colors sm:text-sm",
+										"flex min-w-0 items-center justify-center gap-2 px-2 py-2 font-medium text-xs transition-colors sm:text-sm",
 										active
 											? "bg-primary text-primary-foreground"
 											: "bg-background text-muted-foreground hover:bg-muted",
@@ -289,7 +292,7 @@ export function BasicChatSettingsModal({
 										</FieldLabel>
 										<select
 											id={textProviderId}
-											className="w-full min-w-0 rounded-md border border-input bg-background px-3 py-2 text-sm"
+											className={cn("w-full", NATIVE_SELECT_CLASS)}
 											value={textMode}
 											onChange={(event) =>
 												setTextMode(event.target.value as TextProviderMode)
@@ -371,7 +374,7 @@ export function BasicChatSettingsModal({
 										</FieldLabel>
 										<select
 											id={voiceProviderId}
-											className="w-full min-w-0 rounded-md border border-input bg-background px-3 py-2 text-sm"
+											className={cn("w-full", NATIVE_SELECT_CLASS)}
 											value={voiceMode}
 											onChange={(event) =>
 												setVoiceMode(event.target.value as VoiceProviderMode)
@@ -399,7 +402,7 @@ export function BasicChatSettingsModal({
 										<span className="block font-medium">
 											Enable voice chat pipeline
 										</span>
-										<span className="block text-xs text-muted-foreground">
+										<span className="block text-muted-foreground text-xs">
 											Send text through the selected voice provider when
 											available.
 										</span>
@@ -419,7 +422,7 @@ export function BasicChatSettingsModal({
 										<span className="block font-medium">
 											Auto-speak assistant responses
 										</span>
-										<span className="block text-xs text-muted-foreground">
+										<span className="block text-muted-foreground text-xs">
 											When an avatar/session is active, read provider replies
 											aloud.
 										</span>
@@ -431,8 +434,8 @@ export function BasicChatSettingsModal({
 						{activeTab === "avatar" && (
 							<div className="grid min-w-0 gap-4">
 								<div className="rounded-md border border-border bg-background p-3">
-									<div className="text-sm font-medium">Avatar Chat</div>
-									<p className="mt-1 text-sm text-muted-foreground">
+									<div className="font-medium text-sm">Avatar Chat</div>
+									<p className="mt-1 text-muted-foreground text-sm">
 										Avatar setup still uses the existing session, user, global,
 										and agent settings.
 									</p>

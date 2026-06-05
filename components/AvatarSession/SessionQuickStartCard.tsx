@@ -1,7 +1,3 @@
-import { Pause, Play } from "lucide-react";
-import { useId, useRef, useState } from "react";
-import type { AvatarOption } from "../AvatarConfig/hooks/useAvatarOptions";
-import { Input } from "@/components/ui/input";
 import { BorderBeam } from "@/components/magicui/border-beam";
 import { Button } from "@/components/ui/button";
 import {
@@ -12,20 +8,17 @@ import {
 	CardHeader,
 	CardTitle,
 } from "@/components/ui/card";
-import {
-	Select,
-	SelectContent,
-	SelectItem,
-	SelectTrigger,
-	SelectValue,
-} from "@/components/ui/select";
+import { Input } from "@/components/ui/input";
 import {
 	Tooltip,
 	TooltipContent,
 	TooltipProvider,
 	TooltipTrigger,
 } from "@/components/ui/tooltip";
+import { Check, ChevronDown, Pause, Play } from "lucide-react";
+import { useEffect, useId, useRef, useState } from "react";
 import type { Option } from "../../data/options";
+import type { AvatarOption } from "../AvatarConfig/hooks/useAvatarOptions";
 
 interface SessionQuickStartCardProps {
 	avatarOptions: AvatarOption[];
@@ -51,6 +44,120 @@ interface SessionQuickStartCardProps {
 		voiceId?: string;
 	}) => void;
 	onStartWithoutAvatar?: () => void;
+}
+
+type VideoSelectKey = "avatar" | "voice" | "context";
+
+type VideoSetupSelectOption = {
+	label: string;
+	value: string;
+};
+
+interface VideoSetupSelectProps {
+	className?: string;
+	id?: string;
+	onOpenChange: (open: boolean) => void;
+	onValueChange: (value: string) => void;
+	open: boolean;
+	options: VideoSetupSelectOption[];
+	placeholder: string;
+	value: string;
+}
+
+const VIDEO_SELECT_STYLE = {
+	backgroundColor: "#020617",
+	borderColor: "#334155",
+	color: "#f8fafc",
+} as const;
+
+function cx(...classes: Array<false | null | string | undefined>) {
+	return classes.filter(Boolean).join(" ");
+}
+
+function VideoSetupSelect({
+	className,
+	id,
+	onOpenChange,
+	onValueChange,
+	open,
+	options,
+	placeholder,
+	value,
+}: VideoSetupSelectProps) {
+	const generatedListId = useId();
+	const listId = `${id ?? generatedListId}-menu`;
+	const selectedOption = options.find((option) => option.value === value);
+
+	useEffect(() => {
+		if (!open) return;
+
+		const handleKeyDown = (event: KeyboardEvent) => {
+			if (event.key === "Escape") {
+				onOpenChange(false);
+			}
+		};
+
+		document.addEventListener("keydown", handleKeyDown);
+		return () => {
+			document.removeEventListener("keydown", handleKeyDown);
+		};
+	}, [onOpenChange, open]);
+
+	return (
+		<div className={cx("relative w-full", className)}>
+			<button
+				aria-controls={listId}
+				aria-expanded={open}
+				className="flex h-10 w-full items-center justify-between gap-2 rounded-md border border-slate-700 bg-slate-950 px-3 py-2 text-left text-slate-50 text-sm shadow-sm outline-none transition hover:bg-slate-900 focus:ring-2 focus:ring-ring/50"
+				data-video-select-anchor="true"
+				id={id}
+				style={VIDEO_SELECT_STYLE}
+				type="button"
+				onClick={() => onOpenChange(!open)}
+			>
+				<span className="min-w-0 flex-1 truncate">
+					{selectedOption?.label ?? placeholder}
+				</span>
+				<ChevronDown
+					aria-hidden="true"
+					className={cx("h-4 w-4 shrink-0 opacity-70", open && "rotate-180")}
+				/>
+			</button>
+			{open ? (
+				<div
+					className="absolute top-[calc(100%+0.25rem)] right-0 left-0 z-[10000] max-h-64 overflow-y-auto rounded-md border p-1 shadow-2xl"
+					data-video-select-surface="true"
+					id={listId}
+					style={VIDEO_SELECT_STYLE}
+				>
+					{options.map((option) => {
+						const selected = option.value === value;
+						return (
+							<button
+								aria-pressed={selected}
+								className={cx(
+									"flex w-full items-center gap-2 rounded-sm px-2 py-2 text-left text-slate-50 text-sm outline-none transition hover:bg-slate-800 focus:bg-slate-800",
+									selected && "bg-slate-800",
+								)}
+								key={option.value}
+								style={{ backgroundColor: selected ? "#1e293b" : "#020617" }}
+								type="button"
+								onClick={() => {
+									onValueChange(option.value);
+									onOpenChange(false);
+								}}
+							>
+								<span className="min-w-0 flex-1 truncate">{option.label}</span>
+								{selected ? (
+									<Check aria-hidden="true" className="h-4 w-4 shrink-0" />
+								) : null}
+							</button>
+						);
+					})}
+				</div>
+			) : null}
+		</div>
+	);
 }
 
 /**
@@ -84,9 +191,11 @@ export function SessionQuickStartCard({
 	const contextSelectId = useId();
 	const kbInputId = useId();
 	const voicePreviewRef = useRef<HTMLAudioElement | null>(null);
+	const cardRef = useRef<HTMLDivElement | null>(null);
 	const [playingVoicePreview, setPlayingVoicePreview] = useState<string | null>(
 		null,
 	);
+	const [openSelect, setOpenSelect] = useState<VideoSelectKey | null>(null);
 
 	const finalAvatarId =
 		selectedAvatar === "CUSTOM" ? customAvatarId.trim() : selectedAvatar;
@@ -106,6 +215,27 @@ export function SessionQuickStartCard({
 	const selectedVoicePreviewUrl = selectedVoiceOption?.previewUrl;
 	const isVoicePreviewPlaying =
 		Boolean(selectedVoicePreviewUrl) && playingVoicePreview === selectedVoiceId;
+	const avatarSelectOptions =
+		avatarOptions.length > 0
+			? avatarOptions.map((option) => ({
+					label: option.name,
+					value: option.avatar_id,
+				}))
+			: [{ label: "Paste Avatar UUID", value: "CUSTOM" }];
+	const voiceSelectOptions = [
+		{ label: "Use avatar default voice", value: "__DEFAULT__" },
+		...voiceOptions.map((option) => ({
+			label: option.label,
+			value: option.value,
+		})),
+	];
+	const contextSelectOptions = [
+		{ label: "Select a context", value: "__NONE__" },
+		...contextOptions.map((option) => ({
+			label: option.label,
+			value: option.value,
+		})),
+	];
 
 	const stopVoicePreview = () => {
 		voicePreviewRef.current?.pause();
@@ -142,8 +272,50 @@ export function SessionQuickStartCard({
 		});
 	};
 
+	useEffect(() => {
+		if (!openSelect) return;
+
+		const handlePointerDown = (event: PointerEvent) => {
+			const target = event.target;
+			if (!(target instanceof Element)) return;
+			if (
+				target.closest("[data-video-select-anchor='true']") ||
+				target.closest("[data-video-select-surface='true']")
+			) {
+				return;
+			}
+			setOpenSelect(null);
+		};
+
+		document.addEventListener("pointerdown", handlePointerDown, true);
+		return () => {
+			document.removeEventListener("pointerdown", handlePointerDown, true);
+		};
+	}, [openSelect]);
+
+	useEffect(() => {
+		if (typeof window === "undefined") return;
+
+		window.dispatchEvent(
+			new CustomEvent("deal-scale:video-select-open", {
+				detail: { open: Boolean(openSelect) },
+			}),
+		);
+
+		return () => {
+			window.dispatchEvent(
+				new CustomEvent("deal-scale:video-select-open", {
+					detail: { open: false },
+				}),
+			);
+		};
+	}, [openSelect]);
+
 	return (
-		<Card className="relative w-[360px] overflow-hidden border-border bg-card/80 backdrop-blur">
+		<Card
+			ref={cardRef}
+			className="relative w-[360px] overflow-visible border-border bg-card/80 backdrop-blur"
+		>
 			<CardHeader>
 				<CardTitle>Select an avatar to start session</CardTitle>
 				<CardDescription>
@@ -154,57 +326,27 @@ export function SessionQuickStartCard({
 				<div className="grid gap-4">
 					<div className="flex flex-col gap-2">
 						<label
-							className="flex items-center justify-between gap-2 text-sm text-muted-foreground"
+							className="flex items-center justify-between gap-2 text-muted-foreground text-sm"
 							htmlFor={avatarSelectId}
 						>
 							<span>Avatar</span>
-							<span className="rounded-full border border-destructive/30 bg-destructive/10 px-2 py-0.5 text-[10px] font-medium uppercase tracking-wide text-destructive">
+							<span className="rounded-full border border-destructive/30 bg-destructive/10 px-2 py-0.5 font-medium text-[10px] text-destructive uppercase tracking-wide">
 								Required
 							</span>
 						</label>
-						<Select value={selectedAvatar} onValueChange={onSelectAvatar}>
-							<SelectTrigger
-								id={avatarSelectId}
-								className="bg-popover/90 border-border text-popover-foreground hover:bg-popover focus:ring-2 focus:ring-ring/50"
-							>
-								<SelectValue placeholder="Select an avatar" />
-							</SelectTrigger>
-							<SelectContent
-								align="start"
-								avoidCollisions={false}
-								className="z-50 bg-popover/95 text-popover-foreground border border-border shadow-xl backdrop-blur"
-								position="popper"
-								side="bottom"
-								sideOffset={4}
-							>
-								{avatarOptions.map((opt) => (
-									<SelectItem
-										key={opt.avatar_id}
-										className="cursor-pointer text-foreground focus:bg-accent data-[highlighted]:bg-accent data-[state=checked]:bg-accent"
-										value={opt.avatar_id}
-									>
-										{opt.name}
-									</SelectItem>
-								))}
-								{avatarOptions.length === 0 && (
-									<div className="px-3 py-2 text-xs text-muted-foreground">
-										{isLoadingAvatarOptions
-											? "Loading LiveAvatar avatars..."
-											: "No LiveAvatar avatars returned"}
-									</div>
-								)}
-								{avatarOptions.length === 0 && (
-									<SelectItem
-										className="cursor-pointer text-foreground focus:bg-accent data-[highlighted]:bg-accent"
-										value="CUSTOM"
-									>
-										Paste Avatar UUID
-									</SelectItem>
-								)}
-							</SelectContent>
-						</Select>
+						<VideoSetupSelect
+							id={avatarSelectId}
+							open={openSelect === "avatar"}
+							options={avatarSelectOptions}
+							placeholder="Select an avatar"
+							value={selectedAvatar}
+							onOpenChange={(nextOpen) =>
+								setOpenSelect(nextOpen ? "avatar" : null)
+							}
+							onValueChange={onSelectAvatar}
+						/>
 						{avatarOptions.length === 0 && !isLoadingAvatarOptions ? (
-							<div className="text-xs text-muted-foreground">
+							<div className="text-muted-foreground text-xs">
 								Your LiveAvatar API key did not return avatar options. Paste a
 								LiveAvatar avatar UUID below or confirm the key has access to
 								published avatars.
@@ -219,11 +361,11 @@ export function SessionQuickStartCard({
 								/>
 								{customAvatarId ? (
 									customIdValid ? (
-										<div className="text-primary text-xs mt-1">
+										<div className="mt-1 text-primary text-xs">
 											Avatar UUID format looks good
 										</div>
 									) : (
-										<div className="text-destructive text-xs mt-1">
+										<div className="mt-1 text-destructive text-xs">
 											LiveAvatar avatar_id must be a UUID
 										</div>
 									)
@@ -232,60 +374,29 @@ export function SessionQuickStartCard({
 						)}
 						<div className="mt-3 flex flex-col gap-2">
 							<label
-								className="flex items-center justify-between gap-2 text-sm text-muted-foreground"
+								className="flex items-center justify-between gap-2 text-muted-foreground text-sm"
 								htmlFor={voiceSelectId}
 							>
 								<span>Voice</span>
-								<span className="rounded-full border border-border bg-muted/60 px-2 py-0.5 text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
+								<span className="rounded-full border border-border bg-muted/60 px-2 py-0.5 font-medium text-[10px] text-muted-foreground uppercase tracking-wide">
 									Optional
 								</span>
 							</label>
 							<div className="flex gap-2">
-								<Select
+								<VideoSetupSelect
+									id={voiceSelectId}
+									open={openSelect === "voice"}
+									options={voiceSelectOptions}
+									placeholder="Use default voice"
 									value={selectedVoiceId || "__DEFAULT__"}
+									onOpenChange={(nextOpen) =>
+										setOpenSelect(nextOpen ? "voice" : null)
+									}
 									onValueChange={(value) => {
 										stopVoicePreview();
 										onSelectVoice?.(value === "__DEFAULT__" ? "" : value);
 									}}
-								>
-									<SelectTrigger
-										id={voiceSelectId}
-										className="bg-popover/90 border-border text-popover-foreground hover:bg-popover focus:ring-2 focus:ring-ring/50"
-									>
-										<SelectValue placeholder="Use default voice" />
-									</SelectTrigger>
-									<SelectContent
-										align="start"
-										avoidCollisions={false}
-										className="z-50 bg-popover/95 text-popover-foreground border border-border shadow-xl backdrop-blur"
-										position="popper"
-										side="bottom"
-										sideOffset={4}
-									>
-										<SelectItem
-											className="cursor-pointer text-foreground focus:bg-accent data-[highlighted]:bg-accent"
-											value="__DEFAULT__"
-										>
-											Use avatar default voice
-										</SelectItem>
-										{voiceOptions.map((option) => (
-											<SelectItem
-												key={option.value}
-												className="cursor-pointer text-foreground focus:bg-accent data-[highlighted]:bg-accent data-[state=checked]:bg-accent"
-												value={option.value}
-											>
-												{option.label}
-											</SelectItem>
-										))}
-										{voiceOptions.length === 0 && (
-											<div className="px-3 py-2 text-xs text-muted-foreground">
-												{isLoadingVoiceOptions
-													? "Loading LiveAvatar voices..."
-													: "No LiveAvatar voices returned"}
-											</div>
-										)}
-									</SelectContent>
-								</Select>
+								/>
 								<Button
 									aria-label={
 										isVoicePreviewPlaying
@@ -306,66 +417,49 @@ export function SessionQuickStartCard({
 									)}
 								</Button>
 							</div>
+							{voiceOptions.length === 0 ? (
+								<div className="text-muted-foreground text-xs">
+									{isLoadingVoiceOptions
+										? "Loading LiveAvatar voices..."
+										: "No LiveAvatar voices returned"}
+								</div>
+							) : null}
 							{selectedVoiceId && !selectedVoicePreviewUrl ? (
-								<div className="text-xs text-muted-foreground">
+								<div className="text-muted-foreground text-xs">
 									No preview audio returned for this voice.
 								</div>
 							) : null}
 						</div>
 						<div className="mt-3 flex flex-col gap-2">
 							<label
-								className="flex items-center justify-between gap-2 text-sm text-muted-foreground"
+								className="flex items-center justify-between gap-2 text-muted-foreground text-sm"
 								htmlFor={contextSelectId}
 							>
 								<span>Knowledge Base / Context</span>
-								<span className="rounded-full border border-destructive/30 bg-destructive/10 px-2 py-0.5 text-[10px] font-medium uppercase tracking-wide text-destructive">
+								<span className="rounded-full border border-destructive/30 bg-destructive/10 px-2 py-0.5 font-medium text-[10px] text-destructive uppercase tracking-wide">
 									Required
 								</span>
 							</label>
-							<Select
+							<VideoSetupSelect
+								id={contextSelectId}
+								open={openSelect === "context"}
+								options={contextSelectOptions}
+								placeholder="Use default context"
 								value={knowledgeBaseId || "__NONE__"}
+								onOpenChange={(nextOpen) =>
+									setOpenSelect(nextOpen ? "context" : null)
+								}
 								onValueChange={(value) => {
 									onKnowledgeBaseChange(value === "__NONE__" ? "" : value);
 								}}
-							>
-								<SelectTrigger
-									id={contextSelectId}
-									className="bg-popover/90 border-border text-popover-foreground hover:bg-popover focus:ring-2 focus:ring-ring/50"
-								>
-									<SelectValue placeholder="Use default context" />
-								</SelectTrigger>
-								<SelectContent
-									align="start"
-									avoidCollisions={false}
-									className="z-50 bg-popover/95 text-popover-foreground border border-border shadow-xl backdrop-blur"
-									position="popper"
-									side="bottom"
-									sideOffset={4}
-								>
-									<SelectItem
-										className="cursor-pointer text-foreground focus:bg-accent data-[highlighted]:bg-accent"
-										value="__NONE__"
-									>
-										Select a context
-									</SelectItem>
-									{contextOptions.map((option) => (
-										<SelectItem
-											key={option.value}
-											className="cursor-pointer text-foreground focus:bg-accent data-[highlighted]:bg-accent data-[state=checked]:bg-accent"
-											value={option.value}
-										>
-											{option.label}
-										</SelectItem>
-									))}
-									{contextOptions.length === 0 && (
-										<div className="px-3 py-2 text-xs text-muted-foreground">
-											{isLoadingContextOptions
-												? "Loading LiveAvatar contexts..."
-												: "No LiveAvatar contexts returned"}
-										</div>
-									)}
-								</SelectContent>
-							</Select>
+							/>
+							{contextOptions.length === 0 ? (
+								<div className="text-muted-foreground text-xs">
+									{isLoadingContextOptions
+										? "Loading LiveAvatar contexts..."
+										: "No LiveAvatar contexts returned"}
+								</div>
+							) : null}
 							<Input
 								id={kbInputId}
 								placeholder="Or paste LiveAvatar context_id"
