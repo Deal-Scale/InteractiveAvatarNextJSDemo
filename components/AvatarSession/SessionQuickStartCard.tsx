@@ -357,7 +357,7 @@ export function SessionQuickStartCard({
 								<Input
 									placeholder="Enter LiveAvatar avatar_id"
 									value={customAvatarId}
-									onChange={onCustomAvatarChange}
+									onChange={(event) => onCustomAvatarChange(event.target.value)}
 								/>
 								{customAvatarId ? (
 									customIdValid ? (
@@ -464,7 +464,7 @@ export function SessionQuickStartCard({
 								id={kbInputId}
 								placeholder="Or paste LiveAvatar context_id"
 								value={knowledgeBaseId}
-								onChange={onKnowledgeBaseChange}
+								onChange={(event) => onKnowledgeBaseChange(event.target.value)}
 							/>
 							{knowledgeBaseId ? (
 								kbIdValid ? (

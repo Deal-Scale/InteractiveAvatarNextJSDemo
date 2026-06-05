@@ -13,6 +13,13 @@ export type ConfigModalTab = "global" | "user";
 
 export type KnowledgeFolder = { id: string; name: string; parentId?: string };
 export type ChatFolder = { id: string; name: string; parentId?: string };
+export type ToolConnection = {
+	id: string;
+	name: string;
+	connectedAt: number;
+	authType: "oauth" | "apiKey";
+	config: Record<string, string>;
+};
 
 interface SessionState {
 	isConfigModalOpen: boolean;
@@ -105,6 +112,11 @@ interface SessionState {
 					prev: Array<{ id: string; name: string }>,
 			  ) => Array<{ id: string; name: string }>),
 	) => void;
+
+	toolConnections: Record<string, ToolConnection | undefined>;
+	setToolConnection: (connectorKey: string, connection: ToolConnection) => void;
+	removeToolConnection: (connectorKey: string) => void;
+	clearToolConnections: () => void;
 }
 
 export const useSessionStore = create<SessionState>()(
@@ -242,6 +254,21 @@ export const useSessionStore = create<SessionState>()(
 							? items(state.createdKnowledgeItems)
 							: items,
 				})),
+			toolConnections: {},
+			setToolConnection: (connectorKey, connection) =>
+				set((state) => ({
+					toolConnections: {
+						...state.toolConnections,
+						[connectorKey]: connection,
+					},
+				})),
+			removeToolConnection: (connectorKey) =>
+				set((state) => {
+					const next = { ...state.toolConnections };
+					delete next[connectorKey];
+					return { toolConnections: next };
+				}),
+			clearToolConnections: () => set({ toolConnections: {} }),
 		}),
 		{
 			name: "session-store",
@@ -259,6 +286,7 @@ export const useSessionStore = create<SessionState>()(
 					chatExperience: "basic",
 					chatSettingsTab: "text",
 					viewTab: "video",
+					toolConnections: {},
 				};
 			},
 			// Only persist what's useful across reloads
@@ -280,6 +308,7 @@ export const useSessionStore = create<SessionState>()(
 				kbFolders: state.kbFolders,
 				kbItemFolders: state.kbItemFolders,
 				createdKnowledgeItems: state.createdKnowledgeItems,
+				toolConnections: state.toolConnections,
 			}),
 		},
 	),

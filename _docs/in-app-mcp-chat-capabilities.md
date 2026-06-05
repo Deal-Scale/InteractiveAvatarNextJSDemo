@@ -10,6 +10,12 @@ The chat can execute these app capabilities:
 | --- | --- |
 | `switch_workspace_tab` | Switches the top workspace to `video`, `brain`, `data`, or `actions`. |
 | `create_kanban_task` | Creates a task in the Actions Kanban board and switches to Actions. |
+| `search_chat_resources` | Searches assets, knowledge bases, agents, or tools for chat usage. |
+| `add_chat_resource` | Adds a matched resource to the chat composer. |
+| `reference_chat_resource` | References a matched resource in the chat composer. |
+
+Task execution also supports MCP references while a task is running, including clear matches from the app catalog. See [task-mcp-runtime-capabilities.md](task-mcp-runtime-capabilities.md) for the task-side reference rules.
+That runtime also tracks connected local tools such as GitHub, Notion, and Google Drive through the shared tool registry, so task execution only calls connectors that are actually connected.
 
 There are two ways to trigger them:
 
@@ -257,3 +263,4 @@ The app-action prompt accepts `priority`, but the current Kanban store call only
 - Slash command handling: `components/AvatarSession/hooks/useMcpCommands.ts`
 - Provider response execution: `components/AvatarSession/hooks/useChatController.ts`
 - Regression tests: `lib/services/_tests/appCapabilities.test.ts`
+- Chat resource capability guide: `docs/chat-resource-capabilities.md`

@@ -62,7 +62,10 @@ const toArrayBuffer = (bytes: Uint8Array): ArrayBuffer =>
 		bytes.byteOffset + bytes.byteLength,
 	) as ArrayBuffer;
 
-const ALLOWED_PREVIEW_HOSTS = new Set(["storage.googleapis.com", "cdn.elevenlabs.io"]);
+const ALLOWED_PREVIEW_HOSTS = new Set([
+	"storage.googleapis.com",
+	"cdn.elevenlabs.io",
+]);
 
 const getValidatedPreviewUrl = (value: string): URL | null => {
 	let parsed: URL;
@@ -78,7 +81,10 @@ const getValidatedPreviewUrl = (value: string): URL | null => {
 };
 
 const proxyAudioResponse = async (url: URL) => {
-	const upstream = await fetch(url.toString(), { method: "GET", cache: "no-store" });
+	const upstream = await fetch(url.toString(), {
+		method: "GET",
+		cache: "no-store",
+	});
 	const contentType =
 		upstream.headers.get("content-type") ?? "application/octet-stream";
 
@@ -150,7 +156,8 @@ export async function GET(
 				);
 			}
 
-			const validatedMetadataPreviewUrl = getValidatedPreviewUrl(metadataPreviewUrl);
+			const validatedMetadataPreviewUrl =
+				getValidatedPreviewUrl(metadataPreviewUrl);
 			if (!validatedMetadataPreviewUrl) {
 				return NextResponse.json(
 					{ error: "Invalid ElevenLabs preview URL" },

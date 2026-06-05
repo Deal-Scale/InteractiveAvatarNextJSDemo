@@ -13,5 +13,9 @@ export function buildAssetsFromComposer(
 		mimeType: a.mimeType ?? undefined,
 		kind: a.kind ?? "asset",
 		description: a.description ?? undefined,
+		conversationStarters: a.conversationStarters?.length
+			? a.conversationStarters
+			: undefined,
+		chainOrder: a.chainOrder,
 	}));
 }

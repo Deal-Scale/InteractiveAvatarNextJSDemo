@@ -200,6 +200,10 @@ export default function AgentModal(props: {
 			avatarUrl: z.string().url().optional().or(z.literal("")).optional(),
 			description: z.string().optional(),
 			tags: z.array(z.string()).optional(),
+			conversationStarter1: z.string().optional(),
+			conversationStarter2: z.string().optional(),
+			conversationStarter3: z.string().optional(),
+			conversationStarters: z.array(z.string()).optional(),
 		});
 
 		const withRequiredModeFields = base.superRefine((values, ctx) => {
@@ -272,6 +276,19 @@ export default function AgentModal(props: {
 			avatarUrl: (source?.avatarUrl as string) ?? "",
 			description: (source?.description as string) ?? "",
 			tags: Array.isArray(source?.tags) ? (source?.tags as string[]) : [],
+			conversationStarter1:
+				(source?.conversationStarters as string[])?.[0] ??
+				(source?.promptStarter as string) ??
+				"",
+			conversationStarter2:
+				(source?.conversationStarters as string[])?.[1] ?? "",
+			conversationStarter3:
+				(source?.conversationStarters as string[])?.[2] ?? "",
+			conversationStarters: Array.isArray(source?.conversationStarters)
+				? (source?.conversationStarters as string[])
+				: (source?.promptStarter as string)
+					? [String(source?.promptStarter)]
+					: [],
 			voiceId: (source?.voiceId as string) ?? "",
 			videoVoiceId:
 				(source?.videoVoiceId as string) ?? (source?.voiceId as string) ?? "",
@@ -710,6 +727,29 @@ export default function AgentModal(props: {
 				widget: "textarea",
 				rows: 4,
 				placeholder: "Short summary that appears in the sidebar",
+			},
+			conversationStarter1: {
+				label: "Conversation Starter 1",
+				section: profileSection,
+				widget: "textarea",
+				rows: 3,
+				placeholder: "Primary starter shown for this agent",
+				helpText:
+					"Use short, direct starters. These replace the default chat suggestions.",
+			},
+			conversationStarter2: {
+				label: "Conversation Starter 2",
+				section: profileSection,
+				widget: "textarea",
+				rows: 3,
+				placeholder: "Secondary starter shown for this agent",
+			},
+			conversationStarter3: {
+				label: "Conversation Starter 3",
+				section: profileSection,
+				widget: "textarea",
+				rows: 3,
+				placeholder: "Third starter shown for this agent",
 			},
 			avatarUrl: {
 				label: "Agent Avatar",
@@ -1282,7 +1322,7 @@ export default function AgentModal(props: {
 						<div className="space-y-4">
 							{hasWorking && <AgentPreview agent={working as Agent} />}
 							<div className="flex justify-end gap-2">
-								{(agent?.isOwnedByUser ?? false) && (
+								{(agent?.isOwnedByUser ?? false) || isView ? (
 									<Button
 										type="button"
 										variant="outline"
@@ -1290,7 +1330,7 @@ export default function AgentModal(props: {
 									>
 										Edit
 									</Button>
-								)}
+								) : null}
 								<Button
 									type="button"
 									variant="ghost"
@@ -1362,6 +1402,26 @@ export default function AgentModal(props: {
 											values.description != null
 												? String(values.description).trim()
 												: "";
+										const conversationStarter1 =
+											values.conversationStarter1 != null
+												? String(values.conversationStarter1).trim()
+												: "";
+										const conversationStarter2 =
+											values.conversationStarter2 != null
+												? String(values.conversationStarter2).trim()
+												: "";
+										const conversationStarter3 =
+											values.conversationStarter3 != null
+												? String(values.conversationStarter3).trim()
+												: "";
+										const promptStarter = conversationStarter1;
+										const conversationStarters = [
+											conversationStarter1,
+											conversationStarter2,
+											conversationStarter3,
+										]
+											.map((starter) => starter.trim())
+											.filter(Boolean);
 										const saveVideoSettings =
 											interactionModes.includes("video");
 										const saveVoiceSelection =
@@ -1422,6 +1482,8 @@ export default function AgentModal(props: {
 											avatarUrl,
 											description,
 											tags,
+											promptStarter,
+											conversationStarters,
 											avatarId: saveVideoSettings
 												? configValues.avatarId
 												: undefined,

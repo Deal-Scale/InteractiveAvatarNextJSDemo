@@ -3,6 +3,12 @@
 import { VariantProps } from "class-variance-authority";
 
 import { Button, buttonVariants } from "@/components/ui/button";
+import {
+	Tooltip,
+	TooltipContent,
+	TooltipProvider,
+	TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
 
 export type PromptSuggestionProps = {
@@ -23,34 +29,41 @@ function PromptSuggestion({
 }: PromptSuggestionProps) {
 	const isHighlightMode = highlight !== undefined && highlight.trim() !== "";
 	const content = typeof children === "string" ? children : "";
+	const needsTooltip = content.length > 48 || content.includes("\n");
+
+	const renderButton = (extraClassName?: string) => (
+		<Button
+			className={cn("rounded-full", extraClassName ?? className)}
+			size={size || "lg"}
+			title={content || undefined}
+			variant={variant || "outline"}
+			{...props}
+		>
+			{children}
+		</Button>
+	);
 
 	if (!isHighlightMode) {
+		if (!needsTooltip) return renderButton();
 		return (
-			<Button
-				className={cn("rounded-full", className)}
-				size={size || "lg"}
-				variant={variant || "outline"}
-				{...props}
-			>
-				{children}
-			</Button>
+			<TooltipProvider delayDuration={150}>
+				<Tooltip>
+					<TooltipTrigger asChild>{renderButton()}</TooltipTrigger>
+					<TooltipContent className="max-w-sm whitespace-pre-wrap text-xs">
+						{content}
+					</TooltipContent>
+				</Tooltip>
+			</TooltipProvider>
 		);
 	}
 
 	if (!content) {
-		return (
-			<Button
-				className={cn(
-					"w-full cursor-pointer justify-start rounded-xl py-2",
-					"hover:bg-accent",
-					className,
-				)}
-				size={size || "sm"}
-				variant={variant || "ghost"}
-				{...props}
-			>
-				{children}
-			</Button>
+		return renderButton(
+			cn(
+				"w-full cursor-pointer justify-start rounded-xl py-2",
+				"hover:bg-accent",
+				className,
+			),
 		);
 	}
 
@@ -59,7 +72,7 @@ function PromptSuggestion({
 	const highlightLower = trimmedHighlight.toLowerCase();
 	const shouldHighlight = contentLower.includes(highlightLower);
 
-	return (
+	const button = (
 		<Button
 			className={cn(
 				"w-full cursor-pointer justify-start gap-0 rounded-xl py-2",
@@ -67,6 +80,7 @@ function PromptSuggestion({
 				className,
 			)}
 			size={size || "sm"}
+			title={content}
 			variant={variant || "ghost"}
 			{...props}
 		>
@@ -113,6 +127,19 @@ function PromptSuggestion({
 				</span>
 			)}
 		</Button>
+	);
+
+	if (!needsTooltip) return button;
+
+	return (
+		<TooltipProvider delayDuration={150}>
+			<Tooltip>
+				<TooltipTrigger asChild>{button}</TooltipTrigger>
+				<TooltipContent className="max-w-sm whitespace-pre-wrap text-xs">
+					{content}
+				</TooltipContent>
+			</Tooltip>
+		</TooltipProvider>
 	);
 }
 

@@ -1,6 +1,6 @@
 import { useApiService } from "@/components/logic/ApiServiceContext";
-import { useMessageHistory } from "@/components/logic/useMessageHistory";
 import { useVoiceChat } from "@/components/logic/useVoiceChat";
+import { buildAgentChainInstruction } from "@/lib/agent-chain";
 import {
 	APP_CAPABILITIES_SYSTEM_PROMPT,
 	buildAppCapabilityReasoning,
@@ -9,18 +9,19 @@ import {
 	parseAppCapabilityActions,
 	stripAppCapabilityBlocks,
 } from "@/lib/app-capabilities";
-import { MANUAL_CHAT_MESSAGE_TYPE } from "@/lib/chat/manual-bridge";
 import type { ProviderId } from "@/lib/chat/providers";
 import { getProvider } from "@/lib/chat/registry";
 import { useSendTaskMutation } from "@/lib/services/streaming/query";
 import { useChatProviderStore } from "@/lib/stores/chatProvider";
 import { useSessionStore } from "@/lib/stores/session";
 import { type MessageAsset, MessageSender } from "@/lib/types";
-import { useMemoizedFn } from "@/lib/compat/ahooks";
+import { useMemoizedFn } from "ahooks";
 import { nanoid } from "nanoid";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { StreamingAvatarSessionState } from "../../logic/context";
 import { useMcpCommands } from "./useMcpCommands";
+
+const MANUAL_CHAT_MESSAGE_TYPE = "deal-scale:manual-chat";
 
 export function useChatController(sessionState: StreamingAvatarSessionState) {
 	const { apiService } = useApiService();
@@ -32,13 +33,12 @@ export function useChatController(sessionState: StreamingAvatarSessionState) {
 		setChatSolidBg,
 		currentSessionId,
 	} = useSessionStore();
-	const { navigateHistory, resetHistory } = useMessageHistory(messages);
 	const { startVoiceChat, stopVoiceChat, isVoiceChatActive } = useVoiceChat();
 
 	const sendTaskMutation = useSendTaskMutation();
 
-	const [chatInput, setChatInput] = useState("");
 	const [isSending, setIsSending] = useState(false);
+	const activeSendIdRef = useRef(0);
 	const [userVideoStream, setUserVideoStream] = useState<MediaStream | null>(
 		null,
 	);
@@ -93,7 +93,13 @@ export function useChatController(sessionState: StreamingAvatarSessionState) {
 		async (text: string, assets?: MessageAsset[]) => {
 			const trimmed = text.trim();
 			if (!trimmed) return;
+			const agentChainInstruction = buildAgentChainInstruction(assets);
+			const providerInputText = agentChainInstruction
+				? `${text}\n\n${agentChainInstruction}`
+				: text;
 
+			const sendId = ++activeSendIdRef.current;
+			const isActiveSend = () => sendId === activeSendIdRef.current;
 			setIsSending(true);
 
 			const userMessage = {
@@ -109,7 +115,9 @@ export function useChatController(sessionState: StreamingAvatarSessionState) {
 			try {
 				if (lower.startsWith("/mcp")) {
 					const responses = await handleMcpCommand(trimmed);
+					if (!isActiveSend()) return;
 					for (const response of responses) {
+						if (!isActiveSend()) return;
 						addMessage(response);
 						await speakThroughAvatar(response.content);
 					}
@@ -125,6 +133,7 @@ export function useChatController(sessionState: StreamingAvatarSessionState) {
 				const history = useSessionStore.getState().messages;
 				const systemPrompt = [
 					textSettings.systemPrompt.trim(),
+					agentChainInstruction,
 					APP_CAPABILITIES_SYSTEM_PROMPT,
 				]
 					.filter(Boolean)
@@ -136,7 +145,7 @@ export function useChatController(sessionState: StreamingAvatarSessionState) {
 						try {
 							const reply = await textProvider.sendMessage({
 								history,
-								input: text,
+								input: providerInputText,
 								options: {
 									jsonMode: textSettings.jsonMode,
 									systemPrompt,
@@ -145,6 +154,7 @@ export function useChatController(sessionState: StreamingAvatarSessionState) {
 										: undefined,
 								},
 							});
+							if (!isActiveSend()) return;
 							const appActions = parseAppCapabilityActions(reply.content);
 							const actionResults = executeAppCapabilities(appActions);
 							const cleanedContent = stripAppCapabilityBlocks(reply.content);
@@ -174,12 +184,18 @@ export function useChatController(sessionState: StreamingAvatarSessionState) {
 									: reply.reasoningMarkdown,
 								reasoningOpen: appReasoning ? true : reply.reasoningOpen,
 							};
+							if (!isActiveSend()) return;
 							addMessage(providerMessage);
 
-							if (voiceProvider.supportsVoice && voiceSettings.autoSpeak) {
+							if (
+								isActiveSend() &&
+								voiceProvider.supportsVoice &&
+								voiceSettings.autoSpeak
+							) {
 								await speakThroughAvatar(providerMessage.content);
 							}
 						} catch (error) {
+							if (!isActiveSend()) return;
 							console.error("[Chat] provider sendMessage failed", error);
 							addMessage({
 								id: nanoid(),
@@ -196,31 +212,36 @@ export function useChatController(sessionState: StreamingAvatarSessionState) {
 				// Fire voice pipeline concurrently when available.
 				operations.push(
 					(async () => {
+						if (!isActiveSend()) return;
 						if (!voiceProvider.supportsVoice || !voiceSettings.voiceEnabled) {
 							return;
 						}
 
+						if (!isActiveSend()) return;
 						if (currentSessionId) {
 							await sendTaskMutation.mutateAsync({
 								session_id: currentSessionId,
-								text,
+								text: providerInputText,
 								task_mode: "async",
 								task_type: "chat",
 							});
 						} else if (apiService) {
-							await apiService.textChat.sendMessage(text, assets);
+							await apiService.textChat.sendMessage(providerInputText, assets);
 						}
 					})(),
 				);
 
 				await Promise.allSettled(operations);
 			} finally {
-				resetHistory();
-				setChatInput("");
-				setIsSending(false);
+				if (isActiveSend()) setIsSending(false);
 			}
 		},
 	);
+
+	const stopSendingVoid = useMemoizedFn(() => {
+		activeSendIdRef.current += 1;
+		setIsSending(false);
+	});
 
 	const sendMessageVoid = useMemoizedFn((t: string, a?: MessageAsset[]) => {
 		void handleSendMessage(t, a);
@@ -314,18 +335,6 @@ export function useChatController(sessionState: StreamingAvatarSessionState) {
 		}
 	});
 
-	const handleArrowUp = useMemoizedFn(() => {
-		const prev = navigateHistory("up");
-
-		if (prev) setChatInput(prev);
-	});
-
-	const handleArrowDown = useMemoizedFn(() => {
-		const next = navigateHistory("down");
-
-		if (next) setChatInput(next);
-	});
-
 	const enableMockChatUi = useMemoizedFn(() => {
 		setMockChatEnabled(true);
 		setChatSolidBg(true);
@@ -333,8 +342,6 @@ export function useChatController(sessionState: StreamingAvatarSessionState) {
 
 	return {
 		// state
-		chatInput,
-		setChatInput,
 		isSending,
 		userVideoStream,
 		mockChatEnabled,
@@ -348,11 +355,10 @@ export function useChatController(sessionState: StreamingAvatarSessionState) {
 
 		// actions
 		sendMessageVoid,
+		stopSendingVoid,
 		startVoiceChatVoid,
 		stopVoiceChatVoid,
 		handleCopy,
-		handleArrowUp,
-		handleArrowDown,
 		addAvatarMessage,
 		enableMockChatUi,
 	};

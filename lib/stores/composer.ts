@@ -8,23 +8,32 @@ export type ComposerAsset = {
 	mimeType?: string;
 	kind?: "asset" | "tool" | "knowledge" | "agent";
 	description?: string;
+	conversationStarters?: string[];
+	chainOrder?: number;
 };
 
 export type ComposerState = {
 	assetAttachments: ComposerAsset[];
+	pendingResourceMatches: ComposerAsset[];
 	addAssetAttachment: (a: ComposerAsset) => void;
 	removeAssetAttachment: (id: string) => void;
 	clearAssetAttachments: () => void;
+	setPendingResourceMatches: (items: ComposerAsset[]) => void;
+	removePendingResourceMatch: (id: string) => void;
+	clearPendingResourceMatches: () => void;
 };
 
 export const useComposerStore = create<ComposerState>((set) => ({
 	assetAttachments: [],
+	pendingResourceMatches: [],
 	addAssetAttachment: (a) =>
 		set((s) => {
-			// de-duplicate by id
-			if (s.assetAttachments.some((x) => x.id === a.id)) {
-				console.debug("[composer] duplicate asset ignored", a);
-				return s;
+			const existingIndex = s.assetAttachments.findIndex((x) => x.id === a.id);
+			if (existingIndex >= 0) {
+				const next = [...s.assetAttachments];
+				next[existingIndex] = { ...next[existingIndex], ...a };
+				console.debug("[composer] update", { id: a.id, updated: a });
+				return { assetAttachments: next };
 			}
 			const next = [...s.assetAttachments, a];
 			console.debug("[composer] add", { count: next.length, added: a });
@@ -45,4 +54,18 @@ export const useComposerStore = create<ComposerState>((set) => ({
 			}
 			return { assetAttachments: [] };
 		}),
+	setPendingResourceMatches: (items) =>
+		set(() => ({
+			pendingResourceMatches: items,
+		})),
+	removePendingResourceMatch: (id) =>
+		set((s) => ({
+			pendingResourceMatches: s.pendingResourceMatches.filter(
+				(item) => item.id !== id,
+			),
+		})),
+	clearPendingResourceMatches: () =>
+		set(() => ({
+			pendingResourceMatches: [],
+		})),
 }));

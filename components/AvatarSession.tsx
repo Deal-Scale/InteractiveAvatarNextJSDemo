@@ -73,8 +73,6 @@ export function AvatarSession({
 
 	const {
 		// state
-		chatInput,
-		setChatInput,
 		isSending,
 		userVideoStream,
 		mockVoiceActive,
@@ -83,11 +81,10 @@ export function AvatarSession({
 		isVoiceChatActive,
 		// actions
 		sendMessageVoid,
+		stopSendingVoid,
 		startVoiceChatVoid,
 		stopVoiceChatVoid,
 		handleCopy,
-		handleArrowUp,
-		handleArrowDown,
 		enableMockChatUi,
 	} = useChatController(sessionState);
 
@@ -160,7 +157,7 @@ export function AvatarSession({
 			const shouldClearInput = (event as CustomEvent<{ clearInput?: boolean }>)
 				.detail?.clearInput;
 			if (shouldClearInput) {
-				setChatInput("");
+				// draft is owned by the chat composer now
 			}
 			startWithoutAvatar();
 		};
@@ -176,7 +173,7 @@ export function AvatarSession({
 				handleStartChatWithoutSession,
 			);
 		};
-	}, [setChatInput, startWithoutAvatar]);
+	}, [startWithoutAvatar]);
 
 	useEffect(() => {
 		const handleShowAvatarWorkspace = () => {
@@ -261,17 +258,14 @@ export function AvatarSession({
 	// Build common ChatPanel props once
 	const chatPanelProps = useChatPanelProps({
 		canChat,
-		chatInput,
 		isSending,
 		isChatSolidBg,
 		isVoiceActive: isVoiceChatActive || mockVoiceActive,
 		messages,
 		sessionState,
-		onArrowDown: handleArrowDown,
-		onArrowUp: handleArrowUp,
-		onChatInputChange: setChatInput,
 		onCopy: handleCopy,
 		onSendMessage: sendMessageVoid,
+		onStopSending: stopSendingVoid,
 		onStartVoiceChat: startVoiceChatVoid,
 		onStopVoiceChat: stopVoiceChatVoid,
 		onDock: setDock,

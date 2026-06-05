@@ -1,5 +1,5 @@
-import React from "react";
 import { fireEvent, render, screen, within } from "@testing-library/react";
+import React from "react";
 import { describe, expect, it, vi } from "vitest";
 
 import { ChatModeTabs } from "../ChatTabs";
@@ -16,10 +16,8 @@ describe("ChatModeTabs", () => {
 		);
 
 		const textTab = screen.getByRole("tab", { name: /text/i });
-		expect(textTab).toHaveAttribute("aria-selected", "true");
-		expect(
-			within(textTab).getByText(/HeyGen Streaming Avatar/i),
-		).toBeInTheDocument();
+		expect(textTab.getAttribute("aria-selected")).toBe("true");
+		expect(within(textTab).getByText(/HeyGen Streaming Avatar/i)).toBeTruthy();
 	});
 
 	it("invokes onValueChange when switching to voice", () => {
@@ -47,8 +45,6 @@ describe("ChatModeTabs", () => {
 			/>,
 		);
 
-		expect(
-			screen.getByText(/ElevenLabs voice chat is live/i),
-		).toBeInTheDocument();
+		expect(screen.getByText(/ElevenLabs voice chat is live/i)).toBeTruthy();
 	});
 });

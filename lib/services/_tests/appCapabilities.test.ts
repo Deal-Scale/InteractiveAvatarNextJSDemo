@@ -7,6 +7,7 @@ import {
 	stripAppCapabilityBlocks,
 } from "@/lib/app-capabilities";
 import { PollinationsAdapter } from "@/lib/providers/PollinationsAdapter";
+import { useComposerStore } from "@/lib/stores/composer";
 import { usePlacementStore } from "@/lib/stores/placement";
 import { useSessionStore } from "@/lib/stores/session";
 import { COMPACT_BOTTOM_CHAT_HEIGHT_FRAC } from "../../workspace-view";
@@ -31,6 +32,10 @@ describe("app MCP capabilities", () => {
 			tasks: [],
 			draggedTask: null,
 		}));
+		useComposerStore.setState({
+			assetAttachments: [],
+			pendingResourceMatches: [],
+		});
 	});
 
 	afterEach(() => {
@@ -218,6 +223,248 @@ describe("app MCP capabilities", () => {
 			bottomHeightFrac: COMPACT_BOTTOM_CHAT_HEIGHT_FRAC,
 			sidebarCollapsed: true,
 		});
+	});
+
+	it("searches knowledge bases, agents, and assets for chat resources", () => {
+		useSessionStore.setState((state) => ({
+			...state,
+			createdKnowledgeItems: [{ id: "kb-pricing", name: "Pricing Guide" }],
+		}));
+
+		const actions = parseAppCapabilityActions(
+			JSON.stringify([
+				{
+					tool: "search_chat_resources",
+					args: { resourceType: "knowledge", query: "pricing" },
+				},
+				{
+					tool: "search_chat_resources",
+					args: { resourceType: "agent", query: "support" },
+				},
+				{
+					tool: "search_chat_resources",
+					args: { resourceType: "asset", query: "demo" },
+				},
+			]),
+		);
+
+		const results = executeAppCapabilities(actions);
+
+		expect(results.map((result) => result.ok)).toEqual([true, true, true]);
+		expect(results[0]?.data?.matches).toEqual(
+			expect.arrayContaining([
+				expect.objectContaining({
+					id: "kb-pricing",
+					name: "Pricing Guide",
+					type: "knowledge",
+				}),
+			]),
+		);
+		expect(results[1]?.data?.matches).toEqual(
+			expect.arrayContaining([
+				expect.objectContaining({
+					id: "agent-2",
+					name: "Support Bot",
+					type: "agent",
+				}),
+			]),
+		);
+		expect(results[2]?.data?.matches).toEqual(
+			expect.arrayContaining([
+				expect.objectContaining({
+					id: "asset-1",
+					name: "Demo Image",
+					type: "asset",
+				}),
+			]),
+		);
+		expect(useComposerStore.getState().pendingResourceMatches).toEqual([]);
+	});
+
+	it("keeps exact asset searches focused on the matching asset", () => {
+		const actions = parseAppCapabilityActions(
+			JSON.stringify([
+				{
+					tool: "search_chat_resources",
+					args: {
+						resourceType: "asset",
+						query: "demo image",
+						limit: 5,
+					},
+				},
+			]),
+		);
+
+		const results = executeAppCapabilities(actions);
+
+		expect(results[0]?.ok).toBe(true);
+		expect(results[0]?.data?.matches).toEqual(
+			expect.arrayContaining([
+				expect.objectContaining({
+					id: "asset-1",
+					name: "Demo Image",
+					type: "asset",
+				}),
+			]),
+		);
+		expect(results[0]?.data?.matches).toHaveLength(1);
+		expect(useComposerStore.getState().assetAttachments).toEqual(
+			expect.arrayContaining([
+				expect.objectContaining({
+					id: "asset-1",
+					name: "Demo Image",
+					kind: "asset",
+				}),
+			]),
+		);
+		expect(useComposerStore.getState().pendingResourceMatches).toEqual([]);
+	});
+
+	it("auto-attaches a single best search match to the chat composer", () => {
+		const actions = parseAppCapabilityActions(
+			JSON.stringify([
+				{
+					tool: "search_chat_resources",
+					args: {
+						resourceType: "agent",
+						query: "Sales assistant",
+						limit: 5,
+					},
+				},
+			]),
+		);
+
+		const results = executeAppCapabilities(actions);
+		const attachments = useComposerStore.getState().assetAttachments;
+
+		expect(results[0]?.ok).toBe(true);
+		expect(results[0]?.message).toContain("attached it to the chat");
+		expect(attachments).toEqual(
+			expect.arrayContaining([
+				expect.objectContaining({
+					id: "agent-1",
+					name: "Sales Assistant",
+					kind: "agent",
+				}),
+			]),
+		);
+		expect(useComposerStore.getState().pendingResourceMatches).toEqual([]);
+	});
+
+	it("supports search followed by attach in a single multi-action block", () => {
+		const actions = parseAppCapabilityActions(
+			JSON.stringify([
+				{
+					tool: "search_chat_resources",
+					args: {
+						resourceType: "agent",
+						query: "Sales assistant",
+						limit: 5,
+					},
+				},
+				{
+					tool: "add_chat_resource",
+					args: {
+						resourceType: "agent",
+						id: "agent-1",
+					},
+				},
+			]),
+		);
+
+		const results = executeAppCapabilities(actions);
+		const attachments = useComposerStore.getState().assetAttachments;
+
+		expect(actions).toHaveLength(2);
+		expect(results.map((result) => result.ok)).toEqual([true, true]);
+		expect(results[0]?.data?.matches).toEqual(
+			expect.arrayContaining([
+				expect.objectContaining({
+					id: "agent-1",
+					name: "Sales Assistant",
+					type: "agent",
+				}),
+			]),
+		);
+		expect(attachments).toEqual(
+			expect.arrayContaining([
+				expect.objectContaining({
+					id: "agent-1",
+					name: "Sales Assistant",
+					kind: "agent",
+				}),
+			]),
+		);
+		expect(useComposerStore.getState().pendingResourceMatches).toEqual([]);
+	});
+
+	it("adds and references chat resources as composer attachments", () => {
+		useSessionStore.setState((state) => ({
+			...state,
+			kbFolders: [{ id: "kb-folder-sales", name: "Sales" }],
+		}));
+
+		const actions = parseAppCapabilityActions(
+			JSON.stringify([
+				{
+					tool: "add_chat_resource",
+					args: { resourceType: "knowledge", query: "Sales" },
+				},
+				{
+					tool: "reference_chat_resource",
+					args: { resourceType: "agent", id: "agent-1" },
+				},
+				{
+					tool: "add_chat_resource",
+					args: { resourceType: "asset", id: "asset-1" },
+				},
+			]),
+		);
+
+		const results = executeAppCapabilities(actions);
+		const attachments = useComposerStore.getState().assetAttachments;
+
+		expect(results.map((result) => result.ok)).toEqual([true, true, true]);
+		expect(attachments).toEqual(
+			expect.arrayContaining([
+				expect.objectContaining({
+					id: "kb-folder-sales",
+					name: "Sales",
+					kind: "knowledge",
+				}),
+				expect.objectContaining({
+					id: "agent-1",
+					name: "Sales Assistant",
+					kind: "agent",
+				}),
+				expect.objectContaining({
+					id: "asset-1",
+					name: "Demo Image",
+					kind: "asset",
+				}),
+			]),
+		);
+	});
+
+	it("does not guess a resource when add-chat-resource query is not an exact match", () => {
+		const actions = parseAppCapabilityActions(
+			JSON.stringify([
+				{
+					tool: "add_chat_resource",
+					args: {
+						resourceType: "knowledge",
+						query: "pricing guide knowledge base",
+					},
+				},
+			]),
+		);
+
+		const results = executeAppCapabilities(actions);
+
+		expect(results[0]?.ok).toBe(false);
+		expect(results[0]?.message).toBe("No matching chat resource was found.");
+		expect(useComposerStore.getState().assetAttachments).toHaveLength(0);
+		expect(useComposerStore.getState().pendingResourceMatches).toEqual([]);
 	});
 
 	it("passes app capability instructions through Pollinations and executes returned actions", async () => {

@@ -4,6 +4,7 @@ import type { KanbanColumn, KanbanState } from "./types";
 import type { AiTaskState } from "./types";
 import type { KanbanTask as BaseKanbanTask } from "./types";
 import { defaultCols, mockKanbanState } from "./mocks";
+import { executeTaskMcpReferences } from "./mcpRuntime";
 
 const createId = () =>
 	typeof crypto !== "undefined" && "randomUUID" in crypto
@@ -90,7 +91,7 @@ interface Actions {
 
 export const useTaskStore = create<KanbanState & Actions>()(
 	persist(
-		(set) => ({
+		(set, get) => ({
 			tasks: safeKanbanState.tasks,
 			columns: safeKanbanState.columns,
 			draggedTask: null,
@@ -172,7 +173,8 @@ export const useTaskStore = create<KanbanState & Actions>()(
 					),
 				})),
 			// ---- AI state actions ----
-			runAi: (id: string) =>
+			runAi: (id: string) => {
+				const task = get().tasks.find((t) => String(t.id) === String(id));
 				set((state) => ({
 					tasks: state.tasks.map((t) =>
 						String(t.id) === String(id)
@@ -187,10 +189,83 @@ export const useTaskStore = create<KanbanState & Actions>()(
 									aiStartedAt: new Date().toISOString(),
 									aiEtaSeconds: t.aiEtaSeconds ?? 60,
 									aiStreamText: "",
+									mcpWorkflow: t.mcpWorkflow
+										? {
+												...t.mcpWorkflow,
+												status: "running",
+												lastRunAt: new Date().toISOString(),
+											}
+										: t.mcpWorkflow,
 								}
 							: t,
 					),
-				})),
+				}));
+
+				if (!task) return;
+
+				void executeTaskMcpReferences(task)
+					.then((result) => {
+						set((state) => ({
+							tasks: state.tasks.map((t) =>
+								String(t.id) === String(id)
+									? {
+											...t,
+											aiStreamText: result.summary,
+											mcpWorkflow: t.mcpWorkflow
+												? {
+														...t.mcpWorkflow,
+														lastRunAt: new Date().toISOString(),
+														lastResult: {
+															summary: result.summary,
+															references: result.references.map((ref) =>
+																ref.kind === "tool"
+																	? {
+																			kind: ref.kind,
+																			name: ref.name,
+																			input: ref.input ?? {},
+																			ok: result.toolResults.some(
+																				(item) =>
+																					item.name === ref.name && item.ok,
+																			),
+																		}
+																	: {
+																			kind: ref.kind,
+																			name: ref.name,
+																			ok: result.resourceResults.some(
+																				(item) =>
+																					item.uri === ref.name && item.ok,
+																			),
+																		},
+															),
+															toolResults: result.toolResults,
+															resourceResults: result.resourceResults,
+														},
+													}
+												: t.mcpWorkflow,
+										}
+									: t,
+							),
+						}));
+					})
+					.catch((error) => {
+						console.error(
+							"[Kanban] MCP task reference execution failed",
+							error,
+						);
+						set((state) => ({
+							tasks: state.tasks.map((t) =>
+								String(t.id) === String(id)
+									? {
+											...t,
+											aiStreamText: `Referenced MCP execution failed: ${
+												(error as Error)?.message ?? "unknown"
+											}`,
+										}
+									: t,
+							),
+						}));
+					});
+			},
 			successAi: (id: string) =>
 				set((state) => ({
 					tasks: state.tasks.map((t) => {

@@ -1,18 +1,29 @@
 "use client";
 
+import AddKnowledgeBaseModal from "@/components/KnowledgeBase/AddKnowledgeBaseModal";
+import ActiveSessionsSection from "@/components/Sidebar/ActiveSessionsSection";
+import AgentsSection from "@/components/Sidebar/AgentsSection";
+import ApplicationsStarter from "@/components/Sidebar/ApplicationsStarter";
+import AssetsSection from "@/components/Sidebar/AssetsSection";
+import BookmarkModal from "@/components/Sidebar/BookmarkModal";
+import BookmarksSection from "@/components/Sidebar/BookmarksSection";
+import useBookmarkModal from "@/components/Sidebar/hooks/useBookmarkModal";
+import useConversations from "@/components/Sidebar/hooks/useConversations";
+import useSidebarCollapse from "@/components/Sidebar/hooks/useSidebarCollapse";
 import { Bookmark, Plus as PlusIcon } from "lucide-react";
 import { useRouter } from "next/navigation";
-import React, { useMemo, useRef } from "react";
-import AddKnowledgeBaseModal from "./KnowledgeBase/AddKnowledgeBaseModal";
-import ActiveSessionsSection from "./Sidebar/ActiveSessionsSection";
-import AgentsSection from "./Sidebar/AgentsSection";
-import ApplicationsStarter from "./Sidebar/ApplicationsStarter";
-import AssetsSection from "./Sidebar/AssetsSection";
-import BookmarkModal from "./Sidebar/BookmarkModal";
-import BookmarksSection from "./Sidebar/BookmarksSection";
-import useBookmarkModal from "./Sidebar/hooks/useBookmarkModal";
-import useConversations from "./Sidebar/hooks/useConversations";
-import useSidebarCollapse from "./Sidebar/hooks/useSidebarCollapse";
+import React, { useCallback, useMemo, useRef } from "react";
+import { buildKnowledgeTree } from "../lib/knowledge-tree";
+import {
+	useConnectKBSource,
+	useScheduleKBSync,
+	useTestKBConnection,
+} from "../lib/query/mutations";
+import { useAgentStore } from "../lib/stores/agent";
+import { useAssetsStore } from "../lib/stores/assets";
+import { useComposerStore } from "../lib/stores/composer";
+import { useSessionStore } from "../lib/stores/session";
+import { useSettingsStore } from "../lib/stores/settings";
 import KnowledgebaseSection, {
 	type KnowledgeFolder,
 } from "./Sidebar/KnowledgebaseSection";
@@ -31,17 +42,6 @@ import {
 } from "./ui/sidebar";
 import ThemeEmotionSelect from "./ui/theme-emotion-select";
 import { ThemeToggle } from "./ui/theme-toggle";
-import { buildKnowledgeTree } from "../lib/knowledge-tree";
-import {
-	useConnectKBSource,
-	useScheduleKBSync,
-	useTestKBConnection,
-} from "../lib/query/mutations";
-import { useAgentStore } from "../lib/stores/agent";
-import { useAssetsStore } from "../lib/stores/assets";
-import { useComposerStore } from "../lib/stores/composer";
-import { useSessionStore } from "../lib/stores/session";
-import { useSettingsStore } from "../lib/stores/settings";
 
 // types, utils, and subcomponents are imported from components/Sidebar/*
 
@@ -54,12 +54,18 @@ const Sidebar: React.FC<SidebarProps> = ({
 }) => {
 	const router = useRouter();
 	const { agentSettings } = useSessionStore();
+	const setAgentSettings = useSessionStore((s) => s.setAgentSettings);
 	const currentSessionId = useSessionStore((s) => s.currentSessionId);
 	const chatExperience = useSessionStore((s) => s.chatExperience);
 	const messages = useSessionStore((s) => s.messages);
 	const openConfigModal = useSessionStore((s) => s.openConfigModal);
 	const openChatSettings = useSessionStore((s) => s.openChatSettings);
 	const { currentAgent, updateAgent, toggleStarredAgent } = useAgentStore();
+
+	const handleStartPreview = useCallback((agent: any) => {
+		useAgentStore.getState().setAgent(agent as any);
+		useSessionStore.getState().setAgentSettings(agent as any);
+	}, []);
 	const { globalSettings, setGlobalSettings, clearGlobalSettings } =
 		useSettingsStore();
 	const [starterScale, setStarterScale] = React.useState<number>(1);
@@ -88,6 +94,11 @@ const Sidebar: React.FC<SidebarProps> = ({
 				abilities: ["crm.search", "mail.send", "task.plan"],
 				modalities: ["chat", "voice", "video"],
 				promptStarter: "Find warm leads and draft a short follow-up sequence.",
+				conversationStarters: [
+					"Find warm leads and draft a short follow-up sequence.",
+					"Summarize the best next step for this prospect.",
+					"Create a concise follow-up message for this lead.",
+				],
 				isOwnedByUser: true,
 			},
 			{
@@ -100,6 +111,11 @@ const Sidebar: React.FC<SidebarProps> = ({
 				modalities: ["chat", "voice"],
 				promptStarter:
 					"Summarize this customer issue and suggest the next support step.",
+				conversationStarters: [
+					"Summarize this customer issue and suggest the next support step.",
+					"Draft a clear response and mention any follow-up needed.",
+					"Turn this into a short support ticket summary.",
+				],
 				isOwnedByUser: false,
 			},
 			{
@@ -112,28 +128,42 @@ const Sidebar: React.FC<SidebarProps> = ({
 				modalities: ["chat"],
 				promptStarter:
 					"Analyze the latest chat and create a dashboard insight.",
+				conversationStarters: [
+					"Analyze the latest chat and create a dashboard insight.",
+					"Turn this thread into action items and key takeaways.",
+					"Extract the most important metrics from this conversation.",
+				],
 				isOwnedByUser: false,
 			},
 		];
 
-		if (agentSettings?.id) {
-			return [
-				{
-					id: agentSettings.id,
-					name: agentSettings.name || "Configured Agent",
-					role: "Configured",
-					description:
-						"Current saved agent configuration with the selected avatar, voice, knowledge base, and MCP settings.",
-					abilities: ["session.start", "kb.use", "mcp.tools"],
-					modalities: ["chat", "voice", "video"],
-					promptStarter: "Start from my current agent settings.",
-					isOwnedByUser: true,
-				},
-				...base,
-			];
-		}
-
-		return base;
+		const configured = agentSettings?.id
+			? [
+					{
+						id: agentSettings.id,
+						name: agentSettings.name || "Configured Agent",
+						role: "Configured",
+						description:
+							"Current saved agent configuration with the selected avatar, voice, knowledge base, and MCP settings.",
+						abilities: ["session.start", "kb.use", "mcp.tools"],
+						modalities: ["chat", "voice", "video"],
+						promptStarter: "Start from my current agent settings.",
+						conversationStarters: agentSettings.conversationStarters?.length
+							? agentSettings.conversationStarters.slice(0, 3)
+							: agentSettings.promptStarter
+								? [agentSettings.promptStarter]
+								: ["Start from my current agent settings."],
+						isOwnedByUser: true,
+					},
+				]
+			: [];
+		const merged = [...configured, ...base];
+		const seen = new Set<string>();
+		return merged.filter((agent) => {
+			if (seen.has(agent.id)) return false;
+			seen.add(agent.id);
+			return true;
+		});
 	}, [agentSettings]);
 	const openBookmarkModal = bookmark.openBookmarkModal;
 	const addAssetAttachment = useComposerStore((s) => s.addAssetAttachment);
@@ -369,10 +399,7 @@ const Sidebar: React.FC<SidebarProps> = ({
 
 	// Build a map of conversations by ID for fast lookup in bookmarks tree
 	const conversationsById = useMemo(() => {
-		const map: Record<
-			string,
-			import("./Sidebar/types").Conversation
-		> = {};
+		const map: Record<string, import("./Sidebar/types").Conversation> = {};
 		if (conv.groups) {
 			for (const g of conv.groups) {
 				for (const c of g.conversations) {
@@ -421,7 +448,7 @@ const Sidebar: React.FC<SidebarProps> = ({
 					{/* Theme controls under header (Zola chat/avatar area) */}
 					<div className="px-2 pb-2">
 						<div className="flex items-center gap-2 rounded-md border border-border bg-background px-2 py-2">
-							<span className="text-xs text-muted-foreground group-data-[state=collapsed]/sidebar:hidden">
+							<span className="text-muted-foreground text-xs group-data-[state=collapsed]/sidebar:hidden">
 								Emotion
 							</span>
 							<ThemeEmotionSelect className="group-data-[state=collapsed]/sidebar:hidden" />
@@ -432,7 +459,7 @@ const Sidebar: React.FC<SidebarProps> = ({
 					</div>
 					<div className="px-2">
 						<Button
-							className="mb-3 flex w-full items-center gap-2 group-data-[state=collapsed]/sidebar:justify-center bg-background text-foreground border border-border hover:bg-muted"
+							className="mb-3 flex w-full items-center gap-2 border border-border bg-background text-foreground hover:bg-muted group-data-[state=collapsed]/sidebar:justify-center"
 							data-tour="new-chat"
 							variant="outline"
 							onClick={() => {
@@ -445,7 +472,7 @@ const Sidebar: React.FC<SidebarProps> = ({
 							</span>
 						</Button>
 						<Button
-							className="mb-3 flex w-full items-center gap-2 group-data-[state=collapsed]/sidebar:justify-center bg-background text-foreground border border-border hover:bg-muted"
+							className="mb-3 flex w-full items-center gap-2 border border-border bg-background text-foreground hover:bg-muted group-data-[state=collapsed]/sidebar:justify-center"
 							data-tour="bookmark-current"
 							variant="outline"
 							onClick={() => bookmark.openBookmarkModal(currentBookmarkId)}
@@ -591,7 +618,9 @@ const Sidebar: React.FC<SidebarProps> = ({
 							onFavorite={(id) => toggleStarredAgent(id)}
 							onEdit={(a) => {
 								updateAgent(a);
+								setAgentSettings(a as any);
 							}}
+							onStartPreview={handleStartPreview}
 						/>
 					</div>
 
