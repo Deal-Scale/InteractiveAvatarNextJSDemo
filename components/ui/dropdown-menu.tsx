@@ -1,10 +1,23 @@
 "use client";
 
-import * as React from "react";
 import * as DropdownMenuPrimitive from "@radix-ui/react-dropdown-menu";
 import { Check, ChevronRight, Circle } from "lucide-react";
+import * as React from "react";
 
 import { cn } from "@/lib/utils";
+
+const OPAQUE_OVERLAY_BACKGROUND = "#020617";
+const OPAQUE_OVERLAY_FOREGROUND = "#f8fafc";
+
+const dismissRadixOverlay = () => {
+	document.dispatchEvent(
+		new KeyboardEvent("keydown", {
+			bubbles: true,
+			cancelable: true,
+			key: "Escape",
+		}),
+	);
+};
 
 const DropdownMenu = DropdownMenuPrimitive.Root;
 const DropdownMenuTrigger = DropdownMenuPrimitive.Trigger;
@@ -38,13 +51,20 @@ DropdownMenuSubTrigger.displayName =
 const DropdownMenuSubContent = React.forwardRef<
 	React.ElementRef<typeof DropdownMenuPrimitive.SubContent>,
 	React.ComponentPropsWithoutRef<typeof DropdownMenuPrimitive.SubContent>
->(({ className, ...props }, ref) => (
+>(({ className, style, ...props }, ref) => (
 	<DropdownMenuPrimitive.SubContent
 		ref={ref}
 		className={cn(
-			"z-50 min-w-[8rem] overflow-hidden rounded-md border bg-popover p-1 text-popover-foreground shadow-lg",
+			"!bg-popover !text-popover-foreground !opacity-100 z-50 min-w-[8rem] overflow-hidden rounded-md border p-1 shadow-lg backdrop-blur-none",
 			className,
 		)}
+		style={{
+			...style,
+			backgroundColor: OPAQUE_OVERLAY_BACKGROUND,
+			color: OPAQUE_OVERLAY_FOREGROUND,
+			isolation: "isolate",
+			opacity: 1,
+		}}
 		{...props}
 	/>
 ));
@@ -54,34 +74,58 @@ DropdownMenuSubContent.displayName =
 const DropdownMenuContent = React.forwardRef<
 	React.ElementRef<typeof DropdownMenuPrimitive.Content>,
 	React.ComponentPropsWithoutRef<typeof DropdownMenuPrimitive.Content>
->(({ className, sideOffset = 4, ...props }, ref) => (
-	<DropdownMenuPrimitive.Portal>
-		<DropdownMenuPrimitive.Content
-			ref={ref}
-			sideOffset={sideOffset}
-			className={cn(
-				"z-50 min-w-[8rem] overflow-hidden rounded-md border bg-popover p-1 text-popover-foreground shadow-md",
-				className,
-			)}
-			{...props}
-		/>
-	</DropdownMenuPrimitive.Portal>
-));
+>(
+	(
+		{ className, sideOffset = 4, style, onPointerDownOutside, ...props },
+		ref,
+	) => (
+		<DropdownMenuPrimitive.Portal>
+			<DropdownMenuPrimitive.Content
+				ref={ref}
+				sideOffset={sideOffset}
+				className={cn(
+					"!bg-popover !text-popover-foreground !opacity-100 z-50 min-w-[8rem] overflow-hidden rounded-md border p-1 shadow-md backdrop-blur-none",
+					className,
+				)}
+				style={{
+					...style,
+					backgroundColor: OPAQUE_OVERLAY_BACKGROUND,
+					color: OPAQUE_OVERLAY_FOREGROUND,
+					isolation: "isolate",
+					opacity: 1,
+				}}
+				onPointerDownOutside={(event) => {
+					onPointerDownOutside?.(event);
+					dismissRadixOverlay();
+				}}
+				{...props}
+			/>
+		</DropdownMenuPrimitive.Portal>
+	),
+);
 DropdownMenuContent.displayName = DropdownMenuPrimitive.Content.displayName;
+
+const dropdownMenuItemStyle = {
+	backgroundColor: "var(--overlay-item-background)",
+	color: OPAQUE_OVERLAY_FOREGROUND,
+	opacity: 1,
+	"--overlay-item-background": OPAQUE_OVERLAY_BACKGROUND,
+} as React.CSSProperties;
 
 const DropdownMenuItem = React.forwardRef<
 	React.ElementRef<typeof DropdownMenuPrimitive.Item>,
 	React.ComponentPropsWithoutRef<typeof DropdownMenuPrimitive.Item> & {
 		inset?: boolean;
 	}
->(({ className, inset, ...props }, ref) => (
+>(({ className, inset, style, ...props }, ref) => (
 	<DropdownMenuPrimitive.Item
 		ref={ref}
 		className={cn(
-			"relative flex cursor-default select-none items-center rounded-sm px-2 py-1.5 text-sm outline-none transition-colors focus:bg-accent focus:text-accent-foreground data-[disabled]:pointer-events-none data-[disabled]:opacity-50",
+			"!text-popover-foreground relative flex cursor-default select-none items-center rounded-sm px-2 py-1.5 text-sm outline-none transition-colors [--overlay-item-background:#020617] focus:text-accent-foreground data-[disabled]:pointer-events-none data-[highlighted]:text-accent-foreground data-[disabled]:opacity-50 focus:[--overlay-item-background:#1e293b] data-[highlighted]:[--overlay-item-background:#1e293b]",
 			inset && "pl-8",
 			className,
 		)}
+		style={{ ...style, ...dropdownMenuItemStyle }}
 		{...props}
 	/>
 ));
@@ -90,14 +134,15 @@ DropdownMenuItem.displayName = DropdownMenuPrimitive.Item.displayName;
 const DropdownMenuCheckboxItem = React.forwardRef<
 	React.ElementRef<typeof DropdownMenuPrimitive.CheckboxItem>,
 	React.ComponentPropsWithoutRef<typeof DropdownMenuPrimitive.CheckboxItem>
->(({ className, children, checked, ...props }, ref) => (
+>(({ className, children, checked, style, ...props }, ref) => (
 	<DropdownMenuPrimitive.CheckboxItem
 		ref={ref}
 		className={cn(
-			"relative flex cursor-default select-none items-center rounded-sm py-1.5 pl-8 pr-2 text-sm outline-none transition-colors focus:bg-accent focus:text-accent-foreground data-[disabled]:pointer-events-none data-[disabled]:opacity-50",
+			"!text-popover-foreground relative flex cursor-default select-none items-center rounded-sm py-1.5 pr-2 pl-8 text-sm outline-none transition-colors [--overlay-item-background:#020617] focus:text-accent-foreground data-[disabled]:pointer-events-none data-[highlighted]:text-accent-foreground data-[disabled]:opacity-50 focus:[--overlay-item-background:#1e293b] data-[highlighted]:[--overlay-item-background:#1e293b]",
 			className,
 		)}
 		checked={checked}
+		style={{ ...style, ...dropdownMenuItemStyle }}
 		{...props}
 	>
 		<span className="absolute left-2 flex h-3.5 w-3.5 items-center justify-center">
@@ -114,13 +159,14 @@ DropdownMenuCheckboxItem.displayName =
 const DropdownMenuRadioItem = React.forwardRef<
 	React.ElementRef<typeof DropdownMenuPrimitive.RadioItem>,
 	React.ComponentPropsWithoutRef<typeof DropdownMenuPrimitive.RadioItem>
->(({ className, children, ...props }, ref) => (
+>(({ className, children, style, ...props }, ref) => (
 	<DropdownMenuPrimitive.RadioItem
 		ref={ref}
 		className={cn(
-			"relative flex cursor-default select-none items-center rounded-sm py-1.5 pl-8 pr-2 text-sm outline-none transition-colors focus:bg-accent focus:text-accent-foreground data-[disabled]:pointer-events-none data-[disabled]:opacity-50",
+			"!text-popover-foreground relative flex cursor-default select-none items-center rounded-sm py-1.5 pr-2 pl-8 text-sm outline-none transition-colors [--overlay-item-background:#020617] focus:text-accent-foreground data-[disabled]:pointer-events-none data-[highlighted]:text-accent-foreground data-[disabled]:opacity-50 focus:[--overlay-item-background:#1e293b] data-[highlighted]:[--overlay-item-background:#1e293b]",
 			className,
 		)}
+		style={{ ...style, ...dropdownMenuItemStyle }}
 		{...props}
 	>
 		<span className="absolute left-2 flex h-3.5 w-3.5 items-center justify-center">
@@ -142,7 +188,7 @@ const DropdownMenuLabel = React.forwardRef<
 	<DropdownMenuPrimitive.Label
 		ref={ref}
 		className={cn(
-			"px-2 py-1.5 text-sm font-semibold",
+			"px-2 py-1.5 font-semibold text-sm",
 			inset && "pl-8",
 			className,
 		)}
