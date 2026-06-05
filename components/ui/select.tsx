@@ -9,16 +9,6 @@ import { cn } from "@/lib/utils";
 const OPAQUE_OVERLAY_BACKGROUND = "#020617";
 const OPAQUE_OVERLAY_FOREGROUND = "#f8fafc";
 
-const dismissRadixOverlay = () => {
-	document.dispatchEvent(
-		new KeyboardEvent("keydown", {
-			bubbles: true,
-			cancelable: true,
-			key: "Escape",
-		}),
-	);
-};
-
 const Select = SelectPrimitive.Root;
 
 const SelectGroup = SelectPrimitive.Group;
@@ -96,7 +86,6 @@ const SelectContent = React.forwardRef<
 			position = "popper",
 			portal = true,
 			style,
-			onPointerDownOutside,
 			...props
 		},
 		ref,
@@ -117,10 +106,6 @@ const SelectContent = React.forwardRef<
 					color: OPAQUE_OVERLAY_FOREGROUND,
 					isolation: "isolate",
 					opacity: 1,
-				}}
-				onPointerDownOutside={(event) => {
-					onPointerDownOutside?.(event);
-					dismissRadixOverlay();
 				}}
 				{...props}
 			>

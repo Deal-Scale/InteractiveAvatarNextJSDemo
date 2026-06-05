@@ -98,7 +98,6 @@ export default function BookmarkModal(props: {
 			<DialogContent
 				className="flex max-h-[90vh] w-[96vw] max-w-[96vw] flex-col bg-card p-4 text-foreground md:w-[560px] md:p-6"
 				data-tour="bookmark-modal"
-				onInteractOutside={(event) => event.preventDefault()}
 			>
 				<DialogHeader>
 					<DialogTitle className="font-medium text-sm">

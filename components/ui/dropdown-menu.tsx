@@ -9,16 +9,6 @@ import { cn } from "@/lib/utils";
 const OPAQUE_OVERLAY_BACKGROUND = "#020617";
 const OPAQUE_OVERLAY_FOREGROUND = "#f8fafc";
 
-const dismissRadixOverlay = () => {
-	document.dispatchEvent(
-		new KeyboardEvent("keydown", {
-			bubbles: true,
-			cancelable: true,
-			key: "Escape",
-		}),
-	);
-};
-
 const DropdownMenu = DropdownMenuPrimitive.Root;
 const DropdownMenuTrigger = DropdownMenuPrimitive.Trigger;
 const DropdownMenuGroup = DropdownMenuPrimitive.Group;
@@ -74,35 +64,26 @@ DropdownMenuSubContent.displayName =
 const DropdownMenuContent = React.forwardRef<
 	React.ElementRef<typeof DropdownMenuPrimitive.Content>,
 	React.ComponentPropsWithoutRef<typeof DropdownMenuPrimitive.Content>
->(
-	(
-		{ className, sideOffset = 4, style, onPointerDownOutside, ...props },
-		ref,
-	) => (
-		<DropdownMenuPrimitive.Portal>
-			<DropdownMenuPrimitive.Content
-				ref={ref}
-				sideOffset={sideOffset}
-				className={cn(
-					"!bg-popover !text-popover-foreground !opacity-100 z-50 min-w-[8rem] overflow-hidden rounded-md border p-1 shadow-md backdrop-blur-none",
-					className,
-				)}
-				style={{
-					...style,
-					backgroundColor: OPAQUE_OVERLAY_BACKGROUND,
-					color: OPAQUE_OVERLAY_FOREGROUND,
-					isolation: "isolate",
-					opacity: 1,
-				}}
-				onPointerDownOutside={(event) => {
-					onPointerDownOutside?.(event);
-					dismissRadixOverlay();
-				}}
-				{...props}
-			/>
-		</DropdownMenuPrimitive.Portal>
-	),
-);
+>(({ className, sideOffset = 4, style, ...props }, ref) => (
+	<DropdownMenuPrimitive.Portal>
+		<DropdownMenuPrimitive.Content
+			ref={ref}
+			sideOffset={sideOffset}
+			className={cn(
+				"!bg-popover !text-popover-foreground !opacity-100 z-50 min-w-[8rem] overflow-hidden rounded-md border p-1 shadow-md backdrop-blur-none",
+				className,
+			)}
+			style={{
+				...style,
+				backgroundColor: OPAQUE_OVERLAY_BACKGROUND,
+				color: OPAQUE_OVERLAY_FOREGROUND,
+				isolation: "isolate",
+				opacity: 1,
+			}}
+			{...props}
+		/>
+	</DropdownMenuPrimitive.Portal>
+));
 DropdownMenuContent.displayName = DropdownMenuPrimitive.Content.displayName;
 
 const dropdownMenuItemStyle = {
