@@ -8,7 +8,8 @@ import {
 	useMemo,
 	useState,
 } from "react";
-import Joyride, { EVENTS, type EventData, STATUS } from "react-joyride";
+import * as JoyrideModule from "react-joyride";
+import { EVENTS, type CallBackProps, STATUS } from "react-joyride";
 import { type TourId, tourRegistry } from "./tourRegistry";
 
 type AppTourContextValue = {
@@ -61,6 +62,8 @@ function saveCompletedTourIds(ids: TourId[]) {
 	window.localStorage.setItem(COMPLETED_TOURS_KEY, JSON.stringify(ids));
 }
 
+const Joyride = JoyrideModule.default ?? JoyrideModule;
+
 export function AppTourProvider({ children }: { children: ReactNode }) {
 	const [run, setRun] = useState(false);
 	const [tourRunId, setTourRunId] = useState(0);
@@ -83,7 +86,7 @@ export function AppTourProvider({ children }: { children: ReactNode }) {
 	}, []);
 
 	const handleJoyrideCallback = useCallback(
-		(data: EventData) => {
+		(data: CallBackProps) => {
 			const { index, status, type } = data;
 
 			if (status === STATUS.FINISHED || status === STATUS.SKIPPED) {
@@ -188,7 +191,7 @@ export function AppTourProvider({ children }: { children: ReactNode }) {
 			<Joyride
 				continuous
 				key={`${activeTourId}-${tourRunId}`}
-				onEvent={handleJoyrideCallback}
+				callback={handleJoyrideCallback}
 				options={{
 					arrowColor: "hsl(var(--card))",
 					backgroundColor: "hsl(var(--card))",

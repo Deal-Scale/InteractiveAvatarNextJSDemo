@@ -5,11 +5,58 @@ import { Check, ChevronDown, ChevronUp } from "lucide-react";
 import * as React from "react";
 
 import { cn } from "@/lib/utils";
+import {
+	setForwardedRef,
+	useOutsidePointerClose,
+	useReleaseBodyPointerEvents,
+} from "./use-overlay-outside-close";
 
 const OPAQUE_OVERLAY_BACKGROUND = "#020617";
 const OPAQUE_OVERLAY_FOREGROUND = "#f8fafc";
 
-const Select = SelectPrimitive.Root;
+const SelectCloseContext = React.createContext<{
+	close: () => void;
+	triggerRef: React.RefObject<HTMLElement | null>;
+} | null>(null);
+
+const Select = ({
+	open,
+	defaultOpen,
+	onOpenChange,
+	...props
+}: React.ComponentPropsWithoutRef<typeof SelectPrimitive.Root>) => {
+	const [uncontrolledOpen, setUncontrolledOpen] = React.useState(
+		defaultOpen ?? false,
+	);
+	const isControlled = open !== undefined;
+	const currentOpen = isControlled ? open : uncontrolledOpen;
+
+	const setOpen = React.useCallback(
+		(nextOpen: boolean) => {
+			if (!isControlled) {
+				setUncontrolledOpen(nextOpen);
+			}
+			onOpenChange?.(nextOpen);
+		},
+		[isControlled, onOpenChange],
+	);
+
+	const close = React.useCallback(() => {
+		setOpen(false);
+	}, [setOpen]);
+	const triggerRef = React.useRef<HTMLElement | null>(null);
+	const contextValue = React.useMemo(() => ({ close, triggerRef }), [close]);
+
+	return (
+		<SelectCloseContext.Provider value={contextValue}>
+			<SelectPrimitive.Root
+				open={currentOpen}
+				onOpenChange={setOpen}
+				{...props}
+			/>
+		</SelectCloseContext.Provider>
+	);
+};
 
 const SelectGroup = SelectPrimitive.Group;
 
@@ -18,21 +65,30 @@ const SelectValue = SelectPrimitive.Value;
 const SelectTrigger = React.forwardRef<
 	React.ElementRef<typeof SelectPrimitive.Trigger>,
 	React.ComponentPropsWithoutRef<typeof SelectPrimitive.Trigger>
->(({ className, children, ...props }, ref) => (
-	<SelectPrimitive.Trigger
-		ref={ref}
-		className={cn(
-			"flex h-9 w-full items-center justify-between whitespace-nowrap rounded-md border border-input bg-popover px-3 py-2 text-popover-foreground text-sm shadow-sm ring-offset-background focus:outline-none focus:ring-1 focus:ring-ring disabled:cursor-not-allowed disabled:opacity-50 data-[placeholder]:text-muted-foreground [&>span]:line-clamp-1",
-			className,
-		)}
-		{...props}
-	>
-		{children}
-		<SelectPrimitive.Icon asChild>
-			<ChevronDown className="h-4 w-4 opacity-50" />
-		</SelectPrimitive.Icon>
-	</SelectPrimitive.Trigger>
-));
+>(({ className, children, ...props }, ref) => {
+	const closeContext = React.useContext(SelectCloseContext);
+
+	return (
+		<SelectPrimitive.Trigger
+			ref={(node) => {
+				if (closeContext) {
+					closeContext.triggerRef.current = node;
+				}
+				setForwardedRef(ref, node);
+			}}
+			className={cn(
+				"flex h-9 w-full items-center justify-between whitespace-nowrap rounded-md border border-input bg-popover px-3 py-2 text-popover-foreground text-sm shadow-sm ring-offset-background focus:outline-none focus:ring-1 focus:ring-ring disabled:cursor-not-allowed disabled:opacity-50 data-[placeholder]:text-muted-foreground [&>span]:line-clamp-1",
+				className,
+			)}
+			{...props}
+		>
+			{children}
+			<SelectPrimitive.Icon asChild>
+				<ChevronDown className="h-4 w-4 opacity-50" />
+			</SelectPrimitive.Icon>
+		</SelectPrimitive.Trigger>
+	);
+});
 
 SelectTrigger.displayName = SelectPrimitive.Trigger.displayName;
 
@@ -86,13 +142,27 @@ const SelectContent = React.forwardRef<
 			position = "popper",
 			portal = true,
 			style,
+			onPointerDownOutside,
 			...props
 		},
 		ref,
 	) => {
+		const closeContext = React.useContext(SelectCloseContext);
+		const ignoredRefs = React.useMemo(
+			() => (closeContext ? [closeContext.triggerRef] : []),
+			[closeContext],
+		);
+		const contentRef = useOutsidePointerClose<
+			React.ElementRef<typeof SelectPrimitive.Content>
+		>(closeContext?.close ?? null, ignoredRefs);
+		useReleaseBodyPointerEvents(true);
+
 		const content = (
 			<SelectPrimitive.Content
-				ref={ref}
+				ref={(node) => {
+					contentRef.current = node;
+					setForwardedRef(ref, node);
+				}}
 				className={cn(
 					"!bg-popover !text-popover-foreground !opacity-100 data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[side=bottom]:slide-in-from-top-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2 relative z-[10000] flex max-h-[min(60vh,var(--radix-select-content-available-height))] min-w-[8rem] origin-[--radix-select-content-transform-origin] flex-col overflow-hidden rounded-md border shadow-2xl backdrop-blur-none data-[state=closed]:animate-out data-[state=open]:animate-in",
 					position === "popper" &&
@@ -106,6 +176,17 @@ const SelectContent = React.forwardRef<
 					color: OPAQUE_OVERLAY_FOREGROUND,
 					isolation: "isolate",
 					opacity: 1,
+				}}
+				onPointerDownOutside={(event) => {
+					const target = event.target;
+
+					if (
+						target instanceof Node &&
+						closeContext?.triggerRef.current?.contains(target)
+					) {
+						event.preventDefault();
+					}
+					onPointerDownOutside?.(event);
 				}}
 				{...props}
 			>
@@ -196,13 +277,13 @@ SelectSeparator.displayName = SelectPrimitive.Separator.displayName;
 
 export {
 	Select,
-	SelectGroup,
-	SelectValue,
-	SelectTrigger,
 	SelectContent,
-	SelectLabel,
+	SelectGroup,
 	SelectItem,
-	SelectSeparator,
-	SelectScrollUpButton,
+	SelectLabel,
 	SelectScrollDownButton,
+	SelectScrollUpButton,
+	SelectSeparator,
+	SelectTrigger,
+	SelectValue,
 };

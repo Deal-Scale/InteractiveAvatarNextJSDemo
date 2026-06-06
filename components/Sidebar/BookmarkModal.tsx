@@ -1,5 +1,8 @@
 "use client";
 
+// biome-ignore lint/correctness/noUnusedImports: Vitest's JSX transform for this app requires React at runtime.
+import * as React from "react";
+
 import { Button } from "@/components/ui/button";
 import {
 	Dialog,

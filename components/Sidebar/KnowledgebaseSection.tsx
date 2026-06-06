@@ -469,8 +469,7 @@ function KnowledgeFolderActions(props: {
 				>
 					<DropdownMenuItem
 						className="relative flex cursor-pointer select-none items-center rounded-sm px-2 py-1.5 outline-none data-[highlighted]:bg-muted"
-						onSelect={(e) => {
-							e.preventDefault();
+						onSelect={() => {
 							onAddFolder(folder.id);
 						}}
 					>
@@ -478,8 +477,7 @@ function KnowledgeFolderActions(props: {
 					</DropdownMenuItem>
 					<DropdownMenuItem
 						className="relative flex cursor-pointer select-none items-center rounded-sm px-2 py-1.5 outline-none data-[highlighted]:bg-muted"
-						onSelect={(e) => {
-							e.preventDefault();
+						onSelect={() => {
 							onMoveFolder(folder.id, undefined);
 						}}
 					>
@@ -494,8 +492,7 @@ function KnowledgeFolderActions(props: {
 						<DropdownMenuItem
 							key={target.id}
 							className="relative flex cursor-pointer select-none items-center rounded-sm px-2 py-1.5 outline-none data-[highlighted]:bg-muted"
-							onSelect={(e) => {
-								e.preventDefault();
+							onSelect={() => {
 								onMoveFolder(folder.id, target.id);
 							}}
 						>
@@ -505,8 +502,7 @@ function KnowledgeFolderActions(props: {
 					<div className="my-1 h-px bg-border" />
 					<DropdownMenuItem
 						className="relative flex cursor-pointer select-none items-center rounded-sm px-2 py-1.5 text-red-600 outline-none data-[highlighted]:bg-red-50 dark:text-red-400 dark:data-[highlighted]:bg-red-950/40"
-						onSelect={(e) => {
-							e.preventDefault();
+						onSelect={() => {
 							onDeleteFolder(folder.id);
 						}}
 					>
@@ -558,8 +554,7 @@ function KnowledgeItemActions(props: {
 				>
 					<DropdownMenuItem
 						className="relative flex cursor-pointer select-none items-center rounded-sm px-2 py-1.5 outline-none data-[highlighted]:bg-muted"
-						onSelect={(e) => {
-							e.preventDefault();
+						onSelect={() => {
 							onMoveItem(itemId, undefined);
 						}}
 					>
@@ -578,8 +573,7 @@ function KnowledgeItemActions(props: {
 								key={folder.id}
 								disabled={currentFolderId === folder.id}
 								className="relative flex cursor-pointer select-none items-center rounded-sm px-2 py-1.5 outline-none data-[disabled]:cursor-not-allowed data-[disabled]:opacity-50 data-[highlighted]:bg-muted"
-								onSelect={(e) => {
-									e.preventDefault();
+								onSelect={() => {
 									onMoveItem(itemId, folder.id);
 								}}
 							>
@@ -589,8 +583,7 @@ function KnowledgeItemActions(props: {
 					<div className="my-1 h-px bg-border" />
 					<DropdownMenuItem
 						className="relative flex cursor-pointer select-none items-center rounded-sm px-2 py-1.5 outline-none data-[highlighted]:bg-muted"
-						onSelect={(e) => {
-							e.preventDefault();
+						onSelect={() => {
 							onOpenMarkdown
 								? onOpenMarkdown()
 								: console.debug("KB: open markdown");
@@ -600,8 +593,7 @@ function KnowledgeItemActions(props: {
 					</DropdownMenuItem>
 					<DropdownMenuItem
 						className="relative flex cursor-pointer select-none items-center rounded-sm px-2 py-1.5 outline-none data-[highlighted]:bg-muted"
-						onSelect={(e) => {
-							e.preventDefault();
+						onSelect={() => {
 							onStartApiSync
 								? onStartApiSync()
 								: console.debug("KB: start OAuth sync");

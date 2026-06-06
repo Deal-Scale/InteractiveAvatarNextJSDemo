@@ -5,12 +5,78 @@ import { Check, ChevronRight, Circle } from "lucide-react";
 import * as React from "react";
 
 import { cn } from "@/lib/utils";
+import {
+	setForwardedRef,
+	useOutsidePointerClose,
+} from "./use-overlay-outside-close";
 
 const OPAQUE_OVERLAY_BACKGROUND = "#020617";
 const OPAQUE_OVERLAY_FOREGROUND = "#f8fafc";
 
-const DropdownMenu = DropdownMenuPrimitive.Root;
-const DropdownMenuTrigger = DropdownMenuPrimitive.Trigger;
+const DropdownMenuCloseContext = React.createContext<{
+	close: () => void;
+	triggerRef: React.RefObject<HTMLElement | null>;
+} | null>(null);
+
+const DropdownMenu = ({
+	open,
+	defaultOpen,
+	onOpenChange,
+	modal = false,
+	...props
+}: React.ComponentPropsWithoutRef<typeof DropdownMenuPrimitive.Root>) => {
+	const [uncontrolledOpen, setUncontrolledOpen] = React.useState(
+		defaultOpen ?? false,
+	);
+	const isControlled = open !== undefined;
+	const currentOpen = isControlled ? open : uncontrolledOpen;
+
+	const setOpen = React.useCallback(
+		(nextOpen: boolean) => {
+			if (!isControlled) {
+				setUncontrolledOpen(nextOpen);
+			}
+			onOpenChange?.(nextOpen);
+		},
+		[isControlled, onOpenChange],
+	);
+
+	const close = React.useCallback(() => {
+		setOpen(false);
+	}, [setOpen]);
+	const triggerRef = React.useRef<HTMLElement | null>(null);
+	const contextValue = React.useMemo(() => ({ close, triggerRef }), [close]);
+
+	return (
+		<DropdownMenuCloseContext.Provider value={contextValue}>
+			<DropdownMenuPrimitive.Root
+				open={currentOpen}
+				onOpenChange={setOpen}
+				modal={modal}
+				{...props}
+			/>
+		</DropdownMenuCloseContext.Provider>
+	);
+};
+const DropdownMenuTrigger = React.forwardRef<
+	React.ElementRef<typeof DropdownMenuPrimitive.Trigger>,
+	React.ComponentPropsWithoutRef<typeof DropdownMenuPrimitive.Trigger>
+>((props, ref) => {
+	const closeContext = React.useContext(DropdownMenuCloseContext);
+
+	return (
+		<DropdownMenuPrimitive.Trigger
+			ref={(node) => {
+				if (closeContext) {
+					closeContext.triggerRef.current = node;
+				}
+				setForwardedRef(ref, node);
+			}}
+			{...props}
+		/>
+	);
+});
+DropdownMenuTrigger.displayName = DropdownMenuPrimitive.Trigger.displayName;
 const DropdownMenuGroup = DropdownMenuPrimitive.Group;
 const DropdownMenuPortal = DropdownMenuPrimitive.Portal;
 const DropdownMenuSub = DropdownMenuPrimitive.Sub;
@@ -64,26 +130,56 @@ DropdownMenuSubContent.displayName =
 const DropdownMenuContent = React.forwardRef<
 	React.ElementRef<typeof DropdownMenuPrimitive.Content>,
 	React.ComponentPropsWithoutRef<typeof DropdownMenuPrimitive.Content>
->(({ className, sideOffset = 4, style, ...props }, ref) => (
-	<DropdownMenuPrimitive.Portal>
-		<DropdownMenuPrimitive.Content
-			ref={ref}
-			sideOffset={sideOffset}
-			className={cn(
-				"!bg-popover !text-popover-foreground !opacity-100 z-50 min-w-[8rem] overflow-hidden rounded-md border p-1 shadow-md backdrop-blur-none",
-				className,
-			)}
-			style={{
-				...style,
-				backgroundColor: OPAQUE_OVERLAY_BACKGROUND,
-				color: OPAQUE_OVERLAY_FOREGROUND,
-				isolation: "isolate",
-				opacity: 1,
-			}}
-			{...props}
-		/>
-	</DropdownMenuPrimitive.Portal>
-));
+>(
+	(
+		{ className, sideOffset = 4, style, onPointerDownOutside, ...props },
+		ref,
+	) => {
+		const closeContext = React.useContext(DropdownMenuCloseContext);
+		const ignoredRefs = React.useMemo(
+			() => (closeContext ? [closeContext.triggerRef] : []),
+			[closeContext],
+		);
+		const contentRef = useOutsidePointerClose<
+			React.ElementRef<typeof DropdownMenuPrimitive.Content>
+		>(closeContext?.close ?? null, ignoredRefs);
+
+		return (
+			<DropdownMenuPrimitive.Portal>
+				<DropdownMenuPrimitive.Content
+					ref={(node) => {
+						contentRef.current = node;
+						setForwardedRef(ref, node);
+					}}
+					sideOffset={sideOffset}
+					className={cn(
+						"!bg-popover !text-popover-foreground !opacity-100 z-50 min-w-[8rem] overflow-hidden rounded-md border p-1 shadow-md backdrop-blur-none",
+						className,
+					)}
+					style={{
+						...style,
+						backgroundColor: OPAQUE_OVERLAY_BACKGROUND,
+						color: OPAQUE_OVERLAY_FOREGROUND,
+						isolation: "isolate",
+						opacity: 1,
+					}}
+					onPointerDownOutside={(event) => {
+						const target = event.target;
+
+						if (
+							target instanceof Node &&
+							closeContext?.triggerRef.current?.contains(target)
+						) {
+							event.preventDefault();
+						}
+						onPointerDownOutside?.(event);
+					}}
+					{...props}
+				/>
+			</DropdownMenuPrimitive.Portal>
+		);
+	},
+);
 DropdownMenuContent.displayName = DropdownMenuPrimitive.Content.displayName;
 
 const dropdownMenuItemStyle = {
@@ -203,18 +299,18 @@ DropdownMenuShortcut.displayName = "DropdownMenuShortcut";
 
 export {
 	DropdownMenu,
-	DropdownMenuTrigger,
-	DropdownMenuContent,
-	DropdownMenuItem,
 	DropdownMenuCheckboxItem,
-	DropdownMenuRadioItem,
+	DropdownMenuContent,
+	DropdownMenuGroup,
+	DropdownMenuItem,
 	DropdownMenuLabel,
+	DropdownMenuPortal,
+	DropdownMenuRadioGroup,
+	DropdownMenuRadioItem,
 	DropdownMenuSeparator,
 	DropdownMenuShortcut,
-	DropdownMenuGroup,
-	DropdownMenuPortal,
 	DropdownMenuSub,
 	DropdownMenuSubContent,
 	DropdownMenuSubTrigger,
-	DropdownMenuRadioGroup,
+	DropdownMenuTrigger,
 };

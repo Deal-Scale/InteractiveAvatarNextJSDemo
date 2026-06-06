@@ -308,8 +308,7 @@ function BookmarkFolderActions(props: {
 			>
 				<DropdownMenuItem
 					className="relative flex cursor-pointer select-none items-center rounded-sm px-2 py-1.5 outline-none data-[highlighted]:bg-muted"
-					onSelect={(e) => {
-						e.preventDefault();
+					onSelect={() => {
 						onMoveFolder?.(folder.id, undefined);
 					}}
 				>
@@ -324,8 +323,7 @@ function BookmarkFolderActions(props: {
 					<DropdownMenuItem
 						key={target.id}
 						className="relative flex cursor-pointer select-none items-center rounded-sm px-2 py-1.5 outline-none data-[highlighted]:bg-muted"
-						onSelect={(e) => {
-							e.preventDefault();
+						onSelect={() => {
 							onMoveFolder?.(folder.id, target.id);
 						}}
 					>
@@ -335,8 +333,7 @@ function BookmarkFolderActions(props: {
 				<div className="my-1 h-px bg-border" />
 				<DropdownMenuItem
 					className="relative flex cursor-pointer select-none items-center rounded-sm px-2 py-1.5 text-red-600 outline-none data-[highlighted]:bg-red-50 dark:text-red-400 dark:data-[highlighted]:bg-red-950/40"
-					onSelect={(e) => {
-						e.preventDefault();
+					onSelect={() => {
 						onDeleteFolder?.(folder.id);
 					}}
 				>
@@ -439,8 +436,7 @@ function BookmarkTreeItem(props: {
 						<div className="my-1 h-px bg-border" />
 						<DropdownMenuItem
 							className="relative flex cursor-pointer select-none items-center rounded-sm px-2 py-1.5 outline-none data-[highlighted]:bg-muted"
-							onSelect={(e) => {
-								e.preventDefault();
+							onSelect={() => {
 								if (conversation) onOpenChat?.(conversation);
 							}}
 						>
@@ -448,8 +444,7 @@ function BookmarkTreeItem(props: {
 						</DropdownMenuItem>
 						<DropdownMenuItem
 							className="relative flex cursor-pointer select-none items-center rounded-sm px-2 py-1.5 outline-none data-[highlighted]:bg-muted"
-							onSelect={(e) => {
-								e.preventDefault();
+							onSelect={() => {
 								onOpenBookmarkMove?.(child.id);
 							}}
 						>
@@ -457,8 +452,7 @@ function BookmarkTreeItem(props: {
 						</DropdownMenuItem>
 						<DropdownMenuItem
 							className="relative flex cursor-pointer select-none items-center rounded-sm px-2 py-1.5 text-red-600 outline-none data-[highlighted]:bg-red-50 dark:text-red-400 dark:data-[highlighted]:bg-red-950/40"
-							onSelect={(e) => {
-								e.preventDefault();
+							onSelect={() => {
 								onDeleteBookmark?.(child.id);
 							}}
 						>
