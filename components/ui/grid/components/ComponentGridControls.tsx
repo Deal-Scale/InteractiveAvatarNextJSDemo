@@ -91,7 +91,8 @@ export default function ComponentGridControls({
 						<div
 							role="listbox"
 							aria-label="Select categories"
-							className="absolute z-20 mt-1 w-full rounded-md border border-border bg-popover text-popover-foreground p-2 shadow-lg"
+							className="absolute z-20 mt-1 w-full rounded-md border border-slate-700 bg-slate-950 p-2 text-slate-50 shadow-lg"
+							data-overlay-surface="opaque"
 						>
 							<input
 								aria-label="Filter categories"

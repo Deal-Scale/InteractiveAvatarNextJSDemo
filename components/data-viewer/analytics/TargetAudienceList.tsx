@@ -1,12 +1,16 @@
-import React, { useState } from "react";
 import { Users } from "lucide-react";
+import React, { useState } from "react";
 import {
-	targetAudienceData,
 	predictAudienceData,
 	TargetAudienceData,
+	targetAudienceData,
 } from "../data/engagement/targetAudience";
 
 const demographicTypes = ["Gender", "Age Group", "Location"];
+
+type TargetAudienceListProps = {
+	headerAction?: React.ReactNode;
+};
 
 // Mini donut chart (SVG) for gender split
 function GenderDonut({ male, female }: { male: number; female: number }) {
@@ -157,7 +161,9 @@ const TargetAudienceCard: React.FC<{
 	);
 };
 
-const TargetAudienceList: React.FC = () => {
+const TargetAudienceList: React.FC<TargetAudienceListProps> = ({
+	headerAction,
+}) => {
 	const [selectedAudience, setSelectedAudience] = useState<TargetAudienceData>(
 		targetAudienceData[0],
 	);
@@ -167,9 +173,12 @@ const TargetAudienceList: React.FC = () => {
 
 	return (
 		<div className="h-full overflow-auto rounded-md border border-border bg-card p-4 text-card-foreground shadow-sm">
-			<div className="chart-grid-drag-handle mb-4 flex cursor-move items-center gap-2 text-sm font-medium">
-				<Users className="h-4 w-4 text-primary" />
-				<span>Audience</span>
+			<div className="chart-grid-drag-handle mb-4 flex cursor-move items-center justify-between gap-2 text-sm font-medium">
+				<div className="flex min-w-0 items-center gap-2">
+					<Users className="h-4 w-4 shrink-0 text-primary" />
+					<span className="min-w-0 break-words">Audience</span>
+				</div>
+				{headerAction}
 			</div>
 			<div className="mb-3">
 				<label

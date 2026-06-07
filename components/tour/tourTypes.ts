@@ -1,4 +1,4 @@
-import type { Step } from "react-joyride";
+import type React from "react";
 
 export const TOUR_IDS = [
 	"app-overview",
@@ -18,10 +18,21 @@ export const TOUR_IDS = [
 
 export type TourId = (typeof TOUR_IDS)[number];
 
+export type TourStep = {
+	target: string;
+	content: React.ReactNode;
+	placement?: "auto" | "bottom" | "center" | "left" | "right" | "top";
+	disableBeacon?: boolean;
+	skipBeacon?: boolean;
+	hideOverlay?: boolean;
+	blockTargetInteraction?: boolean;
+	before?: () => Promise<void> | void;
+};
+
 export type TourDefinition = {
 	id: TourId;
 	title: string;
 	description: string;
 	relatedTourIds?: TourId[];
-	steps: Step[];
+	steps: TourStep[];
 };

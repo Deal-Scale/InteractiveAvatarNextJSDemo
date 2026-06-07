@@ -11,9 +11,9 @@ import type {
 } from "react-grid-layout";
 import { Responsive, useContainerWidth } from "react-grid-layout";
 
+import { useDataGridStore } from "../../lib/stores/dataGrid";
 import { LiveMermaidChart } from "../ui/live-mermaid-chart";
 import { Mermaid } from "../ui/mermaid";
-import { useDataGridStore } from "../../lib/stores/dataGrid";
 import PlatformList from "./analytics/PlatformList";
 import TargetAudienceList from "./analytics/TargetAudienceList";
 import TrafficList from "./analytics/TrafficList";
@@ -47,9 +47,27 @@ const TOUR_MERMAID_CHART = `flowchart LR
     D --> E`;
 
 const builtinCharts = [
-	{ id: "platforms", title: "Platforms", content: <PlatformList /> },
-	{ id: "traffic", title: "Traffic", content: <TrafficList /> },
-	{ id: "audience", title: "Audience", content: <TargetAudienceList /> },
+	{
+		id: "platforms",
+		title: "Platforms",
+		renderContent: (headerAction: React.ReactNode) => (
+			<PlatformList headerAction={headerAction} />
+		),
+	},
+	{
+		id: "traffic",
+		title: "Traffic",
+		renderContent: (headerAction: React.ReactNode) => (
+			<TrafficList headerAction={headerAction} />
+		),
+	},
+	{
+		id: "audience",
+		title: "Audience",
+		renderContent: (headerAction: React.ReactNode) => (
+			<TargetAudienceList headerAction={headerAction} />
+		),
+	},
 ] as const;
 
 const defaultLayouts: ChartLayouts = {
@@ -229,11 +247,11 @@ function MermaidGridCard({
 }) {
 	return (
 		<div className="flex h-full min-h-0 flex-col overflow-hidden rounded-md border border-border bg-card text-card-foreground shadow-sm">
-			<div className="chart-grid-drag-handle flex cursor-move items-center justify-between gap-2 border-b border-border px-4 py-3 text-sm font-medium">
-				<span className="truncate">{title}</span>
+			<div className="chart-grid-drag-handle flex min-h-12 shrink-0 cursor-move items-start justify-between gap-2 border-b border-border px-4 py-2.5 text-sm font-medium">
+				<span className="min-w-0 flex-1 break-words leading-snug">{title}</span>
 				<button
 					type="button"
-					className="inline-flex h-7 w-7 items-center justify-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground"
+					className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground"
 					aria-label={`Remove ${title}`}
 					onClick={() => onRemove(id)}
 				>
@@ -311,21 +329,37 @@ export function DataViewer({ initialNodeTree }: DataViewerProps) {
 		setHiddenBuiltinIds(ids);
 		saveHiddenBuiltins(ids);
 	}, []);
-	const removeBuiltinChart = useCallback(
-		(id: string) => {
-			setHiddenBuiltins(Array.from(new Set([...hiddenBuiltinIds, id])));
-		},
-		[hiddenBuiltinIds, setHiddenBuiltins],
-	);
-	const restoreBuiltinChart = useCallback(
-		(id: string) => {
-			setHiddenBuiltins(hiddenBuiltinIds.filter((hiddenId) => hiddenId !== id));
-		},
-		[hiddenBuiltinIds, setHiddenBuiltins],
-	);
+	const removeBuiltinChart = useCallback((id: string) => {
+		setHiddenBuiltinIds((current) => {
+			const next = Array.from(new Set([...current, id]));
+			saveHiddenBuiltins(next);
+			return next;
+		});
+	}, []);
+	const restoreBuiltinChart = useCallback((id: string) => {
+		setHiddenBuiltinIds((current) => {
+			const next = current.filter((hiddenId) => hiddenId !== id);
+			saveHiddenBuiltins(next);
+			return next;
+		});
+	}, []);
 	const restoreAllBuiltinCharts = useCallback(() => {
 		setHiddenBuiltins([]);
 	}, [setHiddenBuiltins]);
+	const renderBuiltinRemoveButton = useCallback(
+		(id: string, title: string) => (
+			<button
+				type="button"
+				className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-md border border-border bg-card text-muted-foreground shadow-sm hover:bg-muted hover:text-foreground"
+				aria-label={`Remove ${title} chart`}
+				data-tour="data-grid-remove-builtin"
+				onClick={() => removeBuiltinChart(id)}
+			>
+				<X className="h-4 w-4" />
+			</button>
+		),
+		[removeBuiltinChart],
+	);
 	const chartItems = useMemo<ChartItem[]>(
 		() => [
 			...mermaidCharts.map((chart) => ({
@@ -346,23 +380,32 @@ export function DataViewer({ initialNodeTree }: DataViewerProps) {
 				.map((chart) => ({
 					id: chart.id,
 					kind: "builtin" as const,
-					content: chart.content,
+					content: chart.renderContent(
+						renderBuiltinRemoveButton(chart.id, chart.title),
+					),
 				})),
 		],
-		[hiddenBuiltinSet, mermaidCharts, removeMermaidChart],
+		[
+			hiddenBuiltinSet,
+			mermaidCharts,
+			removeMermaidChart,
+			renderBuiltinRemoveButton,
+		],
 	);
 	const chartLayoutItems = useMemo(
 		() => chartItems.map((item) => ({ id: item.id, kind: item.kind })),
 		[chartItems],
 	);
+	const activeLayouts = useMemo(
+		() => ensureLayoutsForItems(layouts, chartLayoutItems),
+		[chartLayoutItems, layouts],
+	);
 
 	useEffect(() => {
-		setLayouts((current) => {
-			const next = ensureLayoutsForItems(current, chartLayoutItems);
-			if (next !== current) saveLayouts(next);
-			return next;
-		});
-	}, [chartLayoutItems]);
+		if (activeLayouts === layouts) return;
+		saveLayouts(activeLayouts);
+		setLayouts(activeLayouts);
+	}, [activeLayouts, layouts]);
 
 	useEffect(() => {
 		const enableLayout = () => {
@@ -439,15 +482,15 @@ export function DataViewer({ initialNodeTree }: DataViewerProps) {
 
 	return (
 		<DataViewerProvider initialNodeTree={initialNodeTree}>
-			<div className="h-full w-full overflow-y-auto bg-background px-4 pb-4 pt-16 text-foreground">
+			<div className="h-full w-full overflow-y-auto bg-background px-4 pb-4 pt-3 text-foreground">
 				<div ref={containerRef} className="mx-auto w-full max-w-6xl">
 					<div
-						className="mb-3 flex items-center justify-end gap-2"
+						className="mb-2 flex min-h-9 flex-wrap items-center justify-end gap-1.5"
 						data-tour="data-grid-layout-controls"
 					>
 						{hiddenBuiltins.length > 0 && (
 							<div
-								className="mr-auto flex flex-wrap items-center gap-2 text-xs"
+								className="mr-auto flex min-w-0 flex-wrap items-center gap-1.5 text-xs"
 								data-tour="data-grid-restore-builtin"
 							>
 								<span className="text-muted-foreground">Hidden:</span>
@@ -455,7 +498,7 @@ export function DataViewer({ initialNodeTree }: DataViewerProps) {
 									<button
 										key={chart.id}
 										type="button"
-										className="inline-flex h-8 items-center gap-1 rounded-md border border-border bg-card px-2 text-card-foreground shadow-sm hover:bg-muted"
+										className="inline-flex h-7 items-center gap-1 rounded-md border border-border bg-card px-2 text-card-foreground shadow-sm hover:bg-muted"
 										onClick={() => restoreBuiltinChart(chart.id)}
 									>
 										<Plus className="h-3.5 w-3.5" />
@@ -464,7 +507,7 @@ export function DataViewer({ initialNodeTree }: DataViewerProps) {
 								))}
 								<button
 									type="button"
-									className="inline-flex h-8 items-center rounded-md border border-border bg-card px-2 text-card-foreground shadow-sm hover:bg-muted"
+									className="inline-flex h-7 items-center rounded-md border border-border bg-card px-2 text-card-foreground shadow-sm hover:bg-muted"
 									onClick={restoreAllBuiltinCharts}
 								>
 									Restore all
@@ -498,7 +541,7 @@ export function DataViewer({ initialNodeTree }: DataViewerProps) {
 							width={width}
 							cols={GRID_COLS}
 							breakpoints={GRID_BREAKPOINTS}
-							layouts={layouts}
+							layouts={activeLayouts}
 							rowHeight={48}
 							margin={GRID_MARGIN}
 							containerPadding={GRID_CONTAINER_PADDING}
@@ -507,18 +550,10 @@ export function DataViewer({ initialNodeTree }: DataViewerProps) {
 							onLayoutChange={handleLayoutChange}
 						>
 							{chartItems.map((item) => (
-								<div key={item.id} className="relative min-h-0 overflow-hidden">
-									{item.kind === "builtin" && (
-										<button
-											type="button"
-											className="absolute right-2 top-2 z-10 inline-flex h-7 w-7 items-center justify-center rounded-md border border-border bg-card/90 text-muted-foreground shadow-sm backdrop-blur hover:bg-muted hover:text-foreground"
-											aria-label={`Remove ${item.id} chart`}
-											data-tour="data-grid-remove-builtin"
-											onClick={() => removeBuiltinChart(item.id)}
-										>
-											<X className="h-4 w-4" />
-										</button>
-									)}
+								<div
+									key={item.id}
+									className="relative h-full min-h-0 min-w-0 overflow-hidden"
+								>
 									{item.content}
 								</div>
 							))}

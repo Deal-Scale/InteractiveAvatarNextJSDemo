@@ -29,6 +29,7 @@ export function LiveMermaidChart({
 	className,
 	intervalMs = 2500,
 	seed,
+	showControls,
 	title = "Live Pipeline",
 }: LiveMermaidChartProps) {
 	const [tick, setTick] = React.useState(0);
@@ -50,7 +51,16 @@ export function LiveMermaidChart({
 	return (
 		<div className={className}>
 			{title ? <div className="mb-2 text-sm font-medium">{title}</div> : null}
-			<Mermaid chart={chart} />
+			<Mermaid
+				chart={chart}
+				liveData={{
+					kind: "mockPipeline",
+					intervalMs,
+					seed: seedRef.current,
+				}}
+				showControls={showControls}
+				title={title}
+			/>
 		</div>
 	);
 }

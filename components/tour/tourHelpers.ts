@@ -28,6 +28,7 @@ export async function openBottomChatPanel() {
 	placement.setBottomHeightFrac(0.65);
 	if (typeof window !== "undefined") {
 		window.dispatchEvent(new CustomEvent("tour-show-chat-reopen"));
+		window.dispatchEvent(new CustomEvent("deal-scale:restore-chat"));
 		window.dispatchEvent(
 			new CustomEvent("tour-start-chat-without-session", {
 				detail: { clearInput: true },
@@ -49,6 +50,7 @@ export async function showBottomChatPanelToggle() {
 	placement.setFloating({ visible: false });
 	if (typeof window !== "undefined") {
 		window.dispatchEvent(new CustomEvent("tour-show-chat-reopen"));
+		window.dispatchEvent(new CustomEvent("tour-minimize-chat"));
 		await new Promise((resolve) => window.setTimeout(resolve, 150));
 	}
 	await scrollTourTargetIntoView('[data-tour="bottom-chat-panel-toggle"]');
@@ -164,6 +166,7 @@ async function closeChatPanelForWorkspaceTour() {
 	placement.setFloating({ visible: false });
 	if (typeof window !== "undefined") {
 		window.dispatchEvent(new CustomEvent("tour-close-slash-command-menu"));
+		window.dispatchEvent(new CustomEvent("tour-minimize-chat"));
 		await new Promise((resolve) => window.setTimeout(resolve, 100));
 	}
 }
@@ -210,7 +213,14 @@ export async function openSidebarSection(section: SidebarTourSection) {
 	window.dispatchEvent(
 		new CustomEvent("tour-open-sidebar-section", { detail: { section } }),
 	);
-	await scrollTourTargetIntoView(`[data-tour="${section}"]`);
+	await scrollTourTargetIntoView(getSidebarSectionTarget(section));
+}
+
+function getSidebarSectionTarget(section: SidebarTourSection) {
+	if (section === "chats") {
+		return '[data-tour="chats-section"]';
+	}
+	return `[data-tour="${section}"]`;
 }
 
 export async function openTopPanel(tab: TopPanelTourTab) {

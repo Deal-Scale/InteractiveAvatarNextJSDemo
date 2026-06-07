@@ -64,9 +64,10 @@ export const SlashCommandPalette: React.FC<SlashCommandPaletteProps> = ({
 		<div
 			role="listbox"
 			aria-label="Slash command palette"
+			data-overlay-surface="opaque"
 			data-tour="slash-command-menu"
 			className={cn(
-				"fixed z-50 max-h-72 rounded-md border bg-popover text-popover-foreground shadow-md",
+				"fixed z-50 max-h-72 rounded-md border border-slate-700 bg-slate-950 text-slate-50 shadow-md",
 				"outline-none",
 				"flex",
 			)}
@@ -94,12 +95,12 @@ export const SlashCommandPalette: React.FC<SlashCommandPaletteProps> = ({
 							data-tour={idx === 0 ? "slash-command-item" : undefined}
 							aria-selected={idx === highlightedIndex}
 							className={cn(
-								"flex cursor-pointer items-center justify-between rounded-sm px-2 py-1.5 text-sm",
+								"flex cursor-pointer items-center justify-between rounded-sm bg-slate-950 px-2 py-1.5 text-sm text-slate-50",
 								item.disabled
 									? "opacity-40 cursor-not-allowed text-muted-foreground"
 									: idx === highlightedIndex
-										? "bg-accent text-accent-foreground"
-										: "hover:bg-accent hover:text-accent-foreground",
+										? "bg-slate-800 text-slate-50"
+										: "hover:bg-slate-800 hover:text-slate-50",
 							)}
 							onMouseEnter={() => {
 								if (item.disabled) return;
@@ -157,12 +158,12 @@ export const SlashCommandPalette: React.FC<SlashCommandPaletteProps> = ({
 							role="option"
 							aria-selected={idx === highlightedSubIndex}
 							className={cn(
-								"flex cursor-pointer items-center justify-between rounded-sm px-2 py-1.5 text-sm",
+								"flex cursor-pointer items-center justify-between rounded-sm bg-slate-950 px-2 py-1.5 text-sm text-slate-50",
 								item.disabled
 									? "opacity-40 cursor-not-allowed text-muted-foreground"
 									: idx === highlightedSubIndex
-										? "bg-accent text-accent-foreground"
-										: "hover:bg-accent hover:text-accent-foreground",
+										? "bg-slate-800 text-slate-50"
+										: "hover:bg-slate-800 hover:text-slate-50",
 							)}
 							onMouseEnter={() => {
 								if (item.disabled) return;

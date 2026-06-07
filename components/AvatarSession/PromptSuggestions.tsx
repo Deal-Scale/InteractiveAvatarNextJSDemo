@@ -41,7 +41,10 @@ export const PromptSuggestions: React.FC<PromptSuggestionsProps> = ({
 							.slice(0, 6);
 						if (filtered.length === 0) return null;
 						return (
-							<div className="flex max-h-40 flex-col gap-1 overflow-auto rounded-xl border border-border bg-popover p-1 text-popover-foreground shadow-sm">
+							<div
+								className="flex max-h-40 flex-col gap-1 overflow-auto rounded-xl border border-slate-700 bg-slate-950 p-1 text-slate-50 shadow-sm"
+								data-overlay-surface="opaque"
+							>
 								{filtered.map((s) => (
 									<PromptSuggestion
 										key={s}

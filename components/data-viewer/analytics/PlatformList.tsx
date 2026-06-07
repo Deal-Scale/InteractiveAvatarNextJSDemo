@@ -1,20 +1,27 @@
-import React, { useState } from "react";
 import { Network } from "lucide-react";
+import React, { useState } from "react";
 import { mockPlatforms } from "../data/engagement/sites";
 import { Platform } from "../types";
+
+type PlatformListProps = {
+	headerAction?: React.ReactNode;
+};
 
 const calculatePercentage = (value: number, goal: number): number =>
 	(value / goal) * 100;
 
-const PlatformList: React.FC = () => {
+const PlatformList: React.FC<PlatformListProps> = ({ headerAction }) => {
 	const [selectedEngagement, setSelectedEngagement] = useState<string>("Likes");
 	const engagementTypes = Object.keys(mockPlatforms);
 
 	return (
 		<div className="h-full overflow-auto rounded-md border border-border bg-card p-4 text-card-foreground shadow-sm">
-			<div className="chart-grid-drag-handle mb-4 flex cursor-move items-center gap-2 text-sm font-medium">
-				<Network className="h-4 w-4 text-primary" />
-				<span>Platforms</span>
+			<div className="chart-grid-drag-handle mb-4 flex cursor-move items-center justify-between gap-2 text-sm font-medium">
+				<div className="flex min-w-0 items-center gap-2">
+					<Network className="h-4 w-4 shrink-0 text-primary" />
+					<span className="min-w-0 break-words">Platforms</span>
+				</div>
+				{headerAction}
 			</div>
 			<div className="mb-4">
 				<label htmlFor="engagement-select" className="block text-sm mb-2">

@@ -1,13 +1,24 @@
 "use client";
 
-import * as React from "react";
 import * as TooltipPrimitive from "@radix-ui/react-tooltip";
+import * as React from "react";
 
 import { cn } from "@/lib/utils";
 
 // Alias primitive components to simple identifiers to avoid JSX member expressions
 const TooltipProvider = TooltipPrimitive.Provider;
-const Tooltip = TooltipPrimitive.Root;
+const Tooltip = ({
+	children,
+	delayDuration,
+	...props
+}: React.ComponentPropsWithoutRef<typeof TooltipPrimitive.Root>) => (
+	<TooltipProvider delayDuration={delayDuration}>
+		<TooltipPrimitive.Root delayDuration={delayDuration} {...props}>
+			{children}
+		</TooltipPrimitive.Root>
+	</TooltipProvider>
+);
+Tooltip.displayName = TooltipPrimitive.Root.displayName;
 const TooltipTrigger = TooltipPrimitive.Trigger;
 const TooltipPortal = TooltipPrimitive.Portal;
 const TooltipContentPrimitive = TooltipPrimitive.Content;
@@ -31,4 +42,4 @@ const TooltipContent = React.forwardRef<
 
 TooltipContent.displayName = TooltipContentPrimitive.displayName;
 
-export { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider };
+export { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger };

@@ -1,6 +1,10 @@
-import React, { useState } from "react";
 import { BarChart3 } from "lucide-react";
+import React, { useState } from "react";
 import { TrafficData, trafficData } from "../data/engagement/traffic";
+
+type TrafficListProps = {
+	headerAction?: React.ReactNode;
+};
 
 const calculatePercentage = (value: number, goal: number): number =>
 	Math.round((value / goal) * 100);
@@ -39,16 +43,19 @@ const TrafficCard: React.FC<{ data: TrafficData }> = ({ data }) => {
 	);
 };
 
-const TrafficList: React.FC = () => {
+const TrafficList: React.FC<TrafficListProps> = ({ headerAction }) => {
 	const [selectedTraffic, setSelectedTraffic] = useState<TrafficData>(
 		trafficData[0],
 	);
 
 	return (
 		<div className="h-full overflow-auto rounded-md border border-border bg-card p-4 text-card-foreground shadow-sm">
-			<div className="chart-grid-drag-handle mb-4 flex cursor-move items-center gap-2 text-sm font-medium">
-				<BarChart3 className="h-4 w-4 text-primary" />
-				<span>Traffic</span>
+			<div className="chart-grid-drag-handle mb-4 flex cursor-move items-center justify-between gap-2 text-sm font-medium">
+				<div className="flex min-w-0 items-center gap-2">
+					<BarChart3 className="h-4 w-4 shrink-0 text-primary" />
+					<span className="min-w-0 break-words">Traffic</span>
+				</div>
+				{headerAction}
 			</div>
 			<div className="mb-4">
 				<label htmlFor="traffic-select" className="mb-2 block text-sm">
