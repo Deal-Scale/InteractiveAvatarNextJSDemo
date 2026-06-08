@@ -6,21 +6,23 @@ import {
 	ChevronRight,
 	FolderIcon,
 	PlayIcon,
+	VideoIcon,
 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 
+import { Button } from "@/components/ui/button";
+import { cn } from "../../lib/utils";
 import { useAppTour } from "../tour/AppTourProvider";
 import { tourGroups } from "../tour/tourGroups";
 import { tourDefinitions } from "../tour/tourRegistry";
-import { Button } from "@/components/ui/button";
 import {
 	SidebarGroup,
 	SidebarGroupLabel,
 	SidebarMenu,
 	SidebarMenuButton,
 } from "../ui/sidebar";
-import { cn } from "../../lib/utils";
 import type { AppOption } from "./types";
+import VideoTourModal from "./VideoTourModal";
 
 type TourDefinition = (typeof tourDefinitions)[number];
 
@@ -33,6 +35,7 @@ export default function ApplicationsStarter(props: {
 	const { collapsedStarter, setCollapsedStarter, apps, onOpenGlobalSettings } =
 		props;
 	const { completedTourIds, startTour } = useAppTour();
+	const [videoTourOpen, setVideoTourOpen] = useState(false);
 	const [openTourGroups, setOpenTourGroups] = useState<Set<string>>(
 		() => new Set(tourGroups.map((group) => group.id)),
 	);
@@ -168,6 +171,26 @@ export default function ApplicationsStarter(props: {
 								</div>
 							);
 						})}
+						<div className="overflow-hidden rounded-md border border-border bg-background">
+							<button
+								type="button"
+								className="flex w-full min-w-0 items-start gap-2 rounded px-2 py-2 text-left hover:bg-muted"
+								data-tour-video-option=""
+								onClick={() => setVideoTourOpen(true)}
+							>
+								<span className="mt-0.5 inline-flex size-5 shrink-0 items-center justify-center rounded border border-rose-500/30 bg-rose-500/10 text-rose-700 dark:text-rose-300">
+									<VideoIcon className="size-3" />
+								</span>
+								<span className="min-w-0">
+									<span className="block truncate text-xs font-medium text-foreground">
+										Video tour
+									</span>
+									<span className="line-clamp-2 block text-[11px] leading-snug text-muted-foreground">
+										Open the guided video walkthrough.
+									</span>
+								</span>
+							</button>
+						</div>
 					</div>
 
 					{apps && apps.length > 0 && (
@@ -199,6 +222,10 @@ export default function ApplicationsStarter(props: {
 					)}
 				</>
 			)}
+			<VideoTourModal
+				open={videoTourOpen}
+				onClose={() => setVideoTourOpen(false)}
+			/>
 		</SidebarGroup>
 	);
 }

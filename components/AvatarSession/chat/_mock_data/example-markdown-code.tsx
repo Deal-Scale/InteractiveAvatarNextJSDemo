@@ -41,7 +41,7 @@ Showcases rich markdown features compatible with the PromptKit renderer: callout
 
 ## Image
 
-![Demo Image](/demo.png)
+![Demo Image](/demos/svgs/JZP1_tcJNyZaQHtc8ZL9p.webp)
 
 ---
 

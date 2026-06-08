@@ -5,6 +5,7 @@ import remarkBreaks from "remark-breaks";
 import remarkGfm from "remark-gfm";
 import { cn } from "@/lib/utils";
 import { CodeBlock, CodeBlockCode } from "./code-block";
+import { normalizeMarkdownContent } from "./markdown-normalize";
 import { Mermaid } from "./mermaid";
 
 export type MarkdownProps = React.HTMLAttributes<HTMLDivElement> & {
@@ -23,6 +24,10 @@ function extractLanguage(className?: string): string {
 	return match ? match[1] : "plaintext";
 }
 
+function isMermaidLanguage(language: string) {
+	return ["mermaid", "mmd", "textmermaid"].includes(language.toLowerCase());
+}
+
 function parseFenceMeta(meta?: string): Record<string, string> {
 	const out: Record<string, string> = {};
 	if (!meta) return out;
@@ -37,8 +42,16 @@ function parseFenceMeta(meta?: string): Record<string, string> {
 }
 
 const INITIAL_COMPONENTS: Partial<Components> = {
+	blockquote: function BlockquoteComponent({ children }) {
+		return (
+			<blockquote className="my-3 border-muted-foreground/40 border-l-2 pl-3 text-muted-foreground">
+				{children}
+			</blockquote>
+		);
+	},
 	code: function CodeComponent({ className, children, ...props }) {
 		const codeStr = String(children ?? "");
+		const language = extractLanguage(className);
 		const [copied, setCopied] = React.useState(false);
 		const handleCopy = React.useCallback(async () => {
 			try {
@@ -65,8 +78,9 @@ const INITIAL_COMPONENTS: Partial<Components> = {
 		}, [codeStr]);
 
 		const isInline =
-			!props.node?.position?.start.line ||
-			props.node?.position?.start.line === props.node?.position?.end.line;
+			!className &&
+			(!props.node?.position?.start.line ||
+				props.node?.position?.start.line === props.node?.position?.end.line);
 
 		if (isInline) {
 			return (
@@ -83,13 +97,12 @@ const INITIAL_COMPONENTS: Partial<Components> = {
 			);
 		}
 
-		const language = extractLanguage(className);
 		const codeNode = props.node as { meta?: string } | undefined;
 		const meta = codeNode?.meta;
 		const metaMap = parseFenceMeta(meta);
 		const themeOverride = metaMap.theme;
 
-		if (language.toLowerCase() === "mermaid") {
+		if (isMermaidLanguage(language)) {
 			return <Mermaid chart={codeStr} />;
 		}
 
@@ -124,6 +137,47 @@ const INITIAL_COMPONENTS: Partial<Components> = {
 	pre: function PreComponent({ children }) {
 		return <>{children}</>;
 	},
+	h1: function H1Component({ children }) {
+		return <h1 className="my-3 font-semibold text-xl">{children}</h1>;
+	},
+	h2: function H2Component({ children }) {
+		return <h2 className="my-3 font-semibold text-lg">{children}</h2>;
+	},
+	h3: function H3Component({ children }) {
+		return <h3 className="my-2 font-semibold text-base">{children}</h3>;
+	},
+	h4: function H4Component({ children }) {
+		return <h4 className="my-2 font-medium text-sm">{children}</h4>;
+	},
+	ul: function UlComponent({ children }) {
+		return <ul className="my-2 list-disc space-y-1 pl-5">{children}</ul>;
+	},
+	ol: function OlComponent({ children }) {
+		return <ol className="my-2 list-decimal space-y-1 pl-5">{children}</ol>;
+	},
+	li: function LiComponent({ children }) {
+		return <li className="pl-1 leading-relaxed">{children}</li>;
+	},
+	table: function TableComponent({ children }) {
+		return (
+			<div className="my-3 w-full overflow-x-auto rounded-md border border-border">
+				<table className="w-full border-collapse text-sm">{children}</table>
+			</div>
+		);
+	},
+	thead: function TheadComponent({ children }) {
+		return <thead className="bg-muted/60">{children}</thead>;
+	},
+	th: function ThComponent({ children }) {
+		return (
+			<th className="border-border border-b px-3 py-2 text-left font-medium">
+				{children}
+			</th>
+		);
+	},
+	td: function TdComponent({ children }) {
+		return <td className="border-border border-t px-3 py-2">{children}</td>;
+	},
 };
 
 function MarkdownComponent({
@@ -137,6 +191,10 @@ function MarkdownComponent({
 }: MarkdownProps) {
 	const generatedId = useId();
 	const blockId = id ?? generatedId;
+	const normalizedChildren = React.useMemo(
+		() => normalizeMarkdownContent(children),
+		[children],
+	);
 	const [copied, setCopied] = React.useState(false);
 	const handleCopy = React.useCallback(async () => {
 		try {
@@ -170,7 +228,7 @@ function MarkdownComponent({
 					components={components}
 					remarkPlugins={[remarkGfm, remarkBreaks]}
 				>
-					{children}
+					{normalizedChildren}
 				</ReactMarkdown>
 			</div>
 		</div>

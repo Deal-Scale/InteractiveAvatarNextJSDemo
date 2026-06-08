@@ -7,6 +7,12 @@ export type JSXPreviewProps = {
 	components?: Record<string, React.ComponentType<unknown>>;
 } & React.HTMLAttributes<HTMLDivElement>;
 
+function normalizePreviewJsx(jsx: string) {
+	return jsx
+		.replace(/\{\/\*[\s\S]*?\*\/\}/g, "")
+		.replace(/\sclass=/g, " className=");
+}
+
 function JSXPreview({
 	jsx,
 	className,
@@ -19,6 +25,11 @@ function JSXPreview({
 		() => components ?? {},
 		[components],
 	);
+	const normalizedJsx = React.useMemo(() => normalizePreviewJsx(jsx), [jsx]);
+
+	React.useEffect(() => {
+		setParseError(null);
+	}, [normalizedJsx]);
 
 	return (
 		<div className={className} {...props}>
@@ -29,7 +40,7 @@ function JSXPreview({
 					allowUnknownElements={false}
 					autoCloseVoidElements
 					components={parserComponents}
-					jsx={jsx}
+					jsx={normalizedJsx}
 					onError={(error) => setParseError(error)}
 				/>
 			)}

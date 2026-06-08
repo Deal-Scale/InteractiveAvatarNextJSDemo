@@ -1,6 +1,6 @@
 "use client";
 
-import React from "react";
+import React, { useEffect, useState } from "react";
 
 import { cn } from "@/lib/utils";
 
@@ -23,6 +23,21 @@ function CodeBlock({ children, className, ...props }: CodeBlockProps) {
 	);
 }
 
+function normalizeShikiLanguage(language: string) {
+	const normalized = language.toLowerCase();
+	const aliases: Record<string, string> = {
+		cjs: "javascript",
+		js: "javascript",
+		mjs: "javascript",
+		py: "python",
+		sh: "bash",
+		shell: "bash",
+		ts: "typescript",
+	};
+
+	return aliases[normalized] ?? normalized;
+}
+
 export type CodeBlockCodeProps = {
 	code: string;
 	language?: string;
@@ -33,20 +48,49 @@ export type CodeBlockCodeProps = {
 function CodeBlockCode({
 	code,
 	language = "tsx",
+	theme = "github-dark",
 	className,
 	...props
 }: CodeBlockCodeProps) {
+	const [highlightedHtml, setHighlightedHtml] = useState("");
+
+	useEffect(() => {
+		let cancelled = false;
+
+		import("shiki")
+			.then(({ codeToHtml }) =>
+				codeToHtml(code, {
+					lang: normalizeShikiLanguage(language || "text"),
+					theme,
+				}),
+			)
+			.then((html) => {
+				if (!cancelled) setHighlightedHtml(html);
+			})
+			.catch(() => {
+				if (!cancelled) setHighlightedHtml("");
+			});
+
+		return () => {
+			cancelled = true;
+		};
+	}, [code, language, theme]);
+
 	return (
 		<div
 			className={cn(
-				"w-full overflow-x-auto text-[13px] [&>pre]:m-0 [&>pre]:overflow-x-auto [&>pre]:px-4 [&>pre]:py-4 [&>pre]:whitespace-pre [&>pre>code]:block [&>pre>code]:whitespace-pre",
+				"w-full overflow-x-auto text-[13px] [&>pre]:m-0 [&>pre]:overflow-x-auto [&>pre]:!bg-transparent [&>pre]:px-4 [&>pre]:py-4 [&>pre]:whitespace-pre [&>pre>code]:block [&>pre>code]:whitespace-pre",
 				className,
 			)}
 			{...props}
 		>
-			<pre>
-				<code data-language={language}>{code}</code>
-			</pre>
+			{highlightedHtml ? (
+				<div dangerouslySetInnerHTML={{ __html: highlightedHtml }} />
+			) : (
+				<pre>
+					<code data-language={language}>{code}</code>
+				</pre>
+			)}
 		</div>
 	);
 }
@@ -65,4 +109,4 @@ function CodeBlockGroup({
 	);
 }
 
-export { CodeBlockGroup, CodeBlockCode, CodeBlock };
+export { CodeBlock, CodeBlockCode, CodeBlockGroup };

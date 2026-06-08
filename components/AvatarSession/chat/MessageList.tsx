@@ -1,9 +1,9 @@
 "use client";
 
+import { useVirtualizer } from "@tanstack/react-virtual";
 import { ChevronDown } from "lucide-react";
 import type React from "react";
 import { memo, useState } from "react";
-import { useVirtualizer } from "@tanstack/react-virtual";
 import { Button } from "@/components/ui/button";
 import {
 	Collapsible,
@@ -104,8 +104,7 @@ function MessageListImpl({
 										: undefined)
 								}
 								reasoningOpen={
-									message.reasoningOpen ??
-									message.id === exampleReasoning.message.id
+									message.reasoningOpen ?? false
 								}
 								setVote={setVote}
 								streamMode="typewriter"
@@ -170,8 +169,7 @@ function MessageListImpl({
 												: undefined)
 										}
 										reasoningOpen={
-											message.reasoningOpen ??
-											message.id === exampleReasoning.message.id
+											message.reasoningOpen ?? false
 										}
 										setVote={setVote}
 										streamMode="typewriter"

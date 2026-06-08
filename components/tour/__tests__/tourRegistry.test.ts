@@ -58,6 +58,32 @@ describe("guided tour registry", () => {
 		}
 	});
 
+	it("adds video tour as the final app tours option without registering it as a step tour", async () => {
+		const fs = await import("node:fs/promises");
+		const path = await import("node:path");
+		const root = process.cwd();
+		const applicationsStarterSource = await fs.readFile(
+			path.join(root, "components", "Sidebar", "ApplicationsStarter.tsx"),
+			"utf8",
+		);
+		const videoTourModalSource = await fs.readFile(
+			path.join(root, "components", "Sidebar", "VideoTourModal.tsx"),
+			"utf8",
+		);
+
+		expect(applicationsStarterSource).toContain("VideoTourModal");
+		expect(applicationsStarterSource).toContain("videoTourOpen");
+		expect(applicationsStarterSource).toContain("data-tour-video-option");
+		expect(applicationsStarterSource).toContain("Video tour");
+		expect(applicationsStarterSource.indexOf("tourGroups.map")).toBeLessThan(
+			applicationsStarterSource.indexOf("data-tour-video-option"),
+		);
+		expect(videoTourModalSource).toContain("data-tour-video-modal");
+		expect(videoTourModalSource).toContain("cmhjlwt7i0jk4u1hm0scmf39w");
+		expect(videoTourModalSource).toContain("Welcome To Deal Scale");
+		expect([...TOUR_IDS]).not.toContain("video-tour");
+	});
+
 	it("prepares hidden sidebar sections before tours target them", () => {
 		const hiddenWhenCollapsedTargets = new Set([
 			'[data-tour="active-sessions"]',

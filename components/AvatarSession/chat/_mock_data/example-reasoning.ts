@@ -5,14 +5,7 @@ export const exampleReasoning = {
 		id: "demo-reasoning-1",
 		sender: MessageSender.AVATAR,
 		content:
-			"Here's an example response with hidden chain-of-thought available in the Reasoning panel.",
-		sources: [
-			{
-				href: "#",
-				title: "Reasoning Demo",
-				description: "Synthetic example with chain-of-thought UI",
-			},
-		],
+			"This response includes a collapsible reasoning summary with structured notes and tool activity.",
 	} as Message,
 	reasoningMarkdown: true,
 	reasoning: `### Chain of Thought (condensed)

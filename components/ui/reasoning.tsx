@@ -3,6 +3,7 @@
 import React, { createContext, useContext, useEffect, useState } from "react";
 
 import { cn } from "@/lib/utils";
+import { Markdown } from "./markdown";
 
 type ReasoningContextType = {
 	isOpen: boolean;
@@ -107,6 +108,7 @@ function ReasoningContent({
 	children,
 	className,
 	contentClassName,
+	markdown = false,
 	...props
 }: ReasoningContentProps) {
 	const { isOpen } = useReasoningContext();
@@ -120,9 +122,13 @@ function ReasoningContent({
 			)}
 			{...props}
 		>
-			{children}
+			{markdown && typeof children === "string" ? (
+				<Markdown showHeader={false}>{children}</Markdown>
+			) : (
+				children
+			)}
 		</div>
 	) : null;
 }
 
-export { Reasoning, ReasoningTrigger, ReasoningContent };
+export { Reasoning, ReasoningContent, ReasoningTrigger };

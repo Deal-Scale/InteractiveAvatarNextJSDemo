@@ -1,3 +1,15 @@
+import {
+	ClipboardCopy,
+	GitBranch,
+	Paperclip,
+	Pencil,
+	RotateCcw,
+	SplitSquareHorizontal,
+	ThumbsDown,
+	ThumbsUp,
+	Volume2,
+} from "lucide-react";
+import { memo, useEffect, useMemo, useRef, useState } from "react";
 import { PromptKitStatsDemo } from "@/components/PromptKit/PromptKitStatsDemo";
 import { StatBadge } from "@/components/PromptKit/StatBadge";
 import { Button } from "@/components/ui/button";
@@ -26,18 +38,6 @@ import {
 	MessageSender,
 	type Message as MessageType,
 } from "@/lib/types";
-import {
-	ClipboardCopy,
-	GitBranch,
-	Paperclip,
-	Pencil,
-	RotateCcw,
-	SplitSquareHorizontal,
-	ThumbsDown,
-	ThumbsUp,
-	Volume2,
-} from "lucide-react";
-import { memo, useMemo, useRef, useState } from "react";
 import { LiveMermaidChart } from "../ui/live-mermaid-chart";
 import { Mermaid } from "../ui/mermaid";
 
@@ -154,6 +154,25 @@ const MessageBody = memo(
 		const showMdHeader = Boolean(
 			avatarMarkdownShowHeader || isStrictMarkdown(message.content),
 		);
+		const [isReasoningOpen, setIsReasoningOpen] = useState(
+			() => reasoningOpen ?? false,
+		);
+		const [isReasoningCopied, setIsReasoningCopied] = useState(false);
+
+		useEffect(() => {
+			setIsReasoningOpen(reasoningOpen ?? false);
+		}, [message.id, reasoningOpen]);
+
+		const handleCopyReasoning = async () => {
+			if (!reasoning) return;
+			try {
+				await navigator.clipboard.writeText(reasoning);
+				setIsReasoningCopied(true);
+				window.setTimeout(() => setIsReasoningCopied(false), 1500);
+			} catch {
+				// noop
+			}
+		};
 
 		const renderAssets = (assets?: MessageAsset[]) => {
 			if (!assets || assets.length === 0) return null;
@@ -189,21 +208,6 @@ const MessageBody = memo(
 
 		return message.sender === MessageSender.AVATAR ? (
 			<div className="whitespace-normal break-words rounded-lg bg-muted p-2 text-foreground text-sm">
-				{reasoning && (
-					<div className="mb-2">
-						<Reasoning isStreaming={isStreaming} open={reasoningOpen}>
-							<ReasoningTrigger className="text-muted-foreground text-xs">
-								Reasoning
-							</ReasoningTrigger>
-							<ReasoningContent
-								contentClassName="mt-1"
-								markdown={reasoningMarkdown}
-							>
-								{reasoning}
-							</ReasoningContent>
-						</Reasoning>
-					</div>
-				)}
 				{message.content && (
 					<MessageContent
 						markdown={renderMarkdown}
@@ -213,6 +217,40 @@ const MessageBody = memo(
 					>
 						{message.content}
 					</MessageContent>
+				)}
+				{reasoning && (
+					<div className="mt-2 rounded-md border border-border bg-background">
+						<Reasoning
+							className="w-full"
+							isStreaming={isStreaming}
+							open={isReasoningOpen}
+							onOpenChange={setIsReasoningOpen}
+						>
+							<div className="flex items-center justify-between gap-2 px-2 py-1.5">
+								<ReasoningTrigger className="min-w-0 flex-1 justify-start px-0 py-0 font-medium text-muted-foreground text-xs hover:bg-transparent hover:text-foreground">
+									{isReasoningOpen ? "Hide reasoning" : "Show reasoning"}
+								</ReasoningTrigger>
+								<Button
+									aria-label="Copy reasoning"
+									className="h-7 gap-1 px-2 text-xs"
+									size="sm"
+									type="button"
+									variant="ghost"
+									onClick={handleCopyReasoning}
+								>
+									<ClipboardCopy className="h-3.5 w-3.5" />
+									{isReasoningCopied ? "Copied" : "Copy"}
+								</Button>
+							</div>
+							<ReasoningContent
+								className="rounded-none border-x-0 border-b-0"
+								contentClassName="text-foreground"
+								markdown={reasoningMarkdown}
+							>
+								{reasoning}
+							</ReasoningContent>
+						</Reasoning>
+					</div>
 				)}
 				{hasJsx ? (
 					<div className="w-full">

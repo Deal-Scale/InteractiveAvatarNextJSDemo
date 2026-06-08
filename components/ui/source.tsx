@@ -2,8 +2,8 @@
 
 import { createContext, useContext } from "react";
 
-import { HoverCard, HoverCardContent, HoverCardTrigger } from "./hover-card";
 import { cn } from "@/lib/utils";
+import { HoverCard, HoverCardContent, HoverCardTrigger } from "./hover-card";
 
 const SourceContext = createContext<{ href: string; domain: string } | null>(
 	null,
@@ -68,12 +68,16 @@ export function SourceTrigger({
 			>
 				{showFavicon && (
 					<img
-						alt="favicon"
+						alt=""
 						className="size-3.5 rounded-full"
+						onError={(event) => {
+							event.currentTarget.style.display = "none";
+						}}
 						height={14}
 						src={`https://www.google.com/s2/favicons?sz=64&domain_url=${encodeURIComponent(
 							href,
 						)}`}
+						aria-hidden="true"
 						width={14}
 					/>
 				)}

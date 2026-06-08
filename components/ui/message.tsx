@@ -8,6 +8,7 @@ import {
 	TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
+import { Markdown } from "./markdown";
 
 export type MessageProps = {
 	children: React.ReactNode;
@@ -45,23 +46,42 @@ export type MessageContentProps = {
 	children: React.ReactNode;
 	markdown?: boolean;
 	className?: string;
+	showHeader?: boolean;
+	headerLabel?: string;
 } & React.HTMLProps<HTMLDivElement>;
 
 const MessageContent = ({
 	children,
 	className,
+	headerLabel,
+	markdown = false,
+	showHeader = false,
 	...props
-}: MessageContentProps) => (
-	<div
-		className={cn(
-			"min-w-0 max-w-full overflow-visible break-words whitespace-normal rounded-lg bg-secondary p-2 leading-relaxed text-foreground",
-			className,
-		)}
-		{...props}
-	>
-		{children}
-	</div>
-);
+}: MessageContentProps) => {
+	const contentClassName = cn(
+		"min-w-0 max-w-full overflow-visible break-words whitespace-normal rounded-lg bg-secondary p-2 leading-relaxed text-foreground",
+		className,
+	);
+
+	if (markdown && typeof children === "string") {
+		return (
+			<Markdown
+				className={contentClassName}
+				headerLabel={headerLabel}
+				showHeader={showHeader}
+				{...props}
+			>
+				{children}
+			</Markdown>
+		);
+	}
+
+	return (
+		<div className={contentClassName} {...props}>
+			{children}
+		</div>
+	);
+};
 
 export type MessageActionsProps = {
 	children: React.ReactNode;
@@ -105,4 +125,4 @@ const MessageAction = ({
 	</TooltipProvider>
 );
 
-export { Message, MessageAvatar, MessageContent, MessageActions, MessageAction };
+export { Message, MessageAction, MessageActions, MessageAvatar, MessageContent };

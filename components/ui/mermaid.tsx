@@ -1,10 +1,11 @@
 "use client";
 
-import { MoreHorizontal } from "lucide-react";
 import * as React from "react";
-import { Button } from "@/components/ui/button";
 import { useDataGridStore } from "@/lib/stores/dataGrid";
 import { cn } from "@/lib/utils";
+import { MermaidActionsMenu } from "./mermaid-actions-menu";
+import { MermaidPreviewModal } from "./mermaid-preview-modal";
+import { normalizeMermaidSource } from "./mermaid-source";
 
 export type MermaidProps = {
 	chart?: string;
@@ -48,13 +49,14 @@ export function Mermaid({
 	showControls = true,
 	title,
 }: MermaidProps) {
-	const code = String(chart ?? children ?? "").trim();
+	const code = normalizeMermaidSource(chart, children);
 	const addLiveMermaidChart = useDataGridStore(
 		(state) => state.addLiveMermaidChart,
 	);
 	const addMermaidChart = useDataGridStore((state) => state.addMermaidChart);
 	const [actionsOpen, setActionsOpen] = React.useState(false);
 	const [error, setError] = React.useState<string | null>(null);
+	const [viewOpen, setViewOpen] = React.useState(false);
 	const [renderNonce, setRenderNonce] = React.useState(0);
 	const [renderedSvg, setRenderedSvg] = React.useState(() =>
 		code ? (getCachedSvg(`0:${code}`) ?? "") : "",
@@ -177,6 +179,10 @@ export function Mermaid({
 			setActionsOpen(false);
 		}
 	};
+	const reloadDiagram = () => {
+		setRenderNonce((current) => current + 1);
+	};
+	const isTourPinned = tourPinnedMenuRef.current;
 
 	return (
 		<div
@@ -187,62 +193,19 @@ export function Mermaid({
 		>
 			<div className="flex min-h-0 flex-1 items-center justify-center overflow-auto rounded border border-border/70 bg-slate-950 p-3">
 				{showControls ? (
-					<div className="absolute right-3 top-3">
-						<Button
-							aria-label="Mermaid actions"
-							className="h-8 w-8 border border-slate-600 bg-slate-800 p-0 text-slate-50 shadow-sm hover:bg-slate-700"
-							size="icon"
-							type="button"
-							variant="secondary"
-							data-tour="mermaid-actions"
-							onClick={() => {
-								tourPinnedMenuRef.current = false;
-								setActionsOpen((open) => !open);
-							}}
-						>
-							<MoreHorizontal className="h-4 w-4" />
-						</Button>
-						{actionsOpen ? (
-							<div className="absolute right-0 top-[calc(100%+0.25rem)] z-[10000] grid min-w-40 gap-1 rounded-md border border-slate-700 bg-slate-950 p-1 text-slate-50 shadow-xl">
-								<Button
-									className="justify-start bg-slate-900 text-slate-50 hover:bg-slate-800"
-									size="sm"
-									type="button"
-									variant="ghost"
-								>
-									View diagram
-								</Button>
-								<Button
-									className="justify-start bg-slate-900 text-slate-50 hover:bg-slate-800"
-									size="sm"
-									type="button"
-									variant="ghost"
-									onClick={() => setRenderNonce((current) => current + 1)}
-								>
-									Reload
-								</Button>
-								<Button
-									className="justify-start bg-slate-900 text-slate-50 hover:bg-slate-800"
-									size="sm"
-									type="button"
-									variant="ghost"
-									onClick={() => navigator.clipboard?.writeText(code)}
-								>
-									Copy
-								</Button>
-								<Button
-									className="justify-start bg-slate-900 text-slate-50 hover:bg-slate-800"
-									size="sm"
-									type="button"
-									variant="ghost"
-									data-tour="mermaid-add-to-grid"
-									onClick={handleAddToGrid}
-								>
-									Add to Grid
-								</Button>
-							</div>
-						) : null}
-					</div>
+					<MermaidActionsMenu
+						isOpen={actionsOpen}
+						isTourPinned={isTourPinned}
+						onAddToGrid={handleAddToGrid}
+						onCopy={() => navigator.clipboard?.writeText(code)}
+						onReload={reloadDiagram}
+						onToggle={() => {
+							tourPinnedMenuRef.current = false;
+							setActionsOpen((open) => !open);
+						}}
+						onView={() => setViewOpen(true)}
+						setOpen={setActionsOpen}
+					/>
 				) : null}
 				{renderedSvg ? (
 					<div
@@ -262,6 +225,13 @@ export function Mermaid({
 					</div>
 				)}
 			</div>
+			<MermaidPreviewModal
+				isOpen={viewOpen}
+				isRendering={isRendering}
+				renderedSvg={renderedSvg}
+				title={title}
+				onClose={() => setViewOpen(false)}
+			/>
 		</div>
 	);
 }
