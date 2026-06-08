@@ -1,5 +1,13 @@
 "use client";
 
+import {
+	BotIcon,
+	FolderPlusIcon,
+	MessageSquareIcon,
+	MicIcon,
+} from "lucide-react";
+import type React from "react";
+import { useId, useState } from "react";
 import { Button } from "@/components/ui/button";
 import {
 	Dialog,
@@ -10,20 +18,13 @@ import {
 } from "@/components/ui/dialog";
 import {
 	type TextProviderMode,
-	type VoiceProviderMode,
 	useChatProviderStore,
+	type VoiceProviderMode,
 } from "@/lib/stores/chatProvider";
 import type { ChatExperience, ChatSettingsTab } from "@/lib/stores/session";
 import { useSessionStore } from "@/lib/stores/session";
 import { cn } from "@/lib/utils";
-import {
-	BotIcon,
-	FolderPlusIcon,
-	MessageSquareIcon,
-	MicIcon,
-} from "lucide-react";
-import type React from "react";
-import { useId, useState } from "react";
+import ThemeEmotionSelect from "../ui/theme-emotion-select";
 
 interface BasicChatSettingsModalProps {
 	open: boolean;
@@ -285,6 +286,18 @@ export function BasicChatSettingsModal({
 					<div className="mt-4 min-w-0">
 						{activeTab === "text" && (
 							<div className="grid min-w-0 gap-4">
+								<div className="grid min-w-0 gap-2 rounded-md border border-border bg-background p-3">
+									<div>
+										<div className="font-medium text-sm">
+											Emotion colors
+										</div>
+										<p className="mt-1 text-muted-foreground text-xs">
+											Update chat accent colors for the current experience.
+										</p>
+									</div>
+									<ThemeEmotionSelect className="w-full" />
+								</div>
+
 								{process.env.NEXT_PUBLIC_CHAT_DEBUG === "true" && (
 									<div className="flex min-w-0 flex-col gap-2">
 										<FieldLabel htmlFor={textProviderId}>

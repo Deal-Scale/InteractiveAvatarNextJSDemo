@@ -1,9 +1,13 @@
 "use client";
 
-import * as React from "react";
 import { useTheme } from "next-themes";
+import * as React from "react";
 
-import { useThemeStore, ThemeEmotion, ThemeMode } from "@/lib/stores/theme";
+import {
+	type ThemeEmotion,
+	type ThemeMode,
+	useThemeStore,
+} from "@/lib/stores/theme";
 
 const THEME_SET_EVENT = "app:theme:set";
 
@@ -16,6 +20,20 @@ function computeEmotionClass(
 	const suffix = isDark ? "dark" : "light";
 
 	return `${emotion}-${suffix}`;
+}
+
+function computeHostMoodClass(emotion: ThemeEmotion) {
+	if (emotion === "happy" || emotion === "surprise") {
+		return "variant-mood-energetic";
+	}
+	if (emotion === "neutral" || emotion === "sad" || emotion === "fear") {
+		return "variant-mood-calm";
+	}
+	if (emotion === "anger" || emotion === "disgust") {
+		return "variant-mood-focused";
+	}
+
+	return null;
 }
 
 export default function ThemeBridge() {
@@ -35,6 +53,7 @@ export default function ThemeBridge() {
 			if (!d) return;
 			const root = d.documentElement;
 			const cls = computeEmotionClass(emo, resolved);
+			const hostMoodClass = computeHostMoodClass(emo);
 			// remove previous classes
 			const EMOTIONS: ThemeEmotion[] = [
 				"happy",
@@ -52,7 +71,13 @@ export default function ThemeBridge() {
 				root.classList.remove(`${e}-light`);
 				root.classList.remove(`${e}-dark`);
 			});
+			root.classList.remove(
+				"variant-mood-calm",
+				"variant-mood-energetic",
+				"variant-mood-focused",
+			);
 			if (cls) root.classList.add(cls);
+			if (hostMoodClass) root.classList.add(hostMoodClass);
 		},
 		[],
 	);

@@ -69,6 +69,10 @@ export const AvatarControls: React.FC<AvatarControlsProps> = ({
 
 	// Provide CSS var for Tailwind arbitrary opacity value
 	const rampStyle = { "--ui-opacity": uiOpacity } as React.CSSProperties;
+	const showVideoView = () => {
+		setViewTab("video");
+		setControlsMinimized(true);
+	};
 	const showAlternateView = (tab: "brain" | "data" | "actions") => {
 		switchWorkspaceView(tab);
 	};
@@ -176,7 +180,7 @@ export const AvatarControls: React.FC<AvatarControlsProps> = ({
 									: "!bg-muted !text-foreground"
 							}`}
 							title="Video"
-							onClick={() => setViewTab("video")}
+							onClick={showVideoView}
 						>
 							<Play className="h-4 w-4" />
 						</Button>

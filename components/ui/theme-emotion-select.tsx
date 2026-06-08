@@ -1,8 +1,6 @@
 "use client";
 
 import * as React from "react";
-
-import { useThemeStore } from "../../lib/stores/theme";
 import {
 	Select,
 	SelectContent,
@@ -10,6 +8,7 @@ import {
 	SelectTrigger,
 	SelectValue,
 } from "@/components/ui/select";
+import { useThemeStore } from "../../lib/stores/theme";
 
 const EMOTIONS = [
 	{ id: "none", label: "None" },
@@ -24,7 +23,11 @@ const EMOTIONS = [
 
 type EmotionId = (typeof EMOTIONS)[number]["id"];
 
-export function ThemeEmotionSelect({ className }: { className?: string }) {
+export function ThemeEmotionSelect({
+	className,
+}: {
+	className?: string;
+}) {
 	const emotion = useThemeStore((s) => s.emotion);
 	const setEmotion = useThemeStore((s) => s.setEmotion);
 	const onChange = (val: EmotionId) => setEmotion(val as any);
@@ -32,7 +35,7 @@ export function ThemeEmotionSelect({ className }: { className?: string }) {
 	return (
 		<div className={className}>
 			<Select value={emotion} onValueChange={(v) => onChange(v as EmotionId)}>
-				<SelectTrigger className="h-8 w-[140px]">
+				<SelectTrigger className="h-8 w-full min-w-[140px]">
 					<SelectValue placeholder="Emotion" />
 				</SelectTrigger>
 				<SelectContent>
