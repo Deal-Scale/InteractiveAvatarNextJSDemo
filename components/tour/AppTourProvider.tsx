@@ -9,6 +9,7 @@ import React, {
 	useMemo,
 	useState,
 } from "react";
+import { createPortal } from "react-dom";
 import { type TourId, tourRegistry } from "./tourRegistry";
 import type { TourDefinition } from "./tourTypes";
 
@@ -93,9 +94,18 @@ export function AppTourProvider({ children }: { children: ReactNode }) {
 	const [completionTourId, setCompletionTourId] = useState<TourId | null>(null);
 	const [completedTourIds, setCompletedTourIds] = useState<TourId[]>([]);
 	const [mounted, setMounted] = useState(false);
+	const [portalElement, setPortalElement] = useState<HTMLElement | null>(null);
 
 	useEffect(() => {
+		let root = document.getElementById("floating-ui-root");
+		if (!root) {
+			root = document.createElement("div");
+			root.id = "floating-ui-root";
+			document.body.appendChild(root);
+		}
+
 		setCompletedTourIds(loadCompletedTourIds());
+		setPortalElement(root);
 		setMounted(true);
 	}, []);
 
@@ -151,18 +161,157 @@ export function AppTourProvider({ children }: { children: ReactNode }) {
 		? {
 				left: Math.min(
 					Math.max(16, targetRect.left),
-					typeof window === "undefined" ? targetRect.left : window.innerWidth - 352,
+					typeof window === "undefined"
+						? targetRect.left
+						: window.innerWidth - 352,
 				),
 				top: Math.min(
 					targetRect.bottom + 12,
-					typeof window === "undefined" ? targetRect.bottom : window.innerHeight - 220,
+					typeof window === "undefined"
+						? targetRect.bottom
+						: window.innerHeight - 220,
 				),
 			}
 		: {
 				left: 24,
 				top: 96,
 			};
+	const tourChrome =
+		mounted && portalElement
+			? createPortal(
+					<>
+						{completionTour && relatedTours.length > 0 && (
+							<div className="-translate-x-1/2 fixed bottom-4 left-1/2 z-[2147483647] w-[min(92vw,520px)] rounded-lg border border-border bg-card p-3 text-card-foreground shadow-2xl">
+								<div className="flex items-start justify-between gap-3">
+									<div>
+										<div className="font-semibold text-sm">
+											Continue guided setup
+										</div>
+										<p className="mt-1 text-muted-foreground text-xs">
+											Choose the next focused tour after {completionTour.title}.
+										</p>
+									</div>
+									<button
+										type="button"
+										className="rounded-md px-2 py-1 text-muted-foreground text-xs hover:bg-muted"
+										onClick={() => setCompletionTourId(null)}
+									>
+										Close
+									</button>
+								</div>
+								<div className="mt-3 grid gap-2 sm:grid-cols-2">
+									{relatedTours.map((tour) => (
+										<button
+											key={tour.id}
+											type="button"
+											className="rounded-md border border-border bg-background px-3 py-2 text-left text-xs hover:bg-muted"
+											onClick={() => startTour(tour.id)}
+										>
+											<span className="block font-medium text-foreground">
+												{tour.title}
+											</span>
+											<span className="mt-0.5 line-clamp-2 block text-muted-foreground">
+												{tour.description}
+											</span>
+										</button>
+									))}
+								</div>
+							</div>
+						)}
+						<style>
+							{`
+								[data-app-tour-tooltip] {
+									z-index: ${tourZIndex + 1} !important;
+								}
 
+								[data-app-tour-overlay],
+								[data-app-tour-spotlight] {
+									z-index: ${tourZIndex} !important;
+								}
+							`}
+						</style>
+						{run && activeStep ? (
+							<>
+								{activeStep.hideOverlay ? null : (
+									<button
+										type="button"
+										aria-label="Skip guided tour"
+										className="fixed inset-0 bg-black/60"
+										data-app-tour-overlay=""
+										onClick={() => completeTour(false)}
+									/>
+								)}
+								{targetRect ? (
+									<div
+										className="pointer-events-none fixed rounded-md border-2 border-primary shadow-[0_0_0_9999px_rgba(0,0,0,0.58)]"
+										data-app-tour-spotlight=""
+										style={{
+											height: targetRect.height + 12,
+											left: targetRect.left - 6,
+											top: targetRect.top - 6,
+											width: targetRect.width + 12,
+										}}
+									/>
+								) : null}
+								<div
+									className="fixed w-[min(320px,calc(100vw-32px))] rounded-lg border border-border bg-card p-4 text-card-foreground shadow-2xl"
+									data-app-tour-tooltip=""
+									style={{
+										left: tooltipPosition.left,
+										top: tooltipPosition.top,
+									}}
+								>
+									<div className="text-sm leading-relaxed">
+										{activeStep.content}
+									</div>
+									<div className="mt-4 flex flex-wrap items-center justify-between gap-2">
+										<span className="text-muted-foreground text-xs">
+											{stepIndex + 1} of {totalSteps}
+										</span>
+										<div className="flex items-center gap-2">
+											<button
+												type="button"
+												className="rounded-md px-2 py-1 text-muted-foreground text-xs hover:bg-muted"
+												onClick={() => completeTour(false)}
+											>
+												Skip
+											</button>
+											<button
+												type="button"
+												className="rounded-md px-2 py-1 text-muted-foreground text-xs hover:bg-muted disabled:opacity-40"
+												disabled={stepIndex === 0}
+												onClick={() =>
+													setStepIndex((current) => Math.max(0, current - 1))
+												}
+											>
+												Back
+											</button>
+											<button
+												type="button"
+												className="rounded-md bg-primary px-3 py-1 text-primary-foreground text-xs hover:opacity-90"
+												onClick={() => {
+													if (stepIndex >= totalSteps - 1) {
+														completeTour(true);
+														return;
+													}
+													setStepIndex((current) =>
+														Math.min(totalSteps - 1, current + 1),
+													);
+												}}
+											>
+												{stepIndex >= totalSteps - 1 ? "Done" : "Next"}
+											</button>
+										</div>
+									</div>
+								</div>
+							</>
+						) : null}
+					</>,
+					portalElement,
+				)
+			: null;
+
+	// biome-ignore lint/correctness/useExhaustiveDependencies: tourRunId intentionally replays the current step when a tour restarts.
 	useEffect(() => {
 		if (!mounted || !run || !activeStep) {
 			setTargetRect(null);
@@ -207,123 +356,7 @@ export function AppTourProvider({ children }: { children: ReactNode }) {
 	return (
 		<AppTourContext.Provider value={value}>
 			{children}
-			{completionTour && relatedTours.length > 0 && (
-				<div className="fixed bottom-4 left-1/2 z-[2147483647] w-[min(92vw,520px)] -translate-x-1/2 rounded-lg border border-border bg-card p-3 text-card-foreground shadow-2xl">
-					<div className="flex items-start justify-between gap-3">
-						<div>
-							<div className="text-sm font-semibold">Continue guided setup</div>
-							<p className="mt-1 text-xs text-muted-foreground">
-								Choose the next focused tour after {completionTour.title}.
-							</p>
-						</div>
-						<button
-							type="button"
-							className="rounded-md px-2 py-1 text-xs text-muted-foreground hover:bg-muted"
-							onClick={() => setCompletionTourId(null)}
-						>
-							Close
-						</button>
-					</div>
-					<div className="mt-3 grid gap-2 sm:grid-cols-2">
-						{relatedTours.map((tour) => (
-							<button
-								key={tour.id}
-								type="button"
-								className="rounded-md border border-border bg-background px-3 py-2 text-left text-xs hover:bg-muted"
-								onClick={() => startTour(tour.id)}
-							>
-								<span className="block font-medium text-foreground">
-									{tour.title}
-								</span>
-								<span className="mt-0.5 line-clamp-2 block text-muted-foreground">
-									{tour.description}
-								</span>
-							</button>
-						))}
-					</div>
-				</div>
-			)}
-			<style>
-				{`
-					[data-app-tour-tooltip] {
-						z-index: ${tourZIndex + 1} !important;
-					}
-
-					[data-app-tour-overlay],
-					[data-app-tour-spotlight] {
-						z-index: ${tourZIndex} !important;
-					}
-				`}
-			</style>
-			{mounted && run && activeStep ? (
-				<>
-					<div
-						className="fixed inset-0 bg-black/60"
-						data-app-tour-overlay=""
-						onClick={() => completeTour(false)}
-					/>
-					{targetRect ? (
-						<div
-							className="pointer-events-none fixed rounded-md border-2 border-primary shadow-[0_0_0_9999px_rgba(0,0,0,0.58)]"
-							data-app-tour-spotlight=""
-							style={{
-								height: targetRect.height + 12,
-								left: targetRect.left - 6,
-								top: targetRect.top - 6,
-								width: targetRect.width + 12,
-							}}
-						/>
-					) : null}
-					<div
-						className="fixed w-[min(320px,calc(100vw-32px))] rounded-lg border border-border bg-card p-4 text-card-foreground shadow-2xl"
-						data-app-tour-tooltip=""
-						role="dialog"
-						style={{
-							left: tooltipPosition.left,
-							top: tooltipPosition.top,
-						}}
-					>
-						<div className="text-sm leading-relaxed">{activeStep.content}</div>
-						<div className="mt-4 flex flex-wrap items-center justify-between gap-2">
-							<span className="text-muted-foreground text-xs">
-								{stepIndex + 1} of {totalSteps}
-							</span>
-							<div className="flex items-center gap-2">
-								<button
-									type="button"
-									className="rounded-md px-2 py-1 text-muted-foreground text-xs hover:bg-muted"
-									onClick={() => completeTour(false)}
-								>
-									Skip
-								</button>
-								<button
-									type="button"
-									className="rounded-md px-2 py-1 text-muted-foreground text-xs hover:bg-muted disabled:opacity-40"
-									disabled={stepIndex === 0}
-									onClick={() => setStepIndex((current) => Math.max(0, current - 1))}
-								>
-									Back
-								</button>
-								<button
-									type="button"
-									className="rounded-md bg-primary px-3 py-1 text-primary-foreground text-xs hover:opacity-90"
-									onClick={() => {
-										if (stepIndex >= totalSteps - 1) {
-											completeTour(true);
-											return;
-										}
-										setStepIndex((current) =>
-											Math.min(totalSteps - 1, current + 1),
-										);
-									}}
-								>
-									{stepIndex >= totalSteps - 1 ? "Done" : "Next"}
-								</button>
-							</div>
-						</div>
-					</div>
-				</>
-			) : null}
+			{tourChrome}
 		</AppTourContext.Provider>
 	);
 }

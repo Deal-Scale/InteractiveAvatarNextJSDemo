@@ -58,6 +58,118 @@ describe("guided tour registry", () => {
 		}
 	});
 
+	it("registers dashboard route tours with navigable source anchors", async () => {
+		const fs = await import("node:fs/promises");
+		const path = await import("node:path");
+		const cwd = process.cwd();
+		const root = (await fs
+			.access(path.join(cwd, "app", "dashboard"))
+			.then(() => true)
+			.catch(() => false))
+			? cwd
+			: path.resolve(cwd, "..", "..");
+		const routeTourTargets: Array<{
+			file: string;
+			tourId: keyof typeof tourRegistry;
+			target: string;
+		}> = [
+			{
+				file: "app/dashboard/agents/page.tsx",
+				tourId: "agent-manager",
+				target: "agents-page",
+			},
+			{
+				file: "app/dashboard/campaigns/page.tsx",
+				tourId: "campaigns",
+				target: "campaigns-page",
+			},
+			{
+				file: "app/dashboard/lead-list/page.tsx",
+				tourId: "lead-list",
+				target: "lead-list-page",
+			},
+			{
+				file: "components/kanban/kanban-workspace.tsx",
+				tourId: "kanban",
+				target: "kanban-page",
+			},
+			{
+				file: "app/dashboard/chat/page.tsx",
+				tourId: "chat",
+				target: "chat-page",
+			},
+			{
+				file: "app/dashboard/connections/page.tsx",
+				tourId: "connections",
+				target: "connections-page",
+			},
+			{
+				file: "app/dashboard/charts/page.tsx",
+				tourId: "charts",
+				target: "charts-page",
+			},
+			{
+				file: "app/dashboard/calculators/page.tsx",
+				tourId: "calculations",
+				target: "calculations-page",
+			},
+			{
+				file: "app/dashboard/resources/page.tsx",
+				tourId: "resources",
+				target: "resources-page",
+			},
+			{
+				file: "app/dashboard/deal-room/page.tsx",
+				tourId: "deal-room",
+				target: "deal-room-page",
+			},
+			{
+				file: "app/dashboard/employee/page.tsx",
+				tourId: "employee",
+				target: "employee-page",
+			},
+		];
+
+		for (const { file, target, tourId } of routeTourTargets) {
+			const tour = tourRegistry[tourId];
+			const source = await fs.readFile(path.join(root, file), "utf8");
+			const step = tour.steps.find(
+				(tourStep) => tourStep.target === `[data-tour="${target}"]`,
+			);
+
+			expect(step, tourId).toBeDefined();
+			expect(step?.before, tourId).toEqual(expect.any(Function));
+			expect(source, file).toContain(`data-tour="${target}"`);
+		}
+	});
+
+	it("walks each dashboard route tour through more than a single page intro", () => {
+		const dashboardRouteTourIds = [
+			"agent-manager",
+			"campaigns",
+			"lead-list",
+			"kanban",
+			"chat",
+			"connections",
+			"charts",
+			"calculations",
+			"resources",
+			"deal-room",
+			"employee",
+		] as const;
+
+		for (const tourId of dashboardRouteTourIds) {
+			const tour = tourRegistry[tourId];
+
+			expect(tour.steps.length, tourId).toBeGreaterThan(1);
+			for (const step of tour.steps) {
+				expect(step.before, `${tourId} ${step.target}`).toEqual(
+					expect.any(Function),
+				);
+			}
+		}
+	});
+
 	it("adds video tour as the final app tours option without registering it as a step tour", async () => {
 		const fs = await import("node:fs/promises");
 		const path = await import("node:path");

@@ -138,7 +138,7 @@ export async function scrollTourTargetIntoView(selector: string) {
 		block: "center",
 		inline: "nearest",
 	});
-	await new Promise((resolve) => window.setTimeout(resolve, 150));
+	await new Promise((resolve) => window.setTimeout(resolve, 75));
 }
 
 async function waitForTourTarget(selector: string) {
@@ -169,6 +169,153 @@ async function closeChatPanelForWorkspaceTour() {
 		window.dispatchEvent(new CustomEvent("tour-minimize-chat"));
 		await new Promise((resolve) => window.setTimeout(resolve, 100));
 	}
+}
+
+export async function openDashboardTourTarget(href: string, selector: string) {
+	const session = useSessionStore.getState();
+	session.closeChatSettings();
+	session.closeConfigModal();
+	await navigateDashboardTour(href);
+	await scrollTourTargetIntoView(selector);
+}
+
+async function navigateDashboardTour(href: string) {
+	const session = useSessionStore.getState();
+	session.closeChatSettings();
+	session.closeConfigModal();
+	if (typeof window !== "undefined") {
+		const nextUrl = new URL(href, window.location.origin);
+		const currentPath = `${window.location.pathname}${window.location.search}`;
+		const nextPath = `${nextUrl.pathname}${nextUrl.search}`;
+		if (currentPath !== nextPath) {
+			console.warn("[tour] Dashboard tour target requested on inactive route", {
+				currentPath,
+				nextPath,
+			});
+		}
+	}
+}
+
+export async function openAgentManagerCreateTarget(selector: string) {
+	await navigateDashboardTour("/dashboard/agents");
+	if (typeof window !== "undefined") {
+		const formIsVisible = document.querySelector(
+			'[data-tour="agent-manager-form"]',
+		);
+		if (!formIsVisible) {
+			await scrollTourTargetIntoView('[data-tour="agents-create"]');
+			window.dispatchEvent(new CustomEvent("tour-open-agent-manager-create"));
+			await new Promise((resolve) => window.setTimeout(resolve, 150));
+		}
+	}
+	await scrollTourTargetIntoView(selector);
+}
+
+export async function closeAgentManagerCreateTarget(selector: string) {
+	if (typeof window !== "undefined") {
+		window.dispatchEvent(new CustomEvent("tour-close-agent-manager-create"));
+		await new Promise((resolve) => window.setTimeout(resolve, 150));
+	}
+	await openDashboardTourTarget("/dashboard/agents", selector);
+}
+
+export async function openDealCreateTarget(
+	selector: string,
+	step: 1 | 2 | 3 = 1,
+) {
+	await openDashboardTourTarget(
+		"/dashboard/deal-room",
+		'[data-tour="deal-room-create"]',
+	);
+	if (typeof window !== "undefined") {
+		window.dispatchEvent(new CustomEvent("tour-open-deal-create-modal"));
+		await new Promise((resolve) => window.setTimeout(resolve, 200));
+		window.dispatchEvent(
+			new CustomEvent("tour-set-deal-create-step", {
+				detail: { step },
+			}),
+		);
+		await new Promise((resolve) => window.setTimeout(resolve, 200));
+	}
+	await scrollTourTargetIntoView(selector);
+}
+
+export async function openEmployeeInviteTarget(selector: string) {
+	await openDashboardTourTarget(
+		"/dashboard/employee",
+		'[data-tour="employee-invite"]',
+	);
+	if (typeof window !== "undefined") {
+		window.dispatchEvent(new CustomEvent("tour-open-employee-invite-modal"));
+		await new Promise((resolve) => window.setTimeout(resolve, 200));
+	}
+	await scrollTourTargetIntoView(selector);
+}
+
+export async function openCampaignCreateTarget(selector: string, step = 0) {
+	await openDashboardTourTarget(
+		"/dashboard/campaigns",
+		'[data-tour="campaigns-create"]',
+	);
+	if (typeof window !== "undefined") {
+		window.dispatchEvent(new CustomEvent("tour-open-campaign-create-modal"));
+		await new Promise((resolve) => window.setTimeout(resolve, 200));
+		window.dispatchEvent(
+			new CustomEvent("tour-set-campaign-create-step", {
+				detail: { step },
+			}),
+		);
+		await new Promise((resolve) => window.setTimeout(resolve, 200));
+	}
+	await scrollTourTargetIntoView(selector);
+}
+
+export async function openDashboardKanbanTaskTarget(
+	selector: string,
+	mode: "manual" | "ai" = "manual",
+) {
+	await openDashboardTourTarget(
+		"/dashboard/kanban",
+		'[data-tour="kanban-new-task"]',
+	);
+	if (typeof window !== "undefined") {
+		window.dispatchEvent(
+			new CustomEvent(
+				mode === "ai"
+					? "tour-open-kanban-ai-task-modal"
+					: "tour-open-kanban-manual-task-modal",
+			),
+		);
+		await new Promise((resolve) => window.setTimeout(resolve, 200));
+	}
+	await scrollTourTargetIntoView(selector);
+}
+
+export async function closeDashboardKanbanTaskAndShow(selector: string) {
+	if (typeof window !== "undefined") {
+		window.dispatchEvent(new CustomEvent("tour-close-kanban-task-modal"));
+		await new Promise((resolve) => window.setTimeout(resolve, 200));
+	}
+	await openDashboardTourTarget("/dashboard/kanban", selector);
+}
+
+export async function openConnectionsWebhookTarget(
+	selector: string,
+	stage: "incoming" | "outgoing" | "feeds" = "incoming",
+) {
+	await openDashboardTourTarget(
+		"/dashboard/connections",
+		'[data-tour="connections-configure"]',
+	);
+	if (typeof window !== "undefined") {
+		window.dispatchEvent(
+			new CustomEvent("tour-open-connections-webhook-modal", {
+				detail: { stage },
+			}),
+		);
+		await new Promise((resolve) => window.setTimeout(resolve, 200));
+	}
+	await scrollTourTargetIntoView(selector);
 }
 
 export async function openSidebar() {

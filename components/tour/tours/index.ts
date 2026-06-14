@@ -1,6 +1,20 @@
+import type { TourDefinition } from "../tourTypes";
 import { agentsTour } from "./agents";
 import { appOverviewTour } from "./appOverview";
 import { chatsTour } from "./chats";
+import {
+	agentManagerTour,
+	calculationsTour,
+	campaignsTour,
+	chartsTour,
+	chatTour,
+	connectionsTour,
+	dealRoomTour,
+	employeeTour,
+	kanbanTour,
+	leadListTour,
+	resourcesTour,
+} from "./dashboardRoutes";
 import {
 	salesDemoTour,
 	supportDemoTour,
@@ -17,7 +31,6 @@ import {
 	brainTour,
 	dataGridTour,
 } from "./workspaceTours";
-import type { TourDefinition } from "../tourTypes";
 
 export const tourDefinitions: TourDefinition[] = [
 	appOverviewTour,
@@ -28,6 +41,17 @@ export const tourDefinitions: TourDefinition[] = [
 	knowledgeBaseTour,
 	toolsTour,
 	agentsTour,
+	agentManagerTour,
+	campaignsTour,
+	leadListTour,
+	kanbanTour,
+	chatTour,
+	connectionsTour,
+	chartsTour,
+	calculationsTour,
+	resourcesTour,
+	dealRoomTour,
+	employeeTour,
 	brainTour,
 	dataGridTour,
 	actionsKanbanTour,
