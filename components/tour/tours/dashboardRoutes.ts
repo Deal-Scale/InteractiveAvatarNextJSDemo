@@ -93,52 +93,62 @@ export const agentManagerTour: TourDefinition = {
 		}),
 		dashboardRouteStep({
 			href: "/dashboard/agents",
-			target: '[data-tour="agent-manager-name"]',
+			target: '[data-tour="agent-manager-name-control"]',
 			content:
 				"Name identifies the assistant in campaign assignment, tables, and reporting.",
 			before: () =>
-				openAgentManagerCreateTarget('[data-tour="agent-manager-name"]'),
+				openAgentManagerCreateTarget(
+					'[data-tour="agent-manager-name-control"]',
+				),
 		}),
 		dashboardRouteStep({
 			href: "/dashboard/agents",
-			target: '[data-tour="agent-manager-type"]',
+			target: '[data-tour="agent-manager-type-control"]',
 			content:
-				"Agent Type decides whether the assistant is built for phone, direct mail, or social workflows.",
+				"Agent Type decides whether the assistant is built for phone calls, text messages, direct mail, LinkedIn, or Facebook workflows.",
 			before: () =>
-				openAgentManagerCreateTarget('[data-tour="agent-manager-type"]'),
+				openAgentManagerCreateTarget(
+					'[data-tour="agent-manager-type-control"]',
+				),
 		}),
 		dashboardRouteStep({
 			href: "/dashboard/agents",
-			target: '[data-tour="agent-manager-goal"]',
+			target: '[data-tour="agent-manager-goal-control"]',
 			content:
 				"Campaign Goal tells the assistant what outcome it should optimize for, such as booked appointments or qualified leads.",
 			before: () =>
-				openAgentManagerCreateTarget('[data-tour="agent-manager-goal"]'),
+				openAgentManagerCreateTarget(
+					'[data-tour="agent-manager-goal-control"]',
+				),
 		}),
 		dashboardRouteStep({
 			href: "/dashboard/agents",
-			target: '[data-tour="agent-manager-persona"]',
+			target: '[data-tour="agent-manager-persona-control"]',
 			content:
 				"Persona shapes the tone of the assistant so it matches the intended buyer or seller conversation style.",
 			before: () =>
-				openAgentManagerCreateTarget('[data-tour="agent-manager-persona"]'),
+				openAgentManagerCreateTarget(
+					'[data-tour="agent-manager-persona-control"]',
+				),
 		}),
 		dashboardRouteStep({
 			href: "/dashboard/agents",
-			target: '[data-tour="agent-manager-script"]',
+			target: '[data-tour="agent-manager-script-control"]',
 			content:
 				"Sales Script gives the assistant concrete language to follow during outbound conversations. Users can paste the script directly here.",
 			before: () =>
-				openAgentManagerCreateTarget('[data-tour="agent-manager-script"]'),
+				openAgentManagerCreateTarget(
+					'[data-tour="agent-manager-script-control"]',
+				),
 		}),
 		dashboardRouteStep({
 			href: "/dashboard/agents",
-			target: '[data-tour="agent-manager-script-upload"]',
+			target: '[data-tour="agent-manager-script-upload-control"]',
 			content:
 				"Upload text file loads a .txt or .md sales script into the same field when users already have the script saved locally.",
 			before: () =>
 				openAgentManagerCreateTarget(
-					'[data-tour="agent-manager-script-upload"]',
+					'[data-tour="agent-manager-script-upload-control"]',
 				),
 		}),
 		dashboardRouteStep({
@@ -151,18 +161,21 @@ export const agentManagerTour: TourDefinition = {
 		}),
 		dashboardRouteStep({
 			href: "/dashboard/agents",
-			target: '[data-tour="agent-manager-save"]',
+			target: '[data-tour="agent-manager-save-control"]',
 			content:
 				"Save Agent commits the configured assistant and returns the user to the agent list.",
 			before: () =>
-				openAgentManagerCreateTarget('[data-tour="agent-manager-save"]'),
+				openAgentManagerCreateTarget(
+					'[data-tour="agent-manager-save-control"]',
+				),
 		}),
 		dashboardRouteStep({
 			href: "/dashboard/agents",
-			target: '[data-tour="agents-table"]',
+			target: '[data-tour="agents-table-control"]',
 			content:
 				"The agent table lists existing agents and exposes edit and delete actions for each row.",
-			before: () => closeAgentManagerCreateTarget('[data-tour="agents-table"]'),
+			before: () =>
+				closeAgentManagerCreateTarget('[data-tour="agents-table-control"]'),
 		}),
 	],
 };
