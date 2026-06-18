@@ -1,8 +1,8 @@
 "use client";
 
-import { AlertTriangle, RefreshCw, XCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useUserStore } from "@/lib/stores/userStore";
+import { AlertTriangle, RefreshCw, XCircle } from "lucide-react";
 import type { KanbanTask } from "../../../utils/types";
 
 export function AiStatusBar({
@@ -47,7 +47,7 @@ export function AiStatusBar({
 				? "Skip Trace"
 				: "AI";
 	return (
-		<div className="mt-3 flex flex-wrap items-center gap-2 text-sm">
+		<div className="mt-3 flex min-w-0 max-w-full flex-wrap items-center gap-2 text-sm">
 			{aiState === "running" && (
 				<Button
 					size="sm"
@@ -60,9 +60,11 @@ export function AiStatusBar({
 			)}
 
 			{aiState === "failed" && (
-				<div className="inline-flex items-center gap-2 rounded border border-destructive/40 bg-destructive/10 px-2 py-1 text-destructive">
+				<div className="flex min-w-0 max-w-full flex-wrap items-center gap-2 rounded border border-destructive/40 bg-destructive/10 px-2 py-1 text-destructive">
 					<XCircle className="h-4 w-4" />
-					<span>{task.aiErrorMessage || "Workflow failed"}</span>
+					<span className="min-w-0 break-words">
+						{task.aiErrorMessage || "Workflow failed"}
+					</span>
 					<Button
 						size="sm"
 						className="ml-2 inline-flex h-7 items-center gap-1 px-2"
@@ -76,9 +78,9 @@ export function AiStatusBar({
 			)}
 
 			{aiState === "blocked" && (
-				<div className="inline-flex items-center gap-2 rounded border border-amber-400/40 bg-amber-50 px-2 py-1 text-amber-700">
+				<div className="flex min-w-0 max-w-full flex-wrap items-center gap-2 rounded border border-amber-400/40 bg-amber-50 px-2 py-1 text-amber-700">
 					<AlertTriangle className="h-4 w-4" />
-					<span>
+					<span className="min-w-0 break-words">
 						Missing:{" "}
 						{(task.aiMissingParams || []).join(", ") || "required parameters"}
 					</span>
@@ -104,7 +106,7 @@ export function AiStatusBar({
 			)}
 
 			{aiState === "requires_oauth" && (
-				<div className="inline-flex items-center gap-2 rounded border border-amber-400/40 bg-amber-50 px-2 py-1 text-amber-700">
+				<div className="flex min-w-0 max-w-full flex-wrap items-center gap-2 rounded border border-amber-400/40 bg-amber-50 px-2 py-1 text-amber-700">
 					<AlertTriangle className="h-4 w-4" />
 					<span>Authorization required</span>
 					<Button
@@ -129,7 +131,7 @@ export function AiStatusBar({
 			)}
 
 			{(aiState === "pending" || aiState === undefined) && (
-				<div className="inline-flex items-center gap-2">
+				<div className="flex min-w-0 max-w-full flex-wrap items-center gap-2">
 					<Button
 						size="sm"
 						data-tour="kanban-run-ai-task"
@@ -140,7 +142,7 @@ export function AiStatusBar({
 						Run
 					</Button>
 					{costType && (
-						<span className="rounded border bg-muted px-2 py-0.5 text-muted-foreground text-xs">
+						<span className="min-w-0 break-words rounded border bg-muted px-2 py-0.5 text-muted-foreground text-xs">
 							Cost: {costAmount} {costLabel}{" "}
 							{costAmount === 1 ? "credit" : "credits"} · Remaining: {remaining}
 						</span>

@@ -1,6 +1,5 @@
 "use client";
 
-import { Info, RefreshCw, Square } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -9,6 +8,7 @@ import {
 	TooltipProvider,
 	TooltipTrigger,
 } from "@/components/ui/tooltip";
+import { Info, RefreshCw, Square } from "lucide-react";
 import type { KanbanTask } from "../../../utils/types";
 import { formatHMS } from "../utils/time";
 
@@ -40,7 +40,7 @@ export function AiHeaderControls({
 	})();
 
 	return (
-		<div className="ml-2 flex items-center gap-2">
+		<div className="flex min-w-0 max-w-full flex-wrap items-center justify-end gap-2">
 			{aiState !== "running" ? (
 				<TooltipProvider>
 					<Tooltip>
@@ -95,11 +95,11 @@ export function AiHeaderControls({
 								<span className="h-2 w-2 animate-pulse rounded-full bg-primary" />
 								<span className="font-semibold">Running…</span>
 							</div>
-							<div className="text-sm text-muted-foreground">
+							<div className="text-muted-foreground text-sm">
 								Elapsed: {formatHMS(elapsedSeconds)}
 							</div>
 							{typeof task.aiEtaSeconds === "number" && (
-								<div className="text-sm text-muted-foreground">
+								<div className="text-muted-foreground text-sm">
 									ETA:{" "}
 									{formatHMS(Math.max(0, task.aiEtaSeconds - elapsedSeconds))}
 								</div>
@@ -136,7 +136,7 @@ export function AiHeaderControls({
 					Retry
 				</Button>
 			)}
-			<Badge variant={aiBadge.variant as any} className="font-semibold">
+			<Badge variant={aiBadge.variant} className="font-semibold">
 				{aiBadge.label}
 			</Badge>
 		</div>

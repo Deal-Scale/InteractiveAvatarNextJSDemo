@@ -1,6 +1,6 @@
 "use client";
 
-import { Paperclip, Download } from "lucide-react";
+import { Download, Paperclip } from "lucide-react";
 
 export function Attachments({
 	attachments,
@@ -11,11 +11,11 @@ export function Attachments({
 }) {
 	if (!Array.isArray(attachments) || attachments.length === 0) return null;
 	return (
-		<div className="mt-3 text-sm">
-			<div className="mb-1 font-semibold flex items-center gap-2">
+		<div className="mt-3 min-w-0 max-w-full text-sm">
+			<div className="mb-1 flex min-w-0 items-center gap-2 font-semibold">
 				<Paperclip className="h-4 w-4" /> {title}
 			</div>
-			<div className="flex flex-wrap gap-2">
+			<div className="flex min-w-0 max-w-full flex-wrap gap-2">
 				{attachments.map((att) => (
 					<a
 						key={att.url}
@@ -23,9 +23,9 @@ export function Attachments({
 						download
 						target="_blank"
 						rel="noopener noreferrer"
-						className="inline-flex items-center gap-1 rounded border px-2 py-1 text-xs hover:bg-accent"
+						className="inline-flex min-w-0 max-w-full items-center gap-1 rounded border px-2 py-1 text-xs hover:bg-accent"
 					>
-						<span className="truncate max-w-[10rem]" title={att.filename}>
+						<span className="max-w-[10rem] truncate" title={att.filename}>
 							{att.filename}
 						</span>
 						<Download className="h-3 w-3" />

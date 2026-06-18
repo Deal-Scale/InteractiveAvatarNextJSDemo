@@ -10,9 +10,9 @@ export function LeadInfo({ task }: { task: KanbanTask }) {
 		!task.leadListId;
 
 	return (
-		<div className="mt-2 text-sm">
+		<div className="mt-2 min-w-0 break-words text-sm">
 			{task.leadId ? (
-				<div>
+				<div className="min-w-0 break-words">
 					<span className="font-semibold">Lead: </span>
 					{Array.isArray(mockGeneratedLeads) ? (
 						(() => {
@@ -34,7 +34,7 @@ export function LeadInfo({ task }: { task: KanbanTask }) {
 					)}
 				</div>
 			) : task.leadListId ? (
-				<div>
+				<div className="min-w-0 break-words">
 					<span className="font-semibold">Lead List: </span>
 					{Array.isArray(mockLeadListData) ? (
 						(() => {
@@ -56,7 +56,7 @@ export function LeadInfo({ task }: { task: KanbanTask }) {
 					)}
 				</div>
 			) : (
-				<div>
+				<div className="min-w-0 break-words">
 					<span className="text-muted-foreground italic">
 						No lead or lead list assigned
 					</span>
@@ -64,7 +64,7 @@ export function LeadInfo({ task }: { task: KanbanTask }) {
 			)}
 
 			{showAppointment && (
-				<div className="mt-2">
+				<div className="mt-2 min-w-0 break-words">
 					<span className="font-semibold">Appointment: </span>
 					{task.appointmentDate && (
 						<span className="text-muted-foreground">

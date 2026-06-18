@@ -10,6 +10,10 @@ import React, {
 	useState,
 } from "react";
 import { createPortal } from "react-dom";
+import {
+	isAppTourEvent,
+	markAppTourInteraction,
+} from "@/lib/utils/tourInteractions";
 import { type TourId, tourRegistry } from "./tourRegistry";
 import type { TourDefinition } from "./tourTypes";
 
@@ -85,6 +89,14 @@ async function waitForTourElement(selector: string) {
 	return fallback instanceof HTMLElement ? fallback : null;
 }
 
+function enableTourPointerInteractions(portalElement: HTMLElement | null) {
+	if (typeof document === "undefined") return;
+	document.body.style.pointerEvents = "";
+	if (portalElement) {
+		portalElement.style.pointerEvents = "auto";
+	}
+}
+
 export function AppTourProvider({ children }: { children: ReactNode }) {
 	const [run, setRun] = useState(false);
 	const [tourRunId, setTourRunId] = useState(0);
@@ -108,6 +120,47 @@ export function AppTourProvider({ children }: { children: ReactNode }) {
 		setPortalElement(root);
 		setMounted(true);
 	}, []);
+
+	useEffect(() => {
+		if (!mounted) return;
+
+		const markTourChromeInteraction = (event: Event) => {
+			if (isAppTourEvent(event)) {
+				markAppTourInteraction();
+			}
+		};
+
+		document.addEventListener("pointerdown", markTourChromeInteraction, true);
+		document.addEventListener("mousedown", markTourChromeInteraction, true);
+		document.addEventListener("click", markTourChromeInteraction, true);
+
+		return () => {
+			document.removeEventListener(
+				"pointerdown",
+				markTourChromeInteraction,
+				true,
+			);
+			document.removeEventListener(
+				"mousedown",
+				markTourChromeInteraction,
+				true,
+			);
+			document.removeEventListener("click", markTourChromeInteraction, true);
+		};
+	}, [mounted]);
+
+	useEffect(() => {
+		if (!run && !completionTourId) return;
+
+		const previousPortalPointerEvents = portalElement?.style.pointerEvents;
+		enableTourPointerInteractions(portalElement);
+
+		return () => {
+			if (portalElement && previousPortalPointerEvents !== undefined) {
+				portalElement.style.pointerEvents = previousPortalPointerEvents;
+			}
+		};
+	}, [completionTourId, portalElement, run]);
 
 	const startTour = useCallback((tourId: TourId = "app-overview") => {
 		setActiveTourId(tourId);
@@ -181,7 +234,10 @@ export function AppTourProvider({ children }: { children: ReactNode }) {
 			? createPortal(
 					<>
 						{completionTour && relatedTours.length > 0 && (
-							<div className="-translate-x-1/2 fixed bottom-4 left-1/2 z-[2147483647] w-[min(92vw,520px)] rounded-lg border border-border bg-card p-3 text-card-foreground shadow-2xl">
+							<div
+								className="-translate-x-1/2 fixed bottom-4 left-1/2 z-[2147483647] w-[min(92vw,520px)] rounded-lg border border-border bg-card p-3 text-card-foreground shadow-2xl"
+								data-app-tour-completion=""
+							>
 								<div className="flex items-start justify-between gap-3">
 									<div>
 										<div className="font-semibold text-sm">
@@ -236,7 +292,7 @@ export function AppTourProvider({ children }: { children: ReactNode }) {
 									<button
 										type="button"
 										aria-label="Skip guided tour"
-										className="fixed inset-0 bg-black/60"
+										className="pointer-events-auto fixed inset-0 bg-black/60"
 										data-app-tour-overlay=""
 										onClick={() => completeTour(false)}
 									/>
@@ -254,7 +310,7 @@ export function AppTourProvider({ children }: { children: ReactNode }) {
 									/>
 								) : null}
 								<div
-									className="fixed w-[min(320px,calc(100vw-32px))] rounded-lg border border-border bg-card p-4 text-card-foreground shadow-2xl"
+									className="pointer-events-auto fixed w-[min(320px,calc(100vw-32px))] rounded-lg border border-border bg-card p-4 text-card-foreground shadow-2xl"
 									data-app-tour-tooltip=""
 									style={{
 										left: tooltipPosition.left,
@@ -322,6 +378,7 @@ export function AppTourProvider({ children }: { children: ReactNode }) {
 
 		const prepareStep = async () => {
 			await activeStep.before?.();
+			enableTourPointerInteractions(portalElement);
 			const target =
 				typeof activeStep.target === "string"
 					? await waitForTourElement(activeStep.target)

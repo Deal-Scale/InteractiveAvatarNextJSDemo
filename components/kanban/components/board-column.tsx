@@ -1,15 +1,15 @@
 "use client";
-import type { KanbanColumn, KanbanTask } from "../utils/types";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { useDndContext } from "@dnd-kit/core";
 import { SortableContext, useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { cva } from "class-variance-authority";
 import { GripVertical } from "lucide-react";
 import { useMemo } from "react";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader } from "@/components/ui/card";
-import { ColumnActions } from "./column-action";
 import { defaultCols } from "../utils/mocks";
+import type { KanbanColumn, KanbanTask } from "../utils/types";
+import { ColumnActions } from "./column-action";
 import { TaskCard } from "./task-card";
 
 export type ColumnType = "Column";
@@ -49,7 +49,7 @@ export function BoardColumn({ column, tasks, isOverlay }: BoardColumnProps) {
 	const style = { transition, transform: CSS.Translate.toString(transform) };
 
 	const variants = cva(
-		"w-[350px] max-w-full bg-secondary flex flex-col flex-shrink-0 snap-center overflow-hidden",
+		"w-[350px] max-w-full bg-secondary flex flex-col flex-shrink-0 snap-center overflow-hidden min-h-full",
 		{
 			variants: {
 				dragging: {
@@ -90,8 +90,11 @@ export function BoardColumn({ column, tasks, isOverlay }: BoardColumnProps) {
 				)}
 			</CardHeader>
 			<CardContent className="flex flex-1 flex-col p-0">
-				<div className="w-full overscroll-y-contain">
-					<div className="flex flex-col gap-6 pl-3 pr-4 pt-3 pb-6">
+				<div
+					data-kanban-column-scroll="true"
+					className="flex w-full flex-1 flex-col"
+				>
+					<div className="flex flex-col gap-6 pt-3 pr-4 pb-6 pl-3">
 						<SortableContext items={tasksIds}>
 							{tasks.map((task) => (
 								<TaskCard key={task.id} task={task} />
@@ -107,9 +110,12 @@ export function BoardColumn({ column, tasks, isOverlay }: BoardColumnProps) {
 export function BoardContainer({ children }: { children: React.ReactNode }) {
 	const dndContext = useDndContext();
 	return (
-		<div className="flex-1 min-h-0 w-full overflow-auto overscroll-contain pb-2 [scrollbar-gutter:stable]">
+		<div
+			data-tour="kanban-board"
+			className="flex min-h-0 w-full flex-1 overflow-x-auto overflow-y-visible overscroll-x-contain pb-2 [scrollbar-gutter:stable]"
+		>
 			<div
-				className={`flex min-w-max flex-row items-start gap-4 px-2 md:px-0 ${
+				className={`flex min-h-full min-w-max flex-row items-start gap-4 px-2 md:px-0 ${
 					dndContext.active ? "snap-none" : ""
 				}`}
 			>

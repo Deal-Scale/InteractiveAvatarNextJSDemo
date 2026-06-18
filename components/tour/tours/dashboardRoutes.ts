@@ -2,12 +2,20 @@ import {
 	closeAgentManagerCreateTarget,
 	closeDashboardKanbanTaskAndShow,
 	openAgentManagerCreateTarget,
+	openAppToursSection,
 	openCampaignCreateTarget,
 	openConnectionsWebhookTarget,
+	openDashboardChartsTab,
 	openDashboardKanbanTaskTarget,
 	openDashboardTourTarget,
 	openDealCreateTarget,
 	openEmployeeInviteTarget,
+	openSidebar,
+	openSidebarSection,
+	openSlashCommandMenu,
+	openTopPanel,
+	prepareChatTourTarget,
+	prepareTopPanelTarget,
 } from "../tourHelpers";
 import type { TourDefinition, TourStep } from "../tourTypes";
 
@@ -32,6 +40,24 @@ function dashboardRouteStep({
 		hideOverlay,
 		before: before ?? (() => openDashboardTourTarget(href, target)),
 	};
+}
+
+function chartsTabStep({
+	content,
+	tab,
+	target,
+}: {
+	content: string;
+	tab: "overview" | "leads" | "ai-agents" | "advanced";
+	target: string;
+}): TourStep {
+	return dashboardRouteStep({
+		href:
+			tab === "overview" ? "/dashboard/charts" : `/dashboard/charts?tab=${tab}`,
+		target,
+		content,
+		before: () => openDashboardChartsTab(tab, target),
+	});
 }
 
 export const agentManagerTour: TourDefinition = {
@@ -402,48 +428,139 @@ export const chatTour: TourDefinition = {
 	steps: [
 		dashboardRouteStep({
 			href: "/dashboard/chat",
-			target: '[data-tour="chat-page"]',
+			target: '[data-tour="chat-experience-page"]',
 			content:
-				"Chat is the lightweight AI chat page for simple message exchange.",
+				"Chat opens the full interactive avatar workspace with chat, video, data, brain, and actions panels.",
 		}),
 		dashboardRouteStep({
 			href: "/dashboard/chat",
-			target: '[data-tour="chat-header"]',
+			target: '[data-tour="sidebar-header"]',
 			content:
-				"The chat header identifies this lightweight conversation page before the thread and composer.",
+				"The embedded workspace sidebar stays available inside dashboard chat for search, app tours, saved sessions, knowledge, tools, and agents.",
+			before: () => openSidebar(),
 		}),
 		dashboardRouteStep({
 			href: "/dashboard/chat",
-			target: '[data-tour="chat-thread"]',
+			target: '[data-tour="search-conversations"]',
 			content:
-				"The message thread shows user and assistant messages as the conversation progresses.",
+				"Search filters conversations and sidebar records so users can quickly recover prior work without leaving the chat workspace.",
+			before: () => openSidebar(),
 		}),
 		dashboardRouteStep({
 			href: "/dashboard/chat",
-			target: '[data-tour="chat-empty-state"]',
+			target: '[data-tour="new-chat"]',
 			content:
-				"The empty state confirms there are no messages yet and prompts the user to start the conversation.",
+				"New Chat starts a fresh text chat setup from the sidebar, useful when users want a clean thread or different chat mode.",
+			before: () => openSidebar(),
 		}),
 		dashboardRouteStep({
 			href: "/dashboard/chat",
-			target: '[data-tour="chat-composer"]',
-			content: "Use the composer to enter a prompt and send it to the AI chat.",
+			target: '[data-tour="bookmark-current"]',
+			content:
+				"Bookmark saves the active chat context so users can return to important conversations and generated work later.",
+			before: () => openSidebar(),
+		}),
+		dashboardRouteStep({
+			href: "/dashboard/chat",
+			target: '[data-tour="chats-section"]',
+			content:
+				"The Chats section is where current and historical conversations are organized before users reopen or bookmark work.",
+			before: () => openSidebarSection("chats"),
+		}),
+		dashboardRouteStep({
+			href: "/dashboard/chat",
+			target: '[data-tour="bookmarks"]',
+			content:
+				"Bookmarks group saved chats into a file-tree style list, keeping important sessions accessible from the left sidebar.",
+			before: () => openSidebarSection("bookmarks"),
+		}),
+		dashboardRouteStep({
+			href: "/dashboard/chat",
+			target: '[data-tour="knowledge-base"]',
+			content:
+				"Knowledge Base stores reusable documents and connected sources that agents can use as context during chat.",
+			before: () => openSidebarSection("knowledge-base"),
+		}),
+		dashboardRouteStep({
+			href: "/dashboard/chat",
+			target: '[data-tour="tools"]',
+			content:
+				"Tools shows connected integrations and MCP-style capabilities that can be used from chat commands and agent workflows.",
+			before: () => openSidebarSection("tools"),
+		}),
+		dashboardRouteStep({
+			href: "/dashboard/chat",
+			target: '[data-tour="agents"]',
+			content:
+				"The Agents section gives users quick access to configured assistants and preview actions without leaving the chat workspace.",
+			before: () => openSidebarSection("agents"),
+		}),
+		dashboardRouteStep({
+			href: "/dashboard/chat",
+			target: '[data-tour="app-tours"]',
+			content:
+				"App Tours lives in the left sidebar so users can relaunch guided help for workspace features whenever they need it.",
+			before: () => openAppToursSection(),
+		}),
+		dashboardRouteStep({
+			href: "/dashboard/chat",
+			target: '[data-tour="top-panel-tabs"]',
+			content:
+				"The top workspace controls switch the main panel between avatar video, brain graph, data grid, and action board views.",
+			before: () =>
+				prepareTopPanelTarget("brain", '[data-tour="top-panel-tabs"]'),
+		}),
+		dashboardRouteStep({
+			href: "/dashboard/chat",
+			target: '[data-tour="brain-tab"]',
+			content:
+				"Brain opens the graph workspace for reviewing connected context and relationship maps.",
+			before: () => openTopPanel("brain"),
+		}),
+		dashboardRouteStep({
+			href: "/dashboard/chat",
+			target: '[data-tour="data-tab"]',
+			content:
+				"Data opens the grid workspace where generated charts, extracted records, and reusable data views live.",
+			before: () => openTopPanel("data"),
+		}),
+		dashboardRouteStep({
+			href: "/dashboard/chat",
+			target: '[data-tour="actions-tab"]',
+			content:
+				"Actions opens the task board so chat insights can become tracked follow-up work.",
+			before: () => openTopPanel("actions"),
+		}),
+		dashboardRouteStep({
+			href: "/dashboard/chat",
+			target: '[data-tour="bottom-chat-panel"]',
+			content:
+				"The chat panel is the main conversation area for text prompts, agent responses, and follow-up actions.",
+			before: () => prepareChatTourTarget('[data-tour="bottom-chat-panel"]'),
 		}),
 		dashboardRouteStep({
 			href: "/dashboard/chat",
 			target: '[data-tour="chat-input"]',
 			content:
-				"The input field accepts the user prompt before the message is added to the thread.",
+				"Use the composer to type prompts, attach context, and send messages into the active chat.",
+			before: () => prepareChatTourTarget('[data-tour="chat-input"]'),
 		}),
 		dashboardRouteStep({
 			href: "/dashboard/chat",
-			target: '[data-tour="chat-send"]',
+			target: '[data-tour="slash-command-menu"]',
 			content:
-				"Send posts the prompt, disables during response generation, and appends the AI reply when complete.",
+				"The slash-command menu exposes shortcuts for agents, knowledge, tools, saved actions, and reusable workflow commands.",
+			before: () => openSlashCommandMenu(),
+		}),
+		dashboardRouteStep({
+			href: "/dashboard/chat",
+			target: '[data-tour="slash-command-item"]',
+			content:
+				"Each slash-command result can insert a structured action into the composer so users do not need to remember exact command syntax.",
+			before: () => openSlashCommandMenu(),
 		}),
 	],
 };
-
 export const connectionsTour: TourDefinition = {
 	id: "connections",
 	title: "Connections",
@@ -597,37 +714,151 @@ export const chartsTour: TourDefinition = {
 			href: "/dashboard/charts",
 			target: '[data-tour="charts-header"]',
 			content:
-				"The charts header anchors the analytics workspace before users switch reports or inspect KPIs.",
+				"The charts header anchors the analytics workspace and keeps the refresh action nearby when users need the latest reporting snapshot.",
+		}),
+		dashboardRouteStep({
+			href: "/dashboard/charts",
+			target: '[data-tour="charts-refresh"]',
+			content:
+				"Refresh reloads analytics data so KPI cards, chart series, and downstream tabs stay current after campaigns or lead lists change.",
 		}),
 		dashboardRouteStep({
 			href: "/dashboard/charts",
 			target: '[data-tour="charts-tabs"]',
 			content:
-				"Analytics tabs switch between overview, AI agent analytics, and advanced analytics.",
+				"Analytics tabs split the dashboard into overview metrics, lead segment performance, AI agent reporting, and advanced enterprise analysis.",
 		}),
-		dashboardRouteStep({
-			href: "/dashboard/charts",
+		chartsTabStep({
+			tab: "overview",
 			target: '[data-tour="charts-kpis"]',
 			content:
-				"KPI cards summarize total leads, active campaigns, conversion rate, and active tasks.",
+				"The overview KPI cards summarize the operating pulse: total leads, active campaigns, conversion rate, and active tasks with recent deltas.",
 		}),
-		dashboardRouteStep({
-			href: "/dashboard/charts",
+		chartsTabStep({
+			tab: "overview",
 			target: '[data-tour="charts-grid"]',
 			content:
-				"The chart grid compares campaign performance and lead generation trends.",
+				"The overview grid pairs outreach performance with lead generation trends so users can compare activity volume against lead growth.",
 		}),
-		dashboardRouteStep({
-			href: "/dashboard/charts",
+		chartsTabStep({
+			tab: "overview",
+			target: '[data-tour="charts-campaign-performance"]',
+			content:
+				"Campaign Performance breaks down outreach results by campaign so users can spot which channels and initiatives are producing outcomes.",
+		}),
+		chartsTabStep({
+			tab: "overview",
+			target: '[data-tour="charts-lead-trends"]',
+			content:
+				"Lead Trends shows whether lead generation is accelerating, flattening, or dropping over time before users adjust campaign volume.",
+		}),
+		chartsTabStep({
+			tab: "overview",
 			target: '[data-tour="charts-pipeline"]',
 			content:
-				"The pipeline chart shows funnel health from lead capture through closed deals.",
+				"The pipeline funnel shows where leads are moving or stalling from capture through closed deals, which helps prioritize follow-up work.",
 		}),
-		dashboardRouteStep({
-			href: "/dashboard/charts",
+		chartsTabStep({
+			tab: "overview",
 			target: '[data-tour="charts-roi-calculator"]',
 			content:
 				"The ROI calculator estimates campaign return so analytics can connect activity to financial outcomes.",
+		}),
+		chartsTabStep({
+			tab: "leads",
+			target: '[data-tour="charts-leads-intro"]',
+			content:
+				"The Leads tab focuses on segment-level performance for off-market sellers, motivated sellers, cash buyers, and other tracked lead types.",
+		}),
+		chartsTabStep({
+			tab: "leads",
+			target: '[data-tour="charts-leads-summary"]',
+			content:
+				"Lead summary cards compress the tab into four decision metrics: total volume, qualified leads, hot leads, and average intent score.",
+		}),
+		chartsTabStep({
+			tab: "leads",
+			target: '[data-tour="charts-leads-mix"]',
+			content:
+				"Lead Mix compares total, qualified, and hot leads by segment so users can see which audience has both scale and quality.",
+		}),
+		chartsTabStep({
+			tab: "leads",
+			target: '[data-tour="charts-leads-quality"]',
+			content:
+				"Segment Quality highlights conversion rate, top source, qualified count, hot count, and the strongest signal for each segment.",
+		}),
+		chartsTabStep({
+			tab: "leads",
+			target: '[data-tour="charts-leads-breakdown"]',
+			content:
+				"The breakdown table gives an operations-ready view of every segment so users can compare source, conversion, and signal details row by row.",
+		}),
+		chartsTabStep({
+			tab: "ai-agents",
+			target: '[data-tour="charts-ai-intro"]',
+			content:
+				"The AI Agents tab measures how automated calling, messaging, enrichment, and workflows contribute to sales execution.",
+		}),
+		chartsTabStep({
+			tab: "ai-agents",
+			target: '[data-tour="charts-ai-overview"]',
+			content:
+				"AI overview cards summarize agent output, hours saved, conversion lift, and the highest-level automation impact.",
+		}),
+		chartsTabStep({
+			tab: "ai-agents",
+			target: '[data-tour="charts-ai-performance"]',
+			content:
+				"Voice and script performance compare conversation quality, speed, and messaging effectiveness across the AI outreach stack.",
+		}),
+		chartsTabStep({
+			tab: "ai-agents",
+			target: '[data-tour="charts-ai-automation"]',
+			content:
+				"Enrichment and workflow panels show how AI finds high-intent leads, fills missing context, and moves repetitive work out of the manual queue.",
+		}),
+		chartsTabStep({
+			tab: "ai-agents",
+			target: '[data-tour="charts-ai-pro-insights"]',
+			content:
+				"Pro insights expose deeper AI recommendations and locked premium analysis when the user needs more than starter reporting.",
+		}),
+		chartsTabStep({
+			tab: "ai-agents",
+			target: '[data-tour="charts-ai-weekly"]',
+			content:
+				"The weekly AI report turns agent activity into a quick executive summary of hours saved, high-intent leads found, and top performers.",
+		}),
+		chartsTabStep({
+			tab: "advanced",
+			target: '[data-tour="charts-advanced-intro"]',
+			content:
+				"The Advanced tab groups enterprise-grade analytics such as AI ROI, predictive scoring, forecasting, attribution, and team benchmarks.",
+		}),
+		chartsTabStep({
+			tab: "advanced",
+			target: '[data-tour="charts-advanced-ai-roi"]',
+			content:
+				"AI ROI connects automation cost to saved time and pipeline outcomes so leaders can judge whether AI spend is paying back.",
+		}),
+		chartsTabStep({
+			tab: "advanced",
+			target: '[data-tour="charts-advanced-predictive"]',
+			content:
+				"Predictive analytics combine lead scoring and revenue forecasting to identify which opportunities deserve priority before results are final.",
+		}),
+		chartsTabStep({
+			tab: "advanced",
+			target: '[data-tour="charts-advanced-efficiency"]',
+			content:
+				"Efficiency cards evaluate deal execution and close probability, helping teams separate activity volume from actual deal progress.",
+		}),
+		chartsTabStep({
+			tab: "advanced",
+			target: '[data-tour="charts-advanced-attribution"]',
+			content:
+				"Attribution and hobby-time forecasting explain which signals create value and how much manual effort automation is replacing.",
 		}),
 	],
 };

@@ -17,6 +17,11 @@ export type SidebarTourSection =
 	| "tools";
 
 export type TopPanelTourTab = "video" | "brain" | "data" | "actions";
+export type DashboardChartsTab =
+	| "overview"
+	| "leads"
+	| "ai-agents"
+	| "advanced";
 
 export async function openBottomChatPanel() {
 	const session = useSessionStore.getState();
@@ -176,6 +181,22 @@ export async function openDashboardTourTarget(href: string, selector: string) {
 	session.closeChatSettings();
 	session.closeConfigModal();
 	await navigateDashboardTour(href);
+	await scrollTourTargetIntoView(selector);
+}
+
+export async function openDashboardChartsTab(
+	tab: DashboardChartsTab,
+	selector: string,
+) {
+	const session = useSessionStore.getState();
+	session.closeChatSettings();
+	session.closeConfigModal();
+	if (typeof window !== "undefined") {
+		window.dispatchEvent(
+			new CustomEvent("tour-open-charts-tab", { detail: { tab } }),
+		);
+		await new Promise((resolve) => window.setTimeout(resolve, 200));
+	}
 	await scrollTourTargetIntoView(selector);
 }
 

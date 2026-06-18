@@ -2,10 +2,6 @@
 import { Fragment, useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 
-import { hasDraggableData } from "./utils/utils";
-import { useTaskStore } from "./utils/store";
-import { useKanbanView } from "./utils/viewStore";
-import type { KanbanColumn, KanbanTask, Status } from "./utils/types";
 import {
 	type Active,
 	type Announcements,
@@ -14,33 +10,33 @@ import {
 	type DragOverEvent,
 	DragOverlay,
 	type DragStartEvent,
-	type Over,
 	MouseSensor,
+	type Over,
 	TouchSensor,
 	useSensor,
 	useSensors,
 } from "@dnd-kit/core";
 import { SortableContext, arrayMove } from "@dnd-kit/sortable";
+import ViewSearchAndSort from "./components/ViewSearchAndSort";
+import { BoardColumn, BoardContainer } from "./components/board-column";
 import NewSectionDialog from "./components/new-section-dialog";
 import { TaskCard } from "./components/task-card";
-import { BoardContainer, BoardColumn } from "./components/board-column";
-import ViewSearchAndSort from "./components/ViewSearchAndSort";
+import { useTaskStore } from "./utils/store";
+import type { KanbanColumn, KanbanTask } from "./utils/types";
+import { hasDraggableData } from "./utils/utils";
+import { useKanbanView } from "./utils/viewStore";
 // Removed inline create buttons; creation handled by top-right NewTaskDialog
 
 export type ColumnId = KanbanColumn["id"];
 
 export function KanbanBoard() {
 	const columns = useTaskStore((state) => state.columns);
-	const setColumns = useTaskStore((state) => state.setCols);
 	const tasks = useTaskStore((state) => state.tasks);
 	const setTasks = useTaskStore((state) => state.setTasks);
-	const searchQuery = useKanbanView((state) => state.searchQuery);
-	const filters = useKanbanView((state) => state.filters);
-	const sort = useKanbanView((state) => state.sort);
 	const deriveVisibleTasks = useKanbanView((s) => s.deriveVisibleTasks);
 	const visibleTasks = useMemo(
 		() => deriveVisibleTasks(tasks),
-		[deriveVisibleTasks, filters, searchQuery, sort, tasks],
+		[deriveVisibleTasks, tasks],
 	);
 	const pickedUpTaskColumn = useRef<ColumnId | null>(null);
 	const columnsId = useMemo(
@@ -178,9 +174,12 @@ export function KanbanBoard() {
 			onDragEnd={onDragEnd}
 			onDragOver={onDragOver}
 		>
-			<div className="flex min-h-0 flex-1 flex-col gap-4 overflow-hidden">
+			<div
+				data-tour="kanban-board-page"
+				className="flex min-h-0 w-full flex-1 flex-col gap-4"
+			>
 				{/* View toolbar: search + sorting */}
-				<div className="px-2 md:px-0 shrink-0">
+				<div className="shrink-0 px-2 md:px-0">
 					<ViewSearchAndSort />
 				</div>
 				<BoardContainer>

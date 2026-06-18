@@ -453,7 +453,7 @@ export function AvatarVideoPanel({
 					</div>
 				) : (
 					<div
-						className="absolute inset-0 z-0 bg-background"
+						className="absolute inset-0 z-0 flex h-full min-h-0 flex-col bg-background"
 						data-tour="kanban-board"
 					>
 						<div

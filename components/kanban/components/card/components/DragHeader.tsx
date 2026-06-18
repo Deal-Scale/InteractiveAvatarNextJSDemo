@@ -1,7 +1,7 @@
 "use client";
 
-import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import {
 	DropdownMenu,
 	DropdownMenuContent,
@@ -9,7 +9,7 @@ import {
 	DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { GripVertical, MoreVertical, Pencil, Trash } from "lucide-react";
-import type { HTMLAttributes, ReactNode } from "react";
+import type { ReactNode } from "react";
 
 export function DragHeader({
 	attributes,
@@ -19,8 +19,8 @@ export function DragHeader({
 	aiControls,
 	className = "",
 }: {
-	attributes: HTMLAttributes<HTMLElement>;
-	listeners: any;
+	attributes: Record<string, unknown>;
+	listeners?: Record<string, unknown>;
 	onEdit: () => void;
 	onDelete: () => void;
 	aiControls?: ReactNode;
@@ -28,18 +28,18 @@ export function DragHeader({
 }) {
 	return (
 		<div
-			className={`relative flex flex-row flex-wrap items-center gap-x-1 gap-y-1 border-secondary border-b-2 px-3 py-2 ${className}`}
+			className={`relative flex min-w-0 flex-row flex-wrap items-center gap-x-1 gap-y-1 overflow-hidden border-secondary border-b-2 px-3 py-2 ${className}`}
 		>
 			<Button
 				variant="ghost"
 				{...attributes}
 				{...listeners}
-				className="-ml-2 h-auto cursor-grab p-1 text-secondary-foreground/50 shrink-0"
+				className="-ml-2 h-auto shrink-0 cursor-grab p-1 text-secondary-foreground/50"
 			>
 				<span className="sr-only">Move task</span>
 				<GripVertical />
 			</Button>
-			<Badge variant="outline" className="font-semibold shrink-0">
+			<Badge variant="outline" className="shrink-0 font-semibold">
 				Task
 			</Badge>
 			<DropdownMenu>
@@ -62,7 +62,7 @@ export function DragHeader({
 				</DropdownMenuContent>
 			</DropdownMenu>
 			{aiControls && (
-				<div className="flex flex-wrap items-center gap-1 ml-auto">
+				<div className="ml-auto flex min-w-0 max-w-full flex-wrap items-center justify-end gap-1">
 					{aiControls}
 				</div>
 			)}

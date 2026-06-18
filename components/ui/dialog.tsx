@@ -4,9 +4,27 @@ import * as DialogPrimitive from "@radix-ui/react-dialog";
 import { X } from "lucide-react";
 import * as React from "react";
 
+import {
+	isAppTourEvent,
+	shouldIgnoreAppTourDismiss,
+} from "@/lib/utils/tourInteractions";
 import { cn } from "@/lib/utils";
 
-const Dialog = DialogPrimitive.Root;
+const Dialog = ({
+	onOpenChange,
+	...props
+}: React.ComponentPropsWithoutRef<typeof DialogPrimitive.Root>) => (
+	<DialogPrimitive.Root
+		onOpenChange={(open) => {
+			if (!open && shouldIgnoreAppTourDismiss()) {
+				return;
+			}
+
+			onOpenChange?.(open);
+		}}
+		{...props}
+	/>
+);
 
 const DialogTrigger = DialogPrimitive.Trigger;
 
@@ -35,7 +53,10 @@ DialogOverlay.displayName = DialogPrimitive.Overlay.displayName;
 const DialogContent = React.forwardRef<
 	React.ElementRef<typeof DialogPrimitive.Content>,
 	React.ComponentPropsWithoutRef<typeof DialogPrimitive.Content>
->(function DialogContent({ className, children, ...props }, ref) {
+>(function DialogContent(
+	{ className, children, onInteractOutside, ...props },
+	ref,
+) {
 	return (
 		<DialogPortal>
 			<DialogOverlay />
@@ -51,6 +72,14 @@ const DialogContent = React.forwardRef<
 						"motion-reduce:transition-none motion-reduce:transform-none",
 						className,
 					)}
+					onInteractOutside={(event) => {
+						if (isAppTourEvent(event)) {
+							event.preventDefault();
+							return;
+						}
+
+						onInteractOutside?.(event);
+					}}
 					{...props}
 				>
 					{children}
