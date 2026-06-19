@@ -1,6 +1,13 @@
 "use client";
 
-import React, { createContext, useContext, useMemo, useState } from "react";
+import StreamingAvatar, { ConnectionQuality } from "@heygen/streaming-avatar";
+import React, {
+	createContext,
+	useContext,
+	useMemo,
+	useRef,
+	useState,
+} from "react";
 
 import { Message, MessageSender } from "@/lib/types";
 
@@ -11,7 +18,7 @@ export enum StreamingAvatarSessionState {
 }
 
 type StreamingAvatarContextProps = {
-	avatarRef: React.MutableRefObject<null>;
+	avatarRef: React.MutableRefObject<StreamingAvatar | null>;
 	basePath?: string;
 
 	isMuted: boolean;
@@ -28,7 +35,11 @@ type StreamingAvatarContextProps = {
 
 	messages: Message[];
 	clearMessages: () => void;
-	handleUserTalkingMessage: ({ detail }: { detail: { message: string } }) => void;
+	handleUserTalkingMessage: ({
+		detail,
+	}: {
+		detail: { message: string };
+	}) => void;
 	handleStreamingTalkingMessage: ({
 		detail,
 	}: {
@@ -43,10 +54,8 @@ type StreamingAvatarContextProps = {
 	isAvatarTalking: boolean;
 	setIsAvatarTalking: (isAvatarTalking: boolean) => void;
 
-	connectionQuality: "unknown" | "good" | "bad" | "poor";
-	setConnectionQuality: (
-		connectionQuality: "unknown" | "good" | "bad" | "poor",
-	) => void;
+	connectionQuality: ConnectionQuality;
+	setConnectionQuality: (connectionQuality: ConnectionQuality) => void;
 };
 
 const StreamingAvatarContext = createContext<StreamingAvatarContextProps>({
@@ -72,16 +81,18 @@ const StreamingAvatarContext = createContext<StreamingAvatarContextProps>({
 	setIsUserTalking: () => {},
 	isAvatarTalking: false,
 	setIsAvatarTalking: () => {},
-	connectionQuality: "unknown",
+	connectionQuality: ConnectionQuality.UNKNOWN,
 	setConnectionQuality: () => {},
 });
 
 export const StreamingAvatarProvider = ({
 	children,
+	basePath,
 }: {
 	children: React.ReactNode;
 	basePath?: string;
 }) => {
+	const avatarRef = useRef<StreamingAvatar | null>(null);
 	const [isMuted, setIsMuted] = useState(true);
 	const [isVoiceChatLoading, setIsVoiceChatLoading] = useState(false);
 	const [isVoiceChatActive, setIsVoiceChatActive] = useState(false);
@@ -93,12 +104,14 @@ export const StreamingAvatarProvider = ({
 	const [isListening, setIsListening] = useState(false);
 	const [isUserTalking, setIsUserTalking] = useState(false);
 	const [isAvatarTalking, setIsAvatarTalking] = useState(false);
-	const [connectionQuality, setConnectionQuality] =
-		useState<StreamingAvatarContextProps["connectionQuality"]>("unknown");
+	const [connectionQuality, setConnectionQuality] = useState<ConnectionQuality>(
+		ConnectionQuality.UNKNOWN,
+	);
 
 	const value = useMemo(
 		() => ({
-			avatarRef: { current: null },
+			avatarRef,
+			basePath,
 			isMuted,
 			setIsMuted,
 			isVoiceChatLoading,
@@ -111,11 +124,7 @@ export const StreamingAvatarProvider = ({
 			setStream,
 			messages,
 			clearMessages: () => setMessages([]),
-			handleUserTalkingMessage: ({
-				detail,
-			}: {
-				detail: { message: string };
-			}) =>
+			handleUserTalkingMessage: ({ detail }: { detail: { message: string } }) =>
 				setMessages((prev) => [
 					...prev,
 					{
@@ -148,6 +157,7 @@ export const StreamingAvatarProvider = ({
 			setConnectionQuality,
 		}),
 		[
+			basePath,
 			connectionQuality,
 			isAvatarTalking,
 			isListening,

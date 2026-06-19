@@ -9,9 +9,9 @@ import {
 } from "../_utils";
 
 type RouteContext = {
-	params: {
+	params: Promise<{
 		vertexPath?: string[];
-	};
+	}>;
 };
 
 const FORBIDDEN_REQUEST_HEADERS = new Set([
@@ -84,7 +84,8 @@ async function proxyRequest(
 	req: NextRequest,
 	context: RouteContext,
 ): Promise<Response> {
-	const pathSegments = context.params.vertexPath?.filter(Boolean) ?? [];
+	const params = await context.params;
+	const pathSegments = params.vertexPath?.filter(Boolean) ?? [];
 
 	if (!pathSegments.length) {
 		return NextResponse.json(

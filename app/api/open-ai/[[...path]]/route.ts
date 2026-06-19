@@ -9,7 +9,7 @@ import {
 	readRequestBody,
 } from "../route-support";
 
-type RouteContext = { params: { path?: string[] } };
+type RouteContext = { params: Promise<{ path?: string[] }> };
 
 let cachedClient: OpenAIClient | null = null;
 let cachedSignature: string | null = null;
@@ -21,7 +21,6 @@ export const PATCH = createHandler("patch");
 export const DELETE = createHandler("delete");
 export const OPTIONS = createHandler("options");
 export const HEAD = createHandler("head");
-export const TRACE = createHandler("trace");
 
 async function handleRequest(
 	method: HttpMethod,
@@ -37,7 +36,8 @@ async function handleRequest(
 		);
 	}
 
-	const segments = context.params.path ?? [];
+	const params = await context.params;
+	const segments = params.path ?? [];
 	const path = `/${segments.join("/")}`.replace(/\/+/g, "/");
 
 	try {

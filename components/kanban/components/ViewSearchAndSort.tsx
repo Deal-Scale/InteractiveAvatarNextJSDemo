@@ -213,7 +213,10 @@ export default function ViewSearchAndSort() {
 				) {
 					continue;
 				}
-				const fullName = [lead.contactInfo?.firstName, lead.contactInfo?.lastName]
+				const fullName = [
+					lead.contactInfo?.firstName,
+					lead.contactInfo?.lastName,
+				]
 					.filter(Boolean)
 					.join(" ")
 					.trim();
@@ -269,7 +272,9 @@ export default function ViewSearchAndSort() {
 	const selectProps = (select: ToolbarSelectKey) => ({
 		open: openSelect === select,
 		onOpenChange: (nextOpen: boolean) =>
-			setOpenSelect(nextOpen ? select : openSelect === select ? null : openSelect),
+			setOpenSelect(
+				nextOpen ? select : openSelect === select ? null : openSelect,
+			),
 	});
 
 	useEffect(() => {
@@ -337,10 +342,7 @@ export default function ViewSearchAndSort() {
 								: "All"}
 						</Button>
 					</DropdownMenuTrigger>
-					<DropdownMenuContent
-						className="w-56"
-						{...menuContentProps("status")}
-					>
+					<DropdownMenuContent className="w-56" {...menuContentProps("status")}>
 						<DropdownMenuLabel>Select status</DropdownMenuLabel>
 						<DropdownMenuSeparator />
 						{statusOptions.map((s) => (
@@ -451,7 +453,9 @@ export default function ViewSearchAndSort() {
 							variant="outline"
 							className="justify-between w-[220px]"
 						>
-							{selectedLeadIds.length ? `${selectedLeadIds.length} selected` : "All"}
+							{selectedLeadIds.length
+								? `${selectedLeadIds.length} selected`
+								: "All"}
 						</Button>
 					</DropdownMenuTrigger>
 					<DropdownMenuContent className="w-64" {...menuContentProps("lead")}>
@@ -489,7 +493,10 @@ export default function ViewSearchAndSort() {
 								: "All"}
 						</Button>
 					</DropdownMenuTrigger>
-					<DropdownMenuContent className="w-64" {...menuContentProps("leadList")}>
+					<DropdownMenuContent
+						className="w-64"
+						{...menuContentProps("leadList")}
+					>
 						<DropdownMenuLabel>Select lead lists</DropdownMenuLabel>
 						<DropdownMenuSeparator />
 						{leadListOptions.map(({ id, label }) => (

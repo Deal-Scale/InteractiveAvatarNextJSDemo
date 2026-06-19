@@ -23,11 +23,7 @@ const EMOTIONS = [
 
 type EmotionId = (typeof EMOTIONS)[number]["id"];
 
-export function ThemeEmotionSelect({
-	className,
-}: {
-	className?: string;
-}) {
+export function ThemeEmotionSelect({ className }: { className?: string }) {
 	const emotion = useThemeStore((s) => s.emotion);
 	const setEmotion = useThemeStore((s) => s.setEmotion);
 	const onChange = (val: EmotionId) => setEmotion(val as any);

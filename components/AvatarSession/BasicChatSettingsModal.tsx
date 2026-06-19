@@ -288,9 +288,7 @@ export function BasicChatSettingsModal({
 							<div className="grid min-w-0 gap-4">
 								<div className="grid min-w-0 gap-2 rounded-md border border-border bg-background p-3">
 									<div>
-										<div className="font-medium text-sm">
-											Emotion colors
-										</div>
+										<div className="font-medium text-sm">Emotion colors</div>
 										<p className="mt-1 text-muted-foreground text-xs">
 											Update chat accent colors for the current experience.
 										</p>

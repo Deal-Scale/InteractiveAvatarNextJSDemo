@@ -15,10 +15,7 @@ import {
 	leadListTour,
 	resourcesTour,
 } from "./dashboardRoutes";
-import {
-	salesDemoTour,
-	supportDemoTour,
-} from "./demoTours";
+import { salesDemoTour, supportDemoTour } from "./demoTours";
 import {
 	assetsTour,
 	bookmarksTour,
@@ -26,11 +23,7 @@ import {
 	leftSidebarTour,
 	toolsTour,
 } from "./sidebarTours";
-import {
-	actionsKanbanTour,
-	brainTour,
-	dataGridTour,
-} from "./workspaceTours";
+import { actionsKanbanTour, brainTour, dataGridTour } from "./workspaceTours";
 
 export const tourDefinitions: TourDefinition[] = [
 	appOverviewTour,

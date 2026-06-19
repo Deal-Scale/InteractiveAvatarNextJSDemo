@@ -2,10 +2,7 @@
 
 import { Bookmark, BookmarkCheck, ChevronRight } from "lucide-react";
 
-import type {
-	Conversation,
-	ConversationGroup,
-} from "./types";
+import type { Conversation, ConversationGroup } from "./types";
 import {
 	SidebarGroup,
 	SidebarGroupLabel,

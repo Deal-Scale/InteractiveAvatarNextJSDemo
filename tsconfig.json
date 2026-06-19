@@ -35,11 +35,28 @@
 	},
 	"include": [
 		"next-env.d.ts",
-		"**/*.ts",
-		"**/*.d.ts",
-		"**/*.tsx",
+		"app/**/*.ts",
+		"app/**/*.tsx",
+		"components/**/*.ts",
+		"components/**/*.tsx",
+		"hooks/**/*.ts",
+		"hooks/**/*.tsx",
+		"lib/**/*.ts",
+		"lib/**/*.tsx",
+		"packages/grok-sdk/src/**/*.ts",
+		"types/**/*.d.ts",
 		".next/types/**/*.ts",
 		"components/AvatarSession/chat/utils/message.tss"
 	],
-	"exclude": ["node_modules", "packages/fastmcp-1"]
+	"exclude": [
+		"node_modules",
+		"packages/fastmcp-1",
+		"**/__tests__/**",
+		"**/*.test.ts",
+		"**/*.test.tsx",
+		"**/*.spec.ts",
+		"**/*.spec.tsx",
+		"test-results",
+		"coverage"
+	]
 }

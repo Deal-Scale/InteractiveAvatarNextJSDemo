@@ -171,8 +171,7 @@ export const useKanbanView = create<ViewState & Actions>()(
 				})),
 			clearFilters: () =>
 				set((s) => ({ filters: normalizeFilters(defaultState.filters) })),
-			saveFilters: () =>
-				set((s) => ({ filters: normalizeFilters(s.filters) })),
+			saveFilters: () => set((s) => ({ filters: normalizeFilters(s.filters) })),
 			saveCurrentFilters: () =>
 				set((s) => ({ savedFilters: normalizeFilters(s.filters) })),
 			loadSavedFilters: () =>
@@ -199,7 +198,8 @@ export const useKanbanView = create<ViewState & Actions>()(
 		{
 			name: "external-kanban-view-store",
 			merge: (persistedState, currentState) => {
-				const persisted = (persistedState as Partial<ViewState & Actions>) ?? {};
+				const persisted =
+					(persistedState as Partial<ViewState & Actions>) ?? {};
 				return {
 					...currentState,
 					...persisted,

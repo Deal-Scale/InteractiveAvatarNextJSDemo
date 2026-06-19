@@ -21,10 +21,7 @@ function JSXPreview({
 	...props
 }: JSXPreviewProps) {
 	const [parseError, setParseError] = React.useState<Error | null>(null);
-	const parserComponents = React.useMemo(
-		() => components ?? {},
-		[components],
-	);
+	const parserComponents = React.useMemo(() => components ?? {}, [components]);
 	const normalizedJsx = React.useMemo(() => normalizePreviewJsx(jsx), [jsx]);
 
 	React.useEffect(() => {

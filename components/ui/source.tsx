@@ -102,7 +102,10 @@ export function SourceContent({
 
 	return (
 		<HoverCardContent
-			className={cn("w-80 border border-border bg-card p-0 shadow-xs", className)}
+			className={cn(
+				"w-80 border border-border bg-card p-0 shadow-xs",
+				className,
+			)}
 		>
 			<a
 				className="flex flex-col gap-2 p-3"

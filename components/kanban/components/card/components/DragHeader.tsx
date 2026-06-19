@@ -9,7 +9,7 @@ import {
 	DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { GripVertical, MoreVertical, Pencil, Trash } from "lucide-react";
-import type { ReactNode } from "react";
+import type { HTMLAttributes, ReactNode } from "react";
 
 export function DragHeader({
 	attributes,
@@ -19,8 +19,8 @@ export function DragHeader({
 	aiControls,
 	className = "",
 }: {
-	attributes: Record<string, unknown>;
-	listeners?: Record<string, unknown>;
+	attributes: HTMLAttributes<HTMLElement>;
+	listeners?: HTMLAttributes<HTMLElement>;
 	onEdit: () => void;
 	onDelete: () => void;
 	aiControls?: ReactNode;

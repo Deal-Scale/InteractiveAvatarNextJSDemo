@@ -3,10 +3,7 @@
 import { ChevronRight } from "lucide-react";
 
 import ConversationsSection from "./ConversationsSection";
-import type {
-	Conversation,
-	ConversationGroup,
-} from "./types";
+import type { Conversation, ConversationGroup } from "./types";
 import { formatCompactNumber } from "./utils/format";
 import { Button } from "@/components/ui/button";
 import { SidebarGroup, SidebarGroupLabel } from "../ui/sidebar";

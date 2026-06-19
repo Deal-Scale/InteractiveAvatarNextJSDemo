@@ -10,12 +10,7 @@ import {
 import { ChevronRight, MoreVertical, Plus, Trash2 } from "lucide-react";
 import { useMemo, useState } from "react";
 
-import {
-	File,
-	Folder,
-	Tree,
-	type TreeViewElement,
-} from "../magicui/file-tree";
+import { File, Folder, Tree, type TreeViewElement } from "../magicui/file-tree";
 import { Button } from "@/components/ui/button";
 import { SidebarGroup, SidebarGroupLabel } from "../ui/sidebar";
 import { setChatDragData } from "@/lib/chat-drag";

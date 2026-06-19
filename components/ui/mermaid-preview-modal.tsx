@@ -32,7 +32,9 @@ export function MermaidPreviewModal({
 				onClick={(event) => event.stopPropagation()}
 			>
 				<div className="flex items-center justify-between border-slate-800 border-b px-4 py-3">
-					<div className="font-medium text-sm">{title || "Mermaid diagram"}</div>
+					<div className="font-medium text-sm">
+						{title || "Mermaid diagram"}
+					</div>
 					<Button
 						className="h-8 border-slate-700 bg-slate-900 text-slate-50 hover:bg-slate-800"
 						size="sm"

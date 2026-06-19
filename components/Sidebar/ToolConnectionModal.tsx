@@ -3,10 +3,7 @@
 import { Search } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 
-import {
-	KB_CONNECTORS,
-	type KBConnector,
-} from "../KnowledgeBase/connectors";
+import { KB_CONNECTORS, type KBConnector } from "../KnowledgeBase/connectors";
 import { Button } from "@/components/ui/button";
 import {
 	Dialog,

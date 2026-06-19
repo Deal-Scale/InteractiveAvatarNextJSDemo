@@ -22,7 +22,7 @@ import { BoardColumn, BoardContainer } from "./components/board-column";
 import NewSectionDialog from "./components/new-section-dialog";
 import { TaskCard } from "./components/task-card";
 import { useTaskStore } from "./utils/store";
-import type { KanbanColumn, KanbanTask } from "./utils/types";
+import type { KanbanColumn, KanbanTask, Status } from "./utils/types";
 import { hasDraggableData } from "./utils/utils";
 import { useKanbanView } from "./utils/viewStore";
 // Removed inline create buttons; creation handled by top-right NewTaskDialog
@@ -32,6 +32,7 @@ export type ColumnId = KanbanColumn["id"];
 export function KanbanBoard() {
 	const columns = useTaskStore((state) => state.columns);
 	const tasks = useTaskStore((state) => state.tasks);
+	const setCols = useTaskStore((state) => state.setCols);
 	const setTasks = useTaskStore((state) => state.setTasks);
 	const deriveVisibleTasks = useKanbanView((s) => s.deriveVisibleTasks);
 	const visibleTasks = useMemo(
@@ -257,7 +258,7 @@ export function KanbanBoard() {
 		const overColumnIndex = columns.findIndex(
 			(col) => String(col.id) === String(overId),
 		);
-		setColumns(arrayMove(columns, activeColumnIndex, overColumnIndex));
+		setCols(arrayMove(columns, activeColumnIndex, overColumnIndex));
 	}
 
 	function onDragOver(event: DragOverEvent) {

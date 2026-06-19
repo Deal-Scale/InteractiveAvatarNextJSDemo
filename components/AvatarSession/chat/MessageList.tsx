@@ -103,9 +103,7 @@ function MessageListImpl({
 										? exampleReasoning.reasoningMarkdown
 										: undefined)
 								}
-								reasoningOpen={
-									message.reasoningOpen ?? false
-								}
+								reasoningOpen={message.reasoningOpen ?? false}
 								setVote={setVote}
 								streamMode="typewriter"
 								streamSpeed={28}
@@ -168,9 +166,7 @@ function MessageListImpl({
 												? exampleReasoning.reasoningMarkdown
 												: undefined)
 										}
-										reasoningOpen={
-											message.reasoningOpen ?? false
-										}
+										reasoningOpen={message.reasoningOpen ?? false}
 										setVote={setVote}
 										streamMode="typewriter"
 										streamSpeed={28}
