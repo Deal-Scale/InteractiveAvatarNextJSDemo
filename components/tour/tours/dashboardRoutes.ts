@@ -1133,3 +1133,53 @@ export const employeeTour: TourDefinition = {
 		}),
 	],
 };
+
+export const profileTour: TourDefinition = {
+	id: "profile",
+	title: "Profile",
+	description: "Open profile settings and review account configuration.",
+	steps: [
+		dashboardRouteStep({
+			href: "/dashboard/profile",
+			target: '[data-tour="profile-page"]',
+			content:
+				"Profile is where users manage personal info, company setup, AI knowledge, OAuth connections, and security settings.",
+		}),
+		dashboardRouteStep({
+			href: "/dashboard/profile",
+			target: '[data-tour="profile-header"]',
+			content:
+				"The profile header explains the settings workspace and keeps validation and security controls nearby.",
+		}),
+		dashboardRouteStep({
+			href: "/dashboard/profile",
+			target: '[data-tour="profile-security-settings"]',
+			content:
+				"Security Settings opens account security controls without leaving the profile setup flow.",
+		}),
+		dashboardRouteStep({
+			href: "/dashboard/profile",
+			target: '[data-tour="profile-stepper"]',
+			content:
+				"The stepper moves between personal info, company setup, knowledge base, and OAuth setup.",
+		}),
+		dashboardRouteStep({
+			href: "/dashboard/profile",
+			target: '[data-tour="profile-required-fields"]',
+			content:
+				"Required fields show what must be completed for the active profile step before saving.",
+		}),
+		dashboardRouteStep({
+			href: "/dashboard/profile",
+			target: '[data-tour="profile-step-content"]',
+			content:
+				"The active step content contains the fields and integrations for the selected profile section.",
+		}),
+		dashboardRouteStep({
+			href: "/dashboard/profile",
+			target: '[data-tour="profile-actions"]',
+			content:
+				"Use Back, Next, and Save controls to move through profile setup and commit changes.",
+		}),
+	],
+};

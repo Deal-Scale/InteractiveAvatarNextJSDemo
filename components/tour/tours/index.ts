@@ -13,6 +13,7 @@ import {
 	employeeTour,
 	kanbanTour,
 	leadListTour,
+	profileTour,
 	resourcesTour,
 } from "./dashboardRoutes";
 import { salesDemoTour, supportDemoTour } from "./demoTours";
@@ -45,6 +46,7 @@ export const tourDefinitions: TourDefinition[] = [
 	resourcesTour,
 	dealRoomTour,
 	employeeTour,
+	profileTour,
 	brainTour,
 	dataGridTour,
 	actionsKanbanTour,

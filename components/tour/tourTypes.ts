@@ -20,6 +20,7 @@ export const TOUR_IDS = [
 	"resources",
 	"deal-room",
 	"employee",
+	"profile",
 	"brain",
 	"data-grid",
 	"actions-kanban",
